@@ -1,0 +1,515 @@
+/*# sourceMappingURL=custom.min.css.map */
+/*.navbar-brand-box{background-color: #a5cccd;}
+.navbar-menu{background-color: #a5cccd;}*/
+body{
+    font-family: 'roboto', sans-serif;
+}
+.navbar-menu .navbar-nav .nav-link:hover{background-color: #8cb2b5;}
+
+html[data-theme-colors="default"][data-bs-theme="light"][data-theme="default"] .navbar-menu .navbar-nav .nav-link  {
+    color: #2c2a2a;
+  }
+  .navbar-menu .navbar-nav .nav-link{
+    font-size: 10px;
+     color: #2c2a2a;
+    padding: 4px 6px !important;
+  }
+  .navbar-menu .navbar-nav .nav-link span{
+    font-weight: 600;
+  }
+  .navbar-menu .navbar-nav .nav-sm .nav-link{
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 20px;
+  }
+  .navbar-brand-box{
+    padding: 0;
+  }
+  .company-name{
+    line-height: 27px;
+    float: left;
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+  .card-title{
+    font-size: 13px;
+    font-family: 'roboto', sans-serif;
+  }
+  .m-menu-side{
+    padding-left:0px ;
+  }
+  .m-menu-side li{
+    list-style: none;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1px;
+    padding-top: 1px;
+    font-size: 12px;
+    position: relative;
+  }
+  .m-menu-side li ul li.nav-item a:hover{
+    background-color: #c4e0e1;
+  }
+  .m-menu-side li ul li.nav-item a{
+    padding: 1px;
+    color: #565454;
+  }
+  .m-menu-side li .menu-dropdown{
+    margin-left: 10px;
+  }
+  .m-navbar-menu .navbar-nav .nav-link[data-bs-toggle=collapse]:after{
+    display: block;
+    content: "\f0142";
+    font-family: "Material Design Icons";
+    margin-left: auto;
+    -webkit-transition: -webkit-transform .2s;
+    transition: -webkit-transform .2s;
+    transition: transform .2s;
+    transition: transform .2s, -webkit-transform .2s;
+    font-size: 1.05rem;
+    position: absolute;
+    right: 18px;
+    color: #625e5e;
+    top: -3px;
+  }
+  .m-navbar-menu .navbar-nav .nav-link[data-bs-toggle=collapse][aria-expanded=true]:after {
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg);
+    color: #625e5e;
+  }
+  .table{
+    font-size:11px;
+  }
+  .table>thead {
+    background-color: #cfdce1;
+  }
+  .table-striped>tbody>tr:nth-of-type(odd)>*{
+    background-color: #ECF5F5;
+  }
+  
+  /**************Add css in 11-02-2025 ***************/
+ ul.plist{
+  list-style: disc;
+ }
+  .table tr td,.table tr th{
+	  padding:5px;
+  }
+  .ctc-section {
+    width: 100%;
+}
+ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;}
+.ctc-section li {
+    border-bottom: 1px solid #ddd;
+    font-size: 12px;
+    font-weight: 500;
+    float: left;
+    width: 100%;
+    padding: 6px 0px;
+}
+.ctc-title {
+    float: left;
+    width: 50%;
+    color: #264E58;
+}
+.ctc-value {
+    text-align: right;
+}
+.ctc-section li i {
+    color: #A2B5BA;
+}
+.ctc-value b {
+    color: #DC7937;
+    text-align: right;
+    min-width: 70px;
+    float: right;
+}
+.ctc-head-title p, .eligibility-head-title p {
+  color: #5a5656;
+}
+.ctc-section li:last-child,.eligibility-list li:last-child {
+  border-bottom: 0px solid #ddd;
+}
+.eligibility-list {
+  font-weight: 600;
+  width: 100%;
+}
+.eligibility-list li {
+  margin-bottom: 5px;
+  border-bottom: 1px solid #ddd;
+  padding: 5px 0;
+  width: 100%;
+  float: left;
+  font-size: 12px;
+}
+.eligibility-list li span {
+  color: #DC7937;
+  float: right;
+  padding-left: 10px;
+}
+.profile-details p{
+  margin-bottom: 6px;
+}
+.card-header{
+  padding: 10px;
+}
+.card-header h5{
+  margin-bottom: 5px;
+}
+.arrow-navtabs .nav-item .nav-link{
+  padding: 2px 8px;
+  font-weight: 400;
+  font-size: 12px;
+}
+.avatar-sm{
+  width: 16px;
+  height: 16px;
+}
+.top-h-menu p{
+  font-size:12px;
+}
+.btn-sm{
+  padding: 3px 8px;
+}
+.nav-tabs-custom .nav-item{
+  min-width: 130px;
+  font-size: 12px;
+}
+.m-navbar-menu .navbar-nav .nav-link[data-bs-toggle=collapse]:after{
+  top: 0px;
+}
+.confirmation-box input
+ {
+    height: 20px;
+    float: left;
+    margin-right: 10px;
+}
+
+table.equal-header th {
+    width: auto;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  table.equal-header th,
+  table.equal-header td {
+    padding: 10px;
+  }
+
+  table.equal-header {
+    width: 100%;
+    table-layout: fixed; /* Ensures equal width distribution */
+  }
+
+  /* Optional: Responsive tweak for small screens */
+  @media (max-width: 768px) {
+    table.equal-header {
+      font-size: 12px;
+    }
+  }
+  .form-check-input:checked {
+    background-color: #447172;}
+  .customizer-setting{
+    display: none !important;
+  }
+   #scrollbar ul li.active>a {
+    background-color: #8cb2b5;
+    border-bottom: 1px solid #698993;
+    border-top: 1px solid #698993;
+}
+
+  .tp-menu-bg{
+    background-color: #a9cbcd !important;
+   }
+.emp-details-sep ul li{
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 5px;
+  color:#202020;
+}
+.emp-details-sep span{
+  color:#DC7937;
+  float:right;
+}
+.eligibility-title {
+    float: left;
+    width: 35%;
+    color: #264E58;
+    font-weight: 500;
+}
+.eligibility-list-hr li{
+      margin-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    padding: 5px 0;
+    width: 100%;
+    float: left;
+    font-size: 12px;
+}
+.eligibility-current{
+  width: 30%;
+  float: left;
+}
+.eligibility-praposed{
+    width: 35%;
+  float: left;
+}
+.hr-eligibility-pro-box{
+  width: 120px;
+    margin-right: 10px;
+    text-align: right;
+    font-weight: 600;
+    float: right;
+    margin-bottom: 4px;
+}
+.hr-ctc-details{
+  width:105px;float:right;font-weight:600;font-size:12px;text-align:right;
+}
+.hr-request-list{
+  
+      float: left;
+    width: 100%;
+    
+}
+.hr-request-list li{
+  float: left;
+    width: 100%;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    position: relative;
+}
+.hr-request-list li small{
+  color:#999;
+}
+/*hr operation dashboard css*/
+.chart-container {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: auto;
+    }
+    .chart-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .chart-center h3 {
+      margin: 0;
+      font-weight: bold;
+    }
+    .legend-text {
+      font-size: 14px;
+      color: #555;
+    }
+    .progress {
+      height: 8px;
+      border-radius: 5px;
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .text-success {
+      font-weight: 500;
+      font-size: 10px;
+    }
+    .atte-req-section {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0px 12px 23px 0px rgba(62, 73, 84, 0.08);
+}
+
+  /**hr operation dashboard css end*/
+
+    #loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    /* Custom Styles for Collapsible Tabs */
+    .collapse {
+        display: none;
+    }
+
+    .collapse.show {
+        display: block;
+    }
+
+    .nav-link.active {
+        font-weight: bold;
+    }
+
+    /* Modal header */
+    #hrmenualRequestForEmpPro .modal-header {
+        background-color: #f5f5f5;
+        color: #333;
+        border-bottom: 1px solid #ddd;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    /* Modal title */
+    #hrmenualRequestForEmpPro .modal-title {
+        font-size: 1rem;
+    }
+
+    /* Modal body */
+    #hrmenualRequestForEmpPro .modal-body {
+        background-color: #fff;
+        padding: 1rem;
+        font-size: 12px;
+    }
+
+    /* Form sections */
+    #hrmenualRequestForEmpPro .border.rounded {
+        background: #fafafa;
+        border-radius: 0.25rem;
+        border: 1px solid #e0e0e0;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Labels */
+    #hrmenualRequestForEmpPro .form-label b {
+        color: #444;
+        font-size: 12px;
+    }
+
+    /* Inputs & Selects */
+    #hrmenualRequestForEmpPro select.form-select,
+    #hrmenualRequestForEmpPro input.form-control,
+    #hrmenualRequestForEmpPro textarea.form-control {
+        border-radius: 0.25rem;
+        border: 1px solid #ccc;
+        padding: 0.25rem 0.5rem;
+        font-size: 12px;
+        transition: 0.15s;
+    }
+
+    #hrmenualRequestForEmpPro select.form-select:focus,
+    #hrmenualRequestForEmpPro input.form-control:focus,
+    #hrmenualRequestForEmpPro textarea.form-control:focus {
+        border-color: #888;
+        box-shadow: none;
+    }
+
+    /* Tabs */
+    #hrmenualRequestForEmpPro .nav-tabs .nav-link.active {
+        background-color: #e0e0e0 !important;
+        color: #333 !important;
+        font-size: 12px;
+        border-radius: 0.25rem;
+    }
+
+    /* Buttons */
+    #hrmenualRequestForEmpPro .btn-success {
+        background: #4caf50;
+        border: none;
+        font-size: 12px;
+        padding: 0.35rem 0.9rem;
+    }
+
+    #hrmenualRequestForEmpPro .btn-light {
+        font-size: 12px;
+        padding: 0.35rem 0.9rem;
+    }
+
+    /* Employee details highlights */
+    #hrmenualRequestForEmpPro .emp-details-sep strong {
+        color: #555;
+        font-size: 12px;
+    }
+
+    /* Edit icon */
+    #edit-proposed-ctc-btn i {
+        color: #555;
+        font-size: 12px;
+    }
+
+    #edit-proposed-ctc-btn:hover i {
+        color: #333;
+    }
+
+    /* Css For Eligibility transaction */
+    /* Compact numeric inputs */
+.input-xs {
+    width: 80px;
+    min-width: 80px;
+    padding: 2px 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Medium numeric inputs (amounts, vehicle value) */
+.input-sm-num {
+    width: 110px;
+    min-width: 110px;
+    padding: 2px 6px;
+    font-size: 12px;
+    text-align: right;
+}
+
+/* Compact select boxes */
+.select-xs {
+    width: 72px;
+    min-width: 70px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+/* Textareas for policy / remarks */
+.text_Box {
+    min-width: 80px;
+    font-size: 12px;
+}
+
+/* Textareas for policy / remarks */
+.fixed-text {
+    min-width: 180px;
+    font-size: 12px;
+}
+
+/* Align small current text neatly */
+.dynamic-column small {
+    font-size: 11px;
+}
+
+
+.btn-xs {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.65rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+
+    /* ADD THESE */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* End Css Eligibilty Transaction  */

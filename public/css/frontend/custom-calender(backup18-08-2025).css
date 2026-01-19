@@ -1,0 +1,346 @@
+.weekday th{    width: 14.28%;
+    float: left;
+    height: 30px;
+    background-color: #a9cbcd;
+    text-align: center;
+    border-right: 1px solid #a39696;
+    font-weight: 500;}
+table.calendar tbody tr td{
+		border: 1px solid #ddd;
+		height:100px;
+            /*margin: 3px 3px;
+    border-radius: 5px;*/
+
+		}
+.day-num{    float: left;
+    margin-right: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-left: 8px;
+	color:#000000;}
+	
+.punch-section{
+	    float: right;
+    font-size: 11px;
+    margin-right: 0px;
+	text-align: right;
+	color:#000000;
+	height:30px;
+	}
+.punch-section span{
+	line-height: 7px;
+    width: auto;
+    height: 14px;
+    font-size: 11px;
+    
+	}
+.atten-box{    float: left;margin-top:8px;
+    width: 100%;
+    text-align: center;font-size:14px;}
+	span.atte-late{
+	    width: 17px;
+    border-radius: 50%;
+    background-color: #ff0000;
+    color: #fff;
+    height: 17px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 14px;
+    margin: 5px 0 0 0px; /* top, right, bottom, left */
+    float: left;
+    padding-top: 2px;
+    padding-left: 1px;
+	}
+    
+/* Desktop View (min-width: 768px or higher) */
+@media (min-width: 768px) {
+  span.atte-late {
+    margin: 6px 0 0 23px;
+  }
+  .punch-section{
+    margin-right: 10px;
+  }
+
+}
+    span.atte-late-status{
+	   	    width: 17px;
+    border-radius: 50%;
+    background-color: #ff0000;
+    color: #fff;
+    height: 17px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 14px;
+    margin: 5px 0 0 6px; /* top, right, bottom, left */
+    float: left;
+    padding-top: 2px;
+    padding-left: 1px;
+	}
+	span.atte-absent{
+	border-radius: 50%;
+    background-color: #ff0000;
+	color: #fff;
+	font-weight: 600;    line-height: 30px;
+    width: 30px;
+    height: 30px;
+	}
+    span.atte-present{
+        border-radius: 50%;
+        background-color: #f3f0F0;
+        color: #040404;
+        font-weight: 500;
+        line-height: 30px;
+        width: 30px;
+        height: 30px;
+        font-size:large;
+    }
+    span.atte-OD{
+       
+        border-radius: 50%;
+    background-color: #FF80FF;
+	color: #fff;
+	font-weight: 600;
+        line-height: 30px;
+    width: 30px;
+    height: 30px;
+
+    }
+    span.atte-all-leave{
+        border-radius: 50%;
+        background-color: rgb(100, 177, 255);
+        color: #ffffff;
+        font-weight: 600;
+        line-height: 30px;
+        width: 30px;
+        height: 30px;
+    }
+	.deafult{color:#a19898;}
+	span.holiday-cal{
+	border-radius: 50%;
+    background-color: #3cb82c;
+	color: #fff;
+	font-weight: 600;    
+    line-height: 30px;
+    width: 30px;
+    height: 30px;
+	}
+	span.apply-leave{
+	background-color: #0dcaf0;
+	color: #fff;
+	font-weight: 600;    line-height: 30px;
+    width: 30px;
+    height: 30px;
+	}
+	span.atte-leave{
+	width: 14px;
+    border-radius: 50%;
+    background-color: #0dcaf0;
+    color: #fff;
+    height: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 14px;
+	margin-top:-2px;
+	}
+	.haf-leave{
+    position: relative;
+    width: 30px;
+    height: 30px;
+	left:35%;
+    background: #ff0000;
+    border-radius: 50%;}
+	.first-haf{position: absolute;
+    top: 15px;
+    background: #4cb732;
+    width: 30px;
+    height: 15px;
+    border-radius: 0 0 50px 50px;}
+	.second-haf{position: absolute;
+    top: 0px;
+    background: #4cb732;
+    width: 30px;
+    height: 15px;
+    border-radius: 50px 50px 0px 0px;}
+    .weekday th {
+        text-align: center;
+        font-weight: bold;
+        padding: 4px;
+    }
+    /*Attendance section calender */
+    .attendance table.calendar tbody tr td{
+        margin: 2px;
+        border-radius: 5px;
+        background-color: #F6F8FA;
+        border: 1px solid #f3f3f3;
+        height: 80px;
+        position: relative;
+    }
+     .attendance{
+        padding: 0px;
+    }
+    @media (max-width: 480px) {
+        .attendance .day {
+            width: 13.20%;
+        }
+    }
+    @media (min-width: 768px) {
+        .attendance .day {
+            width: 13.58%;
+        }
+    }
+
+
+    .attendance .weekday{
+        border-bottom: 1px solid #ddd;
+    }
+    .attendance .weekday th{
+        border-right: 0px;
+        background-color: transparent;
+            font-size: 11px;
+    color: #999;
+    font-weight: 500;
+    }
+    .attendance .day-num{
+        color: #a19898;
+        font-size: 12px;
+        font-weight: normal;
+    }
+    .attendance .atten-box{
+        font-size: 11px;
+    }
+    .atte-icon{    width: 35px;
+    margin-right: 5px;
+    background-color: #fff;
+    padding: 4px;
+    border-radius: 5px;
+    float: left;}
+   .attendance .punch-section span{
+    font-size: 9px;
+    line-height: 7px;
+    color: #686666;
+   }
+   .attendance span.atte-present{
+    line-height: 20px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+   }
+.attendance span.atte-all-leave{
+     line-height: 20px;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    float: left;
+}
+.attendance span.atte-late{
+    font-size:10px;
+    margin-top: 0px;
+}
+.attendance span.holiday-cal{
+line-height: 20px;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    float: left;
+}
+.attendance span.atte-OD{
+line-height: 20px;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    float: left;
+}
+.attendance .att-details-box-pop{
+    position: absolute;
+    width: 246px;
+    z-index: 99;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0px 2px 6px #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    /*left: 85px;*/
+    top: 0;
+    min-height: 79px;
+    display: none;
+}
+.day:hover .att-details-box-pop {
+    display: block;
+}
+.box-day-deta{
+    float: left;
+    border-right: 1px solid #ddd;
+    padding: 5px 10px 5px 0;
+}
+.box-day-deta h6{
+color: #34911f;
+    font-size: 27px;
+    /*font-weight: 300;*/
+}
+.att-details-box-pop .punch-section span{
+    font-size: 12px;
+    line-height: 20px;
+    margin-right: 5px;
+    color: #000;
+}
+.att-details-box-pop .open-modal{
+    font-size: 16px;
+        margin-top: -2px;
+    float: left;
+    margin-left: 4px;
+}
+.att-details-box-pop .request-att-btn{
+    padding: 2px 10px;
+    background-color: #53B2B8;
+    border-radius: 5px;
+        text-align: right;
+    color: #fff;
+    font-size: 11px;
+    margin-left: 8px;
+    float: right;
+    margin-top: 2px;
+}
+.att-details-box-pop span.atte-late{
+    margin-left: 0px;
+float: left;
+    margin-right: 3px;
+    border-radius: 5px;
+    font-size: 11px;
+    width: 22px;
+    height: 20px;
+        background-color: transparent;
+    color: red;
+    border: 1px solid #ddd;
+}
+
+.att-details-box-pop span.atte-present{
+    border: 1px solid #D8CFCF;
+    font-size: 12px;
+    border-radius: 4px;
+    color: green;
+    float: left;
+     background-color: transparent;
+     margin-left: 3px;
+}
+.leave-apply-btn{    border: 1px solid #ddd;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 11px;
+    float: left;
+    line-height: 13px;
+    margin-top: 1px;}
+.att-leave-list{
+        border: 1px solid #ddd;
+    padding: 1px 3px;
+    float: left;
+    margin-left: 10px;
+    margin-bottom: 6px;
+    border-radius: 5px;
+    color: #36A7D8;
+}
+.optional-leave{
+        width: 66%;
+    float: left;
+    color: #df5e1e;
+    font-weight: 500;
+}
