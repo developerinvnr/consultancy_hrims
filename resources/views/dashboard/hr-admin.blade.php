@@ -20,13 +20,13 @@
 
 
 	<!-- Compact HR Statistics -->
-	<div class="row g-2 mb-3">
-
+	{{--<div class="row g-2 mb-0">
+		<!-- Requisition Statistics -->
 		<div class="col-md-3 col-6">
 			<div class="card border-0 shadow-sm">
 				<div class="card-body py-2 d-flex justify-content-between align-items-center">
 					<div>
-						<small class="text-muted">Pending Verification</small>
+						<small class="text-muted">Pending HR Verification</small>
 						<div class="fw-bold">{{ $stats['pending_verification'] }}</div>
 					</div>
 					<i class="ri-time-line text-warning fs-5"></i>
@@ -50,10 +50,10 @@
 			<div class="card border-0 shadow-sm">
 				<div class="card-body py-2 d-flex justify-content-between align-items-center">
 					<div>
-						<small class="text-muted">Agreement Pending</small>
-						<div class="fw-bold">{{ $stats['agreement_pending'] }}</div>
+						<small class="text-muted">Total Approved</small>
+						<div class="fw-bold">{{ $stats['approved'] }}</div>
 					</div>
-					<i class="ri-file-text-line text-primary fs-5"></i>
+					<i class="ri-check-double-line text-success fs-5"></i>
 				</div>
 			</div>
 		</div>
@@ -62,15 +62,108 @@
 			<div class="card border-0 shadow-sm">
 				<div class="card-body py-2 d-flex justify-content-between align-items-center">
 					<div>
-						<small class="text-muted">Total Candidates</small>
-						<div class="fw-bold">{{ $stats['total_candidates'] }}</div>
+						<small class="text-muted">Total Requisitions</small>
+						<div class="fw-bold">{{ $stats['total_requisitions'] }}</div>
 					</div>
-					<i class="ri-user-line text-success fs-5"></i>
+					<i class="ri-file-list-line text-primary fs-5"></i>
 				</div>
 			</div>
 		</div>
 
-	</div>
+		<!-- Agreement Process Statistics -->
+		<div class="col-12 mt-0">
+			<h6 class="text-muted mb-2">Agreement Process</h6>
+		</div>
+
+		<div class="col-md-3 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Agreement Pending</small>
+						<div class="fw-bold">{{ $stats['agreement_pending'] }}</div>
+					</div>
+					<i class="ri-file-text-line text-warning fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-3 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Unsigned Uploaded</small>
+						<div class="fw-bold">{{ $stats['unsigned_uploaded'] }}</div>
+					</div>
+					<i class="ri-file-upload-line text-info fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-3 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Agreement Completed</small>
+						<div class="fw-bold">{{ $stats['agreement_completed'] }}</div>
+					</div>
+					<i class="ri-file-check-line text-success fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-3 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Signed Uploaded</small>
+						<div class="fw-bold">{{ $stats['signed_agreement_uploaded'] }}</div>
+					</div>
+					<i class="ri-mail-send-line text-primary fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<!-- Candidate Statistics -->
+		<div class="col-12 mt-0">
+			<h6 class="text-muted mb-2">Candidate Statistics</h6>
+		</div>
+
+		<div class="col-md-4 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Total Candidates</small>
+						<div class="fw-bold">{{ $stats['total_candidates'] }}</div>
+					</div>
+					<i class="ri-user-line text-secondary fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-4 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Active Candidates</small>
+						<div class="fw-bold">{{ $stats['active_candidates'] }}</div>
+					</div>
+					<i class="ri-user-follow-line text-success fs-5"></i>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-4 col-6">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body py-2 d-flex justify-content-between align-items-center">
+					<div>
+						<small class="text-muted">Rejected Candidates</small>
+						<div class="fw-bold">{{ $stats['rejected_candidates'] }}</div>
+					</div>
+					<i class="ri-user-unfollow-line text-danger fs-5"></i>
+				</div>
+			</div>
+		</div>
+	</div>--}}
 
 
 	<!-- Quick Actions -->
@@ -84,151 +177,151 @@
 					<div class="row">
 						<div class="col-md-3 mb-3">
 							<a href="{{ route('hr-admin.applications.new') }}" class="btn btn-primary w-100">
-								<i class="ri-file-list-line me-2"></i> New Applications
-								@if($stats['pending_verification'] > 0)
-								<span class="badge bg-white text-primary ms-1">{{ $stats['pending_verification'] }}</span>
-								@endif
-							</a>
-						</div>
-						<div class="col-md-3 mb-3">
-							<a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-success w-100">
-								<i class="ri-check-double-line me-2"></i> Approved
-								@if($stats['approved'] > 0)
-								<span class="badge bg-white text-success ms-1">{{ $stats['approved'] }}</span>
-								@endif
-							</a>
-						</div>
-						<div class="col-md-3 mb-3">
-							<a href="{{ route('hr-admin.agreement.list') }}" class="btn btn-info w-100">
-								<i class="ri-file-text-line me-2"></i> Agreements
-								@if($stats['agreement_pending'] > 0)
-								<span class="badge bg-white text-info ms-1">{{ $stats['agreement_pending'] }}</span>
-								@endif
-							</a>
-						</div>
-						<div class="col-md-3 mb-3">
-							<a href="{{ route('hr-admin.master.index') }}" class="btn btn-warning w-100">
-								<i class="ri-database-2-line me-2"></i> Master Data
-							</a>
-						</div>
-					</div>
-				</div>
+	<i class="ri-file-list-line me-2"></i> New Applications
+	@if($stats['pending_verification'] > 0)
+	<span class="badge bg-white text-primary ms-1">{{ $stats['pending_verification'] }}</span>
+	@endif
+	</a>
+</div>
+<div class="col-md-3 mb-3">
+	<a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-success w-100">
+		<i class="ri-check-double-line me-2"></i> Approved
+		@if($stats['approved'] > 0)
+		<span class="badge bg-white text-success ms-1">{{ $stats['approved'] }}</span>
+		@endif
+	</a>
+</div>
+<div class="col-md-3 mb-3">
+	<a href="{{ route('hr-admin.agreement.list') }}" class="btn btn-info w-100">
+		<i class="ri-file-text-line me-2"></i> Agreements
+		@if($stats['agreement_pending'] > 0)
+		<span class="badge bg-white text-info ms-1">{{ $stats['agreement_pending'] }}</span>
+		@endif
+	</a>
+</div>
+<div class="col-md-3 mb-3">
+	<a href="{{ route('hr-admin.master.index') }}" class="btn btn-warning w-100">
+		<i class="ri-database-2-line me-2"></i> Master Data
+	</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>--}}
+
+<!-- Recent Requisitions -->
+@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<div class="card-header">
+				<h5 class="card-title mb-0">Recent Requisitions</h5>
 			</div>
-		</div>
-	</div>--}}
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-hover">
+						<thead>
+							<tr>
+								<th>Requisition ID</th>
+								<th>Candidate</th>
+								<th>Email</th>
+								<th>Type</th>
+								<th>Status</th>
+								<th>Submitted By</th>
+								<th>Date</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach($recent_requisitions as $req)
+							<tr>
+								<td>
+									<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
+								</td>
+								<td>
+									<div>{{ $req->candidate_name }}</div>
+								</td>
+								<td>
+									{{ $req->candidate_email }}
+								</td>
+								<td>
+									<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
+										{{ $req->requisition_type }}
+									</span>
+								</td>
+								<td>
+									@php
+									$statusColors = [
+									'Pending HR Verification' => 'warning',
+									'Pending Approval' => 'info',
+									'Approved' => 'success',
+									'Correction Required' => 'danger',
+									'Processed' => 'secondary',
+									'Rejected' => 'dark',
+									'Hr Verified' => 'success',
+									'Unsigned Agreement Uploaded' => 'primary',
+									'Agreement Completed' => 'success'
+									];
+									@endphp
+									<span class="badge bg-{{ $statusColors[$req->status] ?? 'secondary' }}">
+										{{ $req->status }}
+									</span>
+								</td>
+								<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
+								<td>{{ $req->created_at->format('d-M-Y') }}</td>
+								<td>
+									<div class="btn-group" role="group">
+										<a href="{{ route('hr-admin.applications.view', $req) }}"
+											class="btn btn-sm btn-outline-primary" title="View Details">
+											<i class="ri-eye-line"></i>
+										</a>
 
-	<!-- Recent Requisitions -->
-	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
-	<div class="row">
-		<div class="col-12">
-			<div class="card">
-				<div class="card-header">
-					<h5 class="card-title mb-0">Recent Requisitions</h5>
-				</div>
-				<div class="card-body">
-					<div class="table-responsive">
-						<table class="table table-hover">
-							<thead>
-								<tr>
-									<th>Requisition ID</th>
-									<th>Candidate</th>
-									<th>Email</th>
-									<th>Type</th>
-									<th>Status</th>
-									<th>Submitted By</th>
-									<th>Date</th>
-									<th>Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								@foreach($recent_requisitions as $req)
-								<tr>
-									<td>
-										<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
-									</td>
-									<td>
-										<div>{{ $req->candidate_name }}</div>
-									</td>
-									<td>
-										{{ $req->candidate_email }}
-									</td>
-									<td>
-										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
-											{{ $req->requisition_type }}
-										</span>
-									</td>
-									<td>
+										<!-- Upload Unsigned Agreement Button -->
+										@if($req->status == 'Agreement Pending')
 										@php
-										$statusColors = [
-										'Pending HR Verification' => 'warning',
-										'Pending Approval' => 'info',
-										'Approved' => 'success',
-										'Correction Required' => 'danger',
-										'Processed' => 'secondary',
-										'Rejected' => 'dark',
-										'Hr Verified' => 'success',
-										'Unsigned Agreement Uploaded' => 'primary',
-										'Agreement Completed' => 'success'
-										];
+										$candidateForUpload = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
 										@endphp
-										<span class="badge bg-{{ $statusColors[$req->status] ?? 'secondary' }}">
-											{{ $req->status }}
-										</span>
-									</td>
-									<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
-									<td>{{ $req->created_at->format('d-M-Y') }}</td>
-									<td>
-										<div class="btn-group" role="group">
-											<a href="{{ route('hr-admin.applications.view', $req) }}"
-												class="btn btn-sm btn-outline-primary" title="View Details">
-												<i class="ri-eye-line"></i>
-											</a>
+										@if($candidateForUpload)
+										<button type="button"
+											class="btn btn-sm btn-outline-success upload-unsigned-btn"
+											data-candidate-id="{{ $candidateForUpload->id }}"
+											data-candidate-code="{{ $candidateForUpload->candidate_code }}"
+											data-candidate-name="{{ $candidateForUpload->candidate_name }}"
+											title="Upload Unsigned Agreement">
+											<i class="ri-file-upload-line"></i>
+										</button>
+										@endif
+										@endif
 
-											<!-- Upload Unsigned Agreement Button -->
-											@if($req->status == 'Agreement Pending')
-											@php
-											$candidateForUpload = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
-											@endphp
-											@if($candidateForUpload)
-											<button type="button"
-												class="btn btn-sm btn-outline-success upload-unsigned-btn"
-												data-candidate-id="{{ $candidateForUpload->id }}"
-												data-candidate-code="{{ $candidateForUpload->candidate_code }}"
-												data-candidate-name="{{ $candidateForUpload->candidate_name }}"
-												title="Upload Unsigned Agreement">
-												<i class="ri-file-upload-line"></i>
-											</button>
-											@endif
-											@endif
-
-											<!-- Upload Signed Agreement Button (from email) -->
-											@if($req->status == 'Awaiting Signed Agreement')
-											@php
-											$candidateForSigned = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
-											@endphp
-											@if($candidateForSigned)
-											<button type="button"
-												class="btn btn-sm btn-outline-info upload-signed-btn"
-												data-candidate-id="{{ $candidateForSigned->id }}"
-												data-candidate-code="{{ $candidateForSigned->candidate_code }}"
-												data-candidate-name="{{ $candidateForSigned->candidate_name }}"
-												title="Upload Signed Agreement (from email)">
-												<i class="ri-mail-send-line"></i>
-											</button>
-											@endif
-											@endif
-										</div>
-									</td>
-								</tr>
-								@endforeach
-							</tbody>
-						</table>
-					</div>
+										<!-- Upload Signed Agreement Button (from email) -->
+										@if($req->status == 'Awaiting Signed Agreement')
+										@php
+										$candidateForSigned = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
+										@endphp
+										@if($candidateForSigned)
+										<button type="button"
+											class="btn btn-sm btn-outline-info upload-signed-btn"
+											data-candidate-id="{{ $candidateForSigned->id }}"
+											data-candidate-code="{{ $candidateForSigned->candidate_code }}"
+											data-candidate-name="{{ $candidateForSigned->candidate_name }}"
+											title="Upload Signed Agreement (from email)">
+											<i class="ri-mail-send-line"></i>
+										</button>
+										@endif
+										@endif
+									</div>
+								</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
 	</div>
-	@endif
+</div>
+@endif
 </div>
 
 <!-- HR Admin Modals -->

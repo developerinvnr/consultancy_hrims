@@ -37,31 +37,45 @@ class HomeController extends Controller
      * HR Admin Dashboard
      */
     private function hrAdminDashboard()
-    {
-        $stats = [
-            'pending_verification' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
-            'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
-            'pending_approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
-            'approved' => ManpowerRequisition::where('status', 'Approved')->count(),
-            'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
-            'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
-            'rejected' => ManpowerRequisition::where('status', 'Rejected')->count(),
+{
+    $stats = [
+        // Manpower Requisition Stats
+        'pending_verification' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
+        'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
+        'pending_approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
+        'approved' => ManpowerRequisition::where(function($query) {
+            $query->where('status', 'Approved')
+                  ->orWhere('status', 'Agreement Pending')
+                  ->orWhere('status', 'Unsigned Agreement Uploaded')
+                  ->orWhere('status', 'Agreement Completed');
+        })->count(),
+        'rejected' => ManpowerRequisition::where('status', 'Rejected')->count(),
+        'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
+        'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
+        
+        // Candidate Master Stats (for approved requisitions)
+        'agreement_pending' => ManpowerRequisition::where('status', 'Agreement Pending')->count(),
+        'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Uploaded')->count(),
+        'agreement_completed' => ManpowerRequisition::where('status', 'Agreement Completed')->count(),
+        
+        // Additional stats from CandidateMaster for HR perspective
+        'total_candidates' => CandidateMaster::count(),
+        'signed_agreement_uploaded' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
+        'active_candidates' => CandidateMaster::where('candidate_status', 'Active')->count(),
+        'rejected_candidates' => CandidateMaster::where('candidate_status', 'Rejected')->count(),
+        
+        // Overall totals
+        'total_requisitions' => ManpowerRequisition::count(),
+    ];
 
-            // Agreement statistics
-            'agreement_pending' => CandidateMaster::where('candidate_status', 'Agreement Pending')->count(),
-            'unsigned_uploaded' => CandidateMaster::where('candidate_status', 'Unsigned Agreement Uploaded')->count(),
-            'agreement_completed' => CandidateMaster::where('candidate_status', 'Agreement Completed')->count(),
-            'total_candidates' => CandidateMaster::count(),
-        ];
+    // Recent requisitions for HR Admin
+    $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function'])
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get();
 
-        // Recent requisitions for HR Admin
-        $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions'));
-    }
+    return view('dashboard.hr-admin', compact('stats', 'recent_requisitions'));
+}
 
     /**
      * Regular User Dashboard (can be submitter, approver, or both)
@@ -80,72 +94,64 @@ class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        // Check if user is an approver (has employee ID)
+        // Initialize variables
         $isApprover = false;
         $data['pending_approvals'] = collect();
         $data['approval_stats'] = [];
 
+        // Check if user is an approver (has employee ID AND has approvals assigned)
         if ($user->emp_id) {
-            // Get pending approvals (where approver_id matches AND status is Pending Approval)
-            $data['pending_approvals'] = ManpowerRequisition::where('status', 'Pending Approval')
-                ->where('approver_id', $user->emp_id)
-                ->with(['department', 'function', 'submittedBy'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $hasApprovals = ManpowerRequisition::where('approver_id', $user->emp_id)->exists();
 
-            $isApprover = true;
-            $isApprover = ManpowerRequisition::where('approver_id', $user->emp_id)->exists();
+            if ($hasApprovals) {
+                $isApprover = true;
 
-            if ($isApprover) {
-                // Get statistics based on approver_id AND approval_date
+                // Get pending approvals
+                $data['pending_approvals'] = ManpowerRequisition::where('status', 'Pending Approval')
+                    ->where('approver_id', $user->emp_id)
+                    ->with(['department', 'function', 'submittedBy'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+                // Get statistics
                 $data['approval_stats'] = [
-                    // Currently pending for approval
                     'pending' => ManpowerRequisition::where('approver_id', $user->emp_id)
                         ->where('status', 'Pending Approval')
                         ->count(),
 
-                    // Approved (has approval_date and approver_id matches)
                     'total_approved' => ManpowerRequisition::where('approver_id', $user->emp_id)
                         ->whereNotNull('approval_date')
                         ->count(),
 
-                    // Rejected (has rejection_date and approver_id matches)
                     'total_rejected' => ManpowerRequisition::where('approver_id', $user->emp_id)
                         ->whereNotNull('rejection_date')
                         ->count(),
 
-                    // Total assigned to this approver (any status)
                     'total_assigned' => ManpowerRequisition::where('approver_id', $user->emp_id)
                         ->count(),
 
-                    // Approved but later overridden (approver_id matches but status changed)
                     'approved_but_overridden' => ManpowerRequisition::where('approver_id', $user->emp_id)
                         ->whereNotNull('approval_date')
-                        ->whereNotIn('status', ['Approved', 'Agreement Completed'])
+                        ->whereNotIn('status', ['Approved', 'Agreement Completed', 'Completed'])
                         ->count(),
                 ];
             }
         }
 
-        // Get recent requisitions for user
-        if ($isApprover) {
-            // For approvers, show both their submissions and approvals
-            $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy'])
-                ->where('approver_id', $user->emp_id)
-                ->orWhere('submitted_by_user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get();
-        } else {
-            // For regular users, only show their submissions
-            $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy'])
-                ->where('submitted_by_user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get();
-        }
+        // Get recent requisitions
+        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy'])
+            ->where(function ($query) use ($user, $isApprover) {
+                $query->where('submitted_by_user_id', $user->id);
 
-        // Get user statistics - ALWAYS get submitter stats if user has submissions
+                if ($isApprover) {
+                    $query->orWhere('approver_id', $user->emp_id);
+                }
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Get user statistics - FIXED to include all post-approval statuses
         $data['user_stats'] = [
             'total_submissions' => ManpowerRequisition::where('submitted_by_user_id', $user->id)->count(),
             'pending_hr_verification' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
@@ -154,8 +160,17 @@ class HomeController extends Controller
                 ->where('status', 'Hr Verified')->count(),
             'pending_approval' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
                 ->where('status', 'Pending Approval')->count(),
+
+            // FIXED: Include all post-approval statuses
             'approved' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
-                ->where('status', 'Approved')->count(),
+                ->where(function ($query) {
+                    $query->where('status', 'Approved')
+                        ->orWhere('status', 'Agreement Pending')
+                        ->orWhere('status', 'Unsigned Agreement Uploaded')
+                        ->orWhere('status', 'Agreement Completed')
+                        ->orWhere('status', 'Completed');
+                })->count(),
+
             'rejected' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
                 ->where('status', 'Rejected')->count(),
             'correction_required' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
@@ -171,7 +186,6 @@ class HomeController extends Controller
         ];
 
         $data['is_approver'] = $isApprover;
-       //   dd($data['is_approver']);
         return view('dashboard.user', $data);
     }
 }

@@ -1,3 +1,9 @@
+<!-- My Team - Only show if user has emp_id AND has team members -->
+@php
+    $user = Auth::user();
+    $hasTeam = $user->emp_id && 
+               App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id)->exists();
+@endphp
 <div class="app-menu navbar-menu">
     <div class="navbar-brand-box">
         {{-- Logo --}}
@@ -88,13 +94,14 @@
                     </a>
                 </li>
 
-                <!-- My Team -->
+               @if($hasTeam)
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('my-team*') ? 'active' : '' }}" href="{{ route('my-team.index') }}">
                         <i class="ri-team-line"></i>
                         <span>My Team</span>
                     </a>
                 </li>
+                @endif
 
 
 

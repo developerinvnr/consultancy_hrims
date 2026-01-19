@@ -199,10 +199,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/submit-sunday-work', [AttendanceController::class, 'submitSundayWork'])->name('attendance.submit-sunday-work');
     });
 
-    Route::prefix('my-team')->middleware(['auth'])->group(function () {
+   Route::prefix('my-team')->middleware(['auth'])->group(function () {
     Route::get('/', [MyTeamController::class, 'index'])->name('my-team.index');
     Route::get('/get-candidates', [MyTeamController::class, 'getCandidates'])->name('my-team.get-candidates');
-    Route::get('/candidate/{id}', [MyTeamController::class, 'showCandidate'])->name('my-team.candidate.show');
-    Route::get('/candidate-documents/{id}', [MyTeamController::class, 'getCandidateDocuments'])->name('my-team.candidate.documents');
-});
+    Route::get('/candidate/{id}', [MyTeamController::class, 'showCandidatePage'])->name('my-team.candidate.show');
+    Route::get('/candidate/{id}/documents', [MyTeamController::class, 'getCandidateDocuments'])->name('my-team.candidate.documents');
+  });
+
 });
