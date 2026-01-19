@@ -18,17 +18,6 @@
 		</div>
 	</div>
 
-	<!-- Welcome Message -->
-	<div class="row mb-0">
-		<div class="col-12">
-			<div class="card">
-				<div class="card-body">
-					<h5 class="card-title">Welcome, {{ Auth::user()->name }}!</h5>
-					<p class="card-text">HR Admin Dashboard - Manage employee requisitions and agreements</p>
-				</div>
-			</div>
-		</div>
-	</div>
 
 	<!-- Compact HR Statistics -->
 	<div class="row g-2 mb-3">
@@ -85,7 +74,7 @@
 
 
 	<!-- Quick Actions -->
-	<div class="row mb-4">
+	{{--<div class="row mb-4">
 		<div class="col-12">
 			<div class="card">
 				<div class="card-header">
@@ -126,7 +115,7 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</div>--}}
 
 	<!-- Recent Requisitions -->
 	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)

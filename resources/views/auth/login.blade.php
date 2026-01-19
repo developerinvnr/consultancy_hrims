@@ -42,8 +42,7 @@
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
                         
-                        <img style="width: 150px;" src="{{ asset('images/peepal-logo-final.png') }}" alt="Peepal Logo">
-                        
+                        {{--<img style="width: 150px;" src="{{ asset('images/peepal-logo-final.png') }}" alt="Peepal Logo">--}}                        
                         <div class="ad-auth-form" style="margin-top:0px;">
                             <!-- Email/Employee ID Field -->
                             <div class="ad-auth-feilds mb-30" style="margin-top:0px;">
@@ -143,7 +142,7 @@
     </div>
     
     <!-- Website Links Section -->
-    <div class="web-url-section">
+    {{--<div class="web-url-section">
         <div class="web-icon-section"><i class="fa fa-globe"></i></div>
         <div style="float: left; margin-left: 11px;">
             <b>
@@ -153,7 +152,7 @@
                    href="https://www.vnrnursery.in/">www.vnrnursery.in</a>
             </b>
         </div>
-    </div>
+    </div>--}}
 </div>
 @endsection
 
