@@ -97,7 +97,7 @@
                                         -
                                         @endif
                                     </td>
-                                    <td>{{ $user->created_at->format('Y-m-d') }}</td>
+                                    <td>{{ $user->created_at?->format('Y-m-d') ?? '-' }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             <button class="btn btn-xs btn-info edit-user" data-id="{{ $user->id }}" title="Edit">
