@@ -203,6 +203,7 @@ class SubmitterController extends Controller
 
 			// Update candidate status
 			$candidate->candidate_status = 'Signed Agreement Uploaded';
+			$candidate->final_status = 'A';
 			$candidate->save();
 
 			// Update requisition status

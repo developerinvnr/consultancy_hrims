@@ -8,6 +8,8 @@ use App\Models\CandidateMaster;
 use App\Models\AgreementTemp;
 use App\Models\AgreementDocument;
 use App\Models\Employee;
+use App\Models\LeaveBalance;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -675,7 +677,6 @@ class HrAdminController extends Controller
 			], 500);
 		}
 	}
-
 	public function processApplicationModal(Request $request)
 	{
 		$request->validate([
@@ -687,7 +688,7 @@ class HrAdminController extends Controller
 		DB::beginTransaction();
 		try {
 			$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
-			//dd($request->all());
+
 			// Check if already processed (in candidate_master)
 			if (CandidateMaster::where('requisition_id', $requisition->id)->exists()) {
 				return response()->json([
@@ -711,6 +712,14 @@ class HrAdminController extends Controller
 
 			// Generate candidate code
 			$candidateCode = $this->generateCandidateCode($requisition->requisition_type);
+
+			// Calculate leave_credited for Contractual candidates based on agreement_duration
+			$leaveCredited = 0;
+			if ($requisition->requisition_type === 'Contractual') {
+				// 1 CL day per month of agreement duration
+				// Example: 6 months = 6 CL days, 9 months = 9 CL days
+				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration($requisition->agreement_duration);
+			}
 
 			// Create candidate master record
 			$candidate = CandidateMaster::create([
@@ -746,6 +755,7 @@ class HrAdminController extends Controller
 				'reporting_manager_address' => $requisition->reporting_manager_address,
 				'date_of_joining' => $requisition->date_of_joining_required,
 				'agreement_duration' => $requisition->agreement_duration,
+				'leave_credited' => $leaveCredited, // Add this line
 				'date_of_separation' => $requisition->date_of_separation,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
 				'fuel_reimbursement_per_month' => $requisition->fuel_reimbursement_per_month,
@@ -760,6 +770,21 @@ class HrAdminController extends Controller
 				'updated_by_user_id' => auth()->id(),
 			]);
 
+			// Also create initial LeaveBalance record for Contractual candidates
+			if ($requisition->requisition_type === 'Contractual' && $leaveCredited > 0) {
+				$joiningYear = Carbon::parse($requisition->date_of_joining_required)->year;
+
+				LeaveBalance::create([
+					'CandidateID' => $candidate->id,
+					'calendar_year' => $joiningYear,
+					'opening_cl_balance' => $leaveCredited,
+					'cl_utilized' => 0,
+					'lwp_days_accumulated' => 0,
+					'contract_start_date' => $requisition->date_of_joining_required,
+					'contract_end_date' => $requisition->date_of_separation,
+				]);
+			}
+
 			// Store data in agreement_temp table for agreement generation
 			$this->storeAgreementTempData($requisition, $candidateCode);
 
@@ -772,7 +797,9 @@ class HrAdminController extends Controller
 
 			return response()->json([
 				'success' => true,
-				'message' => 'Candidate created successfully! Candidate Code: ' . $candidateCode . '. Agreement generation is pending.',
+				'message' => 'Candidate created successfully! Candidate Code: ' . $candidateCode .
+					($leaveCredited > 0 ? " with {$leaveCredited} CL days" : "") .
+					'. Agreement generation is pending.',
 				'candidate_code' => $candidateCode
 			]);
 		} catch (\Exception $e) {
@@ -786,6 +813,28 @@ class HrAdminController extends Controller
 		}
 	}
 
+	// Helper method to calculate leave credited from agreement duration
+	private function calculateLeaveCreditedFromAgreementDuration($agreementDuration)
+	{
+		// Convert agreement_duration to months if it's in different format
+		// Assuming agreement_duration is stored as number of months (e.g., "6" for 6 months)
+
+		if (is_numeric($agreementDuration)) {
+			$months = (int)$agreementDuration;
+			// 1 CL day per month, maximum 12 days
+			return min($months, 12);
+		}
+
+		// If agreement_duration is string like "6 months", extract the number
+		preg_match('/(\d+)/', $agreementDuration, $matches);
+		if (isset($matches[1])) {
+			$months = (int)$matches[1];
+			return min($months, 12);
+		}
+
+		// Default to 0 if can't determine
+		return 0;
+	}
 	/**
 	 * Generate candidate code
 	 */
@@ -1079,6 +1128,7 @@ class HrAdminController extends Controller
 	 */
 	public function uploadUnsignedAgreement(Request $request, CandidateMaster $candidate)
 	{
+		//dd($request->all());
 		$request->validate([
 			'agreement_file' => 'required|file|mimes:pdf|max:10240',
 			'agreement_number' => 'required|string|max:100',
@@ -1155,20 +1205,17 @@ class HrAdminController extends Controller
 		try {
 			$document = AgreementDocument::find($request->document_id);
 
-			// Verify the document
-			$document->verification_status = 'verified';
-			$document->verified_by_user_id = Auth::id();
-			$document->verification_date = now();
-			$document->save();
-
 			// Update employee status to Active
 			$candidate->candidate_status = 'Active';
+			$candidate->final_status = 'A';
 			$candidate->save();
 
 			DB::commit();
 
-			return redirect()->route('hr-admin.applications.process', $candidate->requisition)
-				->with('success', 'Employee activated successfully!');
+			return response()->json([
+				'success' => true,
+				'message' => 'Candidate activated successfully!'
+			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error verifying signed agreement: ' . $e->getMessage());
@@ -1214,7 +1261,8 @@ class HrAdminController extends Controller
 			]);
 
 			// Update status to completed
-			$candidate->candidate_status = 'Agreement Completed';
+			$candidate->candidate_status = 'Active';
+			$candidate->final_status = 'A';
 			$candidate->save();
 
 			$requisition = $candidate->requisition;
@@ -1372,6 +1420,37 @@ class HrAdminController extends Controller
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to update agreement: ' . $e->getMessage()
+			], 500);
+		}
+	}
+
+	// In your controller
+	public function getSignedDocuments(CandidateMaster $candidate)
+	{
+		try {
+			$documents = $candidate->agreementDocuments()
+				->where('document_type', 'signed')
+				->where('uploaded_by_role', 'submitter') // Only show submitter-uploaded docs
+				->orderBy('created_at', 'desc')
+				->get()
+				->map(function ($doc) {
+					return [
+						'id' => $doc->id,
+						'agreement_number' => $doc->agreement_number,
+						'created_at' => $doc->created_at->format('d-M-Y H:i'),
+						'file_url' => Storage::disk('s3')->url($doc->agreement_path),
+						'uploaded_by' => $doc->uploaded_by_role
+					];
+				});
+
+			return response()->json([
+				'success' => true,
+				'documents' => $documents
+			]);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to load documents'
 			], 500);
 		}
 	}
@@ -1647,7 +1726,7 @@ class HrAdminController extends Controller
 	{
 		// Convert employee to candidate if needed, or use directly
 		// This is a placeholder - you need to adjust based on your data structure
-		$candidate = CandidateMaster::where('employee_code', $employee->employee_id)->first();
+		$candidate = CandidateMaster::where('candidate_code', $employee->employee_id)->first();
 
 		if (!$candidate) {
 			return redirect()->back()

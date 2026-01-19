@@ -10,18 +10,21 @@ class SundayWorkRequest extends Model
     protected $primaryKey = 'id';
     
     protected $fillable = [
-        'candidate_id', 'month', 'year', 'sunday_date', 'work_hours',
-        'rate_multiplier', 'daily_rate', 'amount', 'remark', 'attachment_path',
-        'requested_by', 'approved_by', 'status', 'approved_at'
+        'candidate_id',
+        'month','year',
+        'sunday_date',
+        'remark',
+        'attachment_path',
+        'requested_by',
+        'approved_by',
+        'status',
+        'approved_at'
     ];
     
     protected $casts = [
         'month' => 'integer',
         'year' => 'integer',
-        'work_hours' => 'decimal:2',
-        'rate_multiplier' => 'decimal:2',
-        'daily_rate' => 'decimal:2',
-        'amount' => 'decimal:2',
+        'sunday_date' => 'date',
         'approved_at' => 'datetime'
     ];
     

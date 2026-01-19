@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
             // Route::get('verify-signed/{employee}', [HrAdminController::class, 'showVerifySigned'])
             //     ->name('verify-signed');
             Route::get('verify-signed/{candidate}', [HrAdminController::class, 'showVerifySignedByEmployee'])->name('verify-signed');
+             
         });
 
         // Master Tab
@@ -121,6 +122,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/document/{document}/download', [HrAdminController::class, 'downloadDocument'])
             ->name('download.document');
+        Route::get('candidate/{candidate}/signed-documents', [HrAdminController::class, 'getSignedDocuments'])->name('candidate.signed-documents');
+        Route::post('candidate/{candidate}/verify-signed-agreement', [HrAdminController::class, 'verifySignedAgreement'])->name('candidate.verify-signed-agreement');
     });
 
     Route::prefix('approver')->name('approver.')->group(function () {

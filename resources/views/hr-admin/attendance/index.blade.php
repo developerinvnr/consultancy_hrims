@@ -191,7 +191,7 @@
 @section('script_section')
 <script>
     // Global variables
-    let currentMonth, currentYear, currentEmployeeType;
+    let currentMonth, currentYear, currentEmployeeType, currentDaysInMonth;
 
     // Initialize page
     $(document).ready(function() {
@@ -239,84 +239,95 @@
     }
 
     // Render attendance table
-    function renderAttendanceTable(data) {
-        const daysInMonth = data.days_in_month;
-        const candidates = data.candidates;
+    // Render attendance table
+function renderAttendanceTable(data) {
+    currentDaysInMonth = data.days_in_month;
+    const candidates = data.candidates;
 
-        // Build header
-        let headerHtml = `
-        <th style="width: 50px;" class="text-center">S.No</th>
-        <th style="min-width: 120px;">Candidate Code</th>
-        <th style="min-width: 180px;">Candidate Name</th>
-        <th style="width: 100px;" class="text-center">Type</th>`;
+    // Build header
+    let headerHtml = `
+    <th style="width: 50px;" class="text-center">S.No</th>
+    <th style="min-width: 120px;">Candidate Code</th>
+    <th style="min-width: 180px;">Candidate Name</th>
+    <th style="width: 100px;" class="text-center">Type</th>`;
 
-        // Add day columns - Compact 35px width
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(currentYear, currentMonth - 1, day);
-            const dayOfWeek = date.getDay();
-            const isSunday = dayOfWeek === 0;
-            const dayName = date.toLocaleDateString('en-US', {
-                weekday: 'short'
-            });
+    // Add day columns - Compact 35px width
+    for (let day = 1; day <= currentDaysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth - 1, day);
+        const dayOfWeek = date.getDay();
+        const isSunday = dayOfWeek === 0;
+        const dayName = date.toLocaleDateString('en-US', {
+            weekday: 'short'
+        });
 
-            headerHtml += `<th class="text-center ${isSunday ? 'sunday-cell' : ''}" 
+        headerHtml += `<th class="text-center ${isSunday ? 'sunday-cell' : ''}" 
 style="width: 35px; padding: 2px;">
 <div style="font-size: 11px; font-weight: 600;">${day}</div>
 <div style="font-size: 9px; color: #666;">${dayName}</div>
 </th>`;
-        }
+    }
 
-        // Add summary columns
-        headerHtml += `
-        <th style="width: 40px;" class="text-center">P</th>
-        <th style="width: 40px;" class="text-center">A</th>
-        <th style="width: 40px;" class="text-center">CL</th>
-        <th style="width: 60px;" class="text-center">CL Bal</th>
-        <th style="width: 80px;" class="text-center">Action</th>`;
+    // Add summary columns
+    headerHtml += `
+    <th style="width: 40px;" class="text-center">P</th>
+    <th style="width: 40px;" class="text-center">A</th>
+    <th style="width: 40px;" class="text-center">CL</th>
+    <th style="width: 60px;" class="text-center">CL Bal</th>
+    <th style="width: 80px;" class="text-center">Action</th>`;
 
-        $('#tableHeader').html(headerHtml);
+    $('#tableHeader').html(headerHtml);
 
-        // Build rows
-        let bodyHtml = '';
-        candidates.forEach((candidate, index) => {
-            const isContractual = candidate.requisition_type === 'Contractual';
+    // Build rows
+    let bodyHtml = '';
+    candidates.forEach((candidate, index) => {
+        const isContractual = candidate.requisition_type === 'Contractual';
 
-            let rowHtml = `
-            <tr id="row-${candidate.candidate_id}" data-candidate-id="${candidate.candidate_id}">
-                <td class="text-center">${index + 1}</td>
-                <td><strong>${candidate.candidate_code}</strong></td>
-                <td>${candidate.candidate_name}</td>
-                <td class="text-center"><span class="badge bg-secondary">${candidate.requisition_type}</span></td>`;
+        let rowHtml = `
+        <tr id="row-${candidate.candidate_id}" data-candidate-id="${candidate.candidate_id}">
+            <td class="text-center">${index + 1}</td>
+            <td><strong>${candidate.candidate_code}</strong></td>
+            <td>${candidate.candidate_name}</td>
+            <td class="text-center"><span class="badge bg-secondary">${candidate.requisition_type}</span></td>`;
 
-            // Add day cells - Compact 35px width
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(currentYear, currentMonth - 1, day);
-                const isSunday = date.getDay() === 0;
-                const status = candidate.attendance[day] || '';
+        // Add day cells - Compact 35px width
+        for (let day = 1; day <= currentDaysInMonth; day++) {
+            const date = new Date(currentYear, currentMonth - 1, day);
+            const isSunday = date.getDay() === 0;
+            const status = candidate.attendance[day] || '';
 
-                // For Sundays, only show if it's 'P' (Sunday work) or 'W' (Weekend)
-                // Auto-set to 'W' if empty
-                const sundayStatus = status === 'P' ? 'P' : 'W';
+            // For Sundays, only show if it's 'P' (Sunday work) or 'W' (Weekend)
+            // Auto-set to 'W' if empty
+            const sundayStatus = status === 'P' ? 'P' : 'W';
 
-                // Create options based on whether it's Sunday or not
-                let optionsHtml = '';
+            // Create options based on candidate type
+            let optionsHtml = '';
 
-                if (isSunday) {
-                    // Sunday cells: only 'W' or 'P' if Sunday work was requested
-                    optionsHtml = `
-                    <option value="W" ${sundayStatus === 'W' ? 'selected' : ''}>W</option>
-                    <option value="P" ${sundayStatus === 'P' ? 'selected' : ''}>P</option>`;
-                } else {
-                    // Regular days: all options
+            if (isSunday) {
+                // Sunday cells: only 'W' or 'P' if Sunday work was requested
+                optionsHtml = `
+                <option value="W" ${sundayStatus === 'W' ? 'selected' : ''}>W</option>
+                <option value="P" ${sundayStatus === 'P' ? 'selected' : ''}>P</option>`;
+            } else {
+                // Regular days: different options for Contractual vs others
+                if (isContractual) {
+                    // Contractual candidates: all options including CL
                     optionsHtml = `
                     <option value=""></option>
                     <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
                     <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
                     <option value="CL" ${status === 'CL' ? 'selected' : ''}>CL</option>
                     <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
+                } else {
+                    // Non-contractual candidates (TFA, CB): no CL option
+                    optionsHtml = `
+                    <option value=""></option>
+                    <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
+                    <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
+                    <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
                 }
+            }
 
-                rowHtml += `<td class="text-center ${isSunday ? 'sunday-cell' : ''}" data-day="${day}">
+            rowHtml += `<td class="text-center ${isSunday ? 'sunday-cell' : ''}" data-day="${day}">
 <div class="day-cell-content">
     ${isSunday ? 
         `<span class="badge ${sundayStatus === 'P' ? 'bg-success' : 'bg-light text-muted'}" 
@@ -329,90 +340,97 @@ style="width: 35px; padding: 2px;">
     }
 </div>
 </td>`;
-            }
+        }
 
-            // Add summary columns
-            rowHtml += `
-            <td class="text-center"><span class="badge bg-success" id="present-${candidate.candidate_id}">${candidate.total_present || 0}</span></td>
-            <td class="text-center"><span class="badge bg-danger" id="absent-${candidate.candidate_id}">${candidate.total_absent || 0}</span></td>
-            <td class="text-center"><span class="badge bg-info" id="cl-${candidate.candidate_id}">${candidate.cl_used || 0}</span></td>
-            <td class="text-center">
-                ${isContractual ? 
-                    `<span class="badge ${candidate.cl_remaining > 5 ? 'bg-success' : candidate.cl_remaining > 2 ? 'bg-warning' : 'bg-danger'}" id="cl-balance-${candidate.candidate_id}">
-                        ${candidate.cl_remaining || 12}
-                    </span>` : 
-                    '<span class="text-muted">N/A</span>'}
-            </td>
-           <td class="text-center">
-    <button class="btn btn-sm btn-outline-primary edit-toggle-btn" 
-            onclick="toggleEdit(${candidate.candidate_id})"
-            id="btn-${candidate.candidate_id}"
-            style="padding: 2px 8px; font-size: 12px;">
-        <i class="ri-edit-line"></i>
-    </button>
+        // Add summary columns
+        rowHtml += `
+        <td class="text-center"><span class="badge bg-success" id="present-${candidate.candidate_id}">${candidate.total_present || 0}</span></td>
+        <td class="text-center"><span class="badge bg-danger" id="absent-${candidate.candidate_id}">${candidate.total_absent || 0}</span></td>
+        <td class="text-center"><span class="badge bg-info" id="cl-${candidate.candidate_id}">${candidate.cl_used || 0}</span></td>
+        <td class="text-center">
+            ${isContractual ? 
+                // Contractual: Show CL balance with color coding
+                `<span class="badge ${candidate.cl_remaining > 5 ? 'bg-success' : 
+                                      candidate.cl_remaining > 2 ? 'bg-warning' : 
+                                      'bg-danger'}" 
+                       id="cl-balance-${candidate.candidate_id}"
+                       title="Total Granted: ${candidate.leave_credited || 0} days">
+                    ${candidate.cl_remaining || 0}
+                </span>` : 
+                // Non-contractual: Show N/A or 0
+                '<span class="text-muted" title="Not applicable for this candidate type">N/A</span>'}
+        </td>
+       <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary edit-toggle-btn" 
+                    onclick="toggleEdit(${candidate.candidate_id})"
+                    id="btn-${candidate.candidate_id}"
+                    style="padding: 2px 8px; font-size: 12px;">
+                <i class="ri-edit-line"></i>
+            </button>
 
-    <button class="btn btn-sm btn-light ms-1 cancel-btn" 
-            onclick="cancelEdit(${candidate.candidate_id})"
-            id="cancel-${candidate.candidate_id}"
-            style="display:none; padding: 2px 8px; font-size: 12px;">
-        <i class="ri-close-line"></i>
-    </button>
-</td>
-            </tr>`;
+            <button class="btn btn-sm btn-light ms-1 cancel-btn" 
+                    onclick="cancelEdit(${candidate.candidate_id})"
+                    id="cancel-${candidate.candidate_id}"
+                    style="display:none; padding: 2px 8px; font-size: 12px;">
+                <i class="ri-close-line"></i>
+            </button>
+        </td>
+        </tr>`;
 
-            bodyHtml += rowHtml;
-        });
+        bodyHtml += rowHtml;
+    });
 
-        $('#tableBody').html(bodyHtml);
-        $('#tableContainer').show();
-    }
-    // Recalculate totals for editing row
-    function recalculateTotals(candidateId) {
-        const row = $(`#row-${candidateId}`);
-        let present = 0,
-            absent = 0,
-            cl = 0;
+    $('#tableBody').html(bodyHtml);
+    $('#tableContainer').show();
+}
+   // Recalculate totals for editing row
+function recalculateTotals(candidateId) {
+    const row = $(`#row-${candidateId}`);
+    let present = 0,
+        absent = 0,
+        cl = 0;
 
-        row.find('.edit-select').each(function() {
-            const status = $(this).val();
-            switch (status) {
-                case 'P':
-                    present++;
-                    break;
-                case 'A':
-                    absent++;
-                    break;
-                case 'CL':
-                    cl++;
-                    break;
-            }
-        });
+    row.find('.edit-select').each(function() {
+        const status = $(this).val();
+        switch (status) {
+            case 'P':
+                present++;
+                break;
+            case 'A':
+                absent++;
+                break;
+            case 'CL':
+                cl++;
+                break;
+        }
+    });
 
-        // Update display
-        $(`#present-${candidateId}`).text(present);
-        $(`#absent-${candidateId}`).text(absent);
-        $(`#cl-${candidateId}`).text(cl);
-    }
+    // Update display
+    $(`#present-${candidateId}`).text(present);
+    $(`#absent-${candidateId}`).text(absent);
+    $(`#cl-${candidateId}`).text(cl);
+}
 
-    // Save attendance for candidate
-    function saveAttendance(candidateId) {
-        const row = $(`#row-${candidateId}`);
-        const attendanceData = {};
+// Save attendance for candidate
+function saveAttendance(candidateId) {
+    const row = $(`#row-${candidateId}`);
+    const attendanceData = {};
 
-        // Collect data from dropdowns (only for non-Sunday days)
-        row.find('.edit-select').each(function() {
-            const day = $(this).data('day');
-            const date = new Date(currentYear, currentMonth - 1, parseInt(day));
-            const isSunday = date.getDay() === 0;
+    // Collect data from dropdowns (only for non-Sunday days)
+    row.find('.edit-select').each(function() {
+        const day = $(this).data('day');
+        const date = new Date(currentYear, currentMonth - 1, parseInt(day));
+        const isSunday = date.getDay() === 0;
 
-            if (!isSunday) {
-                const status = $(this).val() || '';
-                attendanceData[day] = status;
-            }
-        });
+        if (!isSunday) {
+            const status = $(this).val() || '';
+            attendanceData[day] = status;
+        }
+    });
 
-        // Add Sundays (all Sundays should be 'W' or 'P' if Sunday work)
-        for (let day = 1; day <= data.days_in_month; day++) {
+    // Add Sundays (all Sundays should be 'W' or 'P' if Sunday work)
+    if (currentDaysInMonth) {
+        for (let day = 1; day <= currentDaysInMonth; day++) {
             const date = new Date(currentYear, currentMonth - 1, day);
             if (date.getDay() === 0) {
                 // Check if this Sunday has been marked as 'P' via Sunday work
@@ -421,56 +439,93 @@ style="width: 35px; padding: 2px;">
                 attendanceData[day] = sundayStatus || 'W';
             }
         }
+    }
 
-        // Send to server
-        $.ajax({
-            url: '{{ route("attendance.update") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                candidate_id: candidateId,
-                month: currentMonth,
-                year: currentYear,
-                attendance: JSON.stringify(attendanceData)
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success('Attendance saved successfully!');
+    // Show loading on button
+    const btn = $(`#btn-${candidateId}`);
+    const cancelBtn = $(`#cancel-${candidateId}`);
+    const selects = row.find('.edit-select');
+    
+    btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
 
-                    // Update CL balance if available
-                    if (response.cl_remaining !== undefined) {
-                        const clBalanceBadge = $(`#cl-balance-${candidateId}`);
-                        const newBalance = response.cl_remaining;
-                        clBalanceBadge.text(newBalance);
+    // Send to server
+    $.ajax({
+        url: '{{ route("attendance.update") }}',
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            candidate_id: candidateId,
+            month: currentMonth,
+            year: currentYear,
+            attendance: JSON.stringify(attendanceData)
+        },
+        success: function(response) {
+            btn.prop('disabled', false);
+            
+            if (response.success) {
+                toastr.success('Attendance saved successfully!');
 
-                        // Update badge color based on balance
-                        clBalanceBadge.removeClass('bg-success bg-warning bg-danger');
-                        if (newBalance > 5) {
-                            clBalanceBadge.addClass('bg-success');
-                        } else if (newBalance > 2) {
-                            clBalanceBadge.addClass('bg-warning');
-                        } else {
-                            clBalanceBadge.addClass('bg-danger');
-                        }
+                // Update CL balance if available (only for contractual)
+                const clBalanceBadge = $(`#cl-balance-${candidateId}`);
+                const isContractual = row.find('.badge.bg-secondary').text() === 'Contractual';
+                
+                if (isContractual && response.cl_remaining !== undefined) {
+                    const newBalance = response.cl_remaining;
+                    clBalanceBadge.text(newBalance);
+
+                    // Update badge color based on balance
+                    clBalanceBadge.removeClass('bg-success bg-warning bg-danger');
+                    if (newBalance > 5) {
+                        clBalanceBadge.addClass('bg-success');
+                    } else if (newBalance > 2) {
+                        clBalanceBadge.addClass('bg-warning');
+                    } else {
+                        clBalanceBadge.addClass('bg-danger');
                     }
-
-                    // Show warning if any
-                    if (response.warning) {
-                        toastr.warning(response.warning);
-                    }
-
-                    // Switch back to display mode
-                    cancelEdit(candidateId);
-
-                } else {
-                    toastr.error(response.message || 'Error saving attendance');
                 }
-            },
-            error: function() {
+
+                // Show warning if any
+                if (response.warning) {
+                    toastr.warning(response.warning);
+                }
+
+                // Switch back to display mode
+                selects.prop('disabled', true);
+                row.removeClass('editing-row');
+
+                btn.html('<i class="ri-edit-line"></i>');
+                btn.removeClass('btn-success').addClass('btn-outline-primary');
+
+                cancelBtn.hide();
+
+            } else {
+                // Error from server - revert to edit mode (keep save button)
+                toastr.error(response.message || 'Error saving attendance');
+                
+                btn.html('<i class="ri-save-line"></i>');
+                btn.removeClass('btn-outline-primary').addClass('btn-success');
+                
+                // Keep edit mode active
+                selects.prop('disabled', false);
+                row.addClass('editing-row');
+                cancelBtn.show();
+            }
+        },
+        error: function(xhr) {
+            btn.prop('disabled', false);
+            
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                toastr.error(xhr.responseJSON.message);
+            } else {
                 toastr.error('Error saving attendance');
             }
-        });
-    }
+            
+            // On error, stay in edit mode with save button
+            btn.html('<i class="ri-save-line"></i>');
+            btn.removeClass('btn-outline-primary').addClass('btn-success');
+        }
+    });
+}
 
 
     // Sunday Work Modal functions
@@ -562,63 +617,114 @@ style="width: 35px; padding: 2px;">
         });
     });
 
-    function cancelEdit(candidateId) {
-        const row = $(`#row-${candidateId}`);
-        const selects = row.find('.edit-select');
-        const btn = $(`#btn-${candidateId}`);
-        const cancelBtn = $(`#cancel-${candidateId}`);
+   // Cancel edit - Fixed version
+function cancelEdit(candidateId) {
+    const row = $(`#row-${candidateId}`);
+    const btn = $(`#btn-${candidateId}`);
+    const cancelBtn = $(`#cancel-${candidateId}`);
+    const selects = row.find('.edit-select');
 
-        // Reload original data by reloading attendance
-        loadAttendance();
+    // Show loading on button
+    const originalHtml = btn.html();
+    btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
 
-        // Restore UI
-        selects.prop('disabled', true);
-        row.removeClass('editing-row');
+    // Load fresh data for this candidate
+    $.ajax({
+        url: '{{ route("attendance.get-candidate") }}',
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            candidate_id: candidateId,
+            month: currentMonth,
+            year: currentYear
+        },
+        success: function(response) {
+            if (response.success) {
+                // Update the row with fresh data
+                updateCandidateRow(candidateId, response.data);
+                
+                // Disable all selects
+                selects.prop('disabled', true);
+                row.removeClass('editing-row');
 
-        btn.html('<i class="ri-edit-line"></i>');
-        btn.removeClass('btn-success').addClass('btn-outline-primary');
+                // Reset button to edit mode
+                btn.html('<i class="ri-edit-line"></i>');
+                btn.removeClass('btn-success').addClass('btn-outline-primary');
+                btn.prop('disabled', false);
 
-        cancelBtn.hide();
-    }
+                cancelBtn.hide();
+                
+                toastr.info('Changes cancelled');
+            } else {
+                toastr.error(response.message || 'Error loading attendance data');
+                btn.html(originalHtml);
+                btn.prop('disabled', false);
+            }
+        },
+        error: function() {
+            toastr.error('Error loading attendance data');
+            btn.html(originalHtml);
+            btn.prop('disabled', false);
+        }
+    });
+}
 
-    // Toggle edit mode
-    function toggleEdit(candidateId) {
-        const row = $(`#row-${candidateId}`);
-        const btn = $(`#btn-${candidateId}`);
-        const cancelBtn = $(`#cancel-${candidateId}`);
-        const selects = row.find('.edit-select');
-
-        if (selects.prop('disabled')) {
-            // Enable edit mode ONLY for non-Sunday selects
-            selects.each(function() {
-                const day = $(this).data('day');
-                const date = new Date(currentYear, currentMonth - 1, parseInt(day));
-                const isSunday = date.getDay() === 0;
-
-                // Only enable non-Sunday selects
-                if (!isSunday) {
-                    $(this).prop('disabled', false);
-                }
-            });
-            row.addClass('editing-row');
-
-            btn.html('<i class="ri-save-line"></i>');
-            btn.removeClass('btn-outline-primary').addClass('btn-success');
-
-            cancelBtn.show();
-        } else {
-            // Save and lock again
-            saveAttendance(candidateId);
-
-            selects.prop('disabled', true);
-            row.removeClass('editing-row');
-
-            btn.html('<i class="ri-edit-line"></i>');
-            btn.removeClass('btn-success').addClass('btn-outline-primary');
-
-            cancelBtn.hide();
+// Function to update a single candidate row with fresh data
+function updateCandidateRow(candidateId, data) {
+    const row = $(`#row-${candidateId}`);
+    
+    // Update day cells
+    for (let day = 1; day <= currentDaysInMonth; day++) {
+        const status = data.attendance[day] || '';
+        const cell = row.find(`td[data-day="${day}"]`);
+        
+        if (cell.length) {
+            const select = cell.find('select');
+            if (select.length) {
+                select.val(status);
+            }
         }
     }
+    
+    // Recalculate totals for this row
+    recalculateTotals(candidateId);
+}
+
+    // Toggle edit mode - Fixed version
+function toggleEdit(candidateId) {
+    const row = $(`#row-${candidateId}`);
+    const btn = $(`#btn-${candidateId}`);
+    const cancelBtn = $(`#cancel-${candidateId}`);
+    const selects = row.find('.edit-select');
+
+    // Check current button icon to determine mode
+    const currentIcon = btn.find('i').attr('class');
+    const isEditMode = currentIcon.includes('ri-edit-line');
+    
+    if (isEditMode) {
+        // Switch from edit to save mode
+        // Enable edit mode ONLY for non-Sunday selects
+        selects.each(function() {
+            const day = $(this).data('day');
+            const date = new Date(currentYear, currentMonth - 1, parseInt(day));
+            const isSunday = date.getDay() === 0;
+
+            // Only enable non-Sunday selects
+            if (!isSunday) {
+                $(this).prop('disabled', false);
+            }
+        });
+        row.addClass('editing-row');
+
+        btn.html('<i class="ri-save-line"></i>');
+        btn.removeClass('btn-outline-primary').addClass('btn-success');
+
+        cancelBtn.show();
+    } else {
+        // Currently in save mode, so save attendance
+        saveAttendance(candidateId);
+    }
+}
 
     // Initialize when month changes in Sunday modal
     $('#swMonth').on('change', function() {

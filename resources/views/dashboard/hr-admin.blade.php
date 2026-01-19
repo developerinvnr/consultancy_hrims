@@ -18,313 +18,280 @@
 		</div>
 	</div>
 
-
-	<!-- Compact HR Statistics -->
-	{{--<div class="row g-2 mb-0">
-		<!-- Requisition Statistics -->
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Pending HR Verification</small>
-						<div class="fw-bold">{{ $stats['pending_verification'] }}</div>
-					</div>
-					<i class="ri-time-line text-warning fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Pending Approval</small>
-						<div class="fw-bold">{{ $stats['pending_approval'] }}</div>
-					</div>
-					<i class="ri-file-paper-line text-info fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Total Approved</small>
-						<div class="fw-bold">{{ $stats['approved'] }}</div>
-					</div>
-					<i class="ri-check-double-line text-success fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Total Requisitions</small>
-						<div class="fw-bold">{{ $stats['total_requisitions'] }}</div>
-					</div>
-					<i class="ri-file-list-line text-primary fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<!-- Agreement Process Statistics -->
-		<div class="col-12 mt-0">
-			<h6 class="text-muted mb-2">Agreement Process</h6>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Agreement Pending</small>
-						<div class="fw-bold">{{ $stats['agreement_pending'] }}</div>
-					</div>
-					<i class="ri-file-text-line text-warning fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Unsigned Uploaded</small>
-						<div class="fw-bold">{{ $stats['unsigned_uploaded'] }}</div>
-					</div>
-					<i class="ri-file-upload-line text-info fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Agreement Completed</small>
-						<div class="fw-bold">{{ $stats['agreement_completed'] }}</div>
-					</div>
-					<i class="ri-file-check-line text-success fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-3 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Signed Uploaded</small>
-						<div class="fw-bold">{{ $stats['signed_agreement_uploaded'] }}</div>
-					</div>
-					<i class="ri-mail-send-line text-primary fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<!-- Candidate Statistics -->
-		<div class="col-12 mt-0">
-			<h6 class="text-muted mb-2">Candidate Statistics</h6>
-		</div>
-
-		<div class="col-md-4 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Total Candidates</small>
-						<div class="fw-bold">{{ $stats['total_candidates'] }}</div>
-					</div>
-					<i class="ri-user-line text-secondary fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-4 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Active Candidates</small>
-						<div class="fw-bold">{{ $stats['active_candidates'] }}</div>
-					</div>
-					<i class="ri-user-follow-line text-success fs-5"></i>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-4 col-6">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body py-2 d-flex justify-content-between align-items-center">
-					<div>
-						<small class="text-muted">Rejected Candidates</small>
-						<div class="fw-bold">{{ $stats['rejected_candidates'] }}</div>
-					</div>
-					<i class="ri-user-unfollow-line text-danger fs-5"></i>
-				</div>
-			</div>
-		</div>
-	</div>--}}
-
-
-	<!-- Quick Actions -->
-	{{--<div class="row mb-4">
+	<!-- Recent Requisitions -->
+	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
+	<div class="row">
 		<div class="col-12">
 			<div class="card">
 				<div class="card-header">
-					<h5 class="card-title mb-0">Quick Actions</h5>
+					<h5 class="card-title mb-0">Recent Requisitions</h5>
 				</div>
 				<div class="card-body">
-					<div class="row">
-						<div class="col-md-3 mb-3">
-							<a href="{{ route('hr-admin.applications.new') }}" class="btn btn-primary w-100">
-	<i class="ri-file-list-line me-2"></i> New Applications
-	@if($stats['pending_verification'] > 0)
-	<span class="badge bg-white text-primary ms-1">{{ $stats['pending_verification'] }}</span>
-	@endif
-	</a>
-</div>
-<div class="col-md-3 mb-3">
-	<a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-success w-100">
-		<i class="ri-check-double-line me-2"></i> Approved
-		@if($stats['approved'] > 0)
-		<span class="badge bg-white text-success ms-1">{{ $stats['approved'] }}</span>
-		@endif
-	</a>
-</div>
-<div class="col-md-3 mb-3">
-	<a href="{{ route('hr-admin.agreement.list') }}" class="btn btn-info w-100">
-		<i class="ri-file-text-line me-2"></i> Agreements
-		@if($stats['agreement_pending'] > 0)
-		<span class="badge bg-white text-info ms-1">{{ $stats['agreement_pending'] }}</span>
-		@endif
-	</a>
-</div>
-<div class="col-md-3 mb-3">
-	<a href="{{ route('hr-admin.master.index') }}" class="btn btn-warning w-100">
-		<i class="ri-database-2-line me-2"></i> Master Data
-	</a>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>--}}
-
-<!-- Recent Requisitions -->
-@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
-<div class="row">
-	<div class="col-12">
-		<div class="card">
-			<div class="card-header">
-				<h5 class="card-title mb-0">Recent Requisitions</h5>
-			</div>
-			<div class="card-body">
-				<div class="table-responsive">
-					<table class="table table-hover">
-						<thead>
-							<tr>
-								<th>Requisition ID</th>
-								<th>Candidate</th>
-								<th>Email</th>
-								<th>Type</th>
-								<th>Status</th>
-								<th>Submitted By</th>
-								<th>Date</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach($recent_requisitions as $req)
-							<tr>
-								<td>
-									<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
-								</td>
-								<td>
-									<div>{{ $req->candidate_name }}</div>
-								</td>
-								<td>
-									{{ $req->candidate_email }}
-								</td>
-								<td>
-									<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
-										{{ $req->requisition_type }}
-									</span>
-								</td>
-								<td>
-									@php
-									$statusColors = [
-									'Pending HR Verification' => 'warning',
-									'Pending Approval' => 'info',
-									'Approved' => 'success',
-									'Correction Required' => 'danger',
-									'Processed' => 'secondary',
-									'Rejected' => 'dark',
-									'Hr Verified' => 'success',
-									'Unsigned Agreement Uploaded' => 'primary',
-									'Agreement Completed' => 'success'
-									];
-									@endphp
-									<span class="badge bg-{{ $statusColors[$req->status] ?? 'secondary' }}">
-										{{ $req->status }}
-									</span>
-								</td>
-								<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
-								<td>{{ $req->created_at->format('d-M-Y') }}</td>
-								<td>
-									<div class="btn-group" role="group">
-										<a href="{{ route('hr-admin.applications.view', $req) }}"
-											class="btn btn-sm btn-outline-primary" title="View Details">
-											<i class="ri-eye-line"></i>
-										</a>
-
-										<!-- Upload Unsigned Agreement Button -->
-										@if($req->status == 'Agreement Pending')
+					<div class="table-responsive">
+						<table class="table table-hover">
+							<thead>
+								<tr>
+									<th>Requisition ID</th>
+									<th>Candidate</th>
+									<th>Email</th>
+									<th>Type</th>
+									<th>Status</th>
+									<th>Submitted By</th>
+									<th>Date</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach($recent_requisitions as $req)
+								@php
+								// Check if already processed
+								$isProcessed = \App\Models\CandidateMaster::where('requisition_id', $req->id)->exists();
+								$candidate = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
+								@endphp
+								<tr>
+									<td>
+										<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
+									</td>
+									<td>
+										<div>{{ $req->candidate_name }}</div>
+									</td>
+									<td>
+										{{ $req->candidate_email }}
+									</td>
+									<td>
+										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
+											{{ $req->requisition_type }}
+										</span>
+									</td>
+									<td>
+										@if($isProcessed)
 										@php
-										$candidateForUpload = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
+										$statusColors = [
+										'Agreement Pending' => 'warning',
+										'Unsigned Agreement Uploaded' => 'info',
+										'Agreement Completed' => 'secondary',
+										'Active' => 'success'
+										];
+										$empStatus = $candidate->candidate_status ?? 'Agreement Pending';
+
+										// Get signed agreement info
+										$signedInfo = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+										->where('document_type', 'signed')
+										->first();
 										@endphp
-										@if($candidateForUpload)
-										<button type="button"
-											class="btn btn-sm btn-outline-success upload-unsigned-btn"
-											data-candidate-id="{{ $candidateForUpload->id }}"
-											data-candidate-code="{{ $candidateForUpload->candidate_code }}"
-											data-candidate-name="{{ $candidateForUpload->candidate_name }}"
-											title="Upload Unsigned Agreement">
-											<i class="ri-file-upload-line"></i>
-										</button>
-										@endif
+
+										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }}">
+											{{ $empStatus }}
+										</span>
+
+										@if($signedInfo)
+										<br>
+										<small class="text-muted">
+											@if($signedInfo->uploaded_by_role === 'submitter')
+											Signed uploaded by candidate
+											@elseif($signedInfo->uploaded_by_role === 'hr_admin')
+											Signed uploaded by HR
+											@endif
+										</small>
 										@endif
 
-										<!-- Upload Signed Agreement Button (from email) -->
-										@if($req->status == 'Awaiting Signed Agreement')
-										@php
-										$candidateForSigned = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
-										@endphp
-										@if($candidateForSigned)
-										<button type="button"
-											class="btn btn-sm btn-outline-info upload-signed-btn"
-											data-candidate-id="{{ $candidateForSigned->id }}"
-											data-candidate-code="{{ $candidateForSigned->candidate_code }}"
-											data-candidate-name="{{ $candidateForSigned->candidate_name }}"
-											title="Upload Signed Agreement (from email)">
-											<i class="ri-mail-send-line"></i>
-										</button>
+										@if($candidate && $candidate->candidate_code)
+										<br>
+										<small class="text-muted">{{ $candidate->candidate_code }}</small>
 										@endif
+										@else
+										<span class="badge bg-secondary">Ready to Process</span>
 										@endif
-									</div>
-								</td>
-							</tr>
-							@endforeach
-						</tbody>
-					</table>
+									</td>
+									<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
+									<td>{{ $req->created_at->format('d-M-Y') }}</td>
+									<td>
+										<div class="btn-group" role="group">
+
+											<!-- Always show View -->
+											<a href="{{ route('hr-admin.applications.view', $req) }}"
+												class="btn btn-sm btn-outline-primary" title="View Details">
+												<i class="ri-eye-line"></i>
+											</a>
+
+											{{-- ========== PROCESS / APPROVAL LOGIC ========== --}}
+											@if(!$isProcessed && !empty($req->approver_id))
+											<button type="button" class="btn btn-sm btn-success process-btn"
+												data-bs-toggle="modal" data-bs-target="#processModal"
+												data-requisition-id="{{ $req->id }}"
+												data-requisition-name="{{ $req->candidate_name }}"
+												data-current-reporting="{{ $req->reporting_to }}"
+												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
+												<i class="ri-play-line"></i> Process
+											</button>
+
+											@elseif(!$isProcessed && empty($req->approver_id))
+											<span class="badge bg-warning">Not approved/Verified</span>
+											@endif
+
+
+											{{-- ========== AGREEMENT WORKFLOW LOGIC ========== --}}
+											@if($candidate)
+
+											@php
+											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'unsigned')
+											->exists();
+
+											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'signed')
+											->exists();
+
+											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'signed')
+											->where('uploaded_by_role', 'submitter')
+											->exists();
+
+											$hrSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'signed')
+											->where('uploaded_by_role', 'hr_admin')
+											->exists();
+											@endphp
+
+
+											{{-- 1. No unsigned yet --}}
+											@if(!$hasUnsigned)
+											<button type="button"
+												class="btn btn-sm btn-outline-warning upload-unsigned-btn"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-code="{{ $candidate->candidate_code }}"
+												data-candidate-name="{{ $candidate->candidate_name }}">
+												<i class="ri-file-upload-line"></i> Upload Agreement
+											</button>
+
+											{{-- 2. Unsigned exists but no signed yet --}}
+											@elseif($hasUnsigned && !$hasSigned)
+											<button type="button"
+												class="btn btn-sm btn-outline-primary upload-signed-btn"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-code="{{ $candidate->candidate_code }}"
+												data-candidate-name="{{ $candidate->candidate_name }}"
+												data-agreement-number="{{ \App\Models\AgreementDocument::where('candidate_id',$candidate->id)->where('document_type','unsigned')->value('agreement_number') }}">
+												<i class="ri-upload-line"></i> Upload Signed
+											</button>
+
+
+											{{-- 3. Signed uploaded by submitter → verify --}}
+											@elseif($hasSigned && $submitterSigned)
+											<button type="button"
+												class="btn btn-sm btn-outline-info verify-signed-modal-btn"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-code="{{ $candidate->candidate_code }}"
+												data-candidate-name="{{ $candidate->candidate_name }}">
+												<i class="ri-check-line"></i> Verify Signed
+											</button>
+
+											{{-- 4. Signed uploaded by HR --}}
+											@elseif($hasSigned && $hrSigned)
+											<span class="badge bg-secondary">Signed Uploaded by HR</span>
+
+											@endif
+
+
+											{{-- Final statuses --}}
+											@if($candidate->candidate_status === 'Agreement Completed')
+											<span class="badge bg-success">Agreement Completed</span>
+
+											@elseif($candidate->candidate_status === 'Active')
+											<span class="badge bg-success">Active</span>
+											@endif
+
+											@endif
+
+										</div>
+									</td>
+
+
+								</tr>
+								@endforeach
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-</div>
-@endif
+	@endif
 </div>
 
-<!-- HR Admin Modals -->
+<!-- Process Modal -->
+<div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Process Approved Application</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<form id="processForm" action="" method="POST">
+				@csrf
+				<div class="modal-body">
+					<input type="hidden" name="requisition_id" id="modalRequisitionId">
+
+					<div class="row">
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label-sm">Candidate</label>
+								<input type="text" class="form-control form-control-sm" id="modalCandidateName" readonly>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label-sm">Current Reporting Manager</label>
+								<input type="text" class="form-control form-control-sm" id="currentReporting" readonly>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label-sm">Current Reporting ID</label>
+								<input type="text" class="form-control form-control-sm" id="currentManagerId" readonly>
+							</div>
+						</div>
+					</div>
+					<h6>Change Reporting Manager</h6>
+					<div class="mb-3">
+						<label for="reporting_manager_employee_id" class="form-label-sm">Reporting Manager *</label>
+						<select class="form-select form-select-sm select2-modal" id="reporting_manager_employee_id"
+							name="reporting_manager_employee_id" required>
+							<option value="">-- Select Reporting Manager --</option>
+							<!-- Options will be populated via AJAX -->
+						</select>
+						<small class="text-muted">Select the reporting manager from the department hierarchy</small>
+					</div>
+
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label for="reporting_to" class="form-label">Reporting To Name *</label>
+								<input type="text" class="form-control form-control-sm" id="reporting_to"
+									name="reporting_to" required readonly>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label for="reporting_manager_id" class="form-label-sm">Reporting Manager ID *</label>
+								<input type="text" class="form-control form-control-sm" id="reporting_manager_id"
+									name="reporting_manager_id" required readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-success">
+						<i class="ri-save-line me-1"></i> Generate Employee Code & Process
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<!-- Upload Unsigned Agreement Modal -->
 <div class="modal fade" id="uploadUnsignedModal" tabindex="-1">
 	<div class="modal-dialog modal-lg">
 		<div class="modal-content">
@@ -363,6 +330,7 @@
 	</div>
 </div>
 
+<!-- Upload Signed Agreement Modal -->
 <div class="modal fade" id="uploadSignedModal" tabindex="-1">
 	<div class="modal-dialog modal-lg">
 		<div class="modal-content">
@@ -379,7 +347,7 @@
 
 					<div class="mb-3">
 						<label class="form-label">Agreement Number *</label>
-						<input type="text" class="form-control" name="agreement_number" required
+						<input type="text" class="form-control" id="signedAgreementNumber" name="agreement_number" required
 							placeholder="Enter agreement number" maxlength="100">
 					</div>
 
@@ -402,6 +370,45 @@
 	</div>
 </div>
 
+<!-- Verify Signed Agreement Modal -->
+<div class="modal fade" id="verifySignedModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Verify Signed Agreement</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<form id="verifySignedForm" action="" method="POST">
+				@csrf
+				<div class="modal-body">
+					<div class="mb-3">
+						<label class="form-label">Candidate</label>
+						<input type="text" class="form-control" id="verifyCandidateInfo" readonly>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">Available Signed Agreements</label>
+						<div id="signedDocumentsList">
+							<div class="text-center">
+								<div class="spinner-border spinner-border-sm" role="status">
+									<span class="visually-hidden">Loading...</span>
+								</div>
+								Loading documents...
+							</div>
+						</div>
+					</div>
+
+					<input type="hidden" name="candidate_id" id="verifyCandidateId">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-success" id="verifySubmitBtn" disabled>Verify & Activate Employee</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
 <!-- Toast Container -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
 	<div class="toast-container"></div>
@@ -409,10 +416,147 @@
 @endsection
 
 @section('script_section')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 	$(document).ready(function() {
 		// Get CSRF token from meta tag
 		const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+		// Initialize Select2 for process modal
+		$('#reporting_manager_employee_id').select2({
+			theme: 'bootstrap-5',
+			placeholder: '-- Select Reporting Manager --',
+			allowClear: true,
+			dropdownParent: $('#processModal'),
+			width: '100%'
+		});
+
+		// Process Modal Show Event
+		$('#processModal').on('shown.bs.modal', function(event) {
+			let button = $(event.relatedTarget);
+			let requisitionId = button.data('requisition-id');
+			let candidateName = button.data('requisition-name');
+			let currentReporting = button.data('current-reporting');
+			let currentManagerId = button.data('current-manager-id');
+
+			let modal = $(this);
+			modal.find('#modalRequisitionId').val(requisitionId);
+			modal.find('#modalCandidateName').val(candidateName);
+			modal.find('#currentReporting').val(currentReporting);
+			modal.find('#currentManagerId').val(currentManagerId);
+
+			let select = $('#reporting_manager_employee_id');
+			select.html('<option value="">Loading...</option>');
+			select.trigger('change');
+
+			// AJAX call to load managers
+			$.ajax({
+				url: '{{ url("hr-admin/applications/get-reporting-managers") }}/' + requisitionId,
+				type: 'GET',
+				success: function(response) {
+					if (!response.success) {
+						select.html('<option value="">No data found</option>');
+						select.trigger('change');
+						return;
+					}
+
+					let data = response.data;
+					select.empty();
+					select.append('<option value="">-- Select Reporting Manager --</option>');
+
+					// Current manager
+					if (data.current) {
+						select.append(`
+                        <option value="${data.current.reporting_manager_employee_id}" selected>
+                            ${data.current.reporting_to} (${data.current.reporting_manager_employee_id}) - Current
+                        </option>
+                    `);
+
+						$('#reporting_to').val(data.current.reporting_to);
+						$('#reporting_manager_id').val(data.current.reporting_manager_employee_id);
+					}
+
+					// Managers
+					if (data.managers?.length) {
+						select.append('<optgroup label="Department Managers">');
+						data.managers.forEach(m => {
+							if (!data.current || m.employee_id != data.current.reporting_manager_employee_id) {
+								select.append(`
+                                <option value="${m.employee_id}">
+                                    ${m.emp_name} (${m.employee_id}) - ${m.emp_designation}
+                                </option>
+                            `);
+							}
+						});
+					}
+
+					// Employees
+					if (data.employees?.length) {
+						select.append('<optgroup label="Department Employees">');
+						data.employees.forEach(e => {
+							if (!data.current || e.employee_id != data.current.reporting_manager_employee_id) {
+								select.append(`
+                                <option value="${e.employee_id}">
+                                    ${e.emp_name} (${e.employee_id}) - ${e.emp_designation}
+                                </option>
+                            `);
+							}
+						});
+					}
+
+					select.trigger('change.select2');
+				},
+				error: function() {
+					Swal.fire({
+						icon: 'error',
+						title: 'Error',
+						text: 'Failed to load reporting managers'
+					});
+				}
+			});
+		});
+
+		// Update fields when dropdown changes
+		$('#reporting_manager_employee_id').on('change', function() {
+			let selectedText = $(this).find('option:selected').text();
+			let selectedValue = $(this).val();
+
+			if (selectedValue) {
+				let name = selectedText.split('(')[0].trim();
+				$('#reporting_to').val(name);
+				$('#reporting_manager_id').val(selectedValue);
+			}
+		});
+
+		// Submit process form
+		$('#processForm').on('submit', function(e) {
+			e.preventDefault();
+			let formData = $(this).serialize();
+
+			Swal.fire({
+				title: 'Process Employee?',
+				html: '<p>This will generate employee code.</p>',
+				icon: 'question',
+				showCancelButton: true,
+				confirmButtonColor: '#198754',
+				confirmButtonText: 'Yes, process it',
+				showLoaderOnConfirm: true,
+				preConfirm: () => {
+					return $.ajax({
+						url: '{{ route("hr-admin.applications.process-modal") }}',
+						type: 'POST',
+						data: formData
+					});
+				}
+			}).then((result) => {
+				if (result.isConfirmed && result.value?.success) {
+					Swal.fire('Success', result.value.message, 'success')
+						.then(() => location.reload());
+				} else if (result.isConfirmed) {
+					Swal.fire('Error', result.value?.message || 'Something went wrong', 'error');
+				}
+			});
+		});
 
 		// Upload Unsigned Agreement Modal
 		$('.upload-unsigned-btn').on('click', function() {
@@ -430,10 +574,131 @@
 			const candidateId = $(this).data('candidate-id');
 			const candidateCode = $(this).data('candidate-code');
 			const candidateName = $(this).data('candidate-name');
+			const agreementNumber = $(this).data('agreement-number');
 
 			$('#signedCandidateInfo').val(`${candidateCode} - ${candidateName}`);
 			$('#signedCandidateId').val(candidateId);
+			$('#signedAgreementNumber').val(agreementNumber);
+
 			$('#uploadSignedModal').modal('show');
+		});
+
+
+		// Verify Signed Agreement Modal
+		$('.verify-signed-modal-btn').on('click', function() {
+			const candidateId = $(this).data('candidate-id');
+			const candidateCode = $(this).data('candidate-code');
+			const candidateName = $(this).data('candidate-name');
+
+			$('#verifyCandidateInfo').val(`${candidateCode} - ${candidateName}`);
+			$('#verifyCandidateId').val(candidateId);
+			$('#verifySubmitBtn').prop('disabled', true);
+
+			// Load signed documents
+			loadSignedDocuments(candidateId);
+
+			$('#verifySignedModal').modal('show');
+		});
+
+		function loadSignedDocuments(candidateId) {
+			$('#signedDocumentsList').html(`
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            Loading documents...
+        </div>
+    `);
+
+			$.ajax({
+				url: `/hr-admin/candidate/${candidateId}/signed-documents`,
+				type: 'GET',
+				headers: {
+					'X-CSRF-TOKEN': csrfToken
+				},
+				success: function(response) {
+					if (response.success && response.documents.length > 0) {
+						let html = '<div class="list-group">';
+						response.documents.forEach(doc => {
+							html += `
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1 document-radio" 
+                               type="radio" name="document_id" 
+                               value="${doc.id}" data-file-url="${doc.file_url}">
+                        <div>
+                            <strong>${doc.agreement_number}</strong>
+                            <small class="text-muted d-block">
+                                Uploaded by: ${doc.uploaded_by === 'submitter' ? 'Candidate' : 'HR'} 
+                                on ${doc.created_at}
+                            </small>
+                            <a href="${doc.file_url}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                                <i class="ri-eye-line"></i> View
+                            </a>
+                        </div>
+                    </label>`;
+						});
+						html += '</div>';
+						$('#signedDocumentsList').html(html);
+
+						// Enable radio selection
+						$('.document-radio').on('change', function() {
+							$('#verifySubmitBtn').prop('disabled', false);
+						});
+					} else {
+						$('#signedDocumentsList').html(`
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line"></i> No signed agreements available for verification.
+                        <br>
+                        <small>The candidate hasn't uploaded any signed agreements yet.</small>
+                    </div>
+                `);
+					}
+				},
+				error: function() {
+					$('#signedDocumentsList').html(`
+                <div class="alert alert-danger">
+                    <i class="ri-error-warning-line"></i> Failed to load documents.
+                </div>
+            `);
+				}
+			});
+		}
+
+		// Submit verify form
+		$('#verifySignedForm').on('submit', function(e) {
+			e.preventDefault();
+
+			if (!$('input[name="document_id"]:checked').val()) {
+				showToast('error', 'Please select a document to verify');
+				return;
+			}
+
+			const formData = $(this).serialize();
+			const candidateId = $('#verifyCandidateId').val();
+
+			Swal.fire({
+				title: 'Verify & Activate Employee?',
+				html: '<p>This will activate the employee and mark them as Active.</p>',
+				icon: 'question',
+				showCancelButton: true,
+				confirmButtonColor: '#198754',
+				confirmButtonText: 'Yes, verify & activate',
+				showLoaderOnConfirm: true,
+				preConfirm: () => {
+					return $.ajax({
+						url: `/hr-admin/candidate/${candidateId}/verify-signed-agreement`,
+						type: 'POST',
+						data: formData
+					});
+				}
+			}).then((result) => {
+				if (result.isConfirmed && result.value?.success) {
+					Swal.fire('Success', result.value.message, 'success')
+						.then(() => location.reload());
+				} else if (result.isConfirmed) {
+					Swal.fire('Error', result.value?.message || 'Something went wrong', 'error');
+				}
+			});
 		});
 
 		// Form submission handlers
@@ -505,4 +770,10 @@
 		}
 	});
 </script>
+<style>
+	.select2-container {
+		z-index: 1065 !important;
+		/* Higher than Bootstrap modal */
+	}
+</style>
 @endsection

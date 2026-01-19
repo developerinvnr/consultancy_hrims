@@ -102,8 +102,8 @@
                                 @foreach($requisitions as $requisition)
                                 @php
                                     // Check if already processed
-                                    $isProcessed = \App\Models\EmployeeMaster::where('requisition_id', $requisition->id)->exists();
-                                    $employee = \App\Models\EmployeeMaster::where('requisition_id', $requisition->id)->first();
+                                    $isProcessed = \App\Models\CandidateMaster::where('requisition_id', $requisition->id)->exists();
+                                    $employee = \App\Models\CandidateMaster::where('requisition_id', $requisition->id)->first();
                                 @endphp
                                 <tr>
                                     <td>
@@ -133,14 +133,14 @@
                                                     'Unsigned Agreement Uploaded' => 'info',
                                                     'Active' => 'success'
                                                 ];
-                                                $empStatus = $employee->employment_status ?? 'Agreement Pending';
+                                                $empStatus = $candidate->employment_status ?? 'Agreement Pending';
                                             @endphp
                                             <span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }}">
                                                 {{ $empStatus }}
                                             </span>
-                                            @if($employee && $employee->employee_code)
+                                            @if($candidate && $candidate->employee_code)
                                                 <br>
-                                                <small class="text-muted">{{ $employee->employee_code }}</small>
+                                                <small class="text-muted">{{ $candidate->employee_code }}</small>
                                             @endif
                                         @else
                                             <span class="badge bg-secondary">Ready to Process</span>

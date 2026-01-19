@@ -54,6 +54,8 @@ class CandidateMaster extends Model
         'pan_no',
         'aadhaar_no',
         'candidate_status',
+        'final_status',
+        'leave_credited',
         'external_reference_id',
         'external_created_at',
         'external_response',

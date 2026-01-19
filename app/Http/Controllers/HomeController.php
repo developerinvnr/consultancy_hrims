@@ -73,7 +73,7 @@ class HomeController extends Controller
         ->orderBy('created_at', 'desc')
         ->limit(10)
         ->get();
-
+    //dd($recent_requisitions);
     return view('dashboard.hr-admin', compact('stats', 'recent_requisitions'));
 }
 
