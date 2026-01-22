@@ -265,7 +265,7 @@
     </div>
 
     <!-- Documents -->
-    <div class="col-md-12">
+    <div class="col-md-6">
         <div class="card border">
             <div class="card-header bg-light py-1 px-2">
                 <div class="d-flex justify-content-between align-items-center">

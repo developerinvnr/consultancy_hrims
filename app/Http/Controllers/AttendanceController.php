@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AttendanceExport;
 
 class AttendanceController extends Controller
 {
@@ -440,13 +442,26 @@ class AttendanceController extends Controller
                 $clRemaining = $leaveResult['new_cl'];
             }
 
+            $clUsed = null;
+
+            if ($isContractual) {
+                $leaveBalance = LeaveBalance::where('CandidateID', $candidateId)
+                    ->where('calendar_year', $year)
+                    ->first();
+
+                if ($leaveBalance) {
+                    $clUsed = $leaveBalance->cl_utilized;
+                }
+            }
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Attendance updated successfully',
                 'warning' => $warning,
-                'cl_remaining' => $clRemaining
+                'cl_remaining' => $clRemaining,
+                'cl_used' => $clUsed
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -757,6 +772,60 @@ class AttendanceController extends Controller
             ]);
         }
     }
-    // Other methods remain the same...
-    // getCandidateAttendance, getSundays, getActiveCandidates, submitSundayWork
+
+    /**
+     * Export attendance data
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|digits:4',
+            'employee_type' => 'nullable|string|in:all,Contractual,Consultant,Permanent'
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return redirect()->back()->with('error', 'User not authenticated.');
+            }
+
+            // Log the export request
+            \Log::info('Attendance Export Request:', [
+                'user_id' => $user->id,
+                'user_emp_id' => $user->emp_id,
+                'user_roles' => $user->getRoleNames()->toArray(),
+                'month' => $request->month,
+                'year' => $request->year,
+                'employee_type' => $request->employee_type
+            ]);
+
+            $month = $request->month;
+            $year = $request->year;
+            $employeeType = $request->employee_type ?? 'all';
+
+            $monthName = Carbon::create($year, $month)->format('F');
+            $filename = "Attendance_Report_{$monthName}_{$year}.xlsx";
+
+            return Excel::download(
+                new AttendanceExport($month, $year, $employeeType, $user),
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        } catch (\Exception $e) {
+            \Log::error('Attendance Export Error:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user' => Auth::id(),
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Failed to export attendance report. Please try again.');
+        }
+    }
 }

@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-4">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Team Attendance</h4>
+                <h4 class="mb-0">Team Attendance</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -16,63 +16,62 @@
         </div>
     </div>
 
-    <!-- Filters Card -->
+    <!-- Compact Filters -->
     <div class="row mb-2">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Filter Attendance</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Month</label>
-                                <select name="month" id="monthFilter" class="form-select form-select-sm">
-                                    @php
-                                    $currentMonth = date('n');
-                                    $currentYear = date('Y');
-                                    $months = [];
-                                    for ($i = 0; $i < 6; $i++) {
-                                        $date=date_create(date('Y-m-01'));
-                                        date_modify($date, "-{$i} months" );
-                                        $months[]=[ 'value'=> date_format($date, 'Y-m'),
-                                        'label' => date_format($date, 'F Y')
-                                        ];
-                                        }
-                                        @endphp
-                                        @foreach($months as $month)
-                                        <option value="{{ $month['value'] }}" {{ $loop->first ? 'selected' : '' }}>
-                                            {{ $month['label'] }}
-                                        </option>
-                                        @endforeach
-                                </select>
-                            </div>
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <label class="form-label mb-0 small text-muted">Month</label>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Candidate Type</label>
-                                <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
-                                    <option value="all">All Candidates</option>
-                                    <option value="Contractual">Contractual</option>
-                                    <option value="TFA">TFA</option>
-                                    <option value="CB">CB</option>
-                                </select>
-                            </div>
+                        <div class="col-md-2 col-sm-3">
+                            <select name="month" id="monthFilter" class="form-select form-select-sm">
+                                @php
+                                $currentMonth = date('n');
+                                $currentYear = date('Y');
+                                $months = [];
+                                for ($i = 0; $i < 6; $i++) {
+                                    $date=date_create(date('Y-m-01'));
+                                    date_modify($date, "-{$i} months" );
+                                    $months[]=[ 'value'=> date_format($date, 'Y-m'),
+                                    'label' => date_format($date, 'F Y')
+                                    ];
+                                    }
+                                    @endphp
+                                    @foreach($months as $month)
+                                    <option value="{{ $month['value'] }}" {{ $loop->first ? 'selected' : '' }}>
+                                        {{ $month['label'] }}
+                                    </option>
+                                    @endforeach
+                            </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <div class="mb-3 w-100">
-                                <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary w-100">
-                                    <i class="ri-refresh-line align-middle"></i> Load Attendance
-                                </button>
-                            </div>
+
+                        <div class="col-auto">
+                            <label class="form-label mb-0 small text-muted">Type</label>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end justify-content-end">
-                            <div class="mb-3">
-                                <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
-                                    <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
-                                </button>
-                            </div>
+                        <div class="col-md-2 col-sm-3">
+                            <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
+                                <option value="all">All Candidates</option>
+                                <option value="Contractual">Contractual</option>
+                                <option value="TFA">TFA</option>
+                                <option value="CB">CB</option>
+                            </select>
+                        </div>
+
+                        <div class="col-auto">
+                            <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
+                                <i class="ri-refresh-line align-middle"></i> Load
+                            </button>
+                        </div>
+
+                        <div class="col-auto ms-auto">
+                            <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
+                                <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
+                            </button>
+                            <button type="button" onclick="exportAttendance()" class="btn btn-sm btn-success me-2">
+                                <i class="ri-download-line align-middle"></i> Export
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -92,12 +91,12 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Attendance Sheet</h5>
+                <div class="card-header py-2">
+                    <h6 class="card-title mb-0">Attendance Sheet</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-2">
                     <div class="table-responsive" id="tableContainer" style="display: none;">
-                        <table class="table table-bordered table-hover" id="attendanceTable">
+                        <table class="table table-bordered table-hover table-sm mb-0" id="attendanceTable">
                             <thead class="table-light">
                                 <tr id="tableHeader">
                                     <!-- Dynamic headers will be loaded here -->
@@ -239,301 +238,275 @@
     }
 
     // Render attendance table
-    // Render attendance table
-function renderAttendanceTable(data) {
-    currentDaysInMonth = data.days_in_month;
-    const candidates = data.candidates;
+    function renderAttendanceTable(data) {
+        currentDaysInMonth = data.days_in_month;
+        const candidates = data.candidates;
 
-    // Build header
-    let headerHtml = `
-    <th style="width: 50px;" class="text-center">S.No</th>
-    <th style="min-width: 120px;">Candidate Code</th>
-    <th style="min-width: 180px;">Candidate Name</th>
-    <th style="width: 100px;" class="text-center">Type</th>`;
+        // Build header
+        let headerHtml = `
+        <th style="width: 40px;" class="text-center">#</th>
+        <th style="min-width: 90px;">Code</th>
+        <th style="min-width: 120px;">Name</th>
+        <th style="width: 60px;" class="text-center">Type</th>`;
 
-    // Add day columns - Compact 35px width
-    for (let day = 1; day <= currentDaysInMonth; day++) {
-        const date = new Date(currentYear, currentMonth - 1, day);
-        const dayOfWeek = date.getDay();
-        const isSunday = dayOfWeek === 0;
-        const dayName = date.toLocaleDateString('en-US', {
-            weekday: 'short'
-        });
-
-        headerHtml += `<th class="text-center ${isSunday ? 'sunday-cell' : ''}" 
-style="width: 35px; padding: 2px;">
-<div style="font-size: 11px; font-weight: 600;">${day}</div>
-<div style="font-size: 9px; color: #666;">${dayName}</div>
-</th>`;
-    }
-
-    // Add summary columns
-    headerHtml += `
-    <th style="width: 40px;" class="text-center">P</th>
-    <th style="width: 40px;" class="text-center">A</th>
-    <th style="width: 40px;" class="text-center">CL</th>
-    <th style="width: 60px;" class="text-center">CL Bal</th>
-    <th style="width: 80px;" class="text-center">Action</th>`;
-
-    $('#tableHeader').html(headerHtml);
-
-    // Build rows
-    let bodyHtml = '';
-    candidates.forEach((candidate, index) => {
-        const isContractual = candidate.requisition_type === 'Contractual';
-
-        let rowHtml = `
-        <tr id="row-${candidate.candidate_id}" data-candidate-id="${candidate.candidate_id}">
-            <td class="text-center">${index + 1}</td>
-            <td><strong>${candidate.candidate_code}</strong></td>
-            <td>${candidate.candidate_name}</td>
-            <td class="text-center"><span class="badge bg-secondary">${candidate.requisition_type}</span></td>`;
-
-        // Add day cells - Compact 35px width
+        // Add day columns
         for (let day = 1; day <= currentDaysInMonth; day++) {
             const date = new Date(currentYear, currentMonth - 1, day);
-            const isSunday = date.getDay() === 0;
-            const status = candidate.attendance[day] || '';
+            const dayOfWeek = date.getDay();
+            const isSunday = dayOfWeek === 0;
+            const dayName = date.toLocaleDateString('en-US', {
+                weekday: 'short'
+            });
 
-            // For Sundays, only show if it's 'P' (Sunday work) or 'W' (Weekend)
-            // Auto-set to 'W' if empty
-            const sundayStatus = status === 'P' ? 'P' : 'W';
+            headerHtml += `<th class="text-center ${isSunday ? 'sunday-cell' : ''}" 
+    style="width: 46px; padding: 4px 2px;">
+    <div style="font-size: 11px; font-weight: 600;">${day}</div>
+    <div style="font-size: 9px; color: #666;">${dayName}</div>
+    </th>`;
+        }
 
-            // Create options based on candidate type
-            let optionsHtml = '';
+        // Add summary columns
+        headerHtml += `
+        <th style="width: 35px;" class="text-center">P</th>
+        <th style="width: 35px;" class="text-center">A</th>
+        <th style="width: 35px;" class="text-center">CL</th>
+        <th style="width: 50px;" class="text-center">Bal</th>
+        <th style="width: 70px;" class="text-center">Action</th>`;
 
-            if (isSunday) {
-                // Sunday cells: only 'W' or 'P' if Sunday work was requested
-                optionsHtml = `
-                <option value="W" ${sundayStatus === 'W' ? 'selected' : ''}>W</option>
-                <option value="P" ${sundayStatus === 'P' ? 'selected' : ''}>P</option>`;
-            } else {
-                // Regular days: different options for Contractual vs others
-                if (isContractual) {
-                    // Contractual candidates: all options including CL
+        $('#tableHeader').html(headerHtml);
+
+        // Build rows
+        let bodyHtml = '';
+        candidates.forEach((candidate, index) => {
+            const isContractual = candidate.requisition_type === 'Contractual';
+
+            let rowHtml = `
+            <tr id="row-${candidate.candidate_id}" data-candidate-id="${candidate.candidate_id}">
+                <td class="text-center">${index + 1}</td>
+                <td><small><strong>${candidate.candidate_code}</strong></small></td>
+                <td><small>${candidate.candidate_name}</small></td>
+                <td class="text-center"><span class="badge bg-secondary" style="font-size: 9px; padding: 2px 4px;">${candidate.requisition_type}</span></td>`;
+
+            // Add day cells
+            for (let day = 1; day <= currentDaysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth - 1, day);
+                const isSunday = date.getDay() === 0;
+                const status = candidate.attendance[day] || '';
+
+                const sundayStatus = status === 'P' ? 'P' : 'W';
+
+                let optionsHtml = '';
+
+                if (isSunday) {
                     optionsHtml = `
-                    <option value=""></option>
-                    <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
-                    <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
-                    <option value="CL" ${status === 'CL' ? 'selected' : ''}>CL</option>
-                    <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
+                    <option value="W" ${sundayStatus === 'W' ? 'selected' : ''}>W</option>
+                    <option value="P" ${sundayStatus === 'P' ? 'selected' : ''}>P</option>`;
                 } else {
-                    // Non-contractual candidates (TFA, CB): no CL option
-                    optionsHtml = `
-                    <option value=""></option>
-                    <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
-                    <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
-                    <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
+                    if (isContractual) {
+                        optionsHtml = `
+                        <option value=""></option>
+                        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
+                        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
+                        <option value="CL" ${status === 'CL' ? 'selected' : ''}>CL</option>
+                        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
+                    } else {
+                        optionsHtml = `
+                        <option value=""></option>
+                        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
+                        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
+                        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>`;
+                    }
                 }
-            }
 
-            rowHtml += `<td class="text-center ${isSunday ? 'sunday-cell' : ''}" data-day="${day}">
-<div class="day-cell-content">
+                rowHtml += `<td class="text-center ${isSunday ? 'sunday-cell' : ''}" data-day="${day}">
     ${isSunday ? 
         `<span class="badge ${sundayStatus === 'P' ? 'bg-success' : 'bg-light text-muted'}" 
-               style="cursor: default; font-size: 11px; padding: 3px 5px;">
+               style="cursor: default; font-size: 10px; padding: 2px 4px;">
             ${sundayStatus}
         </span>` : 
         `<select class="form-select form-select-sm edit-select compact-select" data-day="${day}" disabled>
             ${optionsHtml}
         </select>`
     }
-</div>
-</td>`;
-        }
-
-        // Add summary columns
-        rowHtml += `
-        <td class="text-center"><span class="badge bg-success" id="present-${candidate.candidate_id}">${candidate.total_present || 0}</span></td>
-        <td class="text-center"><span class="badge bg-danger" id="absent-${candidate.candidate_id}">${candidate.total_absent || 0}</span></td>
-        <td class="text-center"><span class="badge bg-info" id="cl-${candidate.candidate_id}">${candidate.cl_used || 0}</span></td>
-        <td class="text-center">
-            ${isContractual ? 
-                // Contractual: Show CL balance with color coding
-                `<span class="badge ${candidate.cl_remaining > 5 ? 'bg-success' : 
-                                      candidate.cl_remaining > 2 ? 'bg-warning' : 
-                                      'bg-danger'}" 
-                       id="cl-balance-${candidate.candidate_id}"
-                       title="Total Granted: ${candidate.leave_credited || 0} days">
-                    ${candidate.cl_remaining || 0}
-                </span>` : 
-                // Non-contractual: Show N/A or 0
-                '<span class="text-muted" title="Not applicable for this candidate type">N/A</span>'}
-        </td>
-       <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary edit-toggle-btn" 
-                    onclick="toggleEdit(${candidate.candidate_id})"
-                    id="btn-${candidate.candidate_id}"
-                    style="padding: 2px 8px; font-size: 12px;">
-                <i class="ri-edit-line"></i>
-            </button>
-
-            <button class="btn btn-sm btn-light ms-1 cancel-btn" 
-                    onclick="cancelEdit(${candidate.candidate_id})"
-                    id="cancel-${candidate.candidate_id}"
-                    style="display:none; padding: 2px 8px; font-size: 12px;">
-                <i class="ri-close-line"></i>
-            </button>
-        </td>
-        </tr>`;
-
-        bodyHtml += rowHtml;
-    });
-
-    $('#tableBody').html(bodyHtml);
-    $('#tableContainer').show();
-}
-   // Recalculate totals for editing row
-function recalculateTotals(candidateId) {
-    const row = $(`#row-${candidateId}`);
-    let present = 0,
-        absent = 0,
-        cl = 0;
-
-    row.find('.edit-select').each(function() {
-        const status = $(this).val();
-        switch (status) {
-            case 'P':
-                present++;
-                break;
-            case 'A':
-                absent++;
-                break;
-            case 'CL':
-                cl++;
-                break;
-        }
-    });
-
-    // Update display
-    $(`#present-${candidateId}`).text(present);
-    $(`#absent-${candidateId}`).text(absent);
-    $(`#cl-${candidateId}`).text(cl);
-}
-
-// Save attendance for candidate
-function saveAttendance(candidateId) {
-    const row = $(`#row-${candidateId}`);
-    const attendanceData = {};
-
-    // Collect data from dropdowns (only for non-Sunday days)
-    row.find('.edit-select').each(function() {
-        const day = $(this).data('day');
-        const date = new Date(currentYear, currentMonth - 1, parseInt(day));
-        const isSunday = date.getDay() === 0;
-
-        if (!isSunday) {
-            const status = $(this).val() || '';
-            attendanceData[day] = status;
-        }
-    });
-
-    // Add Sundays (all Sundays should be 'W' or 'P' if Sunday work)
-    if (currentDaysInMonth) {
-        for (let day = 1; day <= currentDaysInMonth; day++) {
-            const date = new Date(currentYear, currentMonth - 1, day);
-            if (date.getDay() === 0) {
-                // Check if this Sunday has been marked as 'P' via Sunday work
-                const sundayCell = row.find(`td[data-day="${day}"]`);
-                const sundayStatus = sundayCell.find('.badge').text();
-                attendanceData[day] = sundayStatus || 'W';
+    </td>`;
             }
-        }
+
+            // Add summary columns
+            rowHtml += `
+            <td class="text-center"><span class="badge bg-success" style="font-size: 10px; padding: 2px 4px;" id="present-${candidate.candidate_id}">${candidate.total_present || 0}</span></td>
+            <td class="text-center"><span class="badge bg-danger" style="font-size: 10px; padding: 2px 4px;" id="absent-${candidate.candidate_id}">${candidate.total_absent || 0}</span></td>
+            <td class="text-center"><span class="badge bg-info" style="font-size: 10px; padding: 2px 4px;" id="cl-${candidate.candidate_id}">${candidate.cl_used || 0}</span></td>
+            <td class="text-center">
+                ${isContractual ? 
+                    `<span class="badge ${candidate.cl_remaining > 5 ? 'bg-success' : 
+                                          candidate.cl_remaining > 2 ? 'bg-warning' : 
+                                          'bg-danger'}" 
+                           style="font-size: 10px; padding: 2px 4px;"
+                           id="cl-balance-${candidate.candidate_id}"
+                           title="Total: ${candidate.leave_credited || 0}">
+                        ${candidate.cl_remaining || 0}
+                    </span>` : 
+                    '<small class="text-muted">N/A</small>'}
+            </td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary edit-toggle-btn" 
+                        onclick="toggleEdit(${candidate.candidate_id})"
+                        id="btn-${candidate.candidate_id}"
+                        style="padding: 1px 6px; font-size: 11px;">
+                    <i class="ri-edit-line"></i>
+                </button>
+                <button class="btn btn-sm btn-light ms-1 cancel-btn" 
+                        onclick="cancelEdit(${candidate.candidate_id})"
+                        id="cancel-${candidate.candidate_id}"
+                        style="display:none; padding: 1px 6px; font-size: 11px;">
+                    <i class="ri-close-line"></i>
+                </button>
+            </td>
+            </tr>`;
+
+            bodyHtml += rowHtml;
+        });
+
+        $('#tableBody').html(bodyHtml);
+        $('#tableContainer').show();
     }
 
-    // Show loading on button
-    const btn = $(`#btn-${candidateId}`);
-    const cancelBtn = $(`#cancel-${candidateId}`);
-    const selects = row.find('.edit-select');
-    
-    btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
+    // Recalculate totals for editing row
+    function recalculateTotals(candidateId) {
+        const row = $(`#row-${candidateId}`);
+        let present = 0,
+            absent = 0,
+            cl = 0;
 
-    // Send to server
-    $.ajax({
-        url: '{{ route("attendance.update") }}',
-        method: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            candidate_id: candidateId,
-            month: currentMonth,
-            year: currentYear,
-            attendance: JSON.stringify(attendanceData)
-        },
-        success: function(response) {
-            btn.prop('disabled', false);
-            
-            if (response.success) {
-                toastr.success('Attendance saved successfully!');
+        row.find('.edit-select').each(function() {
+            const status = $(this).val();
+            switch (status) {
+                case 'P':
+                    present++;
+                    break;
+                case 'A':
+                    absent++;
+                    break;
+                case 'CL':
+                    cl++;
+                    break;
+            }
+        });
 
-                // Update CL balance if available (only for contractual)
-                const clBalanceBadge = $(`#cl-balance-${candidateId}`);
-                const isContractual = row.find('.badge.bg-secondary').text() === 'Contractual';
-                
-                if (isContractual && response.cl_remaining !== undefined) {
-                    const newBalance = response.cl_remaining;
-                    clBalanceBadge.text(newBalance);
+        $(`#present-${candidateId}`).text(present);
+        $(`#absent-${candidateId}`).text(absent);
+        $(`#cl-${candidateId}`).text(cl);
+    }
 
-                    // Update badge color based on balance
-                    clBalanceBadge.removeClass('bg-success bg-warning bg-danger');
-                    if (newBalance > 5) {
-                        clBalanceBadge.addClass('bg-success');
-                    } else if (newBalance > 2) {
-                        clBalanceBadge.addClass('bg-warning');
-                    } else {
-                        clBalanceBadge.addClass('bg-danger');
+    // Save attendance for candidate
+    function saveAttendance(candidateId) {
+        const row = $(`#row-${candidateId}`);
+        const attendanceData = {};
+
+        row.find('.edit-select').each(function() {
+            const day = $(this).data('day');
+            const date = new Date(currentYear, currentMonth - 1, parseInt(day));
+            const isSunday = date.getDay() === 0;
+
+            if (!isSunday) {
+                const status = $(this).val() || '';
+                attendanceData[day] = status;
+            }
+        });
+
+        if (currentDaysInMonth) {
+            for (let day = 1; day <= currentDaysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth - 1, day);
+                if (date.getDay() === 0) {
+                    const sundayCell = row.find(`td[data-day="${day}"]`);
+                    const sundayStatus = sundayCell.find('.badge').text();
+                    attendanceData[day] = sundayStatus || 'W';
+                }
+            }
+        }
+
+        const btn = $(`#btn-${candidateId}`);
+        const cancelBtn = $(`#cancel-${candidateId}`);
+        const selects = row.find('.edit-select');
+
+        btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
+
+        $.ajax({
+            url: '{{ route("attendance.update") }}',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                candidate_id: candidateId,
+                month: currentMonth,
+                year: currentYear,
+                attendance: JSON.stringify(attendanceData)
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+
+                if (response.success) {
+                    toastr.success('Attendance saved successfully!');
+
+                    const clBalanceBadge = $(`#cl-balance-${candidateId}`);
+                    const clUsedBadge = $(`#cl-${candidateId}`);
+                    const isContractual = row.find('.badge.bg-secondary').text() === 'Contractual';
+
+                    if (isContractual && response.cl_remaining !== undefined) {
+                        const newBalance = response.cl_remaining;
+                        const newUsed = response.cl_used;
+
+                        clUsedBadge.text(newUsed); // ✅ FIXED
+                        clBalanceBadge.text(newBalance);
+
+                        clBalanceBadge.removeClass('bg-success bg-warning bg-danger');
+                        if (newBalance > 5) {
+                            clBalanceBadge.addClass('bg-success');
+                        } else if (newBalance > 2) {
+                            clBalanceBadge.addClass('bg-warning');
+                        } else {
+                            clBalanceBadge.addClass('bg-danger');
+                        }
                     }
+
+
+                    if (response.warning) {
+                        toastr.warning(response.warning);
+                    }
+
+                    selects.prop('disabled', true);
+                    row.removeClass('editing-row');
+                    btn.html('<i class="ri-edit-line"></i>');
+                    btn.removeClass('btn-success').addClass('btn-outline-primary');
+                    cancelBtn.hide();
+
+                } else {
+                    toastr.error(response.message || 'Error saving attendance');
+                    btn.html('<i class="ri-save-line"></i>');
+                    btn.removeClass('btn-outline-primary').addClass('btn-success');
+                    selects.prop('disabled', false);
+                    row.addClass('editing-row');
+                    cancelBtn.show();
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false);
+
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    toastr.error(xhr.responseJSON.message);
+                } else {
+                    toastr.error('Error saving attendance');
                 }
 
-                // Show warning if any
-                if (response.warning) {
-                    toastr.warning(response.warning);
-                }
-
-                // Switch back to display mode
-                selects.prop('disabled', true);
-                row.removeClass('editing-row');
-
-                btn.html('<i class="ri-edit-line"></i>');
-                btn.removeClass('btn-success').addClass('btn-outline-primary');
-
-                cancelBtn.hide();
-
-            } else {
-                // Error from server - revert to edit mode (keep save button)
-                toastr.error(response.message || 'Error saving attendance');
-                
                 btn.html('<i class="ri-save-line"></i>');
                 btn.removeClass('btn-outline-primary').addClass('btn-success');
-                
-                // Keep edit mode active
-                selects.prop('disabled', false);
-                row.addClass('editing-row');
-                cancelBtn.show();
             }
-        },
-        error: function(xhr) {
-            btn.prop('disabled', false);
-            
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                toastr.error(xhr.responseJSON.message);
-            } else {
-                toastr.error('Error saving attendance');
-            }
-            
-            // On error, stay in edit mode with save button
-            btn.html('<i class="ri-save-line"></i>');
-            btn.removeClass('btn-outline-primary').addClass('btn-success');
-        }
-    });
-}
-
+        });
+    }
 
     // Sunday Work Modal functions
     function openSundayWorkModal() {
-        // Set current month and year
         $('#swMonth').val(currentMonth);
         $('#swYear').val(currentYear);
-
         loadSWCandidates();
         loadSundays();
         $('#sundayWorkModal').modal('show');
@@ -592,7 +565,6 @@ function saveAttendance(candidateId) {
         });
     }
 
-    // Handle Sunday Work form submission
     $('#sundayWorkForm').on('submit', function(e) {
         e.preventDefault();
 
@@ -617,116 +589,166 @@ function saveAttendance(candidateId) {
         });
     });
 
-   // Cancel edit - Fixed version
-function cancelEdit(candidateId) {
-    const row = $(`#row-${candidateId}`);
-    const btn = $(`#btn-${candidateId}`);
-    const cancelBtn = $(`#cancel-${candidateId}`);
-    const selects = row.find('.edit-select');
+    function cancelEdit(candidateId) {
+        const row = $(`#row-${candidateId}`);
+        const btn = $(`#btn-${candidateId}`);
+        const cancelBtn = $(`#cancel-${candidateId}`);
+        const selects = row.find('.edit-select');
 
-    // Show loading on button
-    const originalHtml = btn.html();
-    btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i>');
 
-    // Load fresh data for this candidate
-    $.ajax({
-        url: '{{ route("attendance.get-candidate") }}',
-        method: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            candidate_id: candidateId,
-            month: currentMonth,
-            year: currentYear
-        },
-        success: function(response) {
-            if (response.success) {
-                // Update the row with fresh data
-                updateCandidateRow(candidateId, response.data);
-                
-                // Disable all selects
-                selects.prop('disabled', true);
-                row.removeClass('editing-row');
+        $.ajax({
+            url: '{{ route("attendance.get-candidate") }}',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                candidate_id: candidateId,
+                month: currentMonth,
+                year: currentYear
+            },
+            success: function(response) {
+                if (response.success) {
+                    updateCandidateRow(candidateId, response.data);
 
-                // Reset button to edit mode
-                btn.html('<i class="ri-edit-line"></i>');
-                btn.removeClass('btn-success').addClass('btn-outline-primary');
-                btn.prop('disabled', false);
+                    selects.prop('disabled', true);
+                    row.removeClass('editing-row');
+                    btn.html('<i class="ri-edit-line"></i>');
+                    btn.removeClass('btn-success').addClass('btn-outline-primary');
+                    btn.prop('disabled', false);
+                    cancelBtn.hide();
 
-                cancelBtn.hide();
-                
-                toastr.info('Changes cancelled');
-            } else {
-                toastr.error(response.message || 'Error loading attendance data');
+                    toastr.info('Changes cancelled');
+                } else {
+                    toastr.error(response.message || 'Error loading attendance data');
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                }
+            },
+            error: function() {
+                toastr.error('Error loading attendance data');
                 btn.html(originalHtml);
                 btn.prop('disabled', false);
             }
-        },
-        error: function() {
-            toastr.error('Error loading attendance data');
-            btn.html(originalHtml);
-            btn.prop('disabled', false);
-        }
-    });
-}
-
-// Function to update a single candidate row with fresh data
-function updateCandidateRow(candidateId, data) {
-    const row = $(`#row-${candidateId}`);
-    
-    // Update day cells
-    for (let day = 1; day <= currentDaysInMonth; day++) {
-        const status = data.attendance[day] || '';
-        const cell = row.find(`td[data-day="${day}"]`);
-        
-        if (cell.length) {
-            const select = cell.find('select');
-            if (select.length) {
-                select.val(status);
-            }
-        }
-    }
-    
-    // Recalculate totals for this row
-    recalculateTotals(candidateId);
-}
-
-    // Toggle edit mode - Fixed version
-function toggleEdit(candidateId) {
-    const row = $(`#row-${candidateId}`);
-    const btn = $(`#btn-${candidateId}`);
-    const cancelBtn = $(`#cancel-${candidateId}`);
-    const selects = row.find('.edit-select');
-
-    // Check current button icon to determine mode
-    const currentIcon = btn.find('i').attr('class');
-    const isEditMode = currentIcon.includes('ri-edit-line');
-    
-    if (isEditMode) {
-        // Switch from edit to save mode
-        // Enable edit mode ONLY for non-Sunday selects
-        selects.each(function() {
-            const day = $(this).data('day');
-            const date = new Date(currentYear, currentMonth - 1, parseInt(day));
-            const isSunday = date.getDay() === 0;
-
-            // Only enable non-Sunday selects
-            if (!isSunday) {
-                $(this).prop('disabled', false);
-            }
         });
-        row.addClass('editing-row');
-
-        btn.html('<i class="ri-save-line"></i>');
-        btn.removeClass('btn-outline-primary').addClass('btn-success');
-
-        cancelBtn.show();
-    } else {
-        // Currently in save mode, so save attendance
-        saveAttendance(candidateId);
     }
-}
 
-    // Initialize when month changes in Sunday modal
+    function updateCandidateRow(candidateId, data) {
+        const row = $(`#row-${candidateId}`);
+
+        for (let day = 1; day <= currentDaysInMonth; day++) {
+            const status = data.attendance[day] || '';
+            const cell = row.find(`td[data-day="${day}"]`);
+
+            if (cell.length) {
+                const select = cell.find('select');
+                if (select.length) {
+                    select.val(status);
+                }
+            }
+        }
+
+        recalculateTotals(candidateId);
+    }
+
+    function toggleEdit(candidateId) {
+        const row = $(`#row-${candidateId}`);
+        const btn = $(`#btn-${candidateId}`);
+        const cancelBtn = $(`#cancel-${candidateId}`);
+        const selects = row.find('.edit-select');
+
+        const currentIcon = btn.find('i').attr('class');
+        const isEditMode = currentIcon.includes('ri-edit-line');
+
+        if (isEditMode) {
+            selects.each(function() {
+                const day = $(this).data('day');
+                const date = new Date(currentYear, currentMonth - 1, parseInt(day));
+                const isSunday = date.getDay() === 0;
+
+                if (!isSunday) {
+                    $(this).prop('disabled', false);
+                }
+            });
+            row.addClass('editing-row');
+            btn.html('<i class="ri-save-line"></i>');
+            btn.removeClass('btn-outline-primary').addClass('btn-success');
+            cancelBtn.show();
+        } else {
+            saveAttendance(candidateId);
+        }
+    }
+
+    // Export attendance data
+    // Alternative export function using fetch API
+    function exportAttendance() {
+        const monthYear = $('#monthFilter').val().split('-');
+        if (!monthYear[0] || !monthYear[1]) {
+            toastr.error('Please select month and year');
+            return;
+        }
+
+        const year = parseInt(monthYear[0], 10);
+        const month = parseInt(monthYear[1], 10);
+        const employeeType = $('#employeeTypeFilter').val();
+
+        // Show loading indicator
+        const exportBtn = $(event.target).closest('button');
+        const originalHtml = exportBtn.html();
+        exportBtn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i> Exporting...');
+
+        // Build the URL
+        const url = '{{ route("attendance.export") }}' +
+            '?month=' + month +
+            '&year=' + year +
+            '&employee_type=' + encodeURIComponent(employeeType) +
+            '&_token=' + encodeURIComponent('{{ csrf_token() }}');
+
+        // Use fetch API to download the file
+        fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Create a download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+
+                // Set filename
+                const monthName = new Date(year, month - 1).toLocaleString('default', {
+                    month: 'long'
+                });
+                a.download = `attendance_${monthName}_${year}.xlsx`;
+
+                // Append to body and click
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                toastr.success('Export completed successfully!');
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                toastr.error('Error exporting data: ' + error.message);
+            })
+            .finally(() => {
+                exportBtn.prop('disabled', false).html(originalHtml);
+            });
+    }
+
     $('#swMonth').on('change', function() {
         loadSundays();
     });
@@ -736,50 +758,92 @@ function toggleEdit(candidateId) {
     /* Sunday column color */
     .sunday-cell {
         background-color: #f3f6ff !important;
-        /* soft blue */
     }
 
     /* Row being edited */
     .editing-row {
         background-color: #fff8e1 !important;
-        /* soft yellow */
     }
 
-    /* Disabled dropdown better look */
-    .edit-select:disabled {
-        background-color: #f8f9fa;
-        cursor: not-allowed;
-        border-color: #dee2e6;
-    }
-
-    /* Compact dropdown style */
-    .compact-select {
-        width: 35px !important;
-        height: 28px !important;
-        padding: 0 2px !important;
-        font-size: 11px !important;
-        text-align: center;
-    }
-
-    /* Make the table more compact */
-    #attendanceTable th,
-    #attendanceTable td {
-        padding: 4px 2px !important;
-    }
-
-    /* Compact badges */
-    #attendanceTable .badge {
-        padding: 3px 6px;
+    /* Compact table styling */
+    #attendanceTable {
         font-size: 11px;
     }
 
-    /* Adjust header text */
+    #attendanceTable th,
+    #attendanceTable td {
+        padding: 3px 2px !important;
+        vertical-align: middle;
+    }
+
+    #attendanceTable td[data-day] {
+        padding: 2px !important;
+    }
+
     #tableHeader th {
         font-size: 11px;
         line-height: 1.2;
     }
 
-    /* Sunday modal improved layout */
+    /* Compact dropdown style */
+    .compact-select {
+        width: 42px !important;
+        height: 24px !important;
+        padding: 1px 16px 1px 4px !important;
+        font-size: 10px !important;
+        text-align: left;
+        border: 1px solid #d1d5db;
+        border-radius: 3px;
+        background-color: #ffffff;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23333' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 3px center;
+        background-size: 7px 7px;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    .compact-select:not(:disabled):hover {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+    }
+
+    .compact-select:disabled {
+        background-color: transparent;
+        border-color: transparent;
+        color: #495057;
+        font-weight: 600;
+        background-image: none;
+        padding-right: 4px !important;
+    }
+
+    .compact-select:focus {
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+        border-color: #0d6efd !important;
+        outline: none;
+    }
+
+    /* Status color coding */
+    .compact-select option[value="P"] {
+        color: #198754;
+    }
+
+    .compact-select option[value="A"] {
+        color: #dc3545;
+    }
+
+    .compact-select option[value="CL"] {
+        color: #0dcaf0;
+    }
+
+    .compact-select option[value="H"] {
+        color: #6c757d;
+    }
+
+    /* Sunday modal */
     #sundayWorkModal .modal-body {
         padding: 1.25rem;
     }
@@ -799,26 +863,26 @@ function toggleEdit(candidateId) {
         max-width: 1000px;
     }
 
-    /* Better select focus */
-    .edit-select:focus {
-        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
-        border-color: #86b7fe !important;
-    }
-
     /* Responsive adjustments */
     @media (max-width: 768px) {
         #attendanceTable {
-            font-size: 12px;
+            font-size: 10px;
         }
 
         .compact-select {
-            width: 30px !important;
-            height: 26px !important;
-            font-size: 10px !important;
+            width: 38px !important;
+            height: 22px !important;
+            font-size: 9px !important;
+            background-size: 6px 6px;
+            background-position: right 2px center;
         }
 
         #tableHeader th {
             font-size: 10px;
+        }
+
+        #attendanceTable th[style*="width: 46px"] {
+            width: 38px !important;
         }
     }
 </style>

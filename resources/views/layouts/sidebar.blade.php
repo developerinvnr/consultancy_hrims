@@ -1,8 +1,8 @@
 <!-- My Team - Only show if user has emp_id AND has team members -->
 @php
-    $user = Auth::user();
-    $hasTeam = $user->emp_id && 
-               App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id)->exists();
+$user = Auth::user();
+$hasTeam = $user->emp_id &&
+App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id)->exists();
 @endphp
 <div class="app-menu navbar-menu">
     <div class="navbar-brand-box">
@@ -33,8 +33,8 @@
             <ul class="navbar-nav" id="navbar-nav">
 
                 {{-- Dashboard --}}
-                <li class="nav-item active">
-                    <a class="nav-link menu-link" href="{{ route('dashboard') }}">
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('dashboard')" href="{{ route('dashboard') }}">
                         <i class="las la-home"></i>
                         <span>Dashboard</span>
                     </a>
@@ -43,64 +43,90 @@
                 @if(auth()->user()->hasAnyRole(['Admin', 'hr_admin']))
                 {{-- Core API --}}
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('core_api.index')  }}">
+                    <a class="nav-link menu-link @activeRoute('core_api.*')" href="{{ route('core_api.index') }}">
                         <i class="ri-pages-line"></i>
                         <span>Core Api</span>
                     </a>
                 </li>
 
 
+
                 {{-- User Access --}}
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('users.index') }}">
-                        <i class="ri-pages-line"></i>
+                    <a class="nav-link menu-link @activeRoute('users.*')" href="{{ route('users.index') }}">
+                        <i class="ri-user-3-line"></i>
                         <span>User</span>
                     </a>
                 </li>
 
+
                 {{-- Roles & Permission --}}
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('roles.index') }}">
-                        <i class="ri-pages-line"></i>
+                    <a class="nav-link menu-link @activeRoute('roles.*')" href="{{ route('roles.index') }}">
+                        <i class="ri-shield-user-line"></i>
                         <span>Roles & Permission</span>
                     </a>
                 </li>
 
+
                 {{-- Leave --}}
-                <li class="nav-item">
+                {{--<li class="nav-item">
                     <a class="nav-link menu-link" href="#">
                         <i class="ri-pages-line"></i>
                         <span>Leave</span>
                     </a>
-                </li>
+                </li>--}}
                 @endif
 
 
 
                 {{-- Consultancy --}}
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('requisitions.index') }}">
+                    <a class="nav-link menu-link @activeRoute('requisitions.*')" href="{{ route('requisitions.index') }}">
                         <i class="ri-file-list-3-line"></i>
                         <span>Requisitions</span>
                     </a>
                 </li>
 
 
+
                 {{-- Attendance --}}
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('attendance.index') }}">
+                    <a class="nav-link menu-link @activeRoute('attendance.*')" href="{{ route('attendance.index') }}">
                         <i class="ri-calendar-check-line"></i>
                         <span>Attendance</span>
                     </a>
                 </li>
 
-               @if($hasTeam)
+
+                @if($hasTeam)
+                @if($hasTeam)
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('my-team*') ? 'active' : '' }}" href="{{ route('my-team.index') }}">
+                    <a class="nav-link menu-link @activeRoute('my-team.*')" href="{{ route('my-team.index') }}">
                         <i class="ri-team-line"></i>
                         <span>My Team</span>
                     </a>
                 </li>
+                @endif
+
+                @endif
+
+                @if(auth()->user()->hasAnyRole(['hr_admin']))
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('salary.*')" href="{{ route('salary.index') }}">
+                        <i class="ri-money-rupee-circle-line"></i>
+                        <span>Salary Processing</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('communication.*')" href="{{ route('communication.index') }}">
+                        <i class="ri-message-2-line"></i>
+                        <span>Communication Control</span>
+                    </a>
+                </li>
+
+                
                 @endif
 
 

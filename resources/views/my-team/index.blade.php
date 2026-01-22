@@ -15,56 +15,61 @@
             </div>
         </div>
     </div>
-
     <!-- Filters Card -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Filter Candidates</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Search Candidate</label>
-                                <input type="text" id="searchInput" class="form-control form-control-sm"
-                                    placeholder="Search by name, code, email, or phone...">
-                            </div>
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+
+                        <!-- Search -->
+                        <div class="col-md-4">
+                            <label class="form-label mb-1 small">Search</label>
+                            <input type="text" id="searchInput"
+                                class="form-control form-control-sm"
+                                placeholder="Name, code, email, phone">
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Candidate Type</label>
-                                <select id="typeFilter" class="form-select form-select-sm">
-                                    <option value="all">All Types</option>
-                                    <option value="Contractual">Contractual</option>
-                                    <option value="TFA">TFA</option>
-                                    <option value="CB">CB</option>
-                                </select>
-                            </div>
+
+                        <!-- Type -->
+                        <div class="col-md-2">
+                            <label class="form-label mb-1 small">Type</label>
+                            <select id="typeFilter" class="form-select form-select-sm">
+                                <option value="all">All</option>
+                                <option value="Contractual">Contractual</option>
+                                <option value="TFA">TFA</option>
+                                <option value="CB">CB</option>
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Status</label>
-                                <select id="statusFilter" class="form-select form-select-sm">
-                                    <option value="all">All Status</option>
-                                    <option value="A">Active</option>
-                                    <option value="D">Inactive</option>
-                                </select>
-                            </div>
+
+                        <!-- Status -->
+                        <div class="col-md-2">
+                            <label class="form-label mb-1 small">Status</label>
+                            <select id="statusFilter" class="form-select form-select-sm">
+                                <option value="all">All</option>
+                                <option value="A">Active</option>
+                                <option value="D">Inactive</option>
+                            </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <div class="mb-3 w-100">
-                                <button type="button" onclick="loadCandidates()" class="btn btn-sm btn-primary w-100">
-                                    <i class="ri-search-line align-middle"></i> Search
-                                </button>
-                            </div>
+
+                        <!-- Buttons -->
+                        <div class="col-md-4 text-end">
+                            <button type="button" onclick="loadCandidates()"
+                                class="btn btn-sm btn-primary px-3">
+                                <i class="ri-search-line"></i> Search
+                            </button>
+
+                            <button type="button" onclick="exportData()"
+                                class="btn btn-sm btn-success px-3 ms-1" id="exportBtn">
+                                <i class="ri-file-excel-line"></i> Export
+                            </button>
                         </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="text-center" style="display: none;">
@@ -91,7 +96,7 @@
                                 <tr>
                                     <th style="width: 50px;" class="text-center">S.No</th>
                                     <th style="min-width: 120px;">Candidate Code</th>
-                                    <th style="min-width: 180px;">Candidate Name</th>
+                                    <th style="min-width: 100px;">Candidate Name</th>
                                     <th style="width: 100px;" class="text-center">Type</th>
                                     <th style="width: 150px;">Email</th>
                                     <th style="width: 120px;">Mobile</th>
@@ -203,23 +208,9 @@
                     <tr>
                         <td class="text-center">${index + 1}</td>
                         <td><strong>${candidate.candidate_code}</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0 me-3">
-                                    <div class="avatar-xs">
-                                        <div class="avatar-title bg-light text-primary rounded-circle">
-                                            ${candidate.candidate_name.charAt(0).toUpperCase()}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">${candidate.candidate_name}</h6>
-                                    <small class="text-muted">${candidate.candidate_email}</small>
-                                </div>
-                            </div>
-                        </td>
+                        <td>${candidate.candidate_name}</td>
                         <td class="text-center">${typeBadge}</td>
-                        <td>${candidate.candidate_email}</td>
+                        <td class="text-center">${candidate.candidate_email}</td>
                         <td>${candidate.mobile_no}</td>
                         <td>${candidate.work_location_hq || 'N/A'}</td>
                         <td class="text-center">${joiningDate}</td>
@@ -251,6 +242,39 @@
 
         const color = badges[type] || 'bg-secondary';
         return `<span class="badge ${color}">${type}</span>`;
+    }
+
+    function exportData() {
+        const search = $('#searchInput').val();
+        const type = $('#typeFilter').val();
+        const status = $('#statusFilter').val();
+
+        // Show loading on export button
+        const exportBtn = $('#exportBtn');
+        const originalHtml = exportBtn.html();
+        exportBtn.html('<i class="ri-loader-4-line spin align-middle"></i> Exporting...');
+        exportBtn.prop('disabled', true);
+
+        // Build export URL with filters
+        let exportUrl = '{{ route("my-team.export") }}';
+        exportUrl += '?search=' + encodeURIComponent(search);
+        exportUrl += '&type=' + encodeURIComponent(type);
+        exportUrl += '&status=' + encodeURIComponent(status);
+
+        // Create a temporary anchor element to trigger download
+        const a = document.createElement('a');
+        a.href = exportUrl;
+        a.download = 'my_team_export.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Revert button state after a delay
+        setTimeout(() => {
+            exportBtn.html(originalHtml);
+            exportBtn.prop('disabled', false);
+            toastr.success('Export started successfully!');
+        }, 1000);
     }
 
     // Remove all the modal-related functions since we're using separate page

@@ -12,6 +12,9 @@ use App\Http\Controllers\ApproverController;
 use App\Http\Controllers\SubmitterController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\MyTeamController;
+use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\CommunicationControlController;
+
 
 
 
@@ -134,6 +137,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/requisition/{requisition}/reject', [ApproverController::class, 'rejectRequisition'])
             ->name('requisition.reject');
     });
+
+    Route::get('/communication-controls', [CommunicationControlController::class, 'index'])->name('communication.index');
+    Route::post('/communication-controls', [CommunicationControlController::class, 'store'])->name('communication.store');
+    Route::post('/communication-controls/{communicationControl}/toggle', [CommunicationControlController::class, 'toggle'])->name('communication.toggle');
 });
 
 // Agreement Management Routes for HR Admin
@@ -200,6 +207,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/get-sundays', [AttendanceController::class, 'getSundays'])->name('attendance.get-sundays');
         Route::post('/get-active-candidates', [AttendanceController::class, 'getActiveCandidates'])->name('attendance.get-active-candidates');
         Route::post('/submit-sunday-work', [AttendanceController::class, 'submitSundayWork'])->name('attendance.submit-sunday-work');
+        Route::get('/export', [AttendanceController::class, 'export'])->name('attendance.export');
+
     });
 
    Route::prefix('my-team')->middleware(['auth'])->group(function () {
@@ -207,6 +216,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-candidates', [MyTeamController::class, 'getCandidates'])->name('my-team.get-candidates');
     Route::get('/candidate/{id}', [MyTeamController::class, 'showCandidatePage'])->name('my-team.candidate.show');
     Route::get('/candidate/{id}/documents', [MyTeamController::class, 'getCandidateDocuments'])->name('my-team.candidate.documents');
+    Route::get('/export', [MyTeamController::class, 'export'])->name('my-team.export');
   });
 
 });
+
+Route::prefix('hr/salary')->group(function () {
+    Route::get('/', [SalaryController::class, 'index'])->name('salary.index');
+    Route::post('/process', [SalaryController::class, 'process'])->name('salary.process');
+    Route::post('/list', [SalaryController::class, 'list'])->name('salary.list');
+    Route::post('/check-exists', [SalaryController::class, 'checkExists'])->name('salary.checkExists');
+    Route::get('/payslip/{id}', [SalaryController::class, 'downloadPayslip'])->name('salary.payslip');
+    Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
+});
+

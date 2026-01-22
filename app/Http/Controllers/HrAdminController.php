@@ -103,6 +103,52 @@ class HrAdminController extends Controller
 			'documents'
 		]);
 
+		// Get candidate from CandidateMaster using requisition_id
+		$candidate = \App\Models\CandidateMaster::where('requisition_id', $requisition->id)
+			->first();
+
+		$agreementDocuments = [];
+
+		if ($candidate) {
+			try {
+				// Get agreement documents using candidate_code instead of candidate_id
+				$agreementDocs = \App\Models\AgreementDocument::where('candidate_code', $candidate->candidate_code)
+					->orderBy('created_at', 'desc')
+					->get();
+
+				foreach ($agreementDocs as $doc) {
+					$s3Url = null;
+					$hasFile = false;
+
+					if (!empty($doc->agreement_path) && $doc->agreement_path !== 'null') {
+						try {
+							$s3Url = Storage::disk('s3')->url($doc->agreement_path);
+							$hasFile = true;
+						} catch (\Exception $e) {
+							\Log::error("Error generating S3 URL for agreement document: " . $e->getMessage());
+						}
+					}
+
+					$agreementDocuments[] = [
+						'id' => $doc->id,
+						'type' => 'Agreement',
+						'document_type' => $this->formatDocumentType($doc->document_type),
+						'file_name' => 'Agreement_' . ($doc->agreement_number ?? $doc->id) . '.pdf',
+						'uploaded_at' => $doc->created_at->format('d-m-Y H:i'),
+						's3_url' => $s3Url,
+						'has_file' => $hasFile,
+						'agreement_number' => $doc->agreement_number,
+						'document_category' => 'agreement',
+						'candidate_code' => $doc->candidate_code
+					];
+				}
+			} catch (\Exception $e) {
+				\Log::error("Error loading agreement documents: " . $e->getMessage());
+			}
+		} else {
+			\Log::warning("Candidate not found for requisition ID: " . $requisition->id);
+		}
+
 		// Get approvers for HR to select
 		$approvers = $this->getApproversHierarchy($requisition);
 		$showSendApprovalButton = $requisition->status === 'Hr Verified';
@@ -110,8 +156,15 @@ class HrAdminController extends Controller
 		return view('hr-admin.new-applications.view', compact(
 			'requisition',
 			'approvers',
-			'showSendApprovalButton'
+			'showSendApprovalButton',
+			'agreementDocuments',
+			'candidate'
 		));
+	}
+
+	private function formatDocumentType($type)
+	{
+		return ucwords(str_replace('_', ' ', $type));
 	}
 
 	/**
@@ -509,7 +562,6 @@ class HrAdminController extends Controller
 		$request->validate([
 			'approver_id' => 'required|exists:users,emp_id',
 		]);
-		//dd($request->all());
 
 		DB::beginTransaction();
 		try {
@@ -524,33 +576,55 @@ class HrAdminController extends Controller
 				throw new \Exception('Approver not found');
 			}
 
-			// Send email to approver
-			try {
-				Mail::to($approver->emp_email)->send(new RequisitionApprovalRequest($requisition, $approver));
+			// =================================================
+			// ADD COMMUNICATION CONTROL CHECK HERE
+			// =================================================
+			$communicationService = app(\App\Services\CommunicationService::class);
 
-				// Log email sent
-				Log::info('Approval email sent', [
+			// Check if both master toggle and approval reminders are enabled
+			$canSendEmail = $communicationService->isEnabled('approval_reminders');
+			$emailStatus = "";
+			// =================================================
+
+			// Send email to approver ONLY if allowed by communication controls
+			if ($canSendEmail) {
+				try {
+					Mail::to($approver->emp_email)->send(new RequisitionApprovalRequest($requisition, $approver));
+
+					// Log email sent
+					Log::info('Approval email sent', [
+						'requisition_id' => $requisition->id,
+						'approver_id' => $approver->id,
+						'approver_email' => $approver->emp_email,
+						'sent_at' => now()
+					]);
+
+					$emailStatus = "Email notification sent to " . $approver->emp_email;
+				} catch (\Exception $emailException) {
+					// Log email error but don't fail the transaction
+					Log::error('Failed to send approval email: ' . $emailException->getMessage(), [
+						'requisition_id' => $requisition->id,
+						'approver_email' => $approver->emp_email
+					]);
+
+					$emailStatus = "Email notification failed to send.";
+				}
+			} else {
+				// Log that email was skipped due to communication controls
+				Log::info('Approval email skipped - communication control disabled', [
 					'requisition_id' => $requisition->id,
-					'approver_id' => $approver->id,
-					'approver_email' => $approver->emp_email,
-					'sent_at' => now()
-				]);
-			} catch (\Exception $emailException) {
-				// Log email error but don't fail the transaction
-				Log::error('Failed to send approval email: ' . $emailException->getMessage(), [
-					'requisition_id' => $requisition->id,
-					'approver_email' => $approver->emp_email
+					'email_enabled' => $communicationService->isEnabled('email_enabled'),
+					'approval_reminders' => $communicationService->isEnabled('approval_reminders')
 				]);
 
-				// You might want to notify admin about email failure
-				// Mail::to('admin@example.com')->send(new EmailFailureNotification($emailException));
+				$emailStatus = "Email notification not sent (communication control disabled).";
 			}
 
 			DB::commit();
 
 			// Redirect back with success message
 			return redirect()->route('hr-admin.applications.new')
-				->with('success', 'Application sent for approval successfully. Email notification sent to ' . $approver->emp_email);
+				->with('success', 'Application sent for approval successfully. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error sending for approval: ' . $e->getMessage(), [

@@ -5,65 +5,230 @@
 @section('content')
 <div class="container-fluid">
 	<!-- Page Header -->
-	<div class="row mb-0">
+	<div class="row mb-2">
 		<div class="col-12">
 			<div class="page-title-box d-sm-flex align-items-center justify-content-between">
-				<h4 class="mb-sm-0">HR Admin Dashboard</h4>
-				<div class="page-title-right">
-					<ol class="breadcrumb m-0">
-						<li class="breadcrumb-item active">HR Admin Dashboard</li>
-					</ol>
+				<h4 class="mb-sm-0 fs-5">
+					<i class="ri-dashboard-3-line me-2"></i>HR Dashboard
+				</h4>
+			</div>
+		</div>
+	</div>
+
+	<!-- Compact Metrics Grid - Right Aligned Numbers -->
+	<div class="row g-1 mb-3">
+		<!-- Row 1 -->
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Total Requisitions</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold">{{ $stats['total_requisitions'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Active Candidates</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold">{{ $stats['active_candidates'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Pending Verification</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold text-warning">{{ $stats['pending_verification'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">This Month</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold text-info">{{ $stats['this_month']['submissions'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Agreement Pending</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold text-warning">{{ $stats['agreement_pending'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Unsigned Uploaded</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold text-info">{{ $stats['unsigned_uploaded'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row 2 -->
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Agreement Completed</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold text-success">{{ $stats['agreement_completed'] }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		@foreach($stats['requisition_by_type'] as $type => $count)
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">{{ $type }}</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold">{{ $count }}</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+		@endforeach
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Avg Verify Time</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold">{{ number_format($stats['avg_times']['verification_time'] ?? 0, 1) }}h</h5>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-1 d-flex justify-content-between align-items-center">
+					<div class="flex-grow-1">
+						<p class="text-muted mb-0 fs-10 text-truncate">Avg Approval Time</p>
+					</div>
+					<div class="flex-shrink-0">
+						<h5 class="mb-0 fw-bold">{{ number_format($stats['avg_times']['approval_time'] ?? 0, 1) }}h</h5>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Recent Requisitions -->
+	<!-- Top Submitters & Departments (Side by Side) -->
+	<div class="row g-2 mb-2">
+		<div class="col-xl-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-2">
+					<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
+					@forelse($stats['top_submitters'] as $submitter)
+					<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+						<span class="text-truncate fs-12">{{ $submitter->submitted_by_name }}</span>
+						<span class="badge bg-primary fs-10">{{ $submitter->count }}</span>
+					</div>
+					@empty
+					<p class="text-muted text-center mb-0 fs-12">No data</p>
+					@endforelse
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-6">
+			<div class="card border-0 shadow-sm h-100">
+				<div class="card-body p-2">
+					<h6 class="mb-2 fs-6">Top Departments</h6>
+					@forelse($stats['by_department'] as $dept)
+					<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+						<span class="text-truncate fs-12">{{ $dept->department->department_name ?? 'N/A' }}</span>
+						<span class="badge bg-info fs-10">{{ $dept->count }}</span>
+					</div>
+					@empty
+					<p class="text-muted text-center mb-0 fs-12">No data</p>
+					@endforelse
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Recent Requisitions Table -->
 	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
 	<div class="row">
 		<div class="col-12">
-			<div class="card">
-				<div class="card-header">
-					<h5 class="card-title mb-0">Recent Requisitions</h5>
-				</div>
-				<div class="card-body">
-					<div class="table-responsive">
-						<table class="table table-hover">
-							<thead>
+			<div class="card border-0 shadow-sm">
+				<div class="card-body p-2">
+					<h6 class="mb-2 fs-6">Recent Requisitions</h6>
+					<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+						<table class="table table-sm table-hover mb-0">
+							<thead class="sticky-top bg-white">
 								<tr>
-									<th>Requisition ID</th>
-									<th>Candidate</th>
-									<th>Email</th>
-									<th>Type</th>
-									<th>Status</th>
-									<th>Submitted By</th>
-									<th>Date</th>
-									<th>Actions</th>
+									<th class="fs-11">ID</th>
+									<th class="fs-11">Candidate</th>
+									<th class="fs-11">Email</th>
+									<th class="fs-11">Type</th>
+									<th class="fs-11">Status</th>
+									<th class="fs-11">Date</th>
+									<th class="fs-11">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
 								@foreach($recent_requisitions as $req)
 								@php
-								// Check if already processed
 								$isProcessed = \App\Models\CandidateMaster::where('requisition_id', $req->id)->exists();
 								$candidate = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
 								@endphp
 								<tr>
-									<td>
-										<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
+									<td class="fs-11">
+										<span class="badge bg-secondary fs-10">{{ $req->requisition_id }}</span>
 									</td>
-									<td>
-										<div>{{ $req->candidate_name }}</div>
+									<td class="fs-11">
+										{{ $req->candidate_name }}
 									</td>
-									<td>
-										{{ $req->candidate_email }}
+									<td class="fs-11">
+										<small class="text-muted fs-9">{{ $req->candidate_email }}</small>
 									</td>
-									<td>
-										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
+									<td class="fs-11">
+										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }} fs-10">
 											{{ $req->requisition_type }}
 										</span>
 									</td>
-									<td>
+									<td class="fs-11">
 										@if($isProcessed)
 										@php
 										$statusColors = [
@@ -73,140 +238,84 @@
 										'Active' => 'success'
 										];
 										$empStatus = $candidate->candidate_status ?? 'Agreement Pending';
-
-										// Get signed agreement info
-										$signedInfo = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-										->where('document_type', 'signed')
-										->first();
 										@endphp
-
-										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }}">
+										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
 											{{ $empStatus }}
 										</span>
-
-										@if($signedInfo)
-										<br>
-										<small class="text-muted">
-											@if($signedInfo->uploaded_by_role === 'submitter')
-											Signed uploaded by candidate
-											@elseif($signedInfo->uploaded_by_role === 'hr_admin')
-											Signed uploaded by HR
-											@endif
-										</small>
-										@endif
-
 										@if($candidate && $candidate->candidate_code)
 										<br>
-										<small class="text-muted">{{ $candidate->candidate_code }}</small>
+										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
 										@endif
 										@else
-										<span class="badge bg-secondary">Ready to Process</span>
+										<span class="badge bg-secondary fs-10">Ready to Process</span>
 										@endif
 									</td>
-									<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
-									<td>{{ $req->created_at->format('d-M-Y') }}</td>
+									<td class="fs-11">{{ $req->created_at->format('d-M') }}</td>
 									<td>
-										<div class="btn-group" role="group">
-
-											<!-- Always show View -->
+										<div class="btn-group btn-group-sm" role="group">
 											<a href="{{ route('hr-admin.applications.view', $req) }}"
-												class="btn btn-sm btn-outline-primary" title="View Details">
-												<i class="ri-eye-line"></i>
+												class="btn btn-outline-primary" title="View">
+												<i class="ri-eye-line fs-10"></i>
 											</a>
 
-											{{-- ========== PROCESS / APPROVAL LOGIC ========== --}}
 											@if(!$isProcessed && !empty($req->approver_id))
-											<button type="button" class="btn btn-sm btn-success process-btn"
+											<button type="button" class="btn btn-success process-btn"
 												data-bs-toggle="modal" data-bs-target="#processModal"
 												data-requisition-id="{{ $req->id }}"
 												data-requisition-name="{{ $req->candidate_name }}"
 												data-current-reporting="{{ $req->reporting_to }}"
 												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
-												<i class="ri-play-line"></i> Process
+												<i class="ri-play-line fs-10"></i>
 											</button>
-
 											@elseif(!$isProcessed && empty($req->approver_id))
-											<span class="badge bg-warning">Not approved/Verified</span>
+											<span class="badge bg-warning fs-9">Not Verified</span>
 											@endif
 
-
-											{{-- ========== AGREEMENT WORKFLOW LOGIC ========== --}}
 											@if($candidate)
-
 											@php
 											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 											->where('document_type', 'unsigned')
 											->exists();
-
 											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 											->where('document_type', 'signed')
 											->exists();
-
 											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 											->where('document_type', 'signed')
 											->where('uploaded_by_role', 'submitter')
 											->exists();
-
-											$hrSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'signed')
-											->where('uploaded_by_role', 'hr_admin')
-											->exists();
 											@endphp
 
-
-											{{-- 1. No unsigned yet --}}
-											@if(!$hasUnsigned)
+											@if($empStatus == "Active")
+												<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
+											@elseif(!$hasUnsigned)
 											<button type="button"
-												class="btn btn-sm btn-outline-warning upload-unsigned-btn"
+												class="btn btn-outline-warning upload-unsigned-btn"
 												data-candidate-id="{{ $candidate->id }}"
 												data-candidate-code="{{ $candidate->candidate_code }}"
 												data-candidate-name="{{ $candidate->candidate_name }}">
-												<i class="ri-file-upload-line"></i> Upload Agreement
+												<i class="ri-file-upload-line fs-10"></i>
 											</button>
-
-											{{-- 2. Unsigned exists but no signed yet --}}
 											@elseif($hasUnsigned && !$hasSigned)
 											<button type="button"
-												class="btn btn-sm btn-outline-primary upload-signed-btn"
+												class="btn btn-outline-primary upload-signed-btn"
 												data-candidate-id="{{ $candidate->id }}"
 												data-candidate-code="{{ $candidate->candidate_code }}"
 												data-candidate-name="{{ $candidate->candidate_name }}"
 												data-agreement-number="{{ \App\Models\AgreementDocument::where('candidate_id',$candidate->id)->where('document_type','unsigned')->value('agreement_number') }}">
-												<i class="ri-upload-line"></i> Upload Signed
+												<i class="ri-upload-line fs-10"></i>
 											</button>
-
-
-											{{-- 3. Signed uploaded by submitter → verify --}}
 											@elseif($hasSigned && $submitterSigned)
 											<button type="button"
-												class="btn btn-sm btn-outline-info verify-signed-modal-btn"
+												class="btn btn-outline-info verify-signed-modal-btn"
 												data-candidate-id="{{ $candidate->id }}"
 												data-candidate-code="{{ $candidate->candidate_code }}"
 												data-candidate-name="{{ $candidate->candidate_name }}">
-												<i class="ri-check-line"></i> Verify Signed
+												<i class="ri-check-line fs-10"></i>
 											</button>
-
-											{{-- 4. Signed uploaded by HR --}}
-											@elseif($hasSigned && $hrSigned)
-											<span class="badge bg-secondary">Signed Uploaded by HR</span>
-
 											@endif
-
-
-											{{-- Final statuses --}}
-											@if($candidate->candidate_status === 'Agreement Completed')
-											<span class="badge bg-success">Agreement Completed</span>
-
-											@elseif($candidate->candidate_status === 'Active')
-											<span class="badge bg-success">Active</span>
 											@endif
-
-											@endif
-
 										</div>
 									</td>
-
-
 								</tr>
 								@endforeach
 							</tbody>
@@ -774,6 +883,10 @@
 	.select2-container {
 		z-index: 1065 !important;
 		/* Higher than Bootstrap modal */
+	}
+
+	.bg-soft-success {
+		background-color: #e6f7f0 !important;
 	}
 </style>
 @endsection

@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\MyTeamExport;
 
 class MyTeamController extends Controller
 {
@@ -475,5 +477,107 @@ class MyTeamController extends Controller
         ];
 
         return $verticals[$verticalId] ?? 'N/A';
+    }
+
+     public function export(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $empId = $user->emp_id;
+            
+            // Get filter parameters from request
+            $search = $request->get('search', '');
+            $type = $request->get('type', 'all');
+            $status = $request->get('status', 'all');
+            
+            // Get filtered data
+            $query = $this->getFilteredQuery($empId, $search, $type, $status);
+            $candidates = $query->get();
+            
+            // Generate filename with timestamp
+            $filename = 'my_team_' . $user->emp_id . '_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            // Export using Excel
+            return Excel::download(new MyTeamExport($candidates), $filename);
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error exporting data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get filtered query for export
+     */
+    private function getFilteredQuery($empId, $search = '', $type = 'all', $status = 'all')
+    {
+        $query = CandidateMaster::select([
+                'id',
+                'candidate_code',
+                'candidate_name',
+                'candidate_email',
+                'mobile_no',
+                'requisition_type',
+                'requisition_id',
+                'work_location_hq',
+                'date_of_joining',
+                'remuneration_per_month',
+                'candidate_status',
+                'final_status',
+                'reporting_manager_employee_id',
+                'reporting_to',
+                'created_by_user_id',
+                'created_at',
+                'date_of_separation',
+                'agreement_duration',
+                'fuel_reimbursement_per_month',
+                'father_name',
+                'date_of_birth',
+                'gender',
+                'address_line_1',
+                'city',
+                'state_residence',
+                'pin_code',
+                'highest_qualification',
+                'district',
+                'state_work_location',
+                'function_id',
+                'department_id',
+                'vertical_id',
+                'sub_department',
+                'business_unit',
+                'zone',
+                'region',
+                'territory',
+                'pan_no',
+                'aadhaar_no',
+                'bank_account_no',
+                'bank_ifsc',
+                'bank_name',
+                'account_holder_name',
+            ])
+            ->where('final_status', 'A')
+            ->where('reporting_manager_employee_id', $empId);
+
+        // Apply search filters
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('candidate_code', 'like', "%{$search}%")
+                    ->orWhere('candidate_name', 'like', "%{$search}%")
+                    ->orWhere('candidate_email', 'like', "%{$search}%")
+                    ->orWhere('mobile_no', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply type filter
+        if ($type !== 'all') {
+            $query->where('requisition_type', $type);
+        }
+
+        // Apply status filter
+        if ($status !== 'all') {
+            $query->where('final_status', $status);
+        }
+
+        return $query->orderBy('candidate_name');
     }
 }
