@@ -57,7 +57,7 @@ return new class extends Migration
             // Employment Details
             $table->string('reporting_to', 255);
             $table->string('reporting_manager_employee_id', 50);
-            $table->date('date_of_joining_required');
+            $table->date('date_of_joining');
             $table->integer('agreement_duration')->nullable(); // Only for Contractual
             $table->date('date_of_separation');
             $table->decimal('remuneration_per_month', 10, 2);

@@ -316,8 +316,8 @@ class HrAdminController extends Controller
 
 			case 'employment_details':
 				$validations = [
-					'date_of_joining_required' => 'required|date|after:today',
-					'date_of_separation' => 'required|date|after:date_of_joining_required',
+					'date_of_joining' => 'required|date|after:today',
+					'date_of_separation' => 'required|date|after:date_of_joining',
 					'remuneration_per_month' => 'required|numeric|min:0',
 					'agreement_duration' => 'nullable|integer|min:1'
 				];
@@ -325,7 +325,7 @@ class HrAdminController extends Controller
 					'reporting_to',
 					'reporting_manager_employee_id',
 					'reporting_manager_address',
-					'date_of_joining_required',
+					'date_of_joining',
 					'agreement_duration',
 					'date_of_separation',
 					'remuneration_per_month',
@@ -371,8 +371,8 @@ class HrAdminController extends Controller
 			if (isset($data['date_of_birth']) && $data['date_of_birth']) {
 				$data['date_of_birth'] = Carbon::parse($data['date_of_birth']);
 			}
-			if (isset($data['date_of_joining_required']) && $data['date_of_joining_required']) {
-				$data['date_of_joining_required'] = Carbon::parse($data['date_of_joining_required']);
+			if (isset($data['date_of_joining']) && $data['date_of_joining']) {
+				$data['date_of_joining'] = Carbon::parse($data['date_of_joining']);
 			}
 			if (isset($data['date_of_separation']) && $data['date_of_separation']) {
 				$data['date_of_separation'] = Carbon::parse($data['date_of_separation']);
@@ -654,14 +654,50 @@ class HrAdminController extends Controller
 			$requisition->hr_verification_remarks = $request->correction_remarks;
 			$requisition->save();
 
-			// Send email to submitter
-			$submitter = $requisition->submittedBy;
-			Mail::to($submitter->email)->send(new CorrectionRequested($requisition, $request->correction_remarks));
+			// Load relationships for email if needed
+			$requisition->load(['function', 'department', 'vertical']);
+
+			// Get communication service
+			$communicationService = app(\App\Services\CommunicationService::class);
+
+			// Check if both master toggle and correction notifications are enabled
+			$canSendEmail = $communicationService->isEnabled('correction_notifications');
+			$emailStatus = "";
+
+			if ($canSendEmail) {
+				try {
+					$submitter = $requisition->submittedBy;
+
+					if (!$submitter || !$submitter->email) {
+						throw new \Exception('Submitter email missing');
+					}
+
+					Mail::to($submitter->email)
+						->send(new CorrectionRequested($requisition, $request->correction_remarks));
+
+					Log::info('Correction request email sent', [
+						'requisition_id' => $requisition->id,
+						'email' => $submitter->email
+					]);
+
+					$emailStatus = "Correction request email sent to {$submitter->email}";
+				} catch (\Exception $e) {
+					Log::error('Correction email failed: ' . $e->getMessage());
+					$emailStatus = "Correction email failed.";
+				}
+			} else {
+				Log::info('Correction email skipped by communication control', [
+					'requisition_id' => $requisition->id
+				]);
+
+				$emailStatus = "Correction email skipped (disabled by admin).";
+			}
+
 
 			DB::commit();
 
 			return redirect()->route('hr-admin.new-applications')
-				->with('success', 'Correction request sent to submitter.');
+				->with('success', 'Correction request sent. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error requesting correction: ' . $e->getMessage());
@@ -762,7 +798,7 @@ class HrAdminController extends Controller
 		DB::beginTransaction();
 		try {
 			$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
-
+          //dd($requisition);
 			// Check if already processed (in candidate_master)
 			if (CandidateMaster::where('requisition_id', $requisition->id)->exists()) {
 				return response()->json([
@@ -827,7 +863,7 @@ class HrAdminController extends Controller
 				'reporting_to' => $request->reporting_to,
 				'reporting_manager_employee_id' => $request->reporting_manager_employee_id,
 				'reporting_manager_address' => $requisition->reporting_manager_address,
-				'date_of_joining' => $requisition->date_of_joining_required,
+				'date_of_joining' => $requisition->date_of_joining,
 				'agreement_duration' => $requisition->agreement_duration,
 				'leave_credited' => $leaveCredited, // Add this line
 				'date_of_separation' => $requisition->date_of_separation,
@@ -846,7 +882,7 @@ class HrAdminController extends Controller
 
 			// Also create initial LeaveBalance record for Contractual candidates
 			if ($requisition->requisition_type === 'Contractual' && $leaveCredited > 0) {
-				$joiningYear = Carbon::parse($requisition->date_of_joining_required)->year;
+				$joiningYear = Carbon::parse($requisition->date_of_joining)->year;
 
 				LeaveBalance::create([
 					'CandidateID' => $candidate->id,
@@ -854,7 +890,7 @@ class HrAdminController extends Controller
 					'opening_cl_balance' => $leaveCredited,
 					'cl_utilized' => 0,
 					'lwp_days_accumulated' => 0,
-					'contract_start_date' => $requisition->date_of_joining_required,
+					'contract_start_date' => $requisition->date_of_joining,
 					'contract_end_date' => $requisition->date_of_separation,
 				]);
 			}
@@ -960,7 +996,7 @@ class HrAdminController extends Controller
 			'candidate_code' => $candidateCode,
 			'requisition_id' => $requisition->id,
 			'candidate_name' => $requisition->candidate_name,
-			'date_of_joining' => $requisition->date_of_joining_required,
+			'date_of_joining' => $requisition->date_of_joining,
 			'emp_type' => $requisition->requisition_type, // Store the employee type (Contractual/TFA/CB)
 			'contact_number' => $requisition->mobile_no,
 			'father_name' => $requisition->father_name,

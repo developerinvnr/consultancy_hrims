@@ -11,7 +11,7 @@ A new manpower requisition requires your approval.
 - **Position Type:** {{ $requisition->requisition_type }}
 - **Submitted By:** {{ $requisition->submitted_by_name }} ({{ $requisition->submitted_by_employee_id }})
 - **Submission Date:** {{ optional($requisition->submission_date)->format('d M Y, H:i') ?? 'N/A' }}
-- **Joining Date Required:** {{ optional($requisition->date_of_joining_required)->format('d M Y') ?? 'N/A' }}
+- **Joining Date Required:** {{ optional($requisition->date_of_joining)->format('d M Y') ?? 'N/A' }}
 
 ## Employment Details:
 - **Department:** {{ $requisition->department->department_name ?? 'N/A' }}

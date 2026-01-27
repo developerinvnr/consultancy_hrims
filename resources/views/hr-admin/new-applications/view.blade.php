@@ -141,7 +141,7 @@
                             </tr>
                             <tr>
                                 <td class="text-muted small">Joining Date:</td>
-                                <td class="small">{{ $requisition->date_of_joining_required->format('d-m-Y') }}</td>
+                                <td class="small">{{ $requisition->date_of_joining->format('d-m-Y') }}</td>
                             </tr>
                             <tr>
                                 <td class="text-muted small">Separation Date:</td>
@@ -209,6 +209,12 @@
                             <tr>
                                 <td class="text-muted small">Aadhaar No:</td>
                                 <td class="small">{{ $requisition->aadhaar_no }}</td>
+                            </tr>
+                            @endif
+                            @if($requisition->account_holder_name)
+                            <tr>
+                                <td class="text-muted small">Account Holder Name:</td>
+                                <td class="small">{{ $requisition->account_holder_name }}</td>
                             </tr>
                             @endif
                             @if($requisition->bank_account_no)

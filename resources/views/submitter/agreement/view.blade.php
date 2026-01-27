@@ -42,9 +42,9 @@
 						@endif
 					</h5>
 
-					<a href="{{ url()->previous() }}" class="btn btn-sm btn-light">
+					{{--<a href="{{ url()->previous() ?? route('dashboard') }}" class="btn btn-sm btn-light">
 						<i class="ri-arrow-left-line me-1"></i> Back
-					</a>
+					</a>--}}
 				</div>
 
 				<div class="card-body">

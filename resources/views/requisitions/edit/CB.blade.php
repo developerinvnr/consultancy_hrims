@@ -6,11 +6,11 @@
 	<div class="row">
 		<div class="col-12">
 			<div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-				<h4 class="mb-sm-0">Create TFA Requisition</h4>
+				<h4 class="mb-sm-0">Create CB Requisition</h4>
 				<div class="page-title-right">
 					<ol class="breadcrumb m-0">
 						<li class="breadcrumb-item"><a href="{{ route('requisitions.index') }}">Requisitions</a></li>
-						<li class="breadcrumb-item active">Create TFA</li>
+						<li class="breadcrumb-item active">Edit CB</li>
 					</ol>
 				</div>
 			</div>
@@ -24,12 +24,13 @@
 				<div class="card-header">
 					<div class="row align-items-center">
 						<div class="col-md-6">
-							<h5 class="card-title mb-0">Temporary Field Assistant (TFA) Requisition Form</h5>
+							<h5 class="card-title mb-0">Edit Counter Boys (CB) Requisition</h5>
+							<p class="text-muted mb-0">Requisition ID: {{ $requisition->requisition_id }}</p>
 						</div>
 						<div class="col-md-6">
 							<div class="d-flex justify-content-end">
-								<a href="{{ route('requisitions.index') }}" class="btn btn-secondary btn-sm">
-									<i class="ri-arrow-left-line me-1"></i> Back
+								<a href="{{ route('requisitions.show', $requisition) }}" class="btn btn-secondary btn-sm">
+									<i class="ri-arrow-left-line me-1"></i> Back to View
 								</a>
 							</div>
 						</div>
@@ -37,15 +38,25 @@
 				</div>
 
 				<div class="card-body">
-					<form id="requisition-form" method="POST" action="{{ route('requisitions.store') }}" enctype="multipart/form-data">
+					<form id="requisition-form" method="POST" action="{{ route('requisitions.update', $requisition) }}" enctype="multipart/form-data">
 						@csrf
-						<input type="hidden" name="requisition_type" value="TFA">
-						<input type="hidden" name="pan_filename" id="pan_filename">
-						<input type="hidden" name="pan_filepath" id="pan_filepath">
-						<input type="hidden" name="bank_filename" id="bank_filename">
-						<input type="hidden" name="bank_filepath" id="bank_filepath">
-						<input type="hidden" name="aadhaar_filename" id="aadhaar_filename">
-						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath">
+						@method('PUT')
+						<input type="hidden" name="requisition_type" value="CB">
+
+						@php
+						$documents = $requisition->documents ?? collect();
+						$bankDoc = $documents->firstWhere('document_type', 'bank_document');
+						$panDoc = $documents->firstWhere('document_type', 'pan_card');
+						$aadhaarDoc = $documents->firstWhere('document_type', 'aadhaar_card');
+						@endphp
+
+						<input type="hidden" name="pan_filename" id="pan_filename" value="{{ $panDoc->file_name ?? '' }}">
+						<input type="hidden" name="pan_filepath" id="pan_filepath" value="{{ $panDoc->file_path ?? '' }}">
+						<input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
+						<input type="hidden" name="bank_filepath" id="bank_filepath" value="{{ $bankDoc->file_path ?? '' }}">
+						<input type="hidden" name="aadhaar_filename" id="aadhaar_filename" value="{{ $aadhaarDoc->file_name ?? '' }}">
+						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">
+
 
 						<!-- Section 1: Personal Information -->
 						<div class="row mb-4">
@@ -59,67 +70,75 @@
 											<div class="col-md-3 mb-3">
 												<label for="candidate_name" class="form-label">Candidate's Name <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="candidate_name" name="candidate_name" required>
+													id="candidate_name" name="candidate_name"
+													value="{{ old('candidate_name', $requisition->candidate_name) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="father_name" class="form-label">Father's Name <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="father_name" name="father_name" required>
+													id="father_name" name="father_name"
+													value="{{ old('father_name', $requisition->father_name) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
 												<input type="date" class="form-control form-select-sm"
-													id="date_of_birth" name="date_of_birth" required>
+													id="date_of_birth" name="date_of_birth"
+													value="{{ old('date_of_birth', $requisition->date_of_birth?->format('Y-m-d')) }}" required>
 												<div class="invalid-feedback">Age must be 18 years or older</div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" id="gender" name="gender" required>
 													<option value="">Select Gender</option>
-													<option value="Male">Male</option>
-													<option value="Female">Female</option>
-													<option value="Other">Other</option>
+													<option value="Male" {{ old('gender', $requisition->gender) == 'Male' ? 'selected' : '' }}>Male</option>
+													<option value="Female" {{ old('gender', $requisition->gender) == 'Female' ? 'selected' : '' }}>Female</option>
+													<option value="Other" {{ old('gender', $requisition->gender) == 'Other' ? 'selected' : '' }}>Other</option>
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="mobile_no" class="form-label">Mobile No. <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="mobile_no" name="mobile_no" maxlength="10" required>
+													id="mobile_no" name="mobile_no" maxlength="10"
+													value="{{ old('mobile_no', $requisition->mobile_no) }}" required>
 												<div class="invalid-feedback">10-digit number required</div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="candidate_email" class="form-label">Email <span class="text-danger">*</span></label>
 												<input type="email" class="form-control form-select-sm"
-													id="candidate_email" name="candidate_email" required>
+													id="candidate_email" name="candidate_email"
+													value="{{ old('candidate_email', $requisition->candidate_email) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="alternate_email" class="form-label">Alternate Email</label>
 												<input type="email" class="form-control form-select-sm"
-													id="alternate_email" name="alternate_email">
+													id="alternate_email" name="alternate_email"
+													value="{{ old('alternate_email', $requisition->alternate_email) }}">
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="highest_qualification" name="highest_qualification" required>
+													id="highest_qualification" name="highest_qualification"
+													value="{{ old('highest_qualification', $requisition->highest_qualification) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="college_name" class="form-label">College/University</label>
 												<input type="text" class="form-control form-select-sm"
-													id="college_name" name="college_name">
+													id="college_name" name="college_name"
+													value="{{ old('college_name', $requisition->college_name) }}">
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-2 mb-3">
@@ -127,7 +146,9 @@
 												<select class="form-select form-select-sm" id="state_residence" name="state_residence" required>
 													<option value="">Select State</option>
 													@foreach($states as $state)
-													<option value="{{ $state }}">{{ $state }}</option>
+													<option value="{{ $state }}" {{ old('state_residence', $requisition->state_residence) == $state ? 'selected' : '' }}>
+														{{ $state }}
+													</option>
 													@endforeach
 												</select>
 												<div class="invalid-feedback"></div>
@@ -135,26 +156,26 @@
 											<div class="col-md-3 mb-3">
 												<label for="address_line_1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
 												<textarea class="form-control form-select-sm"
-													id="address_line_1" name="address_line_1" rows="2" required></textarea>
+													id="address_line_1" name="address_line_1" rows="2" required>
+												{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="city" name="city" required>
+													id="city" name="city"
+													value="{{ old('city', $requisition->city) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="pin_code" name="pin_code" maxlength="6" required>
+													id="pin_code" name="pin_code" maxlength="6"
+													value="{{ old('pin_code', $requisition->pin_code) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
 
-										
-
-										
 									</div>
 								</div>
 							</div>
@@ -169,56 +190,55 @@
 									</div>
 									<div class="card-body">
 										<div class="row">
+											<!-- Function -->
 											<div class="col-md-3 mb-3">
 												<label for="function_id" class="form-label">Function <span class="text-danger">*</span></label>
-												<!-- Visible disabled select (just for display) -->
 												<select class="form-select form-select-sm" id="function_id_display" disabled>
 													<option value="">Select Function</option>
 													@foreach($functions as $function)
 													<option value="{{ $function->id }}"
-														{{ $autoFillData['function_id'] == $function->id ? 'selected' : '' }}>
+														{{ $requisition->function_id == $function->id ? 'selected' : '' }}>
 														{{ $function->function_name }}
 													</option>
 													@endforeach
 												</select>
-
-												<!-- Real value that will be submitted -->
-												<input type="hidden" name="function_id"
-													value="{{ $autoFillData['function_id'] ?? '' }}">
+												<input type="hidden" name="function_id" value="{{ $requisition->function_id }}">
 											</div>
+
+											<!-- Department -->
 											<div class="col-md-3 mb-3">
 												<label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
-
 												<select class="form-select form-select-sm" id="department_id_display" disabled>
 													<option value="">Select Department</option>
 													@foreach($departments as $department)
 													<option value="{{ $department->id }}"
-														{{ $autoFillData['department_id'] == $department->id ? 'selected' : '' }}>
+														{{ $requisition->department_id == $department->id ? 'selected' : '' }}>
 														{{ $department->department_name }}
 													</option>
 													@endforeach
 												</select>
-
-												<input type="hidden" name="department_id"
-													value="{{ $autoFillData['department_id'] ?? '' }}">
+												<input type="hidden" name="department_id" value="{{ $requisition->department_id }}">
 											</div>
+
+											<!-- Vertical -->
 											<div class="col-md-2 mb-3">
 												<label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" id="vertical_id_display" disabled>
 													<option value="">Select Vertical</option>
 													@foreach($verticals as $vertical)
 													<option value="{{ $vertical->id }}"
-														{{ $autoFillData['vertical_id'] == $vertical->id ? 'selected' : '' }}>
+														{{ $requisition->vertical_id == $vertical->id ? 'selected' : '' }}>
 														{{ $vertical->vertical_name }}
 													</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="vertical_id" value="{{ $autoFillData['vertical_id'] ?? '' }}">
+												<input type="hidden" name="vertical_id" value="{{ $requisition->vertical_id }}">
 											</div>
 											<div class="col-md-2 mb-3">
-												<label for="work_location_hq" class="form-label">Work Location/HQ<span class="text-danger">*</span></label>
+												<label for="work_location_hq" class="form-label">Work Location/HQ <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="work_location_hq" name="work_location_hq" required>
+													id="work_location_hq" name="work_location_hq"
+													value="{{ old('work_location_hq', $requisition->work_location_hq) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-2 mb-3">
@@ -226,35 +246,36 @@
 												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
 													<option value="">Select State</option>
 													@foreach($states as $state)
-													<option value="{{ $state }}">{{ $state }}</option>
+													<option value="{{ $state }}" {{ old('state_work_location', $requisition->state_work_location) == $state ? 'selected' : '' }}>
+														{{ $state }}
+													</option>
 													@endforeach
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
 
-										
-
 										<div class="row">
 											<div class="col-md-2 mb-3">
 												<label for="district" class="form-label">District <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													id="district" name="district" required>
+													id="district" name="district"
+													value="{{ old('district', $requisition->district) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
+
+
 											<!-- Sub-department -->
 											<div class="col-md-2 mb-3">
 												<label for="sub_department_id" class="form-label">Sub-department <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="sub_department_id_display" disabled>
-													<option value="">Select Sub-department</option>
+												<select class="form-select form-select-sm" disabled>
 													@foreach($sub_departments as $subdepartment)
-													<option value="{{ $subdepartment->id }}"
-														{{ $autoFillData['sub_department_id'] == $subdepartment->id ? 'selected' : '' }}>
+													<option {{ $requisition->sub_department == $subdepartment->id ? 'selected' : '' }}>
 														{{ $subdepartment->sub_department_name }}
 													</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="sub_department_id" value="{{ $autoFillData['sub_department_id'] ?? '' }}">
+												<input type="hidden" name="sub_department_id" value="{{ $requisition->sub_department_id }}">
 											</div>
 											<!-- Business Unit -->
 											<div class="col-md-2 mb-3">
@@ -263,12 +284,12 @@
 													<option value="">Select Business Unit</option>
 													@foreach($businessUnits as $unit)
 													<option value="{{ $unit->id }}"
-														{{ $autoFillData['business_unit_id'] == $unit->id ? 'selected' : '' }}>
+														{{ $requisition->business_unit == $unit->id ? 'selected' : '' }}>
 														{{ $unit->business_unit_name }}
 													</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="business_unit" value="{{ $autoFillData['business_unit_id'] ?? '' }}">
+												<input type="hidden" name="business_unit" value="{{ $requisition->business_unit }}">
 											</div>
 											<!-- Zone -->
 											<div class="col-md-2 mb-3">
@@ -316,6 +337,7 @@
 											</div>
 										</div>
 
+
 									</div>
 								</div>
 							</div>
@@ -333,243 +355,410 @@
 											<div class="col-md-3 mb-3">
 												<label class="form-label">Reporting To <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-													value="{{ $autoFillData['reporting_to'] }}" readonly>
-												<input type="hidden" name="reporting_to" value="{{ $autoFillData['reporting_to'] }}">
-												<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
+													value="{{ $requisition->reporting_to }}" readonly>
+												<input type="hidden" name="reporting_to" value="{{ $requisition->reporting_to }}">
+												<input type="hidden" name="reporting_manager_employee_id" value="{{ $requisition->reporting_manager_employee_id }}">
 											</div>
 											{{--<div class="col-md-2 mb-3">
 												<label class="form-label">Reporting Manager ID <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
 													value="{{ $autoFillData['reporting_manager_employee_id'] }}" readonly>
-												<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
-											</div>--}}
-											<div class="col-md-2 mb-3">
-												<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
-												<input type="date" class="form-control form-select-sm"
-													id="date_of_joining" name="date_of_joining" required>
-												<div class="invalid-feedback">Cannot be in past month</div>
-											</div>
-											<div class="col-md-2 mb-3">
-												<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
-													<option value="">Select Duration</option>
-													<option value="1">1 Month</option>
-													<option value="2">2 Months</option>
-													<option value="3">3 Months</option>
-													<option value="6">6 Months</option>
-													<option value="9">9 Months</option>
-													{{--<option value="12">12 Months</option>
-													<option value="18">18 Months</option>
-													<option value="24">24 Months</option>--}}
-												</select>
-												<div class="invalid-feedback">Please select agreement duration</div>
-											</div>
-											<div class="col-md-2 mb-3">
-												<label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
-												<input type="date" class="form-control form-select-sm"
-													id="date_of_separation" name="date_of_separation"
-													readonly required>
-												<div class="invalid-feedback">Separation date will be calculated automatically</div>
-											</div>
-											<div class="col-md-3 mb-3">
-												<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<span class="input-group-text">₹</span>
-													<input type="number" class="form-control"
-														id="remuneration_per_month" name="remuneration_per_month"
-														step="0.01" min="0" required>
-												</div>
-												<div class="invalid-feedback"></div>
-											</div>
+											<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
+										</div>--}}
+										<div class="col-md-2 mb-3">
+											<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+											<input type="date" class="form-control form-select-sm"
+												id="date_of_joining" name="date_of_joining"
+												value="{{ old('date_of_joining', $requisition->date_of_joining?->format('Y-m-d')) }}" required>
+											<div class="invalid-feedback">Cannot be in past month</div>
 										</div>
+										<div class="col-md-2 mb-3">
+											<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
+											<select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
+												<option value="">Select</option>
+												@for($i = 1; $i <= 9; $i++)
+													<option value="{{ $i }}" {{ old('agreement_duration', $requisition->agreement_duration) == $i ? 'selected' : '' }}>
+													{{ $i }} month{{ $i > 1 ? 's' : '' }}
+													</option>
+													@endfor
+											</select>
+											<div class="invalid-feedback">Please select agreement duration</div>
+										</div>
+										<div class="col-md-2 mb-3">
+											<label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
+											<input type="date" class="form-control form-select-sm"
+												id="date_of_separation" name="date_of_separation"
+												value="{{ old('date_of_separation', $requisition->date_of_separation?->format('Y-m-d')) }}" readonly required>
 
-										<div class="row">
-											<div class="col-12 mb-3">
-												<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
+											<div class="invalid-feedback">Separation date will be calculated automatically</div>
+										</div>
+										<div class="col-md-3 mb-3">
+											<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
+											<div class="input-group input-group-sm">
+												<span class="input-group-text">₹</span>
+												<input type="number" class="form-control"
+													id="remuneration_per_month" name="remuneration_per_month"
+													step="0.01" min="0"
+													value="{{ old('remuneration_per_month', $requisition->remuneration_per_month) }}" required>
+											</div>
+											<div class="invalid-feedback"></div>
+										</div>
+									</div>
+
+									<div class="row">
+										<div class="col-12 mb-3">
+											<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
 												<textarea class="form-control form-select-sm"
-													id="reporting_manager_address" name="reporting_manager_address"
-													rows="3" required></textarea>
-												<div class="invalid-feedback"></div>
-												<small class="text-muted">Include PIN code and phone number</small>
-											</div>
+												id="reporting_manager_address" name="reporting_manager_address"
+												rows="3" required>{{ old('reporting_manager_address', $requisition->reporting_manager_address) }}</textarea>
+											<div class="invalid-feedback"></div>
+											<small class="text-muted">Include PIN code and phone number</small>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-
-						<!-- Section 4: Document Uploads with Data Extraction -->
-						<div class="row mb-4">
-							<div class="col-12">
-								<div class="card border">
-									<div class="card-header bg-light py-2">
-										<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
-									</div>
-									<div class="card-body">
-										<div class="row">
-											<!-- Resume -->
-											<div class="col-md-3 mb-3">
-												<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="resume" name="resume" accept=".pdf,.doc,.docx" required>
-												<small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Driving License -->
-											<div class="col-md-3 mb-3">
-												<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- PAN Card -->
-											<div class="col-md-3 mb-3">
-												<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Clear image/PDF for auto-extraction</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- PAN Number -->
-											<div class="col-md-3 mb-3">
-												<label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="pan_no" name="pan_no" maxlength="10"
-														placeholder="Auto-fill from upload" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
-													</span>
-												</div>
-												<small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
-												<div class="invalid-feedback">Valid PAN required</div>
-											</div>
-										</div>
-
-										<!-- Second Row: PAN Number, Aadhaar Card, Aadhaar Number, Bank Document -->
-										<div class="row">
-
-
-											<!-- Aadhaar Card -->
-											<div class="col-md-3 mb-3">
-												<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Clear image/PDF of Aadhaar</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Aadhaar Number -->
-											<div class="col-md-3 mb-3">
-												<label for="aadhaar_no" class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="aadhaar_no" name="aadhaar_no" maxlength="12"
-														placeholder="Auto-fill from upload" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="aadhaar-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="aadhaar-warning-icon"></i>
-													</span>
-												</div>
-												<small class="text-muted" id="aadhaar-status-text">Upload Aadhaar to auto-extract</small>
-												<div class="invalid-feedback">Valid Aadhaar required</div>
-											</div>
-
-											<!-- Bank Document -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Passbook/Cancelled Cheque</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Account Holder Name -->
-											<div class="col-md-3 mb-3">
-												<label for="account_holder_name" class="form-label">Account Holder Name <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="account_holder_name" name="account_holder_name"
-													placeholder="As per bank records" required>
-												<div class="invalid-feedback">Account holder name required</div>
-											</div>
-										</div>
-
-										<!-- Third Row: Account Holder, Account Number, IFSC, Bank Name, Other Document -->
-										<div class="row">
-
-											<!-- Account Number -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_account_no" class="form-label">Account Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="bank_account_no" name="bank_account_no" maxlength="50"
-														placeholder="Auto-extract from document" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="account-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="account-warning-icon"></i>
-													</span>
-												</div>
-												<div class="invalid-feedback">Valid account number required</div>
-											</div>
-
-											<!-- IFSC Code -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_ifsc" class="form-label">IFSC Code <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="bank_ifsc" name="bank_ifsc" maxlength="11"
-														placeholder="Auto-extract from document" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="ifsc-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="ifsc-warning-icon"></i>
-													</span>
-												</div>
-												<div class="invalid-feedback">Valid IFSC code required</div>
-											</div>
-
-											<!-- Bank Name -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_name" class="form-label">Bank Name <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="bank_name" name="bank_name"
-													placeholder="Auto-extract from document" required>
-												<div class="invalid-feedback">Bank name required</div>
-											</div>
-
-											<div class="col-md-3 mb-3">
-												<label for="other_document" class="form-label">Other Document (Optional)</label>
-												<input type="file" class="form-control form-select-sm"
-													id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-												<small class="text-muted">Additional documents</small>
-											</div>
-										</div>
-
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Form Actions -->
-						<div class="row">
-							<div class="col-12">
-								<div class="d-flex justify-content-end gap-2">
-									<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
-									<button type="submit" class="btn btn-primary btn-sm">
-										<i class="ri-save-line me-1"></i> Submit Requisition
-									</button>
-								</div>
-							</div>
-						</div>
-					</form>
 				</div>
+
+				<!-- Section 4: Document Uploads with Data Extraction -->
+				<!-- Section 4: Document Uploads with Data Extraction -->
+				<div class="row mb-4">
+					<div class="col-12">
+						<div class="card border">
+							<div class="card-header bg-light py-2">
+								<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
+							</div>
+							<div class="card-body">
+
+								<!-- Existing Documents Section -->
+								<div class="row mb-4">
+									<div class="col-12">
+										<div class="alert alert-info">
+											<h6 class="alert-heading"><i class="ri-information-line me-2"></i>Existing Documents</h6>
+											<p class="mb-0">Current documents are saved. Upload new files only if you need to replace them.</p>
+											@php
+											$documents = $requisition->documents ?? collect();
+											@endphp
+											@if($documents->count() > 0)
+											<div class="mt-2">
+												<small>
+													<strong>Existing files:</strong><br>
+													@foreach($documents->groupBy('document_type') as $type => $typeDocuments)
+													<span class="badge bg-light text-dark me-2 mb-1">
+														{{ ucfirst(str_replace('_', ' ', $type)) }}: {{ count($typeDocuments) }} file(s)
+													</span>
+													@endforeach
+												</small>
+											</div>
+											@endif
+										</div>
+									</div>
+								</div>
+
+								<!-- First Row: Resume, Driving License, PAN Card -->
+								<div class="row">
+									<!-- Resume -->
+									<div class="col-md-3 mb-3">
+										<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+										@php
+										$resumeDoc = $documents->firstWhere('document_type', 'resume');
+										@endphp
+										@if($resumeDoc)
+										<div class="mb-2">
+											<div class="d-flex justify-content-between align-items-center">
+												<small class="text-success">
+													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
+												</small>
+												<a href="{{ route('document.download', $resumeDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line me-1"></i> View
+												</a>
+											</div>
+											<small class="text-muted d-block mt-1">{{ $resumeDoc->file_name }}</small>
+											<small class="text-muted">Upload new file to replace</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="resume" name="resume" accept=".pdf,.doc,.docx" {{ !$resumeDoc ? 'required' : '' }}>
+										<small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Driving License -->
+									<div class="col-md-3 mb-3">
+										<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
+										@php
+										$drivingDoc = $documents->firstWhere('document_type', 'driving_licence');
+										@endphp
+										@if($drivingDoc)
+										<div class="mb-2">
+											<div class="d-flex justify-content-between align-items-center">
+												<small class="text-success">
+													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
+												</small>
+												<a href="{{ route('document.download', $drivingDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line me-1"></i> View
+												</a>
+											</div>
+											<small class="text-muted d-block mt-1">{{ $drivingDoc->file_name }}</small>
+											<small class="text-muted">Upload new file to replace</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" {{ !$drivingDoc ? 'required' : '' }}>
+										<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- PAN Card -->
+									<div class="col-md-3 mb-3">
+										<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
+										@php
+										$panDoc = $documents->firstWhere('document_type', 'pan_card');
+										@endphp
+										@if($panDoc)
+										<div class="mb-2">
+											<div class="d-flex justify-content-between align-items-center">
+												<small class="text-success">
+													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
+												</small>
+												<a href="{{ route('document.download', $panDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line me-1"></i> View
+												</a>
+											</div>
+											<small class="text-muted d-block mt-1">{{ $panDoc->file_name }}</small>
+											<small class="text-muted">Upload new file to replace</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" {{ !$panDoc ? 'required' : '' }}>
+										<small class="text-muted">Clear image/PDF for auto-extraction</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- PAN Number -->
+									<div class="col-md-3 mb-3">
+										<label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="pan_no" name="pan_no" maxlength="10"
+												value="{{ old('pan_no', $requisition->pan_no) }}" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted" id="pan-status-text">
+											@if($panDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@else
+											Upload PAN to auto-extract
+											@endif
+										</small>
+										<div class="invalid-feedback">Valid PAN required</div>
+									</div>
+								</div>
+
+								<!-- Second Row: Aadhaar Card, Aadhaar Number, Bank Document -->
+								<div class="row">
+									<!-- Aadhaar Card -->
+									<div class="col-md-3 mb-3">
+										<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
+										@php
+										$aadhaarDoc = $documents->firstWhere('document_type', 'aadhaar_card');
+										@endphp
+										@if($aadhaarDoc)
+										<div class="mb-2">
+											<div class="d-flex justify-content-between align-items-center">
+												<small class="text-success">
+													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
+												</small>
+												<a href="{{ route('document.download', $aadhaarDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line me-1"></i> View
+												</a>
+											</div>
+											<small class="text-muted d-block mt-1">{{ $aadhaarDoc->file_name }}</small>
+											<small class="text-muted">Upload new file to replace</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" {{ !$aadhaarDoc ? 'required' : '' }}>
+										<small class="text-muted">Clear image/PDF of Aadhaar</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Aadhaar Number -->
+									<div class="col-md-3 mb-3">
+										<label for="aadhaar_no" class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="aadhaar_no" name="aadhaar_no" maxlength="12"
+												value="{{ old('aadhaar_no', $requisition->aadhaar_no) }}" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="aadhaar-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="aadhaar-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted" id="aadhaar-status-text">
+											@if($aadhaarDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@else
+											Upload Aadhaar to auto-extract
+											@endif
+										</small>
+										<div class="invalid-feedback">Valid Aadhaar required</div>
+									</div>
+
+									<!-- Bank Document -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
+										@php
+										$bankDoc = $documents->firstWhere('document_type', 'bank_document');
+										@endphp
+										@if($bankDoc)
+										<div class="mb-2">
+											<div class="d-flex justify-content-between align-items-center">
+												<small class="text-success">
+													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
+												</small>
+												<a href="{{ route('document.download', $bankDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line me-1"></i> View
+												</a>
+											</div>
+											<small class="text-muted d-block mt-1">{{ $bankDoc->file_name }}</small>
+											<small class="text-muted">Upload new file to replace</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" {{ !$bankDoc ? 'required' : '' }}>
+										<small class="text-muted">Passbook/Cancelled Cheque</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Other Document -->
+									<div class="col-md-3 mb-3">
+										<label for="other_document" class="form-label">Other Document (Optional)</label>
+										@php
+										$otherDocs = $documents->where('document_type', 'other');
+										@endphp
+										@if($otherDocs->count() > 0)
+										<div class="mb-2">
+											<small class="text-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> {{ $otherDocs->count() }} file(s) uploaded
+											</small>
+											@foreach($otherDocs as $otherDoc)
+											<div class="d-flex justify-content-between align-items-center mt-1">
+												<small class="text-muted">{{ $otherDoc->file_name }}</small>
+												<a href="{{ route('document.download', $otherDoc) }}"
+													class="btn btn-xs btn-outline-primary" target="_blank">
+													<i class="ri-eye-line"></i>
+												</a>
+											</div>
+											@endforeach
+											<small class="text-muted d-block mt-1">Upload new file to add more</small>
+										</div>
+										@endif
+										<input type="file" class="form-control form-select-sm"
+											id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+										<small class="text-muted">Additional documents</small>
+									</div>
+								</div>
+
+								<!-- Bank Details Row -->
+								<div class="row">
+									<!-- Account Holder Name -->
+									<div class="col-md-3 mb-3">
+										<label for="account_holder_name" class="form-label">Account Holder Name <span class="text-danger">*</span></label>
+										<input type="text" class="form-control form-select-sm"
+											id="account_holder_name" name="account_holder_name"
+											value="{{ old('account_holder_name', $requisition->account_holder_name) }}" required>
+										<small class="text-muted">
+											@if($bankDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@endif
+										</small>
+										<div class="invalid-feedback">Account holder name required</div>
+									</div>
+
+									<!-- Account Number -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_account_no" class="form-label">Account Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="bank_account_no" name="bank_account_no" maxlength="50"
+												value="{{ old('bank_account_no', $requisition->bank_account_no) }}" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="account-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="account-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted">
+											@if($bankDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@endif
+										</small>
+										<div class="invalid-feedback">Valid account number required</div>
+									</div>
+
+									<!-- IFSC Code -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_ifsc" class="form-label">IFSC Code <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="bank_ifsc" name="bank_ifsc" maxlength="11"
+												value="{{ old('bank_ifsc', $requisition->bank_ifsc) }}" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="ifsc-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="ifsc-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted">
+											@if($bankDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@endif
+										</small>
+										<div class="invalid-feedback">Valid IFSC code required</div>
+									</div>
+
+									<!-- Bank Name -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_name" class="form-label">Bank Name <span class="text-danger">*</span></label>
+										<input type="text" class="form-control form-select-sm"
+											id="bank_name" name="bank_name"
+											value="{{ old('bank_name', $requisition->bank_name) }}" required>
+										<small class="text-muted">
+											@if($bankDoc)
+											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
+											@endif
+										</small>
+										<div class="invalid-feedback">Bank name required</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Form Actions -->
+				<div class="row">
+					<div class="col-12">
+						<div class="d-flex justify-content-end gap-2">
+							<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
+							<button type="submit" class="btn btn-primary btn-sm">
+								<i class="ri-save-line me-1"></i>Update Requisition
+							</button>
+						</div>
+					</div>
+				</div>
+				</form>
 			</div>
 		</div>
 	</div>
+</div>
 </div>
 @endsection
 
@@ -971,9 +1160,11 @@
 			const form = $(this);
 			const url = form.attr('action');
 			const formData = new FormData(form[0]);
-
+			formData.append('_method', 'PUT');
 			form.find('.is-invalid').removeClass('is-invalid');
 			form.find('.invalid-feedback').text('').hide();
+
+			const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
 			const submitBtn = form.find('button[type="submit"]');
 			const originalText = submitBtn.html();
@@ -985,6 +1176,9 @@
 				data: formData,
 				processData: false,
 				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': csrfToken
+				},
 				success: function(response) {
 					if (response.success) {
 						alert('Requisition submitted successfully!');

@@ -140,6 +140,10 @@
                             <label class="small text-muted mb-1">Aadhaar No</label>
                             <div class="fw-semibold small">{{ $candidate->aadhaar_no ? 'XXXX' . substr($candidate->aadhaar_no, -4) : 'N/A' }}</div>
                         </div>
+                         <div class="col-md-6 mb-2">
+                            <label class="small text-muted mb-1">Account Holder Name</label>
+                            <div class="fw-semibold small">{{ $candidate->account_holder_name }}</div>
+                        </div>
                         <div class="col-md-6 mb-2">
                             <label class="small text-muted mb-1">Bank Account</label>
                             <div class="fw-semibold small">{{ $candidate->bank_account_no ? 'XXXX' . substr($candidate->bank_account_no, -4) : 'N/A' }}</div>

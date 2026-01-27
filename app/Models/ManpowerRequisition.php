@@ -45,7 +45,7 @@ class ManpowerRequisition extends Model
         'territory',
         'reporting_to',
         'reporting_manager_employee_id',
-        'date_of_joining_required',
+        'date_of_joining',
         'agreement_duration',
         'date_of_separation',
         'remuneration_per_month',
@@ -71,7 +71,7 @@ class ManpowerRequisition extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'date_of_joining_required' => 'date',
+        'date_of_joining' => 'date',
         'date_of_separation' => 'date',
         'remuneration_per_month' => 'decimal:2',
         'fuel_reimbursement_per_month' => 'decimal:2',

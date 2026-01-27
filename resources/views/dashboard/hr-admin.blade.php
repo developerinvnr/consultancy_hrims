@@ -154,7 +154,7 @@
 
 	<!-- Top Submitters & Departments (Side by Side) -->
 	<div class="row g-2 mb-2">
-		<div class="col-xl-6">
+		<div class="col-md-6">
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-2">
 					<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
@@ -170,7 +170,7 @@
 			</div>
 		</div>
 
-		<div class="col-xl-6">
+		<div class="col-md-6">
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-2">
 					<h6 class="mb-2 fs-6">Top Departments</h6>

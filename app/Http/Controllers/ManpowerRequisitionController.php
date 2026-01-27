@@ -175,10 +175,11 @@ class ManpowerRequisitionController extends Controller
 
     public function store(Request $request)
     {
+        //dd($request->all());
         try {
-            
+
             $validatedData = $this->validateRequisition($request);
-            //(dd($validatedData);
+            //dd($validatedData);
 
             // Generate requisition ID
             $requisitionId = ManpowerRequisition::generateRequisitionId($request->requisition_type);
@@ -224,7 +225,7 @@ class ManpowerRequisitionController extends Controller
                 'territory' => $validatedData['territory'] ?? null,
                 'reporting_to' => $employeeDetails->emp_name ?? $user->name,
                 'reporting_manager_employee_id' => $employeeDetails->employee_id ?? $user->emp_id,
-                'date_of_joining_required' => $validatedData['date_of_joining_required'],
+                'date_of_joining' => $validatedData['date_of_joining'],
                 'agreement_duration' => $validatedData['agreement_duration'] ?? null,
                 'date_of_separation' => $validatedData['date_of_separation'],
                 'remuneration_per_month' => $validatedData['remuneration_per_month'],
@@ -302,35 +303,73 @@ class ManpowerRequisitionController extends Controller
 
     protected function savePreExtractedDocuments(Request $request, $requisitionId, $userId)
     {
+        $s3Service = app(S3Service::class);
+
         // Save PAN document (extracted via AJAX)
         if ($request->filled('pan_filename') && $request->filled('pan_filepath')) {
+            // Check if path already includes Consultancy folder
+            $filePath = $request->pan_filepath;
+            if (!str_contains($filePath, 'Consultancy/')) {
+                // Generate new path with Consultancy folder
+                $filename = basename($filePath);
+                $filePath = $s3Service->generateRequisitionPath(
+                    $request->requisition_type,
+                    'pan_card',
+                    $filename
+                );
+            }
+
             RequisitionDocument::create([
                 'requisition_id' => $requisitionId,
                 'document_type' => 'pan_card',
                 'file_name' => $request->pan_filename,
-                'file_path' => $request->pan_filepath,
+                'file_path' => $filePath,
                 'uploaded_by_user_id' => $userId,
             ]);
         }
 
         // Save Bank document (extracted via AJAX)
         if ($request->filled('bank_filename') && $request->filled('bank_filepath')) {
+            // Check if path already includes Consultancy folder
+            $filePath = $request->bank_filepath;
+            if (!str_contains($filePath, 'Consultancy/')) {
+                // Generate new path with Consultancy folder
+                $filename = basename($filePath);
+                $filePath = $s3Service->generateRequisitionPath(
+                    $request->requisition_type,
+                    'bank_document',
+                    $filename
+                );
+            }
+
             RequisitionDocument::create([
                 'requisition_id' => $requisitionId,
                 'document_type' => 'bank_document',
                 'file_name' => $request->bank_filename,
-                'file_path' => $request->bank_filepath,
+                'file_path' => $filePath,
                 'uploaded_by_user_id' => $userId,
             ]);
         }
 
         // Save Aadhaar document (extracted via AJAX)
         if ($request->filled('aadhaar_filename') && $request->filled('aadhaar_filepath')) {
+            // Check if path already includes Consultancy folder
+            $filePath = $request->aadhaar_filepath;
+            if (!str_contains($filePath, 'Consultancy/')) {
+                // Generate new path with Consultancy folder
+                $filename = basename($filePath);
+                $filePath = $s3Service->generateRequisitionPath(
+                    $request->requisition_type,
+                    'aadhaar_card',
+                    $filename
+                );
+            }
+
             RequisitionDocument::create([
                 'requisition_id' => $requisitionId,
                 'document_type' => 'aadhaar_card',
                 'file_name' => $request->aadhaar_filename,
-                'file_path' => $request->aadhaar_filepath,
+                'file_path' => $filePath,
                 'uploaded_by_user_id' => $userId,
             ]);
         }
@@ -370,7 +409,7 @@ class ManpowerRequisitionController extends Controller
             'vertical_id' => 'required|exists:core_vertical,id',
             'work_location_hq' => 'required|string|max:255',
             'state_work_location' => 'required|string|max:100',
-            'date_of_joining_required' => 'required|date',
+            'date_of_joining' => 'required|date',
             'agreement_duration' => 'required|integer|min:1|max:9',
             'date_of_separation' => 'required|date',
             'remuneration_per_month' => 'required|numeric|min:0',
@@ -409,7 +448,9 @@ class ManpowerRequisitionController extends Controller
 
     public function edit(ManpowerRequisition $requisition)
     {
-        $this->authorize('update', $requisition);
+        if (Auth::id() !== $requisition->submitted_by_user_id) {
+            abort(403, 'You are not authorized to edit this requisition.');
+        }
 
         if ($requisition->status !== 'Correction Required') {
             abort(403, 'Cannot edit requisition in current status.');
@@ -419,31 +460,139 @@ class ManpowerRequisitionController extends Controller
         $functions = CoreFunction::where('is_active', '1')->orderBy('function_name')->get();
         $departments = CoreDepartment::where('is_active', '1')->orderBy('department_name')->get();
         $verticals = CoreVertical::where('is_active', '1')->orderBy('vertical_name')->get();
-        $states = config('states.india');
 
+        // ADD ALL THESE ADDITIONAL DATA LIKE IN CREATE METHOD:
+        $sub_departments = DB::table('core_sub_department')->where('is_active', 1)->orderBy('id')->get();
+        $businessUnits = DB::table('core_business_unit')->where('is_active', '1')->orderBy('business_unit_name')->get();
+        $zones = DB::table('core_zone')->where('is_active', '1')->orderBy('zone_name')->get();
+        $regions = DB::table('core_region')->where('is_active', '1')->orderBy('region_name')->get();
+        $territories = DB::table('core_territory')->where('is_active', '1')->orderBy('territory_name')->get();
+
+        // FIX: Use the same states source as create()
+        $states = CoreState::where('is_active', '1')
+            ->orderBy('state_name')
+            ->pluck('state_name')
+            ->toArray();
+
+        // ADD THIS: Get autoFillData like in create method
+        $user = Auth::user();
+        $employeeDetails = DB::table('core_employee')
+            ->where('employee_id', $user->emp_id)
+            ->orWhere('emp_code', $user->emp_id)
+            ->first();
+
+        $autoFillData = [
+            // Reporting information
+            'reporting_to' => $employeeDetails->emp_name ?? $user->name,
+            'reporting_manager_employee_id' => $employeeDetails->employee_id ?? $user->emp_id,
+
+            // IDs for database storage
+            'function_id' => $this->getFunctionIdFromName($employeeDetails->emp_function ?? null),
+            'department_id' => $employeeDetails->department ?? null,
+            'vertical_id' => $this->getVerticalIdFromName($employeeDetails->emp_vertical ?? null),
+            'sub_department_id' => $employeeDetails->sub_department ?? null,
+
+            // Names for display
+            'function_name' => $employeeDetails->emp_function ?? null,
+            'department_name' => $employeeDetails->emp_department ?? null,
+            'vertical_name' => $employeeDetails->emp_vertical ?? null,
+            'sub_department_name' => $employeeDetails->emp_sub_department ?? null,
+
+            // Other fields
+            'business_unit_id' => $employeeDetails->bu ?? null,
+            'zone_id' => $employeeDetails->zone ?? null,
+            'region_id' => $employeeDetails->region ?? null,
+            'territory_id' => $employeeDetails->territory ?? null,
+
+            // Names for display
+            'business_unit_name' => $employeeDetails->emp_bu ?? null,
+            'zone_name' => $employeeDetails->emp_zone ?? null,
+            'region_name' => $employeeDetails->emp_region ?? null,
+            'territory_name' => $employeeDetails->emp_territory ?? null,
+        ];
+        $requisition->load('documents');
+        //dd($requisition->district);
         return view("requisitions.edit.{$type}", compact(
             'requisition',
             'functions',
             'departments',
             'verticals',
-            'states'
+            'states',
+            'autoFillData',
+            'sub_departments',
+            'businessUnits',
+            'zones',
+            'regions',
+            'territories'
         ));
     }
 
+    protected function validateUpdateRequisition(Request $request)
+    {
+        return $request->validate([
+            'requisition_type' => 'required|in:Contractual,TFA,CB',
+            'candidate_name' => 'required|string|max:255',
+            'father_name' => 'required|string|max:255',
+            'date_of_birth' => 'required|date|before:-18 years',
+            'gender' => 'required|in:Male,Female,Other',
+            'mobile_no' => 'required|digits:10',
+            'candidate_email' => 'required|email|max:255',
+            'alternate_email' => 'nullable|email|max:255',
+            'highest_qualification' => 'required|string|max:255',
+            'college_name' => 'nullable|string|max:255',
+            'address_line_1' => 'required|string|max:500',
+            'city' => 'required|string|max:100',
+            'state_residence' => 'required|string|max:100',
+            'pin_code' => 'required|digits:6',
+
+            'function_id' => 'required|exists:core_org_function,id',
+            'department_id' => 'required|exists:core_department,id',
+            'vertical_id' => 'required|exists:core_vertical,id',
+
+            'work_location_hq' => 'required|string|max:255',
+            'state_work_location' => 'required|string|max:100',
+            'date_of_joining' => 'required|date',
+            'agreement_duration' => 'required|integer|min:1|max:9',
+            'date_of_separation' => 'required|date',
+            'remuneration_per_month' => 'required|numeric|min:0',
+            'reporting_manager_address' => 'required|string|max:500',
+
+            // Optional but validated if present
+            'pan_no' => 'nullable|string|max:10|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/',
+            'aadhaar_no' => 'nullable|digits:12',
+            'bank_account_no' => 'nullable|string|max:50',
+            'account_holder_name' => 'nullable|string|max:255',
+            'bank_ifsc' => 'nullable|string|max:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
+            'bank_name' => 'nullable|string|max:255',
+
+            // Files optional on update
+            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+            'pan_card' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'aadhaar_card' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'driving_licence' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'bank_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+        ]);
+    }
     public function update(Request $request, ManpowerRequisition $requisition)
     {
-        $this->authorize('update', $requisition);
+        // Authorization (same as edit)
+        if (Auth::id() !== $requisition->submitted_by_user_id) {
+            abort(403, 'You are not authorized to update this requisition.');
+        }
 
         try {
-            $validatedData = $this->validateRequisition($request, $requisition->id);
-
-            // Update requisition
+            // Validation (update mode)
+            $validatedData = $this->validateUpdateRequisition($request);
+            //dd($validatedData);
+            // Update requisition safely (preserve old values if empty)
             $requisition->update([
                 'candidate_email' => $validatedData['candidate_email'],
                 'candidate_name' => $validatedData['candidate_name'],
                 'father_name' => $validatedData['father_name'],
                 'mobile_no' => $validatedData['mobile_no'],
-                'alternate_email' => $validatedData['alternate_email'] ?? null,
+                'alternate_email' => $validatedData['alternate_email'] ?? $requisition->alternate_email,
+
                 'address_line_1' => $validatedData['address_line_1'],
                 'city' => $validatedData['city'],
                 'state_residence' => $validatedData['state_residence'],
@@ -451,38 +600,46 @@ class ManpowerRequisitionController extends Controller
                 'date_of_birth' => $validatedData['date_of_birth'],
                 'gender' => $validatedData['gender'],
                 'highest_qualification' => $validatedData['highest_qualification'],
-                'college_name' => $validatedData['college_name'] ?? null,
+                'college_name' => $validatedData['college_name'] ?? $requisition->college_name,
+
                 'work_location_hq' => $validatedData['work_location_hq'],
-                'district' => $validatedData['district'] ?? null,
+                'district' => $validatedData['district'] ?? $requisition->district,
                 'state_work_location' => $validatedData['state_work_location'],
+
                 'function_id' => $validatedData['function_id'],
                 'department_id' => $validatedData['department_id'],
                 'vertical_id' => $validatedData['vertical_id'],
-                'sub_department' => $validatedData['sub_department_id'] ?? null,
-                'business_unit' => $validatedData['business_unit'] ?? null,
-                'zone' => $validatedData['zone'] ?? null,
-                'region' => $validatedData['region'] ?? null,
-                'territory' => $validatedData['territory'] ?? null,
-                'date_of_joining_required' => $validatedData['date_of_joining_required'],
-                'agreement_duration' => $validatedData['agreement_duration'] ?? null,
+
+                'sub_department' => $validatedData['sub_department_id'] ?? $requisition->sub_department,
+                'business_unit' => $validatedData['business_unit'] ?? $requisition->business_unit,
+                'zone' => $validatedData['zone'] ?? $requisition->zone,
+                'region' => $validatedData['region'] ?? $requisition->region,
+                'territory' => $validatedData['territory'] ?? $requisition->territory,
+
+                'date_of_joining' => $validatedData['date_of_joining'],
+                'agreement_duration' => $validatedData['agreement_duration'],
                 'date_of_separation' => $validatedData['date_of_separation'],
                 'remuneration_per_month' => $validatedData['remuneration_per_month'],
-                'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? null,
+                'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? $requisition->fuel_reimbursement_per_month,
+
                 'reporting_manager_address' => $validatedData['reporting_manager_address'],
-                'bank_account_no' => $validatedData['bank_account_no'] ?? null,
-                'account_holder_name' => $validatedData['account_holder_name'] ?? null,
-                'bank_ifsc' => $validatedData['bank_ifsc'] ?? null,
-                'bank_name' => $validatedData['bank_name'] ?? null,
-                'pan_no' => $validatedData['pan_no'] ?? null,
-                'aadhaar_no' => $validatedData['aadhaar_no'] ?? null,
-                // REMOVE THIS: 'documents' => json_encode($documents),
-                'status' => 'Pending HR Verification', // Reset status
+
+                // 🔒 Critical identity/bank fields (never overwrite with null)
+                'pan_no' => $validatedData['pan_no'] ?? $requisition->pan_no,
+                'aadhaar_no' => $validatedData['aadhaar_no'] ?? $requisition->aadhaar_no,
+                'bank_account_no' => $validatedData['bank_account_no'] ?? $requisition->bank_account_no,
+                'account_holder_name' => $validatedData['account_holder_name'] ?? $requisition->account_holder_name,
+                'bank_ifsc' => $validatedData['bank_ifsc'] ?? $requisition->bank_ifsc,
+                'bank_name' => $validatedData['bank_name'] ?? $requisition->bank_name,
+
+                // Workflow fields
+                'status' => 'Pending HR Verification',
                 'hr_verification_remarks' => null,
                 'last_updated_by_user_id' => Auth::id(),
                 'last_updated_date' => now(),
             ]);
 
-            // Update or add new documents
+            // Documents handled separately
             $this->updateRequisitionDocuments($request, $requisition->id);
 
             return response()->json([
@@ -497,6 +654,7 @@ class ManpowerRequisitionController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error updating requisition: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error updating requisition.',
@@ -504,6 +662,19 @@ class ManpowerRequisitionController extends Controller
         }
     }
 
+    // In your ManpowerRequisitionController or a separate controller
+    public function downloadDocument(RequisitionDocument $document)
+    {
+        // Check authorization - user should own the requisition
+        $requisition = $document->requisition;
+        if (Auth::id() !== $requisition->submitted_by_user_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Use your S3 service to download the file
+        $s3Service = app(S3Service::class);
+        return $s3Service->downloadFile($document->file_path, $document->file_name);
+    }
     protected function updateRequisitionDocuments(Request $request, $requisitionId)
     {
         $userId = Auth::id();
@@ -522,13 +693,15 @@ class ManpowerRequisitionController extends Controller
             if ($request->hasFile($field)) {
                 // New file uploaded - replace existing
                 $file = $request->file($field);
-                $upload = $this->uploadDocumentToS3($file, $requisition->requisition_type, $type);
+                $upload = $this->uploadDocumentToS3($file, $request->requisition_type, $type);
 
                 if ($upload['success']) {
                     // Delete existing document of this type if exists
-                    RequisitionDocument::where('requisition_id', $requisitionId)
-                        ->where('document_type', $type)
-                        ->delete();
+                    if ($type !== 'other') {
+                        RequisitionDocument::where('requisition_id', $requisitionId)
+                            ->where('document_type', $type)
+                            ->delete();
+                    }
 
                     // Create new document
                     RequisitionDocument::create([
@@ -548,55 +721,37 @@ class ManpowerRequisitionController extends Controller
 
     protected function updatePreExtractedDocuments(Request $request, $requisitionId, $userId)
     {
-        // Update PAN document if new file was extracted
-        if ($request->filled('pan_filename') && $request->filled('pan_filepath')) {
-            // Delete existing PAN document
-            RequisitionDocument::where('requisition_id', $requisitionId)
-                ->where('document_type', 'pan_card')
-                ->delete();
+        $map = [
+            'pan_card'      => ['pan_filename', 'pan_filepath'],
+            'bank_document' => ['bank_filename', 'bank_filepath'],
+            'aadhaar_card'  => ['aadhaar_filename', 'aadhaar_filepath'],
+        ];
 
-            // Create new PAN document
-            RequisitionDocument::create([
-                'requisition_id' => $requisitionId,
-                'document_type' => 'pan_card',
-                'file_name' => $request->pan_filename,
-                'file_path' => $request->pan_filepath,
-                'uploaded_by_user_id' => $userId,
-            ]);
-        }
+        foreach ($map as $type => [$filenameField, $pathField]) {
 
-        // Update Bank document if new file was extracted
-        if ($request->filled('bank_filename') && $request->filled('bank_filepath')) {
-            // Delete existing Bank document
-            RequisitionDocument::where('requisition_id', $requisitionId)
-                ->where('document_type', 'bank_document')
-                ->delete();
+            // Only update if user really changed it this request
+            if ($request->filled($filenameField) && $request->filled($pathField)) {
 
-            // Create new Bank document
-            RequisitionDocument::create([
-                'requisition_id' => $requisitionId,
-                'document_type' => 'bank_document',
-                'file_name' => $request->bank_filename,
-                'file_path' => $request->bank_filepath,
-                'uploaded_by_user_id' => $userId,
-            ]);
-        }
+                $existing = RequisitionDocument::where('requisition_id', $requisitionId)
+                    ->where('document_type', $type)
+                    ->first();
 
-        // Update Aadhaar document if new file was extracted
-        if ($request->filled('aadhaar_filename') && $request->filled('aadhaar_filepath')) {
-            // Delete existing Aadhaar document
-            RequisitionDocument::where('requisition_id', $requisitionId)
-                ->where('document_type', 'aadhaar_card')
-                ->delete();
+                // Avoid unnecessary overwrite
+                if (!$existing || $existing->file_path !== $request->$pathField) {
 
-            // Create new Aadhaar document
-            RequisitionDocument::create([
-                'requisition_id' => $requisitionId,
-                'document_type' => 'aadhaar_card',
-                'file_name' => $request->aadhaar_filename,
-                'file_path' => $request->aadhaar_filepath,
-                'uploaded_by_user_id' => $userId,
-            ]);
+                    if ($existing) {
+                        $existing->delete();
+                    }
+
+                    RequisitionDocument::create([
+                        'requisition_id' => $requisitionId,
+                        'document_type' => $type,
+                        'file_name' => $request->$filenameField,
+                        'file_path' => $request->$pathField,
+                        'uploaded_by_user_id' => $userId,
+                    ]);
+                }
+            }
         }
     }
 

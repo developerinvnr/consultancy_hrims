@@ -254,9 +254,9 @@
                                             <input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
                                         </div>--}}
                                         <div class="col-md-4 mb-3">
-                                            <label for="date_of_joining_required" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+                                            <label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
                                             <input type="date" class="form-control form-select-sm"
-                                                id="date_of_joining_required" name="date_of_joining_required" required>
+                                                id="date_of_joining" name="date_of_joining" required>
                                             <div class="invalid-feedback">Cannot be in past month</div>
                                         </div>
                                         <div class="col-md-4 mb-3">
@@ -650,7 +650,7 @@
                     showToast('Failed to extract bank details. Please enter manually.', 'error');
                 },
                 complete: function() {
-                    $('#bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+                    $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
                 }
             });
         });
@@ -751,8 +751,8 @@
         }
 
         // Auto-calculate Date of Separation
-        $('#date_of_joining_required, #agreement_duration').on('change', function() {
-            const doj = $('#date_of_joining_required').val();
+        $('#date_of_joining, #agreement_duration').on('change', function() {
+            const doj = $('#date_of_joining').val();
             const duration = $('#agreement_duration').val();
 
             if (doj && duration) {
@@ -768,8 +768,8 @@
 
 
         // Auto-calculate Date of Separation
-        $('#date_of_joining_required, #agreement_duration').on('change', function() {
-            const doj = $('#date_of_joining_required').val();
+        $('#date_of_joining, #agreement_duration').on('change', function() {
+            const doj = $('#date_of_joining').val();
             const duration = $('#agreement_duration').val();
 
             if (doj && duration) {
@@ -784,7 +784,7 @@
         });
 
         // Validate Date of Joining
-        $('#date_of_joining_required').on('change', function() {
+        $('#date_of_joining').on('change', function() {
             const selectedDate = new Date($(this).val());
             const today = new Date();
             const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);

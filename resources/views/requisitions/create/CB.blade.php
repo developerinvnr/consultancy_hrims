@@ -342,9 +342,9 @@
 												<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
 											</div>--}}
 											<div class="col-md-2 mb-3">
-												<label for="date_of_joining_required" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+												<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
 												<input type="date" class="form-control form-select-sm"
-													id="date_of_joining_required" name="date_of_joining_required" required>
+													id="date_of_joining" name="date_of_joining" required>
 												<div class="invalid-feedback">Cannot be in past month</div>
 											</div>
 											<div class="col-md-2 mb-3">
@@ -755,7 +755,7 @@
 					showToast('Failed to extract bank details. Please enter manually.', 'error');
 				},
 				complete: function() {
-					$('#bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
 				}
 			});
 		});
@@ -858,7 +858,7 @@
 
 			// Calculate separation date when date of joining or duration changes
 		function calculateSeparationDate() {
-			const doj = $('#date_of_joining_required').val();
+			const doj = $('#date_of_joining').val();
 			const duration = $('#agreement_duration').val();
 
 			if (doj && duration) {
@@ -892,7 +892,7 @@
 		}
 
 		// Event listeners for date calculation
-		$('#date_of_joining_required').on('change', function() {
+		$('#date_of_joining').on('change', function() {
 			validateDateOfJoining();
 			if ($('#agreement_duration').val()) {
 				calculateSeparationDate();
@@ -900,23 +900,23 @@
 		});
 
 		$('#agreement_duration').on('change', function() {
-			if ($('#date_of_joining_required').val()) {
+			if ($('#date_of_joining').val()) {
 				calculateSeparationDate();
 			}
 		});
 
 		// Validate Date of Joining
 		function validateDateOfJoining() {
-			const selectedDate = new Date($('#date_of_joining_required').val());
+			const selectedDate = new Date($('#date_of_joining').val());
 			const today = new Date();
 			const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
 			if (selectedDate < firstDayOfMonth) {
-				$('#date_of_joining_required').addClass('is-invalid');
-				$('#date_of_joining_required').siblings('.invalid-feedback').text('Date cannot be in past month').show();
+				$('#date_of_joining').addClass('is-invalid');
+				$('#date_of_joining').siblings('.invalid-feedback').text('Date cannot be in past month').show();
 			} else {
-				$('#date_of_joining_required').removeClass('is-invalid');
-				$('#date_of_joining_required').siblings('.invalid-feedback').hide();
+				$('#date_of_joining').removeClass('is-invalid');
+				$('#date_of_joining').siblings('.invalid-feedback').hide();
 			}
 		}
 		// Validate Date of Birth

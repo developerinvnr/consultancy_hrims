@@ -163,7 +163,7 @@
                                             </tr>
                                             <tr>
                                                 <td><small class="text-muted">Joining Date:</small></td>
-                                                <td>{{ $requisition->date_of_joining_required->format('d-m-Y') }}</td>
+                                                <td>{{ $requisition->date_of_joining->format('d-m-Y') }}</td>
                                             </tr>
                                             <tr>
                                                 <td><small class="text-muted">Separation Date:</small></td>
