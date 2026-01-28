@@ -115,7 +115,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.*')" href="{{ route('salary.index') }}">
                         <i class="ri-money-rupee-circle-line"></i>
-                        <span>Salary Processing</span>
+                        <span>Remuneration  Processing</span>
                     </a>
                 </li>
 

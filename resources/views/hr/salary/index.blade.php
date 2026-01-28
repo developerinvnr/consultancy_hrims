@@ -7,7 +7,7 @@
 	<div class="row mb-3">
 		<div class="col-12">
 			<div class="page-title-box d-flex justify-content-between align-items-center">
-				<h4 class="mb-0">Salary Processing</h4>
+				<h4 class="mb-0">Remuneration Processing</h4>
 				<div>
 					<button class="btn btn-sm btn-outline-secondary me-2" onclick="refreshList()">
 						<i class="ri-refresh-line"></i> Refresh

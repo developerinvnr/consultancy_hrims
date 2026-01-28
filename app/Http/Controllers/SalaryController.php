@@ -112,7 +112,7 @@ class SalaryController extends Controller
         }
 
         // Build response message
-        $message = "Salary processing completed. ";
+        $message = "Remuneration processing completed. ";
         $message .= "Processed: {$processedCount}, ";
         $message .= "Skipped (already processed): {$skippedCount}";
         
