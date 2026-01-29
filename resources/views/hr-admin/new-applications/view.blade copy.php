@@ -162,17 +162,17 @@
                                                 <td>{{ $requisition->reporting_manager_employee_id }}</td>
                                             </tr>
                                             <tr>
-                                                <td><small class="text-muted">Joining Date:</small></td>
-                                                <td>{{ $requisition->date_of_joining->format('d-m-Y') }}</td>
+                                                <td><small class="text-muted">Contract Start Date:</small></td>
+                                                <td>{{ $requisition->contract_start_date->format('d-m-Y') }}</td>
                                             </tr>
                                             <tr>
-                                                <td><small class="text-muted">Separation Date:</small></td>
-                                                <td>{{ $requisition->date_of_separation->format('d-m-Y') }}</td>
+                                                <td><small class="text-muted">Contract End Date:</small></td>
+                                                <td>{{ $requisition->contract_end_date->format('d-m-Y') }}</td>
                                             </tr>
-                                            @if($requisition->agreement_duration)
+                                            @if($requisition->contract_duration)
                                             <tr>
-                                                <td><small class="text-muted">Agreement Duration:</small></td>
-                                                <td>{{ $requisition->agreement_duration }} months</td>
+                                                <td><small class="text-muted">Contract Duration:</small></td>
+                                                <td>{{ $requisition->contract_duration }} months</td>
                                             </tr>
                                             @endif
                                             <tr>

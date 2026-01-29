@@ -191,8 +191,8 @@
                     '₹' + parseInt(candidate.remuneration_per_month).toLocaleString('en-IN') :
                     'N/A';
 
-                const joiningDate = candidate.date_of_joining ?
-                    new Date(candidate.date_of_joining).toLocaleDateString('en-GB') :
+                const joiningDate = candidate.contract_start_date ?
+                    new Date(candidate.contract_start_date).toLocaleDateString('en-GB') :
                     'N/A';
 
                 const statusBadge = candidate.final_status === 'A' ?

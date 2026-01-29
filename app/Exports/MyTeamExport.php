@@ -49,8 +49,8 @@ class MyTeamExport implements FromCollection, WithHeadings, WithMapping, WithSty
             '₹ ' . number_format($candidate->remuneration_per_month, 2) : 'N/A';
         
         // Format joining date
-        $joiningDate = $candidate->date_of_joining ? 
-            Carbon::parse($candidate->date_of_joining)->format('d-m-Y') : 'N/A';
+        $joiningDate = $candidate->contract_start_date ? 
+            Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : 'N/A';
         
         // Status display
         $status = $candidate->final_status == 'A' ? 'Active' : 'Inactive';

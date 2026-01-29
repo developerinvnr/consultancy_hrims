@@ -15,7 +15,7 @@ class AgreementTemp extends Model
 		'candidate_code',
 		'requisition_id',
 		'candidate_name',
-		'date_of_joining',
+		'contract_start_date',
 		'emp_type',
 		'contact_number',
 		'father_name',
@@ -35,7 +35,7 @@ class AgreementTemp extends Model
 	];
 
 	protected $casts = [
-		'date_of_joining' => 'date',
+		'contract_start_date' => 'date',
 		'date_of_birth' => 'date',
 		'agreement_generated_at' => 'datetime'
 	];

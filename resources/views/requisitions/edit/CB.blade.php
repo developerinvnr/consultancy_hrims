@@ -366,30 +366,28 @@
 											<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
 										</div>--}}
 										<div class="col-md-2 mb-3">
-											<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+											<label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
 											<input type="date" class="form-control form-select-sm"
-												id="date_of_joining" name="date_of_joining"
-												value="{{ old('date_of_joining', $requisition->date_of_joining?->format('Y-m-d')) }}" required>
+												id="contract_start_date" name="contract_start_date"
+												value="{{ old('contract_start_date', $requisition->contract_start_date?->format('Y-m-d')) }}" required>
 										</div>
 										<div class="col-md-2 mb-3">
-											<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
-											<select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
-												<option value="">Select</option>
-												@for($i = 1; $i <= 9; $i++)
-													<option value="{{ $i }}" {{ old('agreement_duration', $requisition->agreement_duration) == $i ? 'selected' : '' }}>
-													{{ $i }} month{{ $i > 1 ? 's' : '' }}
-													</option>
-													@endfor
+											<label for="contract_duration" class="form-label">Contract Duration <span class="text-danger">*</span></label>
+											<select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
+												<option value="">Select Duration</option>
+												<option value="15" {{ old('contract_duration', $requisition->contract_duration) == 15 ? 'selected' : '' }}>15 Days</option>
+												<option value="30" {{ old('contract_duration', $requisition->contract_duration) == 30 ? 'selected' : '' }}>1 Month</option>
+												<option value="45" {{ old('contract_duration', $requisition->contract_duration) == 45 ? 'selected' : '' }}>45 Days</option>
 											</select>
-											<div class="invalid-feedback">Please select agreement duration</div>
+											<div class="invalid-feedback">Please select contract duration</div>
 										</div>
 										<div class="col-md-2 mb-3">
-											<label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
+											<label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
 											<input type="date" class="form-control form-select-sm"
-												id="date_of_separation" name="date_of_separation"
-												value="{{ old('date_of_separation', $requisition->date_of_separation?->format('Y-m-d')) }}" readonly required>
+												id="contract_end_date" name="contract_end_date"
+												value="{{ old('contract_end_date', $requisition->contract_end_date?->format('Y-m-d')) }}" readonly required>
 
-											<div class="invalid-feedback">Separation date will be calculated automatically</div>
+											<div class="invalid-feedback">Contract end date will be calculated automatically</div>
 										</div>
 										<div class="col-md-3 mb-3">
 											<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
@@ -407,7 +405,7 @@
 									<div class="row">
 										<div class="col-12 mb-3">
 											<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
-												<textarea class="form-control form-select-sm"
+											<textarea class="form-control form-select-sm"
 												id="reporting_manager_address" name="reporting_manager_address"
 												rows="3" required>{{ old('reporting_manager_address', $requisition->reporting_manager_address) }}</textarea>
 											<div class="invalid-feedback"></div>
@@ -821,11 +819,11 @@
 </style>
 
 @section('script_section')
-<script src="{{URL::to('/')}}/assets/js/doj-rules.js"></script>
+<script src="{{URL::to('/')}}/assets/js/contract-rules.js"></script>
 
 <script>
 	$(document).ready(function() {
-		initDOJValidation("#date_of_joining");
+		 initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -1050,26 +1048,22 @@
 
 		// Calculate separation date when date of joining or duration changes
 		function calculateSeparationDate() {
-			const doj = $('#date_of_joining').val();
-			const duration = $('#agreement_duration').val();
+			const doj = $('#contract_start_date').val();
+			const duration = parseInt($('#contract_duration').val());
 
 			if (doj && duration) {
-				const dojDate = new Date(doj);
+				const dojDate = new Date(doj + "T00:00:00");
 				const separationDate = new Date(dojDate);
 
-				// Add months based on selected duration
-				separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
+				// Add duration in days (15 / 30 / 45)
+				separationDate.setDate(separationDate.getDate() + duration - 1);
 
-				// Subtract 1 day to get the last day before the new month
-				separationDate.setDate(separationDate.getDate() - 1);
+				const yyyy = separationDate.getFullYear();
+				const mm = String(separationDate.getMonth() + 1).padStart(2, '0');
+				const dd = String(separationDate.getDate()).padStart(2, '0');
 
-				const formattedDate = separationDate.toISOString().split('T')[0];
-
-				// Set the calculated date in the date picker (readonly field)
-				$('#date_of_separation').val(formattedDate);
-
-				// Clear any validation errors
-				$('#date_of_separation').removeClass('is-invalid');
+				$('#contract_end_date').val(`${yyyy}-${mm}-${dd}`);
+				$('#contract_end_date').removeClass('is-invalid');
 			}
 		}
 
@@ -1084,14 +1078,14 @@
 		}
 
 		// Event listeners for date calculation
-		$('#date_of_joining').on('change', function() {
-			if ($('#agreement_duration').val()) {
+		$('#contract_start_date').on('change', function() {
+			if ($('#contract_duration').val()) {
 				calculateSeparationDate();
 			}
 		});
 
-		$('#agreement_duration').on('change', function() {
-			if ($('#date_of_joining').val()) {
+		$('#contract_duration').on('change', function() {
+			if ($('#contract_start_date').val()) {
 				calculateSeparationDate();
 			}
 		});

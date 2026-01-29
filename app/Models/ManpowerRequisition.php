@@ -45,9 +45,9 @@ class ManpowerRequisition extends Model
         'territory',
         'reporting_to',
         'reporting_manager_employee_id',
-        'date_of_joining',
-        'agreement_duration',
-        'date_of_separation',
+        'contract_start_date',
+        'contract_duration',
+        'contract_end_date',
         'remuneration_per_month',
         'fuel_reimbursement_per_month',
         'reporting_manager_address',
@@ -71,8 +71,8 @@ class ManpowerRequisition extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'date_of_joining' => 'date',
-        'date_of_separation' => 'date',
+        'contract_start_date' => 'date',
+        'contract_end_date' => 'date',
         'remuneration_per_month' => 'decimal:2',
         'fuel_reimbursement_per_month' => 'decimal:2',
         'hr_verification_date' => 'datetime',

@@ -51,13 +51,13 @@ class AttendanceController extends Controller
                 'candidate_name',
                 'requisition_type',
                 'remuneration_per_month',
-                'date_of_joining',
+                'contract_start_date',
                 'leave_credited',
                 'reporting_manager_employee_id'
             ])
                 ->where('final_status', 'A')
-                ->whereNotNull('date_of_joining')
-                ->where('date_of_joining', '<=', Carbon::create($year, $month)->endOfMonth());
+                ->whereNotNull('contract_start_date')
+                ->where('contract_start_date', '<=', Carbon::create($year, $month)->endOfMonth());
 
             // Filter based on user role
             if (!$user->hasRole('hr_admin')) {
@@ -146,7 +146,7 @@ class AttendanceController extends Controller
                         // If no leave balance record exists, we need to create one or calculate from candidate data
 
                         // First, check if we should create a leave balance record
-                        $joiningDate = Carbon::parse($candidate->date_of_joining);
+                        $joiningDate = Carbon::parse($candidate->contract_start_date);
                         $joiningYear = $joiningDate->year;
 
                         if ($joiningYear < $year) {
@@ -246,7 +246,7 @@ class AttendanceController extends Controller
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
             $isContractual = $candidate->requisition_type === 'Contractual';
-            $joiningDate = Carbon::parse($candidate->date_of_joining);
+            $joiningDate = Carbon::parse($candidate->contract_start_date);
 
             // Check if candidate was active in this month
             if ($joiningDate->year > $year || ($joiningDate->year == $year && $joiningDate->month > $month)) {
@@ -686,7 +686,7 @@ class AttendanceController extends Controller
                 'candidate_name'
             ])
                 ->where('final_status', 'A')
-                ->whereNotNull('date_of_joining')
+                ->whereNotNull('contract_start_date')
                 ->orderBy('candidate_name')
                 ->get();
 

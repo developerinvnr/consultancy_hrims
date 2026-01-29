@@ -316,18 +316,18 @@ class HrAdminController extends Controller
 
 			case 'employment_details':
 				$validations = [
-					'date_of_joining' => 'required|date|after:today',
-					'date_of_separation' => 'required|date|after:date_of_joining',
+					'contract_start_date' => 'required|date|after:today',
+					'contract_end_date' => 'required|date|after:contract_start_date',
 					'remuneration_per_month' => 'required|numeric|min:0',
-					'agreement_duration' => 'nullable|integer|min:1'
+					'contract_duration' => 'nullable|integer|min:1'
 				];
 				$data = $request->only([
 					'reporting_to',
 					'reporting_manager_employee_id',
 					'reporting_manager_address',
-					'date_of_joining',
-					'agreement_duration',
-					'date_of_separation',
+					'contract_start_date',
+					'contract_duration',
+					'contract_end_date',
 					'remuneration_per_month',
 					'fuel_reimbursement_per_month'
 				]);
@@ -371,11 +371,11 @@ class HrAdminController extends Controller
 			if (isset($data['date_of_birth']) && $data['date_of_birth']) {
 				$data['date_of_birth'] = Carbon::parse($data['date_of_birth']);
 			}
-			if (isset($data['date_of_joining']) && $data['date_of_joining']) {
-				$data['date_of_joining'] = Carbon::parse($data['date_of_joining']);
+			if (isset($data['contract_start_date']) && $data['contract_start_date']) {
+				$data['contract_start_date'] = Carbon::parse($data['contract_start_date']);
 			}
-			if (isset($data['date_of_separation']) && $data['date_of_separation']) {
-				$data['date_of_separation'] = Carbon::parse($data['date_of_separation']);
+			if (isset($data['contract_end_date']) && $data['contract_end_date']) {
+				$data['contract_end_date'] = Carbon::parse($data['contract_end_date']);
 			}
 
 			// Update requisition
@@ -823,12 +823,12 @@ class HrAdminController extends Controller
 			// Generate candidate code
 			$candidateCode = $this->generateCandidateCode($requisition->requisition_type);
 
-			// Calculate leave_credited for Contractual candidates based on agreement_duration
+			// Calculate leave_credited for Contractual candidates based on contract_duration
 			$leaveCredited = 0;
 			if ($requisition->requisition_type === 'Contractual') {
 				// 1 CL day per month of agreement duration
 				// Example: 6 months = 6 CL days, 9 months = 9 CL days
-				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration($requisition->agreement_duration);
+				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration($requisition->contract_duration);
 			}
 
 			// Create candidate master record
@@ -863,10 +863,10 @@ class HrAdminController extends Controller
 				'reporting_to' => $request->reporting_to,
 				'reporting_manager_employee_id' => $request->reporting_manager_employee_id,
 				'reporting_manager_address' => $requisition->reporting_manager_address,
-				'date_of_joining' => $requisition->date_of_joining,
-				'agreement_duration' => $requisition->agreement_duration,
+				'contract_start_date' => $requisition->contract_start_date,
+				'contract_duration' => $requisition->contract_duration,
 				'leave_credited' => $leaveCredited, // Add this line
-				'date_of_separation' => $requisition->date_of_separation,
+				'contract_end_date' => $requisition->contract_end_date,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
 				'fuel_reimbursement_per_month' => $requisition->fuel_reimbursement_per_month,
 				'account_holder_name' => $requisition->account_holder_name,
@@ -882,7 +882,7 @@ class HrAdminController extends Controller
 
 			// Also create initial LeaveBalance record for Contractual candidates
 			if ($requisition->requisition_type === 'Contractual' && $leaveCredited > 0) {
-				$joiningYear = Carbon::parse($requisition->date_of_joining)->year;
+				$joiningYear = Carbon::parse($requisition->contract_start_date)->year;
 
 				LeaveBalance::create([
 					'CandidateID' => $candidate->id,
@@ -890,8 +890,8 @@ class HrAdminController extends Controller
 					'opening_cl_balance' => $leaveCredited,
 					'cl_utilized' => 0,
 					'lwp_days_accumulated' => 0,
-					'contract_start_date' => $requisition->date_of_joining,
-					'contract_end_date' => $requisition->date_of_separation,
+					'contract_start_date' => $requisition->contract_start_date,
+					'contract_end_date' => $requisition->contract_end_date,
 				]);
 			}
 
@@ -926,8 +926,8 @@ class HrAdminController extends Controller
 	// Helper method to calculate leave credited from agreement duration
 	private function calculateLeaveCreditedFromAgreementDuration($agreementDuration)
 	{
-		// Convert agreement_duration to months if it's in different format
-		// Assuming agreement_duration is stored as number of months (e.g., "6" for 6 months)
+		// Convert contract_duration to months if it's in different format
+		// Assuming contract_duration is stored as number of months (e.g., "6" for 6 months)
 
 		if (is_numeric($agreementDuration)) {
 			$months = (int)$agreementDuration;
@@ -935,7 +935,7 @@ class HrAdminController extends Controller
 			return min($months, 12);
 		}
 
-		// If agreement_duration is string like "6 months", extract the number
+		// If contract_duration is string like "6 months", extract the number
 		preg_match('/(\d+)/', $agreementDuration, $matches);
 		if (isset($matches[1])) {
 			$months = (int)$matches[1];
@@ -996,7 +996,7 @@ class HrAdminController extends Controller
 			'candidate_code' => $candidateCode,
 			'requisition_id' => $requisition->id,
 			'candidate_name' => $requisition->candidate_name,
-			'date_of_joining' => $requisition->date_of_joining,
+			'contract_start_date' => $requisition->contract_start_date,
 			'emp_type' => $requisition->requisition_type, // Store the employee type (Contractual/TFA/CB)
 			'contact_number' => $requisition->mobile_no,
 			'father_name' => $requisition->father_name,

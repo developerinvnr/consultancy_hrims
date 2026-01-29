@@ -87,16 +87,16 @@
                     </tr>
                     <tr>
                         <td class="text-muted small">Joining Date:</td>
-                        <td class="small">{{ $requisition->date_of_joining->format('d-m-Y') }}</td>
+                        <td class="small">{{ $requisition->contract_start_date->format('d-m-Y') }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted small">Separation Date:</td>
-                        <td class="small">{{ $requisition->date_of_separation->format('d-m-Y') }}</td>
+                        <td class="text-muted small">Contract End Date:</td>
+                        <td class="small">{{ $requisition->contract_end_date->format('d-m-Y') }}</td>
                     </tr>
-                    @if($requisition->agreement_duration)
+                    @if($requisition->contract_duration)
                     <tr>
                         <td class="text-muted small">Duration:</td>
-                        <td class="small">{{ $requisition->agreement_duration }} months</td>
+                        <td class="small">{{ $requisition->contract_duration }} months</td>
                     </tr>
                     @endif
                     <tr>

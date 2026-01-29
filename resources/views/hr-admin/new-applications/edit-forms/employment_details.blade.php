@@ -15,21 +15,21 @@
     </div>
     
     <div class="col-md-6 mb-3">
-        <label for="date_of_joining_required" class="form-label">Date of Joining Required <span class="text-danger">*</span></label>
-        <input type="date" class="form-control" id="date_of_joining_required" name="date_of_joining_required" 
-               value="{{ $requisition->date_of_joining_required->format('Y-m-d') }}" required>
+        <label for="contract_start_date" class="form-label">Date of Joining Required <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="contract_start_date" name="contract_start_date" 
+               value="{{ $requisition->contract_start_date->format('Y-m-d') }}" required>
     </div>
     
     <div class="col-md-6 mb-3">
-        <label for="agreement_duration" class="form-label">Agreement Duration (months)</label>
-        <input type="number" class="form-control" id="agreement_duration" name="agreement_duration" 
-               value="{{ $requisition->agreement_duration }}" min="1">
+        <label for="contract_duration" class="form-label">Agreement Duration (months)</label>
+        <input type="number" class="form-control" id="contract_duration" name="contract_duration" 
+               value="{{ $requisition->contract_duration }}" min="1">
     </div>
     
     <div class="col-md-6 mb-3">
-        <label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
-        <input type="date" class="form-control" id="date_of_separation" name="date_of_separation" 
-               value="{{ $requisition->date_of_separation->format('Y-m-d') }}" required>
+        <label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="contract_end_date" name="contract_end_date" 
+               value="{{ $requisition->contract_end_date->format('Y-m-d') }}" required>
     </div>
     
     <div class="col-md-6 mb-3">

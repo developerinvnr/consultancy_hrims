@@ -91,8 +91,8 @@
                 <div class="card-body p-3">
                     <div class="row">
                         <div class="col-md-6 mb-2">
-                            <label class="small text-muted mb-1">Date of Joining</label>
-                            <div class="fw-semibold">{{ $candidate->date_of_joining ? \Carbon\Carbon::parse($candidate->date_of_joining)->format('d-m-Y') : 'N/A' }}</div>
+                            <label class="small text-muted mb-1">Contract Start Date</label>
+                            <div class="fw-semibold">{{ $candidate->contract_start_date ? \Carbon\Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : 'N/A' }}</div>
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="small text-muted mb-1">Remuneration</label>

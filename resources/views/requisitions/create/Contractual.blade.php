@@ -268,13 +268,13 @@
                                             <input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
                                         </div>--}}
                                         <div class="col-md-4 mb-3">
-                                            <label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+                                            <label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control form-select-sm"
-                                                id="date_of_joining" name="date_of_joining" required>
+                                                id="contract_start_date" name="contract_start_date" required>
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label for="agreement_duration" class="form-label">Duration <span class="text-danger">*</span></label>
-                                            <select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
+                                            <label for="contract_duration" class="form-label">Contract Duration<span class="text-danger">*</span></label>
+                                            <select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
                                                 <option value="">Select</option>
                                                 @for($i = 1; $i <= 9; $i++)
                                                     <option value="{{ $i }}">{{ $i }} month{{ $i > 1 ? 's' : '' }}</option>
@@ -286,9 +286,9 @@
 
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
-                                            <label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
+                                            <label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control form-select-sm"
-                                                id="date_of_separation" name="date_of_separation" readonly required>
+                                                id="contract_end_date" name="contract_end_date" readonly required>
                                             <div class="invalid-feedback"></div>
                                         </div>
                                         <div class="col-md-4 mb-3">
@@ -540,10 +540,10 @@
 </style>
 
 @section('script_section')
-<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
+<script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
     $(document).ready(function() {
-        initDOJValidation("#date_of_joining");
+        initContractDateValidation("#contract_start_date");
         // Get requisition type from hidden input
         const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -766,9 +766,9 @@
         }
 
         // Auto-calculate Date of Separation
-        $('#date_of_joining, #agreement_duration').on('change', function() {
-            const doj = $('#date_of_joining').val();
-            const duration = $('#agreement_duration').val();
+        $('#contract_start_date, #contract_duration').on('change', function() {
+            const doj = $('#contract_start_date').val();
+            const duration = $('#contract_duration').val();
 
             if (doj && duration) {
                 const dojDate = new Date(doj);
@@ -777,7 +777,7 @@
                 separationDate.setDate(separationDate.getDate() - 1);
 
                 const formattedDate = separationDate.toISOString().split('T')[0];
-                $('#date_of_separation').val(formattedDate);
+                $('#contract_end_date').val(formattedDate);
             }
         });
 

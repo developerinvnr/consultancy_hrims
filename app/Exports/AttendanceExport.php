@@ -61,14 +61,14 @@ class AttendanceExport implements
                 'candidate_code',
                 'candidate_name',
                 'requisition_type',
-                'date_of_joining',
+                'contract_start_date',
                 'leave_credited',
                 'remuneration_per_month',
                 'reporting_manager_employee_id'
             ])
             ->where('final_status', 'A')
-            ->whereNotNull('date_of_joining')
-            ->where('date_of_joining', '<=', $this->monthEnd);
+            ->whereNotNull('contract_start_date')
+            ->where('contract_start_date', '<=', $this->monthEnd);
 
         // Role-based filtering
         if ($this->user) {
@@ -132,7 +132,7 @@ class AttendanceExport implements
                     $clUsed = $leaveBalance->cl_utilized;
                 } else {
                     // Fallback calculation
-                    $joiningDate = Carbon::parse($candidate->date_of_joining);
+                    $joiningDate = Carbon::parse($candidate->contract_start_date);
                     $joiningYear = $joiningDate->year;
                     
                     if ($joiningYear < $this->year) {
@@ -156,8 +156,8 @@ class AttendanceExport implements
                 'code' => $candidate->candidate_code ?? '',
                 'name' => $candidate->candidate_name ?? '',
                 'type' => $candidate->requisition_type ?? '',
-                'doj' => $candidate->date_of_joining 
-                    ? Carbon::parse($candidate->date_of_joining)->format('d-m-Y') 
+                'doj' => $candidate->contract_start_date 
+                    ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y') 
                     : '',
                 'leave_credited' => $candidate->leave_credited ?? 0,
                 'cl_remaining' => $clRemaining,

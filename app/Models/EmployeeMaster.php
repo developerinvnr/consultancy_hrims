@@ -42,9 +42,9 @@ class EmployeeMaster extends Model
         'reporting_to',
         'reporting_manager_employee_id',
         'reporting_manager_address',
-        'date_of_joining',
-        'agreement_duration',
-        'date_of_separation',
+        'contract_start_date',
+        'contract_duration',
+        'contract_end_date',
         'remuneration_per_month',
         'fuel_reimbursement_per_month',
         'account_holder_name',
@@ -63,8 +63,8 @@ class EmployeeMaster extends Model
     
     protected $casts = [
         'date_of_birth' => 'date',
-        'date_of_joining' => 'date',
-        'date_of_separation' => 'date',
+        'contract_start_date' => 'date',
+        'contract_end_date' => 'date',
         'remuneration_per_month' => 'decimal:2',
         'fuel_reimbursement_per_month' => 'decimal:2',
         'agri_samvida_created_at' => 'datetime'

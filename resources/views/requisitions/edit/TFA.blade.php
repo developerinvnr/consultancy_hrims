@@ -9,7 +9,7 @@
 				<h4 class="mb-sm-0">Edit TFA Requisition</h4>
 				<div class="page-title-right">
 					<ol class="breadcrumb m-0">
-						<li class="breadcrumb-item"><a href="{{ route('requisitions.index') }}">Requisitions</a></li> 
+						<li class="breadcrumb-item"><a href="{{ route('requisitions.index') }}">Requisitions</a></li>
 						<li class="breadcrumb-item"><a href="{{ route('requisitions.show', $requisition->id) }}">#{{ $requisition->requisition_no }}</a></li>
 						<li class="breadcrumb-item active">Edit TFA</li>
 					</ol>
@@ -39,29 +39,29 @@
 
 				<div class="card-body">
 					<form id="requisition-form" method="POST" action="{{ route('requisitions.update', $requisition->id) }}" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+						@csrf
+						@method('PUT')
 
 						@php
-							$documents = $requisition->documents ?? collect();
+						$documents = $requisition->documents ?? collect();
 						@endphp
 						@php
 						$bankDoc = $documents->firstWhere('document_type', 'bank_document');
 						$panDoc = $documents->firstWhere('document_type', 'pan_card');
-                        $resumeDoc = $documents->firstWhere('document_type', 'resume');
+						$resumeDoc = $documents->firstWhere('document_type', 'resume');
 						$drivingDoc = $documents->firstWhere('document_type', 'driving_licence');
 						$aadhaarDoc = $documents->firstWhere('document_type', 'aadhaar_card');
 						$otherDocs = $documents->where('document_type', 'other');
 						@endphp
-						
-							
+
+
 						<input type="hidden" name="requisition_type" value="TFA">
 						<input type="hidden" name="pan_filename" id="pan_filename" value="{{ $panDoc->file_name ?? '' }}">
 						<input type="hidden" name="pan_filepath" id="pan_filepath" value="{{ $panDoc->file_path ?? '' }}">
 						<input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
 						<input type="hidden" name="bank_filepath" id="bank_filepath" value="{{ $bankDoc->file_path ?? '' }}">
 						<input type="hidden" name="aadhaar_filename" id="aadhaar_filename" value="{{ $aadhaarDoc->file_name ?? '' }}">
-						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">					
+						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">
 
 						<!-- Section 1: Personal Information -->
 						<div class="row mb-4">
@@ -106,7 +106,7 @@
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="mobile_no" class="form-label">Mobile No. <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -138,7 +138,7 @@
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="college_name" class="form-label">College/University</label>
 												<input type="text" class="form-control form-select-sm"
@@ -158,7 +158,7 @@
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
-												<div class="col-md-3 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="address_line_1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
 												<textarea class="form-control form-select-sm"
 													id="address_line_1" name="address_line_1" rows="2" required>
@@ -179,9 +179,9 @@
 													value="{{ old('pin_code', $requisition->pin_code) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
-										</div>								
+										</div>
 
-										
+
 									</div>
 								</div>
 							</div>
@@ -210,10 +210,10 @@
 												<input type="hidden" name="function_id"
 													value="{{ $autoFillData['function_id'] ?? '' }}">
 											</div>
-											<div class="col-md-3 mb-3">
+											<div class="col-md-2 mb-3">
 												<label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
 
-													<select class="form-select form-select-sm" disabled>
+												<select class="form-select form-select-sm" disabled>
 													@foreach($departments as $department)
 													<option {{ $requisition->department_id == $department->id ? 'selected' : '' }}>
 														{{ $department->department_name }}
@@ -241,9 +241,9 @@
 													value="{{ old('work_location_hq', $requisition->work_location_hq) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
-													<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
+												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
 													<option value="">Select State</option>
 													@foreach($states as $state)
 													<option value="{{ $state }}" {{ old('state_work_location', $requisition->state_work_location) == $state ? 'selected' : '' }}>
@@ -255,20 +255,20 @@
 											</div>
 										</div>
 
-										
+
 
 										<div class="row">
 											<div class="col-md-2 mb-3">
 												<label for="district" class="form-label">District <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
-                                                    id="district" name="district"
-                                                    value="{{ old('district', $requisition->district) }}" required>
+													id="district" name="district"
+													value="{{ old('district', $requisition->district) }}" required>
 												<div class="invalid-feedback"></div>
 											</div>
 											<!-- Sub-department -->
 											<div class="col-md-2 mb-3">
 												<label for="sub_department_id" class="form-label">Sub-department <span class="text-danger">*</span></label>
-													<select class="form-select form-select-sm" disabled>
+												<select class="form-select form-select-sm" disabled>
 													@foreach($sub_departments as $subdepartment)
 													<option {{ $requisition->sub_department == $subdepartment->id ? 'selected' : '' }}>
 														{{ $subdepartment->sub_department_name }}
@@ -280,7 +280,7 @@
 											<!-- Business Unit -->
 											<div class="col-md-2 mb-3">
 												<label for="business_unit" class="form-label">Business Unit <span class="text-danger">*</span></label>
-													<select class="form-select form-select-sm" id="business_unit_display" disabled>
+												<select class="form-select form-select-sm" id="business_unit_display" disabled>
 													<option value="">Select Business Unit</option>
 													@foreach($businessUnits as $unit)
 													<option value="{{ $unit->id }}"
@@ -362,76 +362,78 @@
 												<label class="form-label">Reporting Manager ID <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
 													value="{{ $autoFillData['reporting_manager_employee_id'] }}" readonly>
-												<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
-											</div>--}}
-												<div class="col-md-2 mb-3">
-																						<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
+											<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
+										</div>--}}
+										<div class="col-md-2 mb-3">
+											<label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
 											<input type="date" class="form-control form-select-sm"
-												id="date_of_joining" name="date_of_joining"
-												value="{{ old('date_of_joining', $requisition->date_of_joining?->format('Y-m-d')) }}" required>
+												id="contract_start_date" name="contract_start_date"
+												value="{{ old('contract_start_date', $requisition->contract_start_date?->format('Y-m-d')) }}" required>
 										</div>
-											<div class="col-md-2 mb-3">
-												<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
-												<option value="">Select</option>
-												@for($i = 1; $i <= 9; $i++)
-													<option value="{{ $i }}" {{ old('agreement_duration', $requisition->agreement_duration) == $i ? 'selected' : '' }}>
-													{{ $i }} month{{ $i > 1 ? 's' : '' }}
-													</option>
-													@endfor
+										<div class="col-md-2 mb-3">
+											<label for="contract_duration" class="form-label">Contract Duration <span class="text-danger">*</span></label>
+											<select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
+												<option value="">Select Duration</option>
+
+												<option value="15" {{ old('contract_duration', $requisition->contract_duration) == 15 ? 'selected' : '' }}>15 Days</option>
+												<option value="30" {{ old('contract_duration', $requisition->contract_duration) == 30 ? 'selected' : '' }}>1 Month</option>
+												<option value="45" {{ old('contract_duration', $requisition->contract_duration) == 45 ? 'selected' : '' }}>45 Days</option>
+												<option value="60" {{ old('contract_duration', $requisition->contract_duration) == 60 ? 'selected' : '' }}>2 Months</option>
+												<option value="90" {{ old('contract_duration', $requisition->contract_duration) == 90 ? 'selected' : '' }}>3 Months</option>
+												<option value="120" {{ old('contract_duration', $requisition->contract_duration) == 120 ? 'selected' : '' }}>4 Months</option>
 											</select>
-												<div class="invalid-feedback">Please select agreement duration</div>
-											</div>
-											<div class="col-md-2 mb-3">
-												<label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
-												<input type="date" class="form-control form-select-sm"
-												id="date_of_separation" name="date_of_separation"
-												value="{{ old('date_of_separation', $requisition->date_of_separation?->format('Y-m-d')) }}" readonly required>
-												<div class="invalid-feedback">Separation date will be calculated automatically</div>
-											</div>
-											<div class="col-md-3 mb-3">
-												<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<span class="input-group-text">₹</span>
-														<input type="number" class="form-control"
+											<div class="invalid-feedback">Please select contract duration</div>
+										</div>
+										<div class="col-md-2 mb-3">
+											<label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
+											<input type="date" class="form-control form-select-sm"
+												id="contract_end_date" name="contract_end_date"
+												value="{{ old('contract_duration', $requisition->contract_end_date?->format('Y-m-d')) }}" readonly required>
+											<div class="invalid-feedback">Contract end date will be calculated automatically</div>
+										</div>
+										<div class="col-md-3 mb-3">
+											<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
+											<div class="input-group input-group-sm">
+												<span class="input-group-text">₹</span>
+												<input type="number" class="form-control"
 													id="remuneration_per_month" name="remuneration_per_month"
 													step="0.01" min="0"
 													value="{{ old('remuneration_per_month', $requisition->remuneration_per_month) }}" required>
-												</div>
-												<div class="invalid-feedback"></div>
 											</div>
+											<div class="invalid-feedback"></div>
 										</div>
+									</div>
 
-										<div class="row">
-											<div class="col-12 mb-3">
-												<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
-													<textarea class="form-control form-select-sm"
+									<div class="row">
+										<div class="col-12 mb-3">
+											<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
+											<textarea class="form-control form-select-sm"
 												id="reporting_manager_address" name="reporting_manager_address"
 												rows="3" required>{{ old('reporting_manager_address', $requisition->reporting_manager_address) }}</textarea>
 											<div class="invalid-feedback"></div>
-											</div>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
+				</div>
 
-						<!-- Section 4: Document Uploads with Data Extraction -->
-						<!-- Section 4: Document Uploads -->
+				<!-- Section 4: Document Uploads with Data Extraction -->
+				<!-- Section 4: Document Uploads -->
 				<div class="row mb-4">
 					<div class="col-12">
 						<div class="card border">
 							<div class="card-header bg-light py-2">
 								<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
 							</div>
-							<div class="card-body">												
-						
+							<div class="card-body">
+
 								<!-- First Row: Resume, Driving License, PAN Card -->
 								<div class="row">
 									<!-- Resume -->
 									<div class="col-md-3 mb-3">
 										<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-										
+
 										@if($resumeDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -456,7 +458,7 @@
 									<!-- Driving License -->
 									<div class="col-md-3 mb-3">
 										<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
-										
+
 										@if($drivingDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -530,7 +532,7 @@
 									<!-- Aadhaar Card -->
 									<div class="col-md-3 mb-3">
 										<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
-										
+
 										@if($aadhaarDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -577,7 +579,7 @@
 									<!-- Bank Document -->
 									<div class="col-md-3 mb-3">
 										<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
-										
+
 										@if($bankDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -704,22 +706,22 @@
 				</div>
 
 
-						<!-- Form Actions -->
-						<div class="row">
-							<div class="col-12">
-								<div class="d-flex justify-content-end gap-2">
-									<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
-									<button type="submit" class="btn btn-primary btn-sm">
-										<i class="ri-save-line me-1"></i> Submit Requisition
-									</button>
-								</div>
-							</div>
+				<!-- Form Actions -->
+				<div class="row">
+					<div class="col-12">
+						<div class="d-flex justify-content-end gap-2">
+							<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
+							<button type="submit" class="btn btn-primary btn-sm">
+								<i class="ri-save-line me-1"></i> Submit Requisition
+							</button>
 						</div>
-					</form>
+					</div>
 				</div>
+				</form>
 			</div>
 		</div>
 	</div>
+</div>
 </div>
 @endsection
 
@@ -783,216 +785,216 @@
 </style>
 
 @section('script_section')
-<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
+<script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
-    $(document).ready(function() {
-		initDOJValidation("#date_of_joining");
-        // Get requisition type from hidden input
-        const requisitionType = $('input[name="requisition_type"]').val();
+	$(document).ready(function() {
+		 initContractDateValidation("#contract_start_date");
+		// Get requisition type from hidden input
+		const requisitionType = $('input[name="requisition_type"]').val();
 
-        // Process PAN Card when file is selected
-        $('#pan_card').on('change', function() {
-            const file = this.files[0];
-            if (!file) return;
+		// Process PAN Card when file is selected
+		$('#pan_card').on('change', function() {
+			const file = this.files[0];
+			if (!file) return;
 
-            // Show loading indicator
-            const panNoField = $('#pan_no');
-            panNoField.prop('disabled', true).val('Extracting...');
+			// Show loading indicator
+			const panNoField = $('#pan_no');
+			panNoField.prop('disabled', true).val('Extracting...');
 
-            const formData = new FormData();
-            formData.append('pan_file', file);
-            formData.append('requisition_type', requisitionType);
+			const formData = new FormData();
+			formData.append('pan_file', file);
+			formData.append('requisition_type', requisitionType);
 
-            $.ajax({
-                url: '{{ route("process.pan.card") }}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        panNoField.val(response.data.panNumber)
-                            .removeClass('is-invalid')
-                            .addClass(response.data.isVerified ? 'is-valid' : '');
+			$.ajax({
+				url: '{{ route("process.pan.card") }}',
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+				},
+				success: function(response) {
+					if (response.status === 'SUCCESS') {
+						panNoField.val(response.data.panNumber)
+							.removeClass('is-invalid')
+							.addClass(response.data.isVerified ? 'is-valid' : '');
 
-                        if (!response.data.isVerified) {
-                            showToast('PAN extracted but not verified. Please verify manually.', 'warning');
-                        } else {
-                            showToast('PAN extracted and verified successfully!', 'success');
-                        }
+						if (!response.data.isVerified) {
+							showToast('PAN extracted but not verified. Please verify manually.', 'warning');
+						} else {
+							showToast('PAN extracted and verified successfully!', 'success');
+						}
 
-                        // Store filename for submission
-                        $('#pan_filename').val(response.data.filename);
-                        $('#pan_filepath').val(response.data.filePath);
-                    }
-                },
-                error: function(xhr) {
-                    panNoField.val('').addClass('is-invalid');
-                    showToast('Failed to extract PAN. Please enter manually.', 'error');
-                },
-                complete: function() {
-                    panNoField.prop('disabled', false);
-                }
-            });
-        });
+						// Store filename for submission
+						$('#pan_filename').val(response.data.filename);
+						$('#pan_filepath').val(response.data.filePath);
+					}
+				},
+				error: function(xhr) {
+					panNoField.val('').addClass('is-invalid');
+					showToast('Failed to extract PAN. Please enter manually.', 'error');
+				},
+				complete: function() {
+					panNoField.prop('disabled', false);
+				}
+			});
+		});
 
-        // Process Bank Document when file is selected
-        $('#bank_document').on('change', function() {
-            const file = this.files[0];
-            if (!file) return;
+		// Process Bank Document when file is selected
+		$('#bank_document').on('change', function() {
+			const file = this.files[0];
+			if (!file) return;
 
-            // Show loading indicators
-            $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', true)
-                .val('Extracting...');
+			// Show loading indicators
+			$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', true)
+				.val('Extracting...');
 
-            const formData = new FormData();
-            formData.append('bank_file', file);
-            formData.append('requisition_type', requisitionType);
+			const formData = new FormData();
+			formData.append('bank_file', file);
+			formData.append('requisition_type', requisitionType);
 
-            $.ajax({
-                url: '{{ route("process.bank.document") }}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        const data = response.data;
+			$.ajax({
+				url: '{{ route("process.bank.document") }}',
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+				},
+				success: function(response) {
+					if (response.status === 'SUCCESS') {
+						const data = response.data;
 
-                        // Update bank fields
-                        if (data.accountNumber) {
-                            $('#bank_account_no').val(data.accountNumber)
-                                .removeClass('is-invalid')
-                                .addClass(data.isVerified ? 'is-valid' : '');
-                        }
+						// Update bank fields
+						if (data.accountNumber) {
+							$('#bank_account_no').val(data.accountNumber)
+								.removeClass('is-invalid')
+								.addClass(data.isVerified ? 'is-valid' : '');
+						}
 
-                        if (data.ifscCode) {
-                            $('#bank_ifsc').val(data.ifscCode)
-                                .removeClass('is-invalid')
-                                .addClass(data.isVerified ? 'is-valid' : '');
-                        }
+						if (data.ifscCode) {
+							$('#bank_ifsc').val(data.ifscCode)
+								.removeClass('is-invalid')
+								.addClass(data.isVerified ? 'is-valid' : '');
+						}
 
-                        if (data.verificationData?.ifsc_details?.name) {
-                            $('#bank_name')
-                                .val(data.verificationData.ifsc_details.name)
-                                .removeClass('is-invalid')
-                                .addClass(data.isVerified ? 'is-valid' : '');
-                        }
+						if (data.verificationData?.ifsc_details?.name) {
+							$('#bank_name')
+								.val(data.verificationData.ifsc_details.name)
+								.removeClass('is-invalid')
+								.addClass(data.isVerified ? 'is-valid' : '');
+						}
 
-                        if (data.verificationData?.beneficiary_name) {
-                            $('#account_holder_name')
-                                .val(data.verificationData.beneficiary_name)
-                                .removeClass('is-invalid')
-                                .addClass(data.isVerified ? 'is-valid' : '');
-                        }
-                        if (!data.isVerified) {
-                            showToast('Bank details extracted but not verified. Please verify manually.', 'warning');
-                        } else {
-                            showToast('Bank details extracted and verified successfully!', 'success');
-                        }
+						if (data.verificationData?.beneficiary_name) {
+							$('#account_holder_name')
+								.val(data.verificationData.beneficiary_name)
+								.removeClass('is-invalid')
+								.addClass(data.isVerified ? 'is-valid' : '');
+						}
+						if (!data.isVerified) {
+							showToast('Bank details extracted but not verified. Please verify manually.', 'warning');
+						} else {
+							showToast('Bank details extracted and verified successfully!', 'success');
+						}
 
-                        // Store filename for submission
-                        $('#bank_filename').val(data.filename);
-                        $('#bank_filepath').val(data.filePath);
-                    }
-                },
-                error: function(xhr) {
-                    $('#bank_account_no, #bank_ifsc, #bank_name')
-                        .val('').addClass('is-invalid');
-                    showToast('Failed to extract bank details. Please enter manually.', 'error');
-                },
-                complete: function() {
-                    $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
-                }
-            });
-        });
+						// Store filename for submission
+						$('#bank_filename').val(data.filename);
+						$('#bank_filepath').val(data.filePath);
+					}
+				},
+				error: function(xhr) {
+					$('#bank_account_no, #bank_ifsc, #bank_name')
+						.val('').addClass('is-invalid');
+					showToast('Failed to extract bank details. Please enter manually.', 'error');
+				},
+				complete: function() {
+					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+				}
+			});
+		});
 
-        // Process Aadhaar Card when file is selected
-        $('#aadhaar_card').on('change', function() {
-            const file = this.files[0];
-            if (!file) return;
+		// Process Aadhaar Card when file is selected
+		$('#aadhaar_card').on('change', function() {
+			const file = this.files[0];
+			if (!file) return;
 
-            const aadhaarField = $('#aadhaar_no');
-            updateAadhaarStatus('loading', 'Extracting Aadhaar number...');
-            aadhaarField.prop('disabled', true).val('Extracting...');
+			const aadhaarField = $('#aadhaar_no');
+			updateAadhaarStatus('loading', 'Extracting Aadhaar number...');
+			aadhaarField.prop('disabled', true).val('Extracting...');
 
-            const formData = new FormData();
-            formData.append('aadhaar_file', file);
-            formData.append('requisition_type', requisitionType);
+			const formData = new FormData();
+			formData.append('aadhaar_file', file);
+			formData.append('requisition_type', requisitionType);
 
-            $.ajax({
-                url: '{{ route("process.aadhaar.card") }}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        aadhaarField.val(response.data.aadhaarNumber);
+			$.ajax({
+				url: '{{ route("process.aadhaar.card") }}',
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+				},
+				success: function(response) {
+					if (response.status === 'SUCCESS') {
+						aadhaarField.val(response.data.aadhaarNumber);
 
-                        if (response.data.isVerified) {
-                            updateAadhaarStatus('success', 'Aadhaar verified successfully!', true);
-                            showToast('Aadhaar extracted and verified successfully!', 'success');
-                        } else {
-                            updateAadhaarStatus('success', 'Aadhaar extracted but not verified', false);
-                            showToast('Aadhaar extracted but not verified.', 'warning');
-                        }
+						if (response.data.isVerified) {
+							updateAadhaarStatus('success', 'Aadhaar verified successfully!', true);
+							showToast('Aadhaar extracted and verified successfully!', 'success');
+						} else {
+							updateAadhaarStatus('success', 'Aadhaar extracted but not verified', false);
+							showToast('Aadhaar extracted but not verified.', 'warning');
+						}
 
-                        // Store filename for submission
-                        $('#aadhaar_filename').val(response.data.filename);
-                        $('#aadhaar_filepath').val(response.data.filePath);
-                    }
-                },
-                error: function(xhr) {
-                    aadhaarField.val('');
-                    updateAadhaarStatus('error', 'Failed to extract Aadhaar. Please enter manually.');
-                    showToast('Failed to extract Aadhaar. Please enter manually.', 'error');
-                },
-                complete: function() {
-                    aadhaarField.prop('disabled', false);
-                }
-            });
-        });
+						// Store filename for submission
+						$('#aadhaar_filename').val(response.data.filename);
+						$('#aadhaar_filepath').val(response.data.filePath);
+					}
+				},
+				error: function(xhr) {
+					aadhaarField.val('');
+					updateAadhaarStatus('error', 'Failed to extract Aadhaar. Please enter manually.');
+					showToast('Failed to extract Aadhaar. Please enter manually.', 'error');
+				},
+				complete: function() {
+					aadhaarField.prop('disabled', false);
+				}
+			});
+		});
 
-        // Helper function for Aadhaar status updates
-        function updateAadhaarStatus(status, message, isVerified = false) {
-            const aadhaarField = $('#aadhaar_no');
-            const verifiedIcon = $('#aadhaar-verified-icon');
-            const warningIcon = $('#aadhaar-warning-icon');
-            const statusText = $('#aadhaar-status-text');
+		// Helper function for Aadhaar status updates
+		function updateAadhaarStatus(status, message, isVerified = false) {
+			const aadhaarField = $('#aadhaar_no');
+			const verifiedIcon = $('#aadhaar-verified-icon');
+			const warningIcon = $('#aadhaar-warning-icon');
+			const statusText = $('#aadhaar-status-text');
 
-            aadhaarField.removeClass('is-invalid is-valid');
-            verifiedIcon.addClass('d-none');
-            warningIcon.addClass('d-none');
+			aadhaarField.removeClass('is-invalid is-valid');
+			verifiedIcon.addClass('d-none');
+			warningIcon.addClass('d-none');
 
-            if (status === 'success') {
-                aadhaarField.addClass(isVerified ? 'is-valid' : '');
-                if (isVerified) {
-                    verifiedIcon.removeClass('d-none');
-                } else {
-                    warningIcon.removeClass('d-none');
-                }
-            } else if (status === 'error') {
-                aadhaarField.addClass('is-invalid');
-            } else if (status === 'loading') {
-                // Loading state - keep icons hidden
-            }
+			if (status === 'success') {
+				aadhaarField.addClass(isVerified ? 'is-valid' : '');
+				if (isVerified) {
+					verifiedIcon.removeClass('d-none');
+				} else {
+					warningIcon.removeClass('d-none');
+				}
+			} else if (status === 'error') {
+				aadhaarField.addClass('is-invalid');
+			} else if (status === 'loading') {
+				// Loading state - keep icons hidden
+			}
 
-            statusText.text(message);
-        }
+			statusText.text(message);
+		}
 
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const toast = `<div class="toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show position-fixed" role="alert" style="bottom: 20px; right: 20px; z-index: 1050;">
+		// Toast notification function
+		function showToast(message, type = 'info') {
+			const toast = `<div class="toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show position-fixed" role="alert" style="bottom: 20px; right: 20px; z-index: 1050;">
                 <div class="d-flex">
                     <div class="toast-body">
                         ${message}
@@ -1001,143 +1003,147 @@
                 </div>
             </div>`;
 
-            $('.toast').remove();
-            $('body').append(toast);
+			$('.toast').remove();
+			$('body').append(toast);
 
-            setTimeout(() => {
-                $('.toast').remove();
-            }, 5000);
-        }
+			setTimeout(() => {
+				$('.toast').remove();
+			}, 5000);
+		}
 
-        // Auto-calculate Date of Separation
-        $('#date_of_joining_required, #agreement_duration').on('change', function() {
-            const doj = $('#date_of_joining_required').val();
-            const duration = $('#agreement_duration').val();
+		// Auto-calculate Date of Separation
+		$('#contract_start_date, #contract_duration').on('change', function() {
+			const doj = $('#contract_start_date').val();
+			const duration = parseInt($('#contract_duration').val());
 
-            if (doj && duration) {
-                const dojDate = new Date(doj);
-                const separationDate = new Date(dojDate);
-                separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
-                separationDate.setDate(separationDate.getDate() - 1);
+			if (doj && duration) {
+				const dojDate = new Date(doj + "T00:00:00");
+				const separationDate = new Date(dojDate);
 
-                const formattedDate = separationDate.toISOString().split('T')[0];
-                $('#date_of_separation').val(formattedDate);
-            }
-        });
+				// duration is already in DAYS
+				separationDate.setDate(separationDate.getDate() + duration - 1);
 
-       
+				const yyyy = separationDate.getFullYear();
+				const mm = String(separationDate.getMonth() + 1).padStart(2, '0');
+				const dd = String(separationDate.getDate()).padStart(2, '0');
 
-        // Validate Date of Birth
-        $('#date_of_birth').on('change', function() {
-            const birthDate = new Date($(this).val());
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
+				$('#contract_end_date').val(`${yyyy}-${mm}-${dd}`);
+			}
+		});
 
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
 
-            if (age < 18) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').text('Age must be 18+').show();
-            } else {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
-            }
-        });
 
-        // Mobile number validation
-        $('#mobile_no').on('input', function() {
-            const mobile = $(this).val();
-            if (mobile.length === 10 && /^\d+$/.test(mobile)) {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
-            } else if (mobile.length > 0) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').show();
-            }
-        });
+		// Validate Date of Birth
+		$('#date_of_birth').on('change', function() {
+			const birthDate = new Date($(this).val());
+			const today = new Date();
+			let age = today.getFullYear() - birthDate.getFullYear();
+			const m = today.getMonth() - birthDate.getMonth();
 
-        // PIN code validation
-        $('#pin_code').on('input', function() {
-            const pincode = $(this).val();
-            if (pincode.length === 6 && /^\d+$/.test(pincode)) {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
-            } else if (pincode.length > 0) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').show();
-            }
-        });
+			if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+				age--;
+			}
 
-        // Form submission
-        $('#requisition-form').on('submit', function(e) {
-            e.preventDefault();
+			if (age < 18) {
+				$(this).addClass('is-invalid');
+				$(this).siblings('.invalid-feedback').text('Age must be 18+').show();
+			} else {
+				$(this).removeClass('is-invalid');
+				$(this).siblings('.invalid-feedback').hide();
+			}
+		});
 
-            const form = $(this);
-            const url = form.attr('action');
-            const formData = new FormData(form[0]);
-            
-            // Add _method for Laravel to recognize as PUT
-            formData.append('_method', 'PUT');
+		// Mobile number validation
+		$('#mobile_no').on('input', function() {
+			const mobile = $(this).val();
+			if (mobile.length === 10 && /^\d+$/.test(mobile)) {
+				$(this).removeClass('is-invalid');
+				$(this).siblings('.invalid-feedback').hide();
+			} else if (mobile.length > 0) {
+				$(this).addClass('is-invalid');
+				$(this).siblings('.invalid-feedback').show();
+			}
+		});
 
-            // Get CSRF token from meta tag
-            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+		// PIN code validation
+		$('#pin_code').on('input', function() {
+			const pincode = $(this).val();
+			if (pincode.length === 6 && /^\d+$/.test(pincode)) {
+				$(this).removeClass('is-invalid');
+				$(this).siblings('.invalid-feedback').hide();
+			} else if (pincode.length > 0) {
+				$(this).addClass('is-invalid');
+				$(this).siblings('.invalid-feedback').show();
+			}
+		});
 
-            form.find('.is-invalid').removeClass('is-invalid');
-            form.find('.invalid-feedback').text('').hide();
+		// Form submission
+		$('#requisition-form').on('submit', function(e) {
+			e.preventDefault();
 
-            const submitBtn = form.find('button[type="submit"]');
-            const originalText = submitBtn.html();
-            submitBtn.html('<i class="ri-loader-4-line ri-spin me-1"></i> Updating...').prop('disabled', true);
+			const form = $(this);
+			const url = form.attr('action');
+			const formData = new FormData(form[0]);
 
-            $.ajax({
-                url: url,
-                type: 'POST', // Must be POST when using FormData with _method
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken // Add CSRF token header
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert('Requisition updated successfully!');
-                        window.location.href = response.redirect;
-                    }
-                },
-                error: function(xhr) {
-                    submitBtn.html(originalText).prop('disabled', false);
+			// Add _method for Laravel to recognize as PUT
+			formData.append('_method', 'PUT');
 
-                    if (xhr.status === 422) {
-                        const errors = xhr.responseJSON.errors;
-                        $.each(errors, function(field, messages) {
-                            const input = form.find(`[name="${field}"]`);
-                            input.addClass('is-invalid');
-                            input.siblings('.invalid-feedback').text(messages[0]).show();
-                        });
-                    } else {
-                        alert('An error occurred. Please try again.');
-                    }
-                }
-            });
-        });
+			// Get CSRF token from meta tag
+			const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-        // File size validation
-        $('input[type="file"]').on('change', function() {
-            const file = this.files[0];
-            const maxSize = 5 * 1024 * 1024;
+			form.find('.is-invalid').removeClass('is-invalid');
+			form.find('.invalid-feedback').text('').hide();
 
-            if (file && file.size > maxSize) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').text('File must be < 5MB').show();
-                this.value = '';
-            } else {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
-            }
-        });
-    });
+			const submitBtn = form.find('button[type="submit"]');
+			const originalText = submitBtn.html();
+			submitBtn.html('<i class="ri-loader-4-line ri-spin me-1"></i> Updating...').prop('disabled', true);
+
+			$.ajax({
+				url: url,
+				type: 'POST', // Must be POST when using FormData with _method
+				data: formData,
+				processData: false,
+				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': csrfToken // Add CSRF token header
+				},
+				success: function(response) {
+					if (response.success) {
+						alert('Requisition updated successfully!');
+						window.location.href = response.redirect;
+					}
+				},
+				error: function(xhr) {
+					submitBtn.html(originalText).prop('disabled', false);
+
+					if (xhr.status === 422) {
+						const errors = xhr.responseJSON.errors;
+						$.each(errors, function(field, messages) {
+							const input = form.find(`[name="${field}"]`);
+							input.addClass('is-invalid');
+							input.siblings('.invalid-feedback').text(messages[0]).show();
+						});
+					} else {
+						alert('An error occurred. Please try again.');
+					}
+				}
+			});
+		});
+
+		// File size validation
+		$('input[type="file"]').on('change', function() {
+			const file = this.files[0];
+			const maxSize = 5 * 1024 * 1024;
+
+			if (file && file.size > maxSize) {
+				$(this).addClass('is-invalid');
+				$(this).siblings('.invalid-feedback').text('File must be < 5MB').show();
+				this.value = '';
+			} else {
+				$(this).removeClass('is-invalid');
+				$(this).siblings('.invalid-feedback').hide();
+			}
+		});
+	});
 </script>
 @endsection

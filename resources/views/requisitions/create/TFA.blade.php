@@ -87,7 +87,7 @@
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="mobile_no" class="form-label">Mobile No. <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -115,7 +115,7 @@
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-3 mb-3">
 												<label for="college_name" class="form-label">College/University</label>
 												<input type="text" class="form-control form-select-sm"
@@ -152,9 +152,9 @@
 											</div>
 										</div>
 
-										
 
-										
+
+
 									</div>
 								</div>
 							</div>
@@ -186,7 +186,7 @@
 												<input type="hidden" name="function_id"
 													value="{{ $autoFillData['function_id'] ?? '' }}">
 											</div>
-											<div class="col-md-3 mb-3">
+											<div class="col-md-2 mb-3">
 												<label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
 
 												<select class="form-select form-select-sm" id="department_id_display" disabled>
@@ -221,7 +221,7 @@
 													id="work_location_hq" name="work_location_hq" required>
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
 													<option value="">Select State</option>
@@ -233,7 +233,7 @@
 											</div>
 										</div>
 
-										
+
 
 										<div class="row">
 											<div class="col-md-2 mb-3">
@@ -341,234 +341,233 @@
 												<label class="form-label">Reporting Manager ID <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
 													value="{{ $autoFillData['reporting_manager_employee_id'] }}" readonly>
-												<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
-											</div>--}}
-											<div class="col-md-2 mb-3">
-												<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
-												<input type="date" class="form-control form-select-sm"
-													id="date_of_joining" name="date_of_joining" required>
-											</div>
-											<div class="col-md-2 mb-3">
-												<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="agreement_duration" name="agreement_duration" required>
-													<option value="">Select Duration</option>
-													<option value="1">1 Month</option>
-													<option value="2">2 Months</option>
-													<option value="3">3 Months</option>
-													<option value="6">6 Months</option>
-													<option value="9">9 Months</option>
-													{{--<option value="12">12 Months</option>
-													<option value="18">18 Months</option>
-													<option value="24">24 Months</option>--}}
-												</select>
-												<div class="invalid-feedback">Please select agreement duration</div>
-											</div>
-											<div class="col-md-2 mb-3">
-												<label for="date_of_separation" class="form-label">Date of Separation <span class="text-danger">*</span></label>
-												<input type="date" class="form-control form-select-sm"
-													id="date_of_separation" name="date_of_separation"
-													readonly required>
-												<div class="invalid-feedback">Separation date will be calculated automatically</div>
-											</div>
-											<div class="col-md-3 mb-3">
-												<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<span class="input-group-text">₹</span>
-													<input type="number" class="form-control"
-														id="remuneration_per_month" name="remuneration_per_month"
-														step="0.01" min="0" required>
-												</div>
-												<div class="invalid-feedback"></div>
-											</div>
+											<input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] }}">
+										</div>--}}
+										<div class="col-md-2 mb-3">
+											<label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
+											<input type="date" class="form-control form-select-sm"
+												id="contract_start_date" name="contract_start_date" required>
 										</div>
+										<div class="col-md-2 mb-3">
+											<label for="contract_duration" class="form-label">Contract Duration<span class="text-danger">*</span></label>
+											<select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
+												<option value="">Select Duration</option>
 
-										<div class="row">
-											<div class="col-12 mb-3">
-												<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
-												<textarea class="form-control form-select-sm"
-													id="reporting_manager_address" name="reporting_manager_address"
-													rows="3" required></textarea>
-												<div class="invalid-feedback"></div>
-												<small class="text-muted">Include PIN code and phone number</small>
+												<option value="15">15 Days</option>
+												<option value="30">1 Month</option>
+												<option value="45">45 Days</option>
+												<option value="60">2 Months</option>
+												<option value="90">3 Months</option>
+												<option value="120">4 Months</option>
+											</select>
+											<div class="invalid-feedback">Please select contract duration</div>
+										</div>
+										<div class="col-md-2 mb-3">
+											<label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
+											<input type="date" class="form-control form-select-sm"
+												id="contract_end_date" name="contract_end_date"
+												readonly required>
+											<div class="invalid-feedback">Contract end date will be calculated automatically</div>
+										</div>
+										<div class="col-md-3 mb-3">
+											<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
+											<div class="input-group input-group-sm">
+												<span class="input-group-text">₹</span>
+												<input type="number" class="form-control"
+													id="remuneration_per_month" name="remuneration_per_month"
+													step="0.01" min="0" required>
 											</div>
+											<div class="invalid-feedback"></div>
+										</div>
+									</div>
+
+									<div class="row">
+										<div class="col-12 mb-3">
+											<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
+											<textarea class="form-control form-select-sm"
+												id="reporting_manager_address" name="reporting_manager_address"
+												rows="3" required></textarea>
+											<div class="invalid-feedback"></div>
+											<small class="text-muted">Include PIN code and phone number</small>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-
-						<!-- Section 4: Document Uploads with Data Extraction -->
-						<div class="row mb-4">
-							<div class="col-12">
-								<div class="card border">
-									<div class="card-header bg-light py-2">
-										<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
-									</div>
-									<div class="card-body">
-										<div class="row">
-											<!-- Resume -->
-											<div class="col-md-3 mb-3">
-												<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="resume" name="resume" accept=".pdf,.doc,.docx" required>
-												<small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Driving License -->
-											<div class="col-md-3 mb-3">
-												<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- PAN Card -->
-											<div class="col-md-3 mb-3">
-												<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Clear image/PDF for auto-extraction</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- PAN Number -->
-											<div class="col-md-3 mb-3">
-												<label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="pan_no" name="pan_no" maxlength="10"
-														placeholder="Auto-fill from upload" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
-													</span>
-												</div>
-												<small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
-												<div class="invalid-feedback">Valid PAN required</div>
-											</div>
-										</div>
-
-										<!-- Second Row: PAN Number, Aadhaar Card, Aadhaar Number, Bank Document -->
-										<div class="row">
-
-
-											<!-- Aadhaar Card -->
-											<div class="col-md-3 mb-3">
-												<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Clear image/PDF of Aadhaar</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Aadhaar Number -->
-											<div class="col-md-3 mb-3">
-												<label for="aadhaar_no" class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="aadhaar_no" name="aadhaar_no" maxlength="12"
-														placeholder="Auto-fill from upload" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="aadhaar-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="aadhaar-warning-icon"></i>
-													</span>
-												</div>
-												<small class="text-muted" id="aadhaar-status-text">Upload Aadhaar to auto-extract</small>
-												<div class="invalid-feedback">Valid Aadhaar required</div>
-											</div>
-
-											<!-- Bank Document -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-select-sm"
-													id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" required>
-												<small class="text-muted">Passbook/Cancelled Cheque</small>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- Account Holder Name -->
-											<div class="col-md-3 mb-3">
-												<label for="account_holder_name" class="form-label">Account Holder Name <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="account_holder_name" name="account_holder_name"
-													placeholder="As per bank records" required>
-												<div class="invalid-feedback">Account holder name required</div>
-											</div>
-										</div>
-
-										<!-- Third Row: Account Holder, Account Number, IFSC, Bank Name, Other Document -->
-										<div class="row">
-
-											<!-- Account Number -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_account_no" class="form-label">Account Number <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="bank_account_no" name="bank_account_no" maxlength="50"
-														placeholder="Auto-extract from document" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="account-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="account-warning-icon"></i>
-													</span>
-												</div>
-												<div class="invalid-feedback">Valid account number required</div>
-											</div>
-
-											<!-- IFSC Code -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_ifsc" class="form-label">IFSC Code <span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control"
-														id="bank_ifsc" name="bank_ifsc" maxlength="11"
-														placeholder="Auto-extract from document" required>
-													<span class="input-group-text">
-														<i class="ri-checkbox-circle-fill text-success d-none" id="ifsc-verified-icon"></i>
-														<i class="ri-alert-fill text-warning d-none" id="ifsc-warning-icon"></i>
-													</span>
-												</div>
-												<div class="invalid-feedback">Valid IFSC code required</div>
-											</div>
-
-											<!-- Bank Name -->
-											<div class="col-md-3 mb-3">
-												<label for="bank_name" class="form-label">Bank Name <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="bank_name" name="bank_name"
-													placeholder="Auto-extract from document" required>
-												<div class="invalid-feedback">Bank name required</div>
-											</div>
-
-											<div class="col-md-3 mb-3">
-												<label for="other_document" class="form-label">Other Document (Optional)</label>
-												<input type="file" class="form-control form-select-sm"
-													id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-												<small class="text-muted">Additional documents</small>
-											</div>
-										</div>
-
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Form Actions -->
-						<div class="row">
-							<div class="col-12">
-								<div class="d-flex justify-content-end gap-2">
-									<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
-									<button type="submit" class="btn btn-primary btn-sm">
-										<i class="ri-save-line me-1"></i> Submit Requisition
-									</button>
-								</div>
-							</div>
-						</div>
-					</form>
 				</div>
+
+				<!-- Section 4: Document Uploads with Data Extraction -->
+				<div class="row mb-4">
+					<div class="col-12">
+						<div class="card border">
+							<div class="card-header bg-light py-2">
+								<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
+							</div>
+							<div class="card-body">
+								<div class="row">
+									<!-- Resume -->
+									<div class="col-md-3 mb-3">
+										<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+										<input type="file" class="form-control form-select-sm"
+											id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+										<small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Driving License -->
+									<div class="col-md-3 mb-3">
+										<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
+										<input type="file" class="form-control form-select-sm"
+											id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
+										<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- PAN Card -->
+									<div class="col-md-3 mb-3">
+										<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
+										<input type="file" class="form-control form-select-sm"
+											id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
+										<small class="text-muted">Clear image/PDF for auto-extraction</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- PAN Number -->
+									<div class="col-md-3 mb-3">
+										<label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="pan_no" name="pan_no" maxlength="10"
+												placeholder="Auto-fill from upload" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
+										<div class="invalid-feedback">Valid PAN required</div>
+									</div>
+								</div>
+
+								<!-- Second Row: PAN Number, Aadhaar Card, Aadhaar Number, Bank Document -->
+								<div class="row">
+
+
+									<!-- Aadhaar Card -->
+									<div class="col-md-3 mb-3">
+										<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
+										<input type="file" class="form-control form-select-sm"
+											id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" required>
+										<small class="text-muted">Clear image/PDF of Aadhaar</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Aadhaar Number -->
+									<div class="col-md-3 mb-3">
+										<label for="aadhaar_no" class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="aadhaar_no" name="aadhaar_no" maxlength="12"
+												placeholder="Auto-fill from upload" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="aadhaar-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="aadhaar-warning-icon"></i>
+											</span>
+										</div>
+										<small class="text-muted" id="aadhaar-status-text">Upload Aadhaar to auto-extract</small>
+										<div class="invalid-feedback">Valid Aadhaar required</div>
+									</div>
+
+									<!-- Bank Document -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
+										<input type="file" class="form-control form-select-sm"
+											id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" required>
+										<small class="text-muted">Passbook/Cancelled Cheque</small>
+										<div class="invalid-feedback"></div>
+									</div>
+
+									<!-- Account Holder Name -->
+									<div class="col-md-3 mb-3">
+										<label for="account_holder_name" class="form-label">Account Holder Name <span class="text-danger">*</span></label>
+										<input type="text" class="form-control form-select-sm"
+											id="account_holder_name" name="account_holder_name"
+											placeholder="As per bank records" required>
+										<div class="invalid-feedback">Account holder name required</div>
+									</div>
+								</div>
+
+								<!-- Third Row: Account Holder, Account Number, IFSC, Bank Name, Other Document -->
+								<div class="row">
+
+									<!-- Account Number -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_account_no" class="form-label">Account Number <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="bank_account_no" name="bank_account_no" maxlength="50"
+												placeholder="Auto-extract from document" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="account-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="account-warning-icon"></i>
+											</span>
+										</div>
+										<div class="invalid-feedback">Valid account number required</div>
+									</div>
+
+									<!-- IFSC Code -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_ifsc" class="form-label">IFSC Code <span class="text-danger">*</span></label>
+										<div class="input-group input-group-sm">
+											<input type="text" class="form-control"
+												id="bank_ifsc" name="bank_ifsc" maxlength="11"
+												placeholder="Auto-extract from document" required>
+											<span class="input-group-text">
+												<i class="ri-checkbox-circle-fill text-success d-none" id="ifsc-verified-icon"></i>
+												<i class="ri-alert-fill text-warning d-none" id="ifsc-warning-icon"></i>
+											</span>
+										</div>
+										<div class="invalid-feedback">Valid IFSC code required</div>
+									</div>
+
+									<!-- Bank Name -->
+									<div class="col-md-3 mb-3">
+										<label for="bank_name" class="form-label">Bank Name <span class="text-danger">*</span></label>
+										<input type="text" class="form-control form-select-sm"
+											id="bank_name" name="bank_name"
+											placeholder="Auto-extract from document" required>
+										<div class="invalid-feedback">Bank name required</div>
+									</div>
+
+									<div class="col-md-3 mb-3">
+										<label for="other_document" class="form-label">Other Document (Optional)</label>
+										<input type="file" class="form-control form-select-sm"
+											id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+										<small class="text-muted">Additional documents</small>
+									</div>
+								</div>
+
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Form Actions -->
+				<div class="row">
+					<div class="col-12">
+						<div class="d-flex justify-content-end gap-2">
+							<button type="reset" class="btn btn-light btn-sm">Reset Form</button>
+							<button type="submit" class="btn btn-primary btn-sm">
+								<i class="ri-save-line me-1"></i> Submit Requisition
+							</button>
+						</div>
+					</div>
+				</div>
+				</form>
 			</div>
 		</div>
 	</div>
+</div>
 </div>
 @endsection
 
@@ -632,10 +631,10 @@
 </style>
 
 @section('script_section')
-<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
+<script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
 	$(document).ready(function() {
-		    initDOJValidation("#date_of_joining");
+		initContractDateValidation("#contract_start_date");
 
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
@@ -861,29 +860,23 @@
 
 		// Calculate separation date when date of joining or duration changes
 		function calculateSeparationDate() {
-			const doj = $('#date_of_joining').val();
-			const duration = $('#agreement_duration').val();
+			const doj = $('#contract_start_date').val();
+			const duration = parseInt($('#contract_duration').val());
 
 			if (doj && duration) {
-				const dojDate = new Date(doj);
+				const dojDate = new Date(doj + "T00:00:00");
 				const separationDate = new Date(dojDate);
 
-				// Add months based on selected duration
-				separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
+				// Add days and subtract 1 (inclusive)
+				separationDate.setDate(separationDate.getDate() + duration - 1);
 
-				// Subtract 1 day to get the last day before the new month
-				separationDate.setDate(separationDate.getDate() - 1);
+				const yyyy = separationDate.getFullYear();
+				const mm = String(separationDate.getMonth() + 1).padStart(2, '0');
+				const dd = String(separationDate.getDate()).padStart(2, '0');
 
-				const formattedDate = separationDate.toISOString().split('T')[0];
-
-				// Set the calculated date in the date picker (readonly field)
-				$('#date_of_separation').val(formattedDate);
-
-				// Clear any validation errors
-				$('#date_of_separation').removeClass('is-invalid');
+				$('#contract_end_date').val(`${yyyy}-${mm}-${dd}`);
 			}
 		}
-
 		// Format date for display
 		function formatDate(date) {
 			const options = {
@@ -895,8 +888,16 @@
 		}
 
 
-		$('#agreement_duration').on('change', function() {
-			if ($('#date_of_joining').val()) {
+	
+		// Event listeners for date calculation
+		$('#contract_start_date').on('change', function() {
+			if ($('#contract_duration').val()) {
+				calculateSeparationDate();
+			}
+		});
+
+		$('#contract_duration').on('change', function() {
+			if ($('#contract_start_date').val()) {
 				calculateSeparationDate();
 			}
 		});

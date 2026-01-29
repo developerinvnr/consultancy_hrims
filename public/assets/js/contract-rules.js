@@ -1,23 +1,20 @@
-function initDOJValidation(selector) {
-    const dojInput = document.querySelector(selector);
-    if (!dojInput) return;
+function initContractDateValidation(selector) {
+    const input = document.querySelector(selector);
+    if (!input) return;
 
-    // Only Sunday is off
+    // Sunday is off
     function isSunday(date) {
         return date.getDay() === 0;
     }
 
-    // Get last 4 working days (Saturday working)
+    // Get last N working days of the month (Saturday is working)
     function getLastWorkingDays(year, month, count = 4) {
-        let date = new Date(year, month + 1, 0);
+        let date = new Date(year, month + 1, 0); // last date of month
         const blocked = [];
 
         while (blocked.length < count) {
             if (!isSunday(date)) {
-                const y = date.getFullYear();
-                const m = String(date.getMonth() + 1).padStart(2, '0');
-                const d = String(date.getDate()).padStart(2, '0');
-                blocked.push(`${y}-${m}-${d}`);
+                blocked.push(formatDate(date));
             }
             date.setDate(date.getDate() - 1);
         }
@@ -25,7 +22,14 @@ function initDOJValidation(selector) {
         return blocked;
     }
 
-    dojInput.addEventListener("change", function () {
+    function formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    input.addEventListener("change", function () {
         if (!this.value) return;
 
         const selected = new Date(this.value + "T00:00:00");
@@ -42,18 +46,15 @@ function initDOJValidation(selector) {
             return;
         }
 
-        // Rule 2: Block last 4 working days
+        // Rule 2: Block last 4 working days of the selected month
         const blockedDates = getLastWorkingDays(
             selected.getFullYear(),
             selected.getMonth()
         );
 
-        const formatted =
-            selected.getFullYear() + '-' +
-            String(selected.getMonth() + 1).padStart(2, '0') + '-' +
-            String(selected.getDate()).padStart(2, '0');
+        const selectedFormatted = formatDate(selected);
 
-        if (blockedDates.includes(formatted)) {
+        if (blockedDates.includes(selectedFormatted)) {
             alert("Last 4 working days of the month are not allowed.");
             this.value = '';
             return;
