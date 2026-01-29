@@ -38,18 +38,18 @@
 
 				<div class="card-body">
 					<form id="requisition-form" method="POST" action="{{ route('requisitions.update', $requisition) }}" enctype="multipart/form-data">
-					   @csrf
+						@csrf
 						@method('PUT')
 						@php
-							$documents = $requisition->documents ?? collect();
+						$documents = $requisition->documents ?? collect();
 						@endphp
 						@php
 						$bankDoc = $documents->firstWhere('document_type', 'bank_document');
 						$panDoc = $documents->firstWhere('document_type', 'pan_card');
-                        $resumeDoc = $documents->firstWhere('document_type', 'resume');
+						$resumeDoc = $documents->firstWhere('document_type', 'resume');
 						$drivingDoc = $documents->firstWhere('document_type', 'driving_licence');
 						$aadhaarDoc = $documents->firstWhere('document_type', 'aadhaar_card');
-					    $otherDocs = $documents->where('document_type', 'other');
+						$otherDocs = $documents->where('document_type', 'other');
 
 						@endphp
 						<input type="hidden" name="requisition_type" value="Contractual">
@@ -58,7 +58,7 @@
 						<input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
 						<input type="hidden" name="bank_filepath" id="bank_filepath" value="{{ $bankDoc->file_path ?? '' }}">
 						<input type="hidden" name="aadhaar_filename" id="aadhaar_filename" value="{{ $aadhaarDoc->file_name ?? '' }}">
-						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">	
+						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">
 						<!-- Section 1: Personal Information -->
 						<div class="row mb-4">
 							<div class="col-12">
@@ -198,7 +198,7 @@
 									<div class="card-body">
 										<div class="row">
 											<!-- Function -->
-											<div class="col-md-4 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="function_id" class="form-label">Function <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" disabled>
 													@foreach($functions as $function)
@@ -212,7 +212,7 @@
 											</div>
 
 											<!-- Department -->
-											<div class="col-md-4 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" disabled>
 													@foreach($departments as $department)
@@ -225,8 +225,23 @@
 												<div class="invalid-feedback"></div>
 											</div>
 
+											<!-- Sub-Department -->
+											<div class="col-md-3 mb-3">
+												<label for="sub_department_id" class="form-label">Department <span class="text-danger">*</span></label>
+												<select class="form-select form-select-sm" disabled>
+													@foreach($sub_departments as $subdepartment)
+													<option {{ $requisition->sub_department == $subdepartment->id ? 'selected' : '' }}>
+														{{ $subdepartment->sub_department_name }}
+													</option>
+													@endforeach
+												</select>
+												<input type="hidden" name="sub_department_id" value="{{ $requisition->sub_department_id }}">
+												<div class="invalid-feedback"></div>
+											</div>
+
+
 											<!-- Vertical -->
-											<div class="col-md-4 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" disabled>
 													@foreach($verticals as $vertical)
@@ -294,7 +309,6 @@
 											<input type="date" class="form-control form-select-sm"
 												id="date_of_joining" name="date_of_joining"
 												value="{{ old('date_of_joining', $requisition->date_of_joining?->format('Y-m-d')) }}" required>
-											<div class="invalid-feedback">Cannot be in past month</div>
 										</div>
 										<div class="col-md-4 mb-3">
 											<label for="agreement_duration" class="form-label">Duration <span class="text-danger">*</span></label>
@@ -365,14 +379,14 @@
 							<div class="card-header bg-light py-2">
 								<h6 class="mb-0">Section 4: Document Uploads with Data Extraction</h6>
 							</div>
-							<div class="card-body">												
-							
+							<div class="card-body">
+
 								<!-- First Row: Resume, Driving License, PAN Card -->
 								<div class="row">
 									<!-- Resume -->
 									<div class="col-md-3 mb-3">
 										<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-										
+
 										@if($resumeDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -397,7 +411,7 @@
 									<!-- Driving License -->
 									<div class="col-md-3 mb-3">
 										<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
-									
+
 										@if($drivingDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -422,7 +436,7 @@
 									<!-- PAN Card -->
 									<div class="col-md-3 mb-3">
 										<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-									
+
 										@if($panDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -472,7 +486,7 @@
 									<!-- Aadhaar Card -->
 									<div class="col-md-3 mb-3">
 										<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
-									
+
 										@if($aadhaarDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -519,7 +533,7 @@
 									<!-- Bank Document -->
 									<div class="col-md-3 mb-3">
 										<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
-										
+
 										@if($bankDoc)
 										<div class="mb-2">
 											<div class="d-flex justify-content-between align-items-center">
@@ -544,7 +558,7 @@
 									<!-- Other Document -->
 									<div class="col-md-3 mb-3">
 										<label for="other_document" class="form-label">Other Document (Optional)</label>
-										
+
 										@if($otherDocs->count() > 0)
 										<div class="mb-2">
 											<small class="text-success">
@@ -702,8 +716,12 @@
 </style>
 
 @section('script_section')
+<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
+
 <script>
+	
 	$(document).ready(function() {
+		initDOJValidation("#date_of_joining");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -941,38 +959,6 @@
 			}
 		});
 
-
-		// Auto-calculate Date of Separation
-		$('#date_of_joining, #agreement_duration').on('change', function() {
-			const doj = $('#date_of_joining').val();
-			const duration = $('#agreement_duration').val();
-
-			if (doj && duration) {
-				const dojDate = new Date(doj);
-				const separationDate = new Date(dojDate);
-				separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
-				separationDate.setDate(separationDate.getDate() - 1);
-
-				const formattedDate = separationDate.toISOString().split('T')[0];
-				$('#date_of_separation').val(formattedDate);
-			}
-		});
-
-		// Validate Date of Joining
-		$('#date_of_joining').on('change', function() {
-			const selectedDate = new Date($(this).val());
-			const today = new Date();
-			const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-			if (selectedDate < firstDayOfMonth) {
-				$(this).addClass('is-invalid');
-				$(this).siblings('.invalid-feedback').text('Date cannot be in past month').show();
-			} else {
-				$(this).removeClass('is-invalid');
-				$(this).siblings('.invalid-feedback').hide();
-			}
-		});
-
 		// Validate Date of Birth
 		$('#date_of_birth').on('change', function() {
 			const birthDate = new Date($(this).val());
@@ -1019,57 +1005,57 @@
 
 		// Form submission
 		// Form submission
-$('#requisition-form').on('submit', function(e) {
-    e.preventDefault();
+		$('#requisition-form').on('submit', function(e) {
+			e.preventDefault();
 
-    const form = $(this);
-    const url = form.attr('action');
-    const formData = new FormData(form[0]);
-    
-    // Add _method for Laravel to recognize as PUT
-    formData.append('_method', 'PUT');
+			const form = $(this);
+			const url = form.attr('action');
+			const formData = new FormData(form[0]);
 
-    // Get CSRF token from meta tag
-    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+			// Add _method for Laravel to recognize as PUT
+			formData.append('_method', 'PUT');
 
-    form.find('.is-invalid').removeClass('is-invalid');
-    form.find('.invalid-feedback').text('').hide();
+			// Get CSRF token from meta tag
+			const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-    const submitBtn = form.find('button[type="submit"]');
-    const originalText = submitBtn.html();
-    submitBtn.html('<i class="ri-loader-4-line ri-spin me-1"></i> Updating...').prop('disabled', true);
+			form.find('.is-invalid').removeClass('is-invalid');
+			form.find('.invalid-feedback').text('').hide();
 
-    $.ajax({
-        url: url,
-        type: 'POST', // Must be POST when using FormData with _method
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-            'X-CSRF-TOKEN': csrfToken // Add CSRF token header
-        },
-        success: function(response) {
-            if (response.success) {
-                alert('Requisition updated successfully!');
-                window.location.href = response.redirect;
-            }
-        },
-        error: function(xhr) {
-            submitBtn.html(originalText).prop('disabled', false);
+			const submitBtn = form.find('button[type="submit"]');
+			const originalText = submitBtn.html();
+			submitBtn.html('<i class="ri-loader-4-line ri-spin me-1"></i> Updating...').prop('disabled', true);
 
-            if (xhr.status === 422) {
-                const errors = xhr.responseJSON.errors;
-                $.each(errors, function(field, messages) {
-                    const input = form.find(`[name="${field}"]`);
-                    input.addClass('is-invalid');
-                    input.siblings('.invalid-feedback').text(messages[0]).show();
-                });
-            } else {
-                alert('An error occurred. Please try again.');
-            }
-        }
-    });
-});
+			$.ajax({
+				url: url,
+				type: 'POST', // Must be POST when using FormData with _method
+				data: formData,
+				processData: false,
+				contentType: false,
+				headers: {
+					'X-CSRF-TOKEN': csrfToken // Add CSRF token header
+				},
+				success: function(response) {
+					if (response.success) {
+						alert('Requisition updated successfully!');
+						window.location.href = response.redirect;
+					}
+				},
+				error: function(xhr) {
+					submitBtn.html(originalText).prop('disabled', false);
+
+					if (xhr.status === 422) {
+						const errors = xhr.responseJSON.errors;
+						$.each(errors, function(field, messages) {
+							const input = form.find(`[name="${field}"]`);
+							input.addClass('is-invalid');
+							input.siblings('.invalid-feedback').text(messages[0]).show();
+						});
+					} else {
+						alert('An error occurred. Please try again.');
+					}
+				}
+			});
+		});
 
 		// File size validation
 		$('input[type="file"]').on('change', function() {

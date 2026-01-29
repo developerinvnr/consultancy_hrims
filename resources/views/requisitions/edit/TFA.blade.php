@@ -369,7 +369,6 @@
 											<input type="date" class="form-control form-select-sm"
 												id="date_of_joining" name="date_of_joining"
 												value="{{ old('date_of_joining', $requisition->date_of_joining?->format('Y-m-d')) }}" required>
-											<div class="invalid-feedback">Cannot be in past month</div>
 										</div>
 											<div class="col-md-2 mb-3">
 												<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
@@ -784,8 +783,10 @@
 </style>
 
 @section('script_section')
+<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
 <script>
     $(document).ready(function() {
+		initDOJValidation("#date_of_joining");
         // Get requisition type from hidden input
         const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -1024,20 +1025,7 @@
             }
         });
 
-        // Validate Date of Joining
-        $('#date_of_joining_required').on('change', function() {
-            const selectedDate = new Date($(this).val());
-            const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-            if (selectedDate < firstDayOfMonth) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').text('Date cannot be in past month').show();
-            } else {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
-            }
-        });
+       
 
         // Validate Date of Birth
         $('#date_of_birth').on('change', function() {

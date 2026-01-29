@@ -347,7 +347,6 @@
 												<label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
 												<input type="date" class="form-control form-select-sm"
 													id="date_of_joining" name="date_of_joining" required>
-												<div class="invalid-feedback">Cannot be in past month</div>
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="agreement_duration" class="form-label">Agreement Duration <span class="text-danger">*</span></label>
@@ -633,8 +632,11 @@
 </style>
 
 @section('script_section')
+<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
 <script>
 	$(document).ready(function() {
+		    initDOJValidation("#date_of_joining");
+
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -892,13 +894,6 @@
 			return date.toLocaleDateString('en-US', options);
 		}
 
-		// Event listeners for date calculation
-		$('#date_of_joining').on('change', function() {
-			validateDateOfJoining();
-			if ($('#agreement_duration').val()) {
-				calculateSeparationDate();
-			}
-		});
 
 		$('#agreement_duration').on('change', function() {
 			if ($('#date_of_joining').val()) {
@@ -906,20 +901,6 @@
 			}
 		});
 
-		// Validate Date of Joining
-		function validateDateOfJoining() {
-			const selectedDate = new Date($('#date_of_joining').val());
-			const today = new Date();
-			const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-			if (selectedDate < firstDayOfMonth) {
-				$('#date_of_joining').addClass('is-invalid');
-				$('#date_of_joining').siblings('.invalid-feedback').text('Date cannot be in past month').show();
-			} else {
-				$('#date_of_joining').removeClass('is-invalid');
-				$('#date_of_joining').siblings('.invalid-feedback').hide();
-			}
-		}
 		// Validate Date of Birth
 		$('#date_of_birth').on('change', function() {
 			const birthDate = new Date($(this).val());

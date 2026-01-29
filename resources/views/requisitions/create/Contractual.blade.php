@@ -165,7 +165,7 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="function_id" class="form-label">Function <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm" disabled>
                                                     @foreach($functions as $function)
@@ -179,7 +179,7 @@
 
                                                 <div class="invalid-feedback"></div>
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm" disabled>
                                                     @foreach($departments as $department)
@@ -193,7 +193,21 @@
 
                                                 <div class="invalid-feedback"></div>
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <!-- Sub-department -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="sub_department_id" class="form-label">Sub-department <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm" id="sub_department_id_display" disabled>
+                                                    <option value="">Select Sub-department</option>
+                                                    @foreach($sub_departments as $subdepartment)
+                                                    <option value="{{ $subdepartment->id }}"
+                                                        {{ $autoFillData['sub_department_id'] == $subdepartment->id ? 'selected' : '' }}>
+                                                        {{ $subdepartment->sub_department_name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                                <input type="hidden" name="sub_department_id" value="{{ $autoFillData['sub_department_id'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
                                                 <label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm" disabled>
                                                     @foreach($verticals as $vertical)
@@ -257,7 +271,6 @@
                                             <label for="date_of_joining" class="form-label">Date of Joining <span class="text-danger">*</span></label>
                                             <input type="date" class="form-control form-select-sm"
                                                 id="date_of_joining" name="date_of_joining" required>
-                                            <div class="invalid-feedback">Cannot be in past month</div>
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label for="agreement_duration" class="form-label">Duration <span class="text-danger">*</span></label>
@@ -527,8 +540,10 @@
 </style>
 
 @section('script_section')
+<script src="{{ asset('assets/js/doj-rules.js') }}"></script>
 <script>
     $(document).ready(function() {
+        initDOJValidation("#date_of_joining");
         // Get requisition type from hidden input
         const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -763,38 +778,6 @@
 
                 const formattedDate = separationDate.toISOString().split('T')[0];
                 $('#date_of_separation').val(formattedDate);
-            }
-        });
-
-
-        // Auto-calculate Date of Separation
-        $('#date_of_joining, #agreement_duration').on('change', function() {
-            const doj = $('#date_of_joining').val();
-            const duration = $('#agreement_duration').val();
-
-            if (doj && duration) {
-                const dojDate = new Date(doj);
-                const separationDate = new Date(dojDate);
-                separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
-                separationDate.setDate(separationDate.getDate() - 1);
-
-                const formattedDate = separationDate.toISOString().split('T')[0];
-                $('#date_of_separation').val(formattedDate);
-            }
-        });
-
-        // Validate Date of Joining
-        $('#date_of_joining').on('change', function() {
-            const selectedDate = new Date($(this).val());
-            const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-            if (selectedDate < firstDayOfMonth) {
-                $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').text('Date cannot be in past month').show();
-            } else {
-                $(this).removeClass('is-invalid');
-                $(this).siblings('.invalid-feedback').hide();
             }
         });
 
