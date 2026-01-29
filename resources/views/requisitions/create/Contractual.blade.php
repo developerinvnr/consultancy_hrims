@@ -275,11 +275,18 @@
                                         <div class="col-md-4 mb-3">
                                             <label for="contract_duration" class="form-label">Contract Duration<span class="text-danger">*</span></label>
                                             <select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
-                                                <option value="">Select</option>
-                                                @for($i = 1; $i <= 9; $i++)
-                                                    <option value="{{ $i }}">{{ $i }} month{{ $i > 1 ? 's' : '' }}</option>
-                                                    @endfor
-                                            </select>
+												<option value="">Select Duration</option>
+
+												<option value="30">1 Month</option>
+												<option value="60">2 Months</option>
+												<option value="90">3 Months</option>
+												<option value="120">4 Months</option>
+                                                <option value="150">5 Months</option>
+                                                <option value="180">6 Months</option>
+                                                <option value="210">7 Months</option>
+                                                <option value="240">8 Months</option>
+                                                <option value="270">9 Months</option>
+											</select>
                                             <div class="invalid-feedback"></div>
                                         </div>
                                     </div>
@@ -765,21 +772,40 @@
             }, 5000);
         }
 
-        // Auto-calculate Date of Separation
-        $('#contract_start_date, #contract_duration').on('change', function() {
-            const doj = $('#contract_start_date').val();
-            const duration = $('#contract_duration').val();
+        	// Calculate separation date when date of joining or duration changes
+		function calculateSeparationDate() {
+			const doj = $('#contract_start_date').val();
+			const duration = parseInt($('#contract_duration').val());
 
-            if (doj && duration) {
-                const dojDate = new Date(doj);
-                const separationDate = new Date(dojDate);
-                separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
-                separationDate.setDate(separationDate.getDate() - 1);
+			if (doj && duration) {
+				const dojDate = new Date(doj + "T00:00:00");
+				const separationDate = new Date(dojDate);
 
-                const formattedDate = separationDate.toISOString().split('T')[0];
-                $('#contract_end_date').val(formattedDate);
-            }
-        });
+				// Add number of days
+				separationDate.setDate(separationDate.getDate() + duration - 1);
+
+				const yyyy = separationDate.getFullYear();
+				const mm = String(separationDate.getMonth() + 1).padStart(2, '0');
+				const dd = String(separationDate.getDate()).padStart(2, '0');
+
+				$('#contract_end_date').val(`${yyyy}-${mm}-${dd}`);
+			}
+		}
+
+
+        	// Event listeners for date calculation
+		$('#contract_start_date').on('change', function() {
+			if ($('#contract_duration').val()) {
+				calculateSeparationDate();
+			}
+		});
+
+		$('#contract_duration').on('change', function() {
+			if ($('#contract_start_date').val()) {
+				calculateSeparationDate();
+			}
+		});
+
 
         // Validate Date of Birth
         $('#date_of_birth').on('change', function() {

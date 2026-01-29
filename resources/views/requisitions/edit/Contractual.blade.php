@@ -311,15 +311,35 @@
 												value="{{ old('contract_start_date', $requisition->contract_start_date?->format('Y-m-d')) }}" required>
 										</div>
 										<div class="col-md-4 mb-3">
-											<label for="contract_duration" class="form-label">Contract duration<span class="text-danger">*</span></label>
+											<label for="contract_duration" class="form-label">
+												Contract Duration <span class="text-danger">*</span>
+											</label>
+
 											<select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
-												<option value="">Select</option>
-												@for($i = 1; $i <= 9; $i++)
-													<option value="{{ $i }}" {{ old('contract_duration', $requisition->contract_duration) == $i ? 'selected' : '' }}>
-													{{ $i }} month{{ $i > 1 ? 's' : '' }}
-													</option>
-													@endfor
+												<option value="">Select Duration</option>
+
+												@php
+												$durations = [
+												30 => '1 Month',
+												60 => '2 Months',
+												90 => '3 Months',
+												120 => '4 Months',
+												150 => '5 Months',
+												180 => '6 Months',
+												210 => '7 Months',
+												240 => '8 Months',
+												270 => '9 Months',
+												];
+												@endphp
+
+												@foreach($durations as $value => $label)
+												<option value="{{ $value }}"
+													{{ old('contract_duration', $requisition->contract_duration) == $value ? 'selected' : '' }}>
+													{{ $label }}
+												</option>
+												@endforeach
 											</select>
+
 											<div class="invalid-feedback"></div>
 										</div>
 									</div>
@@ -719,9 +739,8 @@
 <script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 
 <script>
-	
 	$(document).ready(function() {
-		 initContractDateValidation("#contract_start_date");
+		initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -943,21 +962,40 @@
 			}, 5000);
 		}
 
-		// Auto-calculate Date of Separation
-		$('#contract_start_date, #contract_duration').on('change', function() {
+		// Calculate separation date when date of joining or duration changes
+		function calculateSeparationDate() {
 			const doj = $('#contract_start_date').val();
-			const duration = $('#contract_duration').val();
+			const duration = parseInt($('#contract_duration').val());
 
 			if (doj && duration) {
-				const dojDate = new Date(doj);
+				const dojDate = new Date(doj + "T00:00:00");
 				const separationDate = new Date(dojDate);
-				separationDate.setMonth(separationDate.getMonth() + parseInt(duration));
-				separationDate.setDate(separationDate.getDate() - 1);
 
-				const formattedDate = separationDate.toISOString().split('T')[0];
-				$('#contract_end_date').val(formattedDate);
+				// Add number of days
+				separationDate.setDate(separationDate.getDate() + duration - 1);
+
+				const yyyy = separationDate.getFullYear();
+				const mm = String(separationDate.getMonth() + 1).padStart(2, '0');
+				const dd = String(separationDate.getDate()).padStart(2, '0');
+
+				$('#contract_end_date').val(`${yyyy}-${mm}-${dd}`);
+			}
+		}
+
+
+        	// Event listeners for date calculation
+		$('#contract_start_date').on('change', function() {
+			if ($('#contract_duration').val()) {
+				calculateSeparationDate();
 			}
 		});
+
+		$('#contract_duration').on('change', function() {
+			if ($('#contract_start_date').val()) {
+				calculateSeparationDate();
+			}
+		});
+
 
 		// Validate Date of Birth
 		$('#date_of_birth').on('change', function() {
