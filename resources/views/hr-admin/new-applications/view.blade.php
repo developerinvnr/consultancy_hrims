@@ -140,18 +140,21 @@
                                 <td class="small">{{ $requisition->reporting_manager_employee_id }}</td>
                             </tr>
                             <tr>
-                                <td class="text-muted small">Joining Date:</td>
+                                <td class="text-muted small">Contract Start Date:</td>
                                 <td class="small">{{ $requisition->contract_start_date->format('d-m-Y') }}</td>
                             </tr>
                             <tr>
-                                <td class="text-muted small">Separation Date:</td>
-                                <td class="small">{{ $requisition->->format('d-m-Y') }}</td>
+                                <td class="text-muted small">Contract End Date:</td>
+                                <td class="small">{{ $requisition->contract_end_date->format('d-m-Y') }}</td>
                             </tr>
-                            @if($requisition->contract_duration)
-                            <tr>
-                                <td class="text-muted small">Agreement Duration:</td>
-                                <td class="small">{{ $requisition->contract_duration }} months</td>
-                            </tr>
+                          @if($requisition->contract_duration)
+                                <tr>
+                                    <td class="text-muted small">Contract Duration:</td>
+                                    <td class="small">
+                                        {{ intval($requisition->contract_duration / 30) }}
+                                        month{{ ($requisition->contract_duration / 30) > 1 ? 's' : '' }}
+                                    </td>
+                                </tr>
                             @endif
                             <tr>
                                 <td class="text-muted small">Remuneration:</td>
