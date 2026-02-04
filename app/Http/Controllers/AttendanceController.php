@@ -24,7 +24,6 @@ class AttendanceController extends Controller
         return view('hr-admin.attendance.index');
     }
 
-
     /**
      * Get attendance data for month
      */
@@ -41,6 +40,7 @@ class AttendanceController extends Controller
             $month = $request->month;
             $year = $request->year;
             $employeeType = $request->employee_type;
+            $currentDate = Carbon::now();
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
@@ -92,6 +92,8 @@ class AttendanceController extends Controller
                 'month' => $month,
                 'month_name' => Carbon::create($year, $month)->format('F'),
                 'days_in_month' => $daysInMonth,
+                'current_date' => $currentDate->format('Y-m-d'),
+                'current_day' => $currentDate->day,
                 'candidates' => []
             ];
 
@@ -111,6 +113,8 @@ class AttendanceController extends Controller
                 $totalAbsent = 0;
                 $totalCL = 0;
                 $totalLWP = 0;
+                $totalOD = 0;
+                $totalCH = 0;
 
                 if ($attendance) {
                     for ($day = 1; $day <= $daysInMonth; $day++) {
@@ -132,6 +136,12 @@ class AttendanceController extends Controller
                             case 'LWP':
                                 $totalLWP++;
                                 break;
+                            case 'OD':
+                                $totalOD++;
+                                break;
+                            case 'CH':
+                                $totalCH++;
+                                break;
                         }
                     }
                 }
@@ -144,8 +154,6 @@ class AttendanceController extends Controller
                         $clRemaining = max(0, $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized);
                     } else {
                         // If no leave balance record exists, we need to create one or calculate from candidate data
-
-                        // First, check if we should create a leave balance record
                         $joiningDate = Carbon::parse($candidate->contract_start_date);
                         $joiningYear = $joiningDate->year;
 
@@ -189,6 +197,8 @@ class AttendanceController extends Controller
                     'total_absent' => $totalAbsent,
                     'cl_used' => $totalCL,
                     'lwp_days' => $totalLWP,
+                    'od_days' => $totalOD,
+                    'ch_days' => $totalCH,
                     'cl_remaining' => $clRemaining,
                     'daily_rate' => $candidate->remuneration_per_month ? $candidate->remuneration_per_month / 26 : 0
                 ];
@@ -208,6 +218,7 @@ class AttendanceController extends Controller
 
     public function updateAttendance(Request $request)
     {
+        //dd($request->all());
         $request->validate([
             'candidate_id' => 'required|integer',
             'month' => 'required|integer|between:1,12',
@@ -218,240 +229,172 @@ class AttendanceController extends Controller
         DB::beginTransaction();
 
         try {
+
             $candidateId = $request->candidate_id;
             $month = $request->month;
             $year = $request->year;
             $attendanceData = json_decode($request->attendance, true);
-            $userId = Auth::id();
-
-            // Get current user
             $user = Auth::user();
+            $today = Carbon::today();
 
-            // Check user roles
-            $isHRAdmin = $user->hasRole('hr_admin') || $user->hasRole('admin');
-
-            // Get candidate details first
-            $candidate = CandidateMaster::find($candidateId);
-            if (!$candidate) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Candidate not found'
-                ]);
-            }
-
-            // Check if current user is the reporting manager for this candidate
-            $isReportingManager = ($user->emp_id && $candidate->reporting_manager_employee_id)
-                && ($user->emp_id == $candidate->reporting_manager_employee_id);
+            $candidate = CandidateMaster::findOrFail($candidateId);
+            $isContractual = $candidate->requisition_type === 'Contractual';
+            $isHRAdmin = $user->hasRole('admin') || $user->hasRole('hr_admin');
+            $isReportingManager = $user->emp_id &&
+                $candidate->reporting_manager_employee_id == $user->emp_id;
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            $isCurrentMonth = ($today->month == $month && $today->year == $year);
 
-            $isContractual = $candidate->requisition_type === 'Contractual';
-            $joiningDate = Carbon::parse($candidate->contract_start_date);
+            /* ---------------- ROLE DATE VALIDATION ---------------- */
 
-            // Check if candidate was active in this month
-            if ($joiningDate->year > $year || ($joiningDate->year == $year && $joiningDate->month > $month)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Candidate was not active in this month'
-                ]);
-            }
+            if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
 
-            // Get or create attendance record
-            $attendance = Attendance::firstOrNew([
-                'candidate_id' => $candidateId,
-                'Month' => $month,
-                'Year' => $year
-            ]);
+                $allowedDays = [];
+                $cursor = $today->copy();
 
-            // For new records, make sure candidate_id is set
-            if (!$attendance->exists) {
-                $attendance->candidate_id = $candidateId;
-                $attendance->Month = $month;
-                $attendance->Year = $year;
-            }
-
-            // Get existing attendance data to compare changes
-            $existingAttendance = [];
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $column = "A" . $day;
-                $existingAttendance[$day] = $attendance->exists ? $attendance->$column : null;
-            }
-
-            // Count CL days in new attendance data
-            $newCLCount = 0;
-            foreach ($attendanceData as $status) {
-                if ($status === 'CL') {
-                    $newCLCount++;
-                }
-            }
-
-            // Get existing CL count from current attendance
-            $existingCLCount = 0;
-            foreach ($existingAttendance as $status) {
-                if ($status === 'CL') {
-                    $existingCLCount++;
-                }
-            }
-
-            // Calculate net CL change
-            $clChange = $newCLCount - $existingCLCount;
-
-            // Validate CL application based on user role and availability
-            if ($isContractual && $clChange != 0) {
-                // Get or create leave balance
-                $leaveBalance = LeaveBalance::firstOrNew([
-                    'CandidateID' => $candidateId,
-                    'calendar_year' => $year
-                ]);
-
-                // If new leave balance record, set opening balance from candidate's leave_credited
-                if (!$leaveBalance->exists) {
-                    // Use leave_credited value from candidate table, default to 0 if null
-                    $leaveBalance->opening_cl_balance = $candidate->leave_credited ?: 0;
-                    $leaveBalance->cl_utilized = 0;
-                    $leaveBalance->lwp_days_accumulated = 0;
-                    $leaveBalance->contract_start_date = $joiningDate;
-                    $leaveBalance->save();
+                while (count($allowedDays) < 7) {
+                    if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
+                        $allowedDays[] = $cursor->day;
+                    }
+                    $cursor->subDay();
                 }
 
-                // Calculate current available CL
-                $availableCL = $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized;
+                foreach ($attendanceData as $day => $status) {
+                    if ($status === null || $status === '') continue;
 
-                // **ROLE-BASED VALIDATION STARTS HERE**
-
-                if ($clChange > 0) { // Only validate when adding CL
-                    if ($isReportingManager) {
-                        // Reporting Manager validations
-
-                        // 1. Max 2 days CL per request
-                        if ($clChange > 2) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Reporting Managers can apply maximum 2 days CL per request'
-                            ]);
-                        }
-
-                        // 2. Max 2 days CL per month (existing + new)
-                        $currentMonthCL = $existingCLCount + $clChange;
-                        if ($currentMonthCL > 2) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Reporting Managers can apply maximum 2 days CL per month. Already have {$existingCLCount} CL this month."
-                            ]);
-                        }
-
-                        // 3. Check if enough CL balance is available
-                        if ($clChange > $availableCL) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Insufficient CL balance. Available: {$availableCL} days, Requested: {$clChange} days"
-                            ]);
-                        }
-                    } else if ($isHRAdmin) {
-                        // HR Admin validations - more flexible
-
-                        // Only check if enough CL balance is available
-                        if ($clChange > $availableCL) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Insufficient CL balance. Available: {$availableCL} days, Requested: {$clChange} days"
-                            ]);
-                        }
-                    } else {
-                        // Other users (if any) - no permission
+                    if (!in_array((int)$day, $allowedDays)) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'You do not have permission to apply CL'
+                            'message' => 'Reporting Managers can update only last 7 working days'
                         ]);
                     }
                 }
             }
 
-            // Initialize counts
+            /* ---------------- ATTENDANCE RECORD ---------------- */
+
+            $attendance = Attendance::firstOrNew([
+                'candidate_id' => $candidateId,
+                'month' => $month,
+                'year' => $year
+            ]);
+
+            // 🔥 THIS IS REQUIRED
+            $attendance->candidate_id = $candidateId;
+            $attendance->month = $month;
+            $attendance->year = $year;
+
+            /* ---------------- LEAVE BALANCE ---------------- */
+
+            $leaveBalance = null;
+            if ($isContractual) {
+                $leaveBalance = LeaveBalance::firstOrCreate(
+                    ['CandidateID' => $candidateId, 'calendar_year' => $year],
+                    [
+                        'opening_cl_balance' => $candidate->leave_credited ?? 0,
+                        'cl_utilized' => 0,
+                        'lwp_days_accumulated' => 0,
+                        'contract_start_date' => $candidate->contract_start_date
+                    ]
+                );
+            }
+
+            $availableCL = $leaveBalance
+                ? $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized
+                : 0;
+
+            /* ---------------- TOTALS ---------------- */
+
             $totalPresent = 0;
-            $totalAbsent = 0;
+            $totalAbsent  = 0;
             $totalCL = 0;
+            $totalCH = 0;
+            $totalOD = 0;
             $totalLWP = 0;
 
-            // Update day columns
+            /* ---------------- DAY LOOP ---------------- */
+
             for ($day = 1; $day <= $daysInMonth; $day++) {
-                $column = "A" . $day;
-                $oldStatus = $existingAttendance[$day] ?? null;
-                $newStatus = $attendanceData[$day] ?? null;
 
-                // If status is empty string, convert to null
-                if ($newStatus === "" || $newStatus === null) {
-                    $newStatus = null;
-                } else {
-                    // Validate status based on candidate type
-                    if (!$isContractual && $newStatus === 'CL') {
-                        // Non-contractual candidates cannot have CL
-                        $newStatus = 'A'; // Convert CL to Absent for non-contractual
-                    }
-                }
-
-                // Auto-set Sundays to 'W' unless it's 'P' (Sunday work)
+                $status = $attendanceData[$day] ?? null;
                 $date = Carbon::create($year, $month, $day);
-                if ($date->dayOfWeek === Carbon::SUNDAY && $newStatus !== 'P') {
-                    $newStatus = 'W';
+
+                if ($date->dayOfWeek === Carbon::SUNDAY && $status !== 'P') {
+                    $status = 'W';
                 }
 
-                $attendance->$column = $newStatus;
+                if (!$isContractual && in_array($status, ['CL', 'CH', 'OD', 'HF'])) {
+                    $status = 'A';
+                }
 
-                // Count statuses
-                if ($newStatus !== null) {
-                    switch ($newStatus) {
-                        case 'P':
-                            $totalPresent++;
-                            break;
-                        case 'A':
-                            $totalAbsent++;
-                            break;
-                        case 'CL':
-                            $totalCL++;
-                            break;
-                        case 'LWP':
-                            $totalLWP++;
-                            break;
-                        case 'H':
-                            $totalPresent++; // Holiday counts as present
-                            break;
+                if ($isContractual) {
+                    if ($status === 'CH' && $availableCL < 0.5) {
+                        $status = 'HF';
                     }
+                    if ($status === 'CL' && $availableCL < 1) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient CL balance'
+                        ]);
+                    }
+                }
+
+                $attendance->{"A{$day}"} = $status;
+
+                switch ($status) {
+                    case 'P':
+                    case 'OD':
+                    case 'CL':
+                    case 'H':
+                        $totalPresent += 1;
+                        break;
+
+                    case 'CH':
+                        $totalPresent += 1;
+                        $totalCH += 0.5;
+                        $availableCL -= 0.5;
+                        break;
+
+                    case 'HF':
+                        $totalPresent += 0.5;
+                        $totalAbsent += 0.5;
+                        break;
+
+                    case 'A':
+                        $totalAbsent += 1;
+                        break;
+
+                    case 'W':
+                        break;
+                }
+
+                if ($status === 'CL') {
+                    $totalCL += 1;
+                    $availableCL -= 1;
+                }
+
+                if ($status === 'OD') {
+                    $totalOD++;
                 }
             }
 
-            // Update calculated fields
-            $attendance->total_present = $totalPresent;
-            $attendance->total_absent = $totalAbsent;
-            $attendance->total_cl = $totalCL;
-            $attendance->total_lwp = $totalLWP;
-            $attendance->submitted_by = $userId;
-            $attendance->status = 'submitted';
+            /* ---------------- SAVE ---------------- */
 
+            $attendance->total_present = $totalPresent;
+            $attendance->total_absent  = $totalAbsent;
+            $attendance->total_cl      = $totalCL;
+            $attendance->total_ch      = $totalCH;
+            $attendance->total_od      = $totalOD;
+            $attendance->total_lwp     = $totalLWP;
+            $attendance->submitted_by  = $user->id;
+            $attendance->status        = 'submitted';
             $attendance->save();
 
-            // Process leave deduction/restoration for contractual candidates
-            $warning = null;
-            $clRemaining = null;
-
-            if ($isContractual) {
-                $leaveResult = $this->processLeaveDeduction($candidateId, $month, $year, $existingAttendance, $attendanceData);
-                if ($leaveResult['warning']) {
-                    $warning = $leaveResult['warning'];
-                }
-                $clRemaining = $leaveResult['new_cl'];
-            }
-
-            $clUsed = null;
-
-            if ($isContractual) {
-                $leaveBalance = LeaveBalance::where('CandidateID', $candidateId)
-                    ->where('calendar_year', $year)
-                    ->first();
-
-                if ($leaveBalance) {
-                    $clUsed = $leaveBalance->cl_utilized;
-                }
+            if ($leaveBalance) {
+                $leaveBalance->cl_utilized =
+                    $leaveBalance->opening_cl_balance - $availableCL;
+                $leaveBalance->save();
             }
 
             DB::commit();
@@ -459,24 +402,402 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Attendance updated successfully',
-                'warning' => $warning,
-                'cl_remaining' => $clRemaining,
-                'cl_used' => $clUsed
+                'cl_remaining' => $availableCL,
+                'od_days' => $totalOD,
+                'ch_days' => $totalCH
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Attendance update error: ' . $e->getMessage());
-            \Log::error('Request data: ', $request->all());
+            \Log::error($e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating attendance: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
 
+
+
+    // public function updateAttendance(Request $request)
+    // {
+    //     $request->validate([
+    //         'candidate_id' => 'required|integer',
+    //         'month' => 'required|integer|between:1,12',
+    //         'year' => 'required|integer',
+    //         'attendance' => 'required|json'
+    //     ]);
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $candidateId = $request->candidate_id;
+    //         $month = $request->month;
+    //         $year = $request->year;
+    //         $attendanceData = json_decode($request->attendance, true);
+    //         $userId = Auth::id();
+    //         $currentDate = Carbon::now();
+
+    //         // Get current user
+    //         $user = Auth::user();
+
+    //         // Check user roles
+    //         $isHRAdmin = $user->hasRole('hr_admin') || $user->hasRole('admin');
+
+    //         // Get candidate details first
+    //         $candidate = CandidateMaster::find($candidateId);
+    //         if (!$candidate) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Candidate not found'
+    //             ]);
+    //         }
+
+    //         // Check if current user is the reporting manager for this candidate
+    //         $isReportingManager = ($user->emp_id && $candidate->reporting_manager_employee_id)
+    //             && ($user->emp_id == $candidate->reporting_manager_employee_id);
+
+    //         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+    //         $currentDay = $currentDate->day;
+    //         $currentMonth = $currentDate->month;
+    //         $currentYear = $currentDate->year;
+
+    //         // Get selected month details
+    //         $selectedMonthDate = Carbon::create($year, $month, 1);
+    //         $isCurrentMonth = ($year == $currentYear && $month == $currentMonth);
+    //         $isPastMonth = ($year < $currentYear) || ($year == $currentYear && $month < $currentMonth);
+
+    //         // RESTRICTIONS FOR REPORTING MANAGERS
+    //         if (!$isHRAdmin && $isReportingManager) {
+    //             // 1. Cannot fill future attendance
+    //             if ($year > $currentYear || ($year == $currentYear && $month > $currentMonth)) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Reporting Managers cannot fill attendance for future months'
+    //                 ]);
+    //             }
+
+    //             // 2. Cannot fill previous month attendance
+    //             if ($isPastMonth) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Reporting Managers cannot fill attendance for previous months'
+    //                 ]);
+    //             }
+    //             if ($isCurrentMonth) {
+
+    //                 $today = Carbon::today();
+    //                 $allowedDays = [];
+    //                 $dateCursor = $today->copy();
+
+    //                 // Collect last 7 working days (exclude Sundays)
+    //                 while (count($allowedDays) < 7) {
+    //                     if ($dateCursor->dayOfWeek !== Carbon::SUNDAY) {
+    //                         $allowedDays[] = $dateCursor->day;
+    //                     }
+    //                     $dateCursor->subDay();
+    //                 }
+
+    //                 foreach ($attendanceData as $day => $status) {
+
+    //                     // Ignore untouched days
+    //                     if ($status === null || $status === '') {
+    //                         continue;
+    //                     }
+
+    //                     if (!in_array((int)$day, $allowedDays)) {
+    //                         return response()->json([
+    //                             'success' => false,
+    //                             'message' => 'Reporting Managers can only fill attendance for the last 7 working days'
+    //                         ]);
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         $isContractual = $candidate->requisition_type === 'Contractual';
+    //         $joiningDate = Carbon::parse($candidate->contract_start_date);
+
+    //         // Check if candidate was active in this month
+    //         if ($joiningDate->year > $year || ($joiningDate->year == $year && $joiningDate->month > $month)) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Candidate was not active in this month'
+    //             ]);
+    //         }
+
+    //         // Get or create attendance record
+    //         $attendance = Attendance::firstOrNew([
+    //             'candidate_id' => $candidateId,
+    //             'Month' => $month,
+    //             'Year' => $year
+    //         ]);
+
+    //         if (!$attendance->exists) {
+    //             $attendance->candidate_id = $candidateId;
+    //             $attendance->Month = $month;
+    //             $attendance->Year = $year;
+    //         }
+
+    //         // Get existing attendance data to compare changes
+    //         $existingAttendance = [];
+    //         for ($day = 1; $day <= $daysInMonth; $day++) {
+    //             $column = "A" . $day;
+    //             $existingAttendance[$day] = $attendance->exists ? $attendance->$column : null;
+    //         }
+
+    //         // Count various leave types in new attendance data
+    //         $newCLCount = 0;
+    //         $newCHCount = 0;
+    //         $newODCount = 0;
+
+    //         foreach ($attendanceData as $status) {
+    //             if ($status === 'CL') {
+    //                 $newCLCount++;
+    //             } elseif ($status === 'CH') {
+    //                 $newCHCount++;
+    //             } elseif ($status === 'OD') {
+    //                 $newODCount++;
+    //             }
+    //         }
+
+    //         // Get existing counts from current attendance
+    //         $existingCLCount = 0;
+    //         $existingCHCount = 0;
+    //         $existingODCount = 0;
+
+    //         foreach ($existingAttendance as $status) {
+    //             if ($status === 'CL') {
+    //                 $existingCLCount++;
+    //             } elseif ($status === 'CH') {
+    //                 $existingCHCount++;
+    //             } elseif ($status === 'OD') {
+    //                 $existingODCount++;
+    //             }
+    //         }
+
+    //         // Calculate net changes
+    //         $clChange = $newCLCount - $existingCLCount;
+    //         $chChange = $newCHCount - $existingCHCount;
+    //         $odChange = $newODCount - $existingODCount;
+
+    //         // Validate leave application based on user role and availability
+    //         if ($isContractual && ($clChange != 0 || $chChange != 0)) {
+    //             // Get or create leave balance
+    //             $leaveBalance = LeaveBalance::firstOrNew([
+    //                 'CandidateID' => $candidateId,
+    //                 'calendar_year' => $year
+    //             ]);
+
+    //             if (!$leaveBalance->exists) {
+    //                 $leaveBalance->opening_cl_balance = $candidate->leave_credited ?: 0;
+    //                 $leaveBalance->cl_utilized = 0;
+    //                 $leaveBalance->lwp_days_accumulated = 0;
+    //                 $leaveBalance->contract_start_date = $joiningDate;
+    //                 $leaveBalance->save();
+    //             }
+
+    //             // Calculate current available CL
+    //             $availableCL = $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized;
+
+    //             // Calculate total CL units needed (CH counts as 0.5 CL)
+    //             $totalCLNeeded = $clChange + ($chChange * 0.5);
+
+    //             // ROLE-BASED VALIDATION
+    //             if ($totalCLNeeded > 0) { // Only validate when adding CL/CH
+    //                 if ($isReportingManager) {
+    //                     // Reporting Manager validations
+
+    //                     // 1. Max 2 days CL per request (including CH as half days)
+    //                     $totalRequestedDays = $clChange + ($chChange * 0.5);
+    //                     if ($totalRequestedDays > 2) {
+    //                         return response()->json([
+    //                             'success' => false,
+    //                             'message' => 'Reporting Managers can apply maximum 2 CL days (or equivalent) per request'
+    //                         ]);
+    //                     }
+
+    //                     // 2. Max 2 days CL per month (existing + new)
+    //                     $currentMonthCL = $existingCLCount + ($existingCHCount * 0.5) + $totalRequestedDays;
+    //                     if ($currentMonthCL > 2) {
+    //                         return response()->json([
+    //                             'success' => false,
+    //                             'message' => "Reporting Managers can apply maximum 2 CL days per month"
+    //                         ]);
+    //                     }
+
+    //                     // 3. Check if enough CL balance is available
+    //                     if ($totalCLNeeded > $availableCL) {
+    //                         return response()->json([
+    //                             'success' => false,
+    //                             'message' => "Insufficient CL balance. Available: {$availableCL} days, Requested: {$totalCLNeeded} days"
+    //                         ]);
+    //                     }
+    //                 } else if ($isHRAdmin) {
+    //                     // HR Admin validations - more flexible
+    //                     // Only check if enough CL balance is available
+    //                     if ($totalCLNeeded > $availableCL) {
+    //                         return response()->json([
+    //                             'success' => false,
+    //                             'message' => "Insufficient CL balance. Available: {$availableCL} days, Requested: {$totalCLNeeded} days"
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     // Other users (if any) - no permission
+    //                     return response()->json([
+    //                         'success' => false,
+    //                         'message' => 'You do not have permission to apply CL/CH'
+    //                     ]);
+    //                 }
+    //             }
+    //         }
+
+    //         // Initialize counts
+    //         $totalPresent = 0;
+    //         $totalAbsent = 0;
+    //         $totalCL = 0;
+    //         $totalLWP = 0;
+    //         $totalOD = 0;
+    //         $totalCH = 0;
+
+    //         // Update day columns
+    //         for ($day = 1; $day <= $daysInMonth; $day++) {
+    //             $column = "A" . $day;
+    //             $oldStatus = $existingAttendance[$day] ?? null;
+    //             $newStatus = $attendanceData[$day] ?? null;
+
+    //             // If status is empty string, convert to null
+    //             if ($newStatus === "" || $newStatus === null) {
+    //                 $newStatus = null;
+    //             } else {
+    //                 // Validate status based on candidate type
+    //                 if (!$isContractual) {
+    //                     // Non-contractual candidates cannot have CL, CH, or OD
+    //                     if (in_array($newStatus, ['CL', 'CH', 'OD'])) {
+    //                         $newStatus = 'A';
+    //                     }
+    //                 }
+    //             }
+
+    //             // For reporting managers, validate future dates
+    //             if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
+    //                 $date = Carbon::create($year, $month, $day);
+    //                 $today = Carbon::today();
+
+    //                 // Cannot fill future dates
+    //                 if ($date->greaterThan($today)) {
+    //                     $newStatus = null;
+    //                 }
+
+    //                 // Can only fill last 7 days
+    //                 $daysDiff = $today->diffInDays($date);
+    //                 if ($daysDiff > 7) {
+    //                     $newStatus = $oldStatus; // Keep existing value or null
+    //                 }
+    //             }
+
+    //             // Auto-set Sundays to 'W' unless it's 'P' (Sunday work)
+    //             $date = Carbon::create($year, $month, $day);
+    //             if ($date->dayOfWeek === Carbon::SUNDAY && $newStatus !== 'P') {
+    //                 $newStatus = 'W';
+    //             }
+
+    //             $attendance->$column = $newStatus;
+
+    //             // Count statuses
+    //             if ($newStatus !== null) {
+    //                 switch ($newStatus) {
+    //                     case 'P':
+    //                         $totalPresent++;
+    //                         break;
+    //                     case 'A':
+    //                         $totalAbsent++;
+    //                         break;
+    //                     case 'CL':
+    //                         $totalCL++;
+    //                         break;
+    //                     case 'LWP':
+    //                         $totalLWP++;
+    //                         break;
+    //                     case 'OD':
+    //                         $totalOD++;
+    //                         $totalPresent++; // OD counts as present
+    //                         break;
+    //                     case 'CH':
+    //                         $totalCH++;
+    //                         $totalPresent++; // CH counts as present
+    //                         break;
+    //                     case 'H':
+    //                         $totalPresent++; // Holiday counts as present
+    //                         break;
+    //                     case 'W':
+    //                         // Sunday - no counting
+    //                         break;
+    //                 }
+    //             }
+    //         }
+
+    //         // Update calculated fields
+    //         $attendance->total_present = $totalPresent;
+    //         $attendance->total_absent = $totalAbsent;
+    //         $attendance->total_cl = $totalCL;
+    //         $attendance->total_lwp = $totalLWP;
+    //         $attendance->total_od = $totalOD;
+    //         $attendance->total_ch = $totalCH;
+    //         $attendance->submitted_by = $userId;
+    //         $attendance->status = 'submitted';
+
+    //         $attendance->save();
+
+    //         // Process leave deduction/restoration for contractual candidates
+    //         $warning = null;
+    //         $clRemaining = null;
+
+    //         if ($isContractual) {
+    //             $leaveResult = $this->processLeaveDeduction($candidateId, $month, $year, $existingAttendance, $attendanceData);
+    //             if ($leaveResult['warning']) {
+    //                 $warning = $leaveResult['warning'];
+    //             }
+    //             $clRemaining = $leaveResult['new_cl'];
+    //         }
+
+    //         $clUsed = null;
+    //         if ($isContractual) {
+    //             $leaveBalance = LeaveBalance::where('CandidateID', $candidateId)
+    //                 ->where('calendar_year', $year)
+    //                 ->first();
+
+    //             if ($leaveBalance) {
+    //                 $clUsed = $leaveBalance->cl_utilized;
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Attendance updated successfully',
+    //             'warning' => $warning,
+    //             'cl_remaining' => $clRemaining,
+    //             'cl_used' => $clUsed,
+    //             'od_days' => $totalOD,
+    //             'ch_days' => $totalCH
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         \Log::error('Attendance update error: ' . $e->getMessage());
+    //         \Log::error('Request data: ', $request->all());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error updating attendance: ' . $e->getMessage()
+    //         ]);
+    //     }
+    // }
+
     /**
      * Process leave deduction/restoration for contractual candidates
+     * Updated to handle CH (half day) as 0.5 CL
      */
     private function processLeaveDeduction($candidateId, $month, $year, $oldAttendance, $newAttendance)
     {
@@ -494,7 +815,8 @@ class AttendanceController extends Controller
                 ];
             }
 
-            $clChanges = 0; // Positive = adding CL, Negative = removing CL
+            $clChanges = 0; // Positive = adding CL, Negative = removing CL (in full day units)
+            $chChanges = 0; // Positive = adding CH, Negative = removing CH (in half day units)
             $lwpChanges = 0; // Positive = adding LWP, Negative = removing LWP
 
             // Calculate changes for each day
@@ -506,13 +828,22 @@ class AttendanceController extends Controller
                     continue;
                 }
 
-                // Handle CL changes
+                // Handle CL changes (full day)
                 if ($oldStatus === 'CL' && $newStatus !== 'CL') {
-                    // Removing CL - restore leave balance
+                    // Removing CL - restore 1 day leave balance
                     $clChanges--;
                 } elseif ($oldStatus !== 'CL' && $newStatus === 'CL') {
-                    // Adding CL - deduct leave balance
+                    // Adding CL - deduct 1 day leave balance
                     $clChanges++;
+                }
+
+                // Handle CH changes (half day)
+                if ($oldStatus === 'CH' && $newStatus !== 'CH') {
+                    // Removing CH - restore 0.5 day leave balance
+                    $chChanges--;
+                } elseif ($oldStatus !== 'CH' && $newStatus === 'CH') {
+                    // Adding CH - deduct 0.5 day leave balance
+                    $chChanges++;
                 }
 
                 // Handle LWP changes
@@ -523,35 +854,41 @@ class AttendanceController extends Controller
                     // Adding LWP
                     $lwpChanges++;
                 }
+
+                // Handle OD changes (no leave deduction, just counting)
+                // OD is counted separately in the attendance table
             }
 
             $warning = null;
 
-            // Process CL changes
-            if ($clChanges > 0) {
-                // Adding CL - check if enough balance
+            // Convert CH changes to CL units (0.5 each)
+            $totalCLUnitsNeeded = $clChanges + ($chChanges * 0.5);
+
+            // Process CL and CH changes
+            if ($totalCLUnitsNeeded > 0) {
+                // Adding CL/CH - check if enough balance
                 $availableCL = $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized;
 
-                if ($clChanges <= $availableCL) {
+                if ($totalCLUnitsNeeded <= $availableCL) {
                     // Enough balance - deduct from CL
-                    $leaveBalance->cl_utilized += $clChanges;
+                    $leaveBalance->cl_utilized += $totalCLUnitsNeeded;
                 } else {
                     // Not enough CL balance - use what's available, rest as LWP
                     $clDeducted = $availableCL;
-                    $lwpFromCL = $clChanges - $clDeducted;
+                    $lwpFromCL = $totalCLUnitsNeeded - $clDeducted;
 
                     $leaveBalance->cl_utilized += $clDeducted;
                     $leaveBalance->lwp_days_accumulated += $lwpFromCL;
 
                     $warning = "Insufficient CL balance. {$clDeducted} days deducted from CL, {$lwpFromCL} days marked as LWP.";
                 }
-            } elseif ($clChanges < 0) {
-                // Removing CL - restore leave balance (but not more than was utilized)
-                $clRestored = min(abs($clChanges), $leaveBalance->cl_utilized);
+            } elseif ($totalCLUnitsNeeded < 0) {
+                // Removing CL/CH - restore leave balance (but not more than was utilized)
+                $clRestored = min(abs($totalCLUnitsNeeded), $leaveBalance->cl_utilized);
                 $leaveBalance->cl_utilized -= $clRestored;
             }
 
-            // Process LWP changes (independent of CL changes)
+            // Process LWP changes (independent of CL/CH changes)
             $leaveBalance->lwp_days_accumulated += $lwpChanges;
 
             // Ensure non-negative values
@@ -589,6 +926,7 @@ class AttendanceController extends Controller
             ];
         }
     }
+
     /**
      * Get candidate attendance
      */
@@ -634,7 +972,6 @@ class AttendanceController extends Controller
         }
     }
 
-
     /**
      * Get Sundays for month
      */
@@ -649,12 +986,19 @@ class AttendanceController extends Controller
             $month = $request->month;
             $year = $request->year;
 
+            $today = Carbon::today();
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
             $sundays = [];
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
+
                 $date = Carbon::create($year, $month, $day);
-                if ($date->dayOfWeek === Carbon::SUNDAY) {
+
+                // ✅ Only past Sundays (or today if Sunday)
+                if (
+                    $date->dayOfWeek === Carbon::SUNDAY &&
+                    $date->lessThanOrEqualTo($today)
+                ) {
                     $sundays[] = [
                         'date' => $date->format('Y-m-d'),
                         'day' => $day,
@@ -675,20 +1019,33 @@ class AttendanceController extends Controller
         }
     }
 
+
     /**
      * Get active candidates
      */
     public function getActiveCandidates(Request $request)
     {
         try {
-            $candidates = CandidateMaster::select([
+            $user = Auth::user();
+            $isHRAdmin = $user->hasRole('hr_admin') || $user->hasRole('admin');
+
+            $query = CandidateMaster::select([
                 'id',
-                'candidate_name'
+                'candidate_name',
+                'requisition_type'
             ])
                 ->where('final_status', 'A')
-                ->whereNotNull('contract_start_date')
-                ->orderBy('candidate_name')
-                ->get();
+                ->whereNotNull('contract_start_date');
+
+            // For non-HR admins, only show their team members
+            if (!$isHRAdmin) {
+                $query->where('reporting_manager_employee_id', $user->emp_id);
+            }
+
+            // Only Contractual candidates can have Sunday work
+            $query->where('requisition_type', 'Contractual');
+
+            $candidates = $query->orderBy('candidate_name')->get();
 
             return response()->json([
                 'success' => true,
@@ -702,13 +1059,11 @@ class AttendanceController extends Controller
         }
     }
 
-
     /**
-     * Submit Sunday work request
+     * Submit Sunday work request - Only for Contractual candidates
      */
     public function submitSundayWork(Request $request)
     {
-        //dd($request->all());
         $request->validate([
             'month' => 'required|integer|between:1,12',
             'year' => 'required|integer',
@@ -725,32 +1080,52 @@ class AttendanceController extends Controller
             $sundayDates = $request->sunday_dates;
             $candidateIds = $request->candidate_ids;
             $remark = $request->remark;
-            $userId = Auth::id();
+            $user = Auth::user();
+
+            // ✅ Decide approval based on role
+            $isHrAdmin = $user->hasRole('hr_admin');
 
             foreach ($candidateIds as $candidateId) {
+
+                $candidate = CandidateMaster::find($candidateId);
+                if (!$candidate || $candidate->requisition_type !== 'Contractual') {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Sunday work is only allowed for Contractual candidates'
+                    ]);
+                }
+
                 foreach ($sundayDates as $sundayDate) {
-                    // Check if already exists
+
                     $existing = SundayWorkRequest::where('candidate_id', $candidateId)
                         ->where('sunday_date', $sundayDate)
                         ->first();
 
                     if ($existing) {
-                        continue; // Skip if already exists
+                        continue;
                     }
 
-                    // Create simplified Sunday work request
                     $sundayWork = new SundayWorkRequest();
                     $sundayWork->candidate_id = $candidateId;
                     $sundayWork->month = $month;
                     $sundayWork->year = $year;
                     $sundayWork->sunday_date = $sundayDate;
                     $sundayWork->remark = $remark;
-                    $sundayWork->requested_by = $userId;
-                    $sundayWork->status = 'pending';
+                    $sundayWork->requested_by = $user->id;
 
-                    // Handle attachment (optional)
+                    // ✅ AUTO APPROVE IF HR
+                    if ($isHrAdmin) {
+                        $sundayWork->status = 'approved';
+                        $sundayWork->approved_by = $user->id;
+                        $sundayWork->approved_at = now();
+                    } else {
+                        $sundayWork->status = 'pending';
+                    }
+
                     if ($request->hasFile('attachment')) {
-                        $path = $request->file('attachment')->store('sunday-work-attachments', 'public');
+                        $path = $request->file('attachment')
+                            ->store('sunday-work-attachments', 'public');
                         $sundayWork->attachment_path = $path;
                     }
 
@@ -762,7 +1137,9 @@ class AttendanceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sunday work request submitted successfully'
+                'message' => $isHrAdmin
+                    ? 'Sunday work approved successfully'
+                    : 'Sunday work request submitted for approval'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

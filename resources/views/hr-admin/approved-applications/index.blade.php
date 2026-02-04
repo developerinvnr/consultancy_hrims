@@ -272,7 +272,7 @@
 						<div class="modal-footer">
 							<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 							<button type="submit" class="btn btn-success">
-								<i class="ri-save-line me-1"></i> Generate Employee Code & Process
+								<i class="ri-save-line me-1"></i> Generate Party Code & Process
 							</button>
 						</div>
 					</form>
@@ -414,7 +414,7 @@ $(document).ready(function () {
 
         Swal.fire({
             title: 'Process Employee?',
-            html: '<p>This will generate employee code.</p>',
+            html: '<p>This will generate party code.</p>',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#198754',

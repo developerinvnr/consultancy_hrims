@@ -11,20 +11,20 @@ class SalaryCalculator
 {
     public static function calculate(CandidateMaster $candidate, int $month, int $year): array
     {
-        // 1. Fetch attendance
+        // 1️⃣ Fetch attendance
         $attendance = Attendance::where('candidate_id', $candidate->id)
             ->where('month', $month)
             ->where('year', $year)
             ->first();
 
         if (!$attendance) {
-            throw new Exception("Attendance not found for candidate {$candidate->candidate_code} ({$month}/{$year})");
+            throw new Exception("Attendance not found");
         }
 
-        // 2. Count total days & Sundays
+        // 2️⃣ Month stats
         $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-        $sundays = 0;
 
+        $sundays = 0;
         for ($d = 1; $d <= $totalDays; $d++) {
             if (date('w', strtotime("$year-$month-$d")) == 0) {
                 $sundays++;
@@ -32,58 +32,78 @@ class SalaryCalculator
         }
 
         $workingDays = $totalDays - $sundays;
-
         if ($workingDays <= 0) {
-            throw new Exception("Invalid working days calculation");
+            throw new Exception("Invalid working days");
         }
 
-        // 3. Salary base
+        // 3️⃣ Salary base
         $monthlySalary = (float) $candidate->remuneration_per_month;
-
         if ($monthlySalary <= 0) {
-            throw new Exception("Salary not defined for {$candidate->candidate_code}");
+            throw new Exception("Salary not defined");
         }
 
-        $perDay = round($monthlySalary / $workingDays, 2);
+        // ❗ DO NOT ROUND HERE
+        $perDay = $monthlySalary / $workingDays;
 
-        // 4. Attendance values
-        $present = (int) $attendance->total_present;
-        $cl      = (int) $attendance->total_cl;
-        $absent  = (int) $attendance->total_absent;
+        // 4️⃣ Count paid & absent WORKING days only
+        $paidDays = 0;
+        $absentDays = 0;
 
-        // 5. Approved Sundays
+        for ($d = 1; $d <= $totalDays; $d++) {
+
+            // Skip Sundays completely
+            if (date('w', strtotime("$year-$month-$d")) == 0) {
+                continue;
+            }
+
+            $status = $attendance->{"A{$d}"} ?? null;
+
+            switch ($status) {
+                case 'P':
+                case 'CL':
+                case 'OD':
+                case 'H':
+                    $paidDays += 1;
+                    break;
+
+                case 'CH':
+                    $paidDays += 0.5;
+                    break;
+
+                case 'A':
+                case 'LWP':
+                    $absentDays += 1;
+                    break;
+            }
+        }
+
+        // 5️⃣ Approved Sunday work (EXTRA PAY)
         $approvedSundays = SundayWorkRequest::where('candidate_id', $candidate->id)
             ->where('month', $month)
             ->where('year', $year)
-            //->where('status', 'approved')
+            ->where('status', 'approved')
             ->count();
 
-        // 6. Paid days
-        $paidDays = $present + $cl + $approvedSundays;
+        $extraAmount = $approvedSundays * $perDay;
 
-        // 7. Final salary
-        $netPay = round($paidDays * $perDay, 2);
+        // 6️⃣ Net Pay
+        $netPay = ($paidDays * $perDay) + $extraAmount;
 
-        // 8. Optional calculated fields (for UI display)
-        $deduction = round(($absent) * $perDay, 2);
-        $extra     = round($approvedSundays * $perDay, 2);
-
+        // 7️⃣ Final rounded values (ONLY here)
         return [
-            'monthly_salary'    => $monthlySalary,
-            'per_day_salary'    => $perDay,
+            'monthly_salary'   => round($monthlySalary, 2),
+            'per_day_salary'   => round($perDay, 2),
 
-			'total_days'        => $workingDays,
-            'paid_days'         => $paidDays,
-            'cl_days'           => $cl,
-            'absent_days'       => $absent,
-            
+            'total_working_days' => $workingDays,
+            'paid_days'        => $paidDays,
+            'absent_days'      => $absentDays,
 
-            'approved_sundays'  => $approvedSundays,
+            'approved_sundays' => $approvedSundays,
 
-            // These two are optional, only for display
-            'deduction_amount'  => $deduction,
-            'extra_amount'      => $extra,
-            'net_pay'           => $netPay,
+            'deduction_amount' => round($absentDays * $perDay, 2),
+            'extra_amount'     => round($extraAmount, 2),
+
+            'net_pay'          => round($netPay, 2),
         ];
     }
 }

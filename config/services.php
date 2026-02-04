@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'agreement' => [
+        'test_mode' => true, // 👈 hardcoded
+    ],
+
 ];

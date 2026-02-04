@@ -212,6 +212,7 @@
 								@php
 								$isProcessed = \App\Models\CandidateMaster::where('requisition_id', $req->id)->exists();
 								$candidate = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
+								$empStatus = $candidate->candidate_status ?? null;
 								@endphp
 								<tr>
 									<td class="fs-11">
@@ -229,27 +230,53 @@
 										</span>
 									</td>
 									<td class="fs-11">
-										@if($isProcessed)
-										@php
-										$statusColors = [
-										'Agreement Pending' => 'warning',
-										'Unsigned Agreement Uploaded' => 'info',
-										'Agreement Completed' => 'secondary',
-										'Active' => 'success'
-										];
-										$empStatus = $candidate->candidate_status ?? 'Agreement Pending';
-										@endphp
-										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
-											{{ $empStatus }}
-										</span>
-										@if($candidate && $candidate->candidate_code)
-										<br>
-										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
-										@endif
-										@else
-										<span class="badge bg-secondary fs-10">Ready to Process</span>
-										@endif
-									</td>
+
+    @switch($req->status)
+
+        @case('Pending HR Verification')
+            <span class="badge bg-warning fs-10">Pending HR Verification</span>
+            @break
+
+        @case('Correction Required')
+            <span class="badge bg-danger fs-10">Correction Required</span>
+            @break
+
+        @case('Pending Approval')
+            <span class="badge bg-info fs-10">Pending Approval</span>
+            @break
+
+        @case('Approved')
+            <span class="badge bg-primary fs-10">Ready to Process</span>
+            @break
+
+        @case('Processed')
+            @php
+                $statusColors = [
+                    'Agreement Pending' => 'warning',
+                    'Unsigned Agreement Uploaded' => 'info',
+                    'Agreement Completed' => 'secondary',
+                    'Active' => 'success'
+                ];
+            @endphp
+
+            <span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
+                {{ $empStatus }}
+            </span>
+
+            @if($candidate?->candidate_code)
+                <br>
+                <small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
+            @endif
+            @break
+
+        @default
+            <span class="badge bg-secondary fs-10">{{ $req->status }}</span>
+
+    @endswitch
+
+</td>
+
+
 									<td class="fs-11">{{ $req->created_at->format('d-M') }}</td>
 									<td>
 										<div class="btn-group btn-group-sm" role="group">
@@ -258,7 +285,20 @@
 												<i class="ri-eye-line fs-10"></i>
 											</a>
 
-											@if(!$isProcessed && !empty($req->approver_id))
+											@if($req->status === 'Approved' && !$isProcessed)
+												<button type="button" class="btn btn-success process-btn"
+												data-bs-toggle="modal" data-bs-target="#processModal"
+												data-requisition-id="{{ $req->id }}"
+												data-requisition-name="{{ $req->candidate_name }}"
+												data-current-reporting="{{ $req->reporting_to }}"
+												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
+												<i class="ri-play-line fs-10"></i>
+											@elseif($req->status === 'Pending Approval')
+												<span class="badge bg-info fs-9">Awaiting Approval</span>
+											@endif
+
+
+											{{--@if(!$isProcessed && !empty($req->approver_id))
 											<button type="button" class="btn btn-success process-btn"
 												data-bs-toggle="modal" data-bs-target="#processModal"
 												data-requisition-id="{{ $req->id }}"
@@ -269,7 +309,7 @@
 											</button>
 											@elseif(!$isProcessed && empty($req->approver_id))
 											<span class="badge bg-warning fs-9">Not Verified</span>
-											@endif
+											@endif--}}
 
 											@if($candidate)
 											@php
@@ -286,15 +326,8 @@
 											@endphp
 
 											@if($empStatus == "Active")
-												<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
-											@elseif(!$hasUnsigned)
-											<button type="button"
-												class="btn btn-outline-warning upload-unsigned-btn"
-												data-candidate-id="{{ $candidate->id }}"
-												data-candidate-code="{{ $candidate->candidate_code }}"
-												data-candidate-name="{{ $candidate->candidate_name }}">
-												<i class="ri-file-upload-line fs-10"></i>
-											</button>
+											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
+											
 											@elseif($hasUnsigned && !$hasSigned)
 											<button type="button"
 												class="btn btn-outline-primary upload-signed-btn"
@@ -344,7 +377,7 @@
 					<div class="row">
 						<div class="col-md-4">
 							<div class="mb-3">
-								<label class="form-label-sm">Candidate</label>
+								<label class="form-label-sm">Party</label>
 								<input type="text" class="form-control form-control-sm" id="modalCandidateName" readonly>
 							</div>
 						</div>
@@ -392,7 +425,7 @@
 				<div class="modal-footer">
 					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 					<button type="submit" class="btn btn-success">
-						<i class="ri-save-line me-1"></i> Generate Employee Code & Process
+						<i class="ri-save-line me-1"></i> Generate Party Code & Process
 					</button>
 				</div>
 			</form>
@@ -644,7 +677,7 @@
 
 			Swal.fire({
 				title: 'Process Employee?',
-				html: '<p>This will generate employee code.</p>',
+				html: '<p>This will generate party code.</p>',
 				icon: 'question',
 				showCancelButton: true,
 				confirmButtonColor: '#198754',

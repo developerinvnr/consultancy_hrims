@@ -24,6 +24,11 @@ class HomeController extends Controller
             return $this->hrAdminDashboard();
         }
 
+          
+        if ($user->hasRole('management')) {
+            return redirect()->route('dashboard.management');
+        }
+
         return $this->userDashboard($user);
     }
 
@@ -101,7 +106,7 @@ class HomeController extends Controller
         ];
 
         // Recent requisitions
-        $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function'])
+        $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate', 'candidate'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -161,7 +166,7 @@ class HomeController extends Controller
             }
         }
 
-        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy'])
+        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy','candidate'])
             ->where(function ($query) use ($user, $isApprover) {
                 $query->where('submitted_by_user_id', $user->id);
                 if ($isApprover) {

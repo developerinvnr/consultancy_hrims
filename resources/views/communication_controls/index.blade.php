@@ -24,13 +24,13 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
 					<h5>Communication Controls</h5>
-					<div class="d-flex">
+					{{--<div class="d-flex">
                         <div class="">
                             <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createControlModal">
                                 Add New Control
                             </button>
                         </div>
-                    </div>
+                    </div>--}}
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

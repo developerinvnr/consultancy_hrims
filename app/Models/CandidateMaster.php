@@ -71,27 +71,89 @@ class CandidateMaster extends Model
         'fuel_reimbursement_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
     ];
-    
+
     // ADD THIS RELATIONSHIP
     public function requisition()
     {
         return $this->belongsTo(ManpowerRequisition::class, 'requisition_id');
     }
-    
+
     public function agreementDocuments()
     {
         return $this->hasMany(AgreementDocument::class, 'candidate_id');
     }
-    
+
     public function unsignedAgreement()
     {
         return $this->hasOne(AgreementDocument::class, 'candidate_id')
             ->where('document_type', 'unsigned');
     }
-    
+
     public function signedAgreement()
     {
         return $this->hasOne(AgreementDocument::class, 'candidate_id')
             ->where('document_type', 'signed');
+    }
+
+    public function salaryProcessings()
+    {
+        return $this->hasMany(SalaryProcessing::class, 'candidate_id');
+    }
+
+    public function businessUnit()
+    {
+        return $this->belongsTo(CoreBusinessUnit::class, 'business_unit', 'id');
+    }
+
+    public function zoneRef()
+    {
+        return $this->belongsTo(CoreZone::class, 'zone', 'id');
+    }
+
+    public function regionRef()
+    {
+        return $this->belongsTo(CoreRegion::class, 'region', 'id');
+    }
+
+    public function territoryRef()
+    {
+        return $this->belongsTo(CoreTerritory::class, 'territory', 'id');
+    }
+
+    public function subDepartmentRef()
+    {
+        return $this->belongsTo(CoreSubDepartment::class, 'sub_department', 'id');
+    }
+
+
+    public function department()
+    {
+        // Check if you have a departments table
+        return $this->belongsTo(CoreDepartment::class, 'department_id', 'id');
+    }
+
+
+
+    public function function()
+    {
+        return $this->belongsTo(CoreFunction::class, 'function_id', 'id');
+    }
+
+    /**
+     * Relationship with Vertical (assuming you have a verticals table)
+     */
+    public function vertical()
+    {
+        return $this->belongsTo(CoreVertical::class, 'vertical_id', 'id');
+    }
+
+    /**
+     * Get salary for specific month and year
+     */
+    public function salaryForSpecificMonth($month, $year)
+    {
+        return $this->hasOne(SalaryProcessing::class, 'candidate_id')
+            ->where('month', $month)
+            ->where('year', $year);
     }
 }

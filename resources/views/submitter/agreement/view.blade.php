@@ -43,7 +43,7 @@
 					</h5>
 
 					{{--<a href="{{ url()->previous() ?? route('dashboard') }}" class="btn btn-sm btn-light">
-						<i class="ri-arrow-left-line me-1"></i> Back
+					<i class="ri-arrow-left-line me-1"></i> Back
 					</a>--}}
 				</div>
 
@@ -82,11 +82,6 @@
 							<div class="border rounded p-2 h-100">
 								<strong class="d-block mb-1 text-muted">Agreement</strong>
 
-								@if($unsignedAgreement)
-								<div>No: {{ $unsignedAgreement->agreement_number }}</div>
-								<div>Uploaded: {{ $unsignedAgreement->created_at->format('d M Y H:i') }}</div>
-								@endif
-
 								@if($isCompleted && $signedAgreement)
 								<div>Signed On: {{ $signedAgreement->created_at->format('d M Y H:i') }}</div>
 								<div>By: {{ $signedAgreement->uploadedBy->name ?? 'N/A' }}</div>
@@ -102,19 +97,62 @@
 						<div class="col-12">
 							<h6>Agreement Actions</h6>
 							<div class="d-flex gap-2 flex-wrap">
-								@if($unsignedAgreement)
-								<a href="{{ route('submitter.agreement.download', $requisition) }}?type=unsigned"
-									class="btn btn-sm btn-outline-primary">
-									<i class="ri-download-line"></i> Unsigned
-								</a>
+								@if($unsignedAgreements->count())
+								@foreach($unsignedAgreements as $index => $unsigned)
+								<div class="border rounded p-2 mb-2">
+									<div class="fw-semibold">
+										Unsigned Agreement {{ $index + 1 }}
+										@if(str_contains($unsigned->agreement_path, 'stamp'))
+										<span class="badge bg-warning ms-1">With Stamp</span>
+										@else
+										<span class="badge bg-secondary ms-1">Without Stamp</span>
+										@endif
+									</div>
+
+									<div class="small text-muted">
+										Agreement No: {{ $unsigned->agreement_number }} <br>
+										Uploaded: {{ $unsigned->created_at->format('d M Y, h:i A') }}
+									</div>
+
+									<div class="mt-2 d-flex gap-2">
+										{{-- VIEW --}}
+										<a href="{{ $unsigned->file_url }}" target="_blank"
+											class="btn btn-sm btn-outline-info">
+											<i class="ri-eye-line"></i> View
+										</a>
+
+										{{-- DOWNLOAD --}}
+										<a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $unsigned->id]) }}"
+											class="btn btn-sm btn-outline-primary">
+											<i class="ri-download-line"></i> Download
+										</a>
+									</div>
+								</div>
+								@endforeach
 								@endif
 
+
 								@if($isCompleted && $signedAgreement)
-								<a href="{{ route('submitter.agreement.download', $requisition) }}?type=signed"
-									class="btn btn-sm btn-outline-success">
-									<i class="ri-download-line"></i> Signed
-								</a>
-								@endif
+<div class="border rounded p-2 mb-2">
+    <div class="fw-semibold">
+        Signed Agreement
+        <span class="badge bg-success ms-1">Final</span>
+    </div>
+
+    <div class="small text-muted">
+        Agreement No: {{ $signedAgreement->agreement_number }} <br>
+        Signed On: {{ $signedAgreement->created_at->format('d M Y, h:i A') }}
+    </div>
+
+    <div class="mt-2 d-flex gap-2">
+        <a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $signedAgreement->id]) }}"
+           class="btn btn-sm btn-outline-success">
+            <i class="ri-download-line"></i> Download
+        </a>
+    </div>
+</div>
+@endif
+
 
 								@if(!$isCompleted)
 								<button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#uploadSignedModal">
@@ -132,16 +170,16 @@
 							<h6 class="mb-2">Agreement Timeline</h6>
 
 							<ul class="list-group list-group-flush small">
-
 								<li class="list-group-item px-0 py-1 d-flex justify-content-between">
 									<span>
 										<i class="ri-checkbox-circle-fill text-success me-1"></i>
-										Unsigned Agreement Uploaded
+										Unsigned Agreements Uploaded ({{ $unsignedAgreements->count() }})
 									</span>
 									<span class="text-muted">
-										{{ $unsignedAgreement?->created_at?->format('d M Y, h:i A') ?? 'Pending' }}
+										{{ $unsignedAgreements->last()?->created_at?->format('d M Y, h:i A') ?? 'Pending' }}
 									</span>
 								</li>
+
 
 								<li class="list-group-item px-0 py-1 d-flex justify-content-between">
 									<span>

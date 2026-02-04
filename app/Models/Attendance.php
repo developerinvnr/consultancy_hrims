@@ -10,9 +10,10 @@ class Attendance extends Model
 	protected $primaryKey = 'id';
 
 	protected $fillable = [
-		'CandidateID',
-		'Month',
-		'Year',
+		'candidate_id',
+		'month',
+		'year',
+
 		'A1',
 		'A2',
 		'A3',
@@ -44,20 +45,26 @@ class Attendance extends Model
 		'A29',
 		'A30',
 		'A31',
+
 		'total_present',
 		'total_absent',
 		'total_cl',
+		'total_ch',
+		'total_od',
 		'total_lwp',
 		'submitted_by',
 		'status'
 	];
 
+
 	protected $casts = [
-		'Month' => 'integer',
-		'Year' => 'integer',
-		'total_present' => 'integer',
-		'total_absent' => 'integer',
+		'month' => 'integer',
+		'year' => 'integer',
+		'total_present' => 'float',
+		'total_absent' => 'float',
 		'total_cl' => 'integer',
+		'total_ch' => 'float',
+		'total_od' => 'integer',
 		'total_lwp' => 'integer'
 	];
 

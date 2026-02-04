@@ -67,6 +67,11 @@ class ManpowerRequisition extends Model
         'rejection_date',
         'rejection_reason',
         'processing_date',
+        'team_id',
+        'other_reimbursement',
+        'other_reimbursement_remark',
+        'out_of_pocket_expense',
+        'last_working_date',
     ];
 
     protected $casts = [
@@ -80,6 +85,7 @@ class ManpowerRequisition extends Model
         'rejection_date' => 'datetime',
         'processing_date' => 'datetime',
         'submission_date' => 'datetime',
+        'last_working_date' => 'date',
     ];
 
     // Relationships
@@ -140,5 +146,10 @@ class ManpowerRequisition extends Model
     public function hrVerifier()
     {
         return $this->belongsTo(User::class, 'hr_verified_id');
+    }
+
+    public function candidate()
+    {
+        return $this->hasOne(CandidateMaster::class, 'requisition_id', 'id');
     }
 }

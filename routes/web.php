@@ -14,11 +14,11 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\MyTeamController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\CommunicationControlController;
+use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DashboardController;
 
-
-
-
-
+use Symfony\Component\HttpFoundation\Request;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -29,6 +29,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
     //Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('/management', [DashboardController::class, 'managementDashboard'])->name('management');
+        Route::post('/management/data', [DashboardController::class, 'getDashboardData'])->name('management.data');
+    });
 
     //========================Core API=======================
     Route::resource('core_api', CoreAPIController::class);
@@ -75,7 +80,6 @@ Route::middleware('auth')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [HrAdminController::class, 'dashboard'])->name('dashboard');
-
         // New Applications
         Route::prefix('applications')->name('applications.')->group(function () {
             Route::get('/new', [HrAdminController::class, 'newApplications'])->name('new');
@@ -83,33 +87,18 @@ Route::middleware('auth')->group(function () {
             Route::get('/new/{requisition}/verify', [HrAdminController::class, 'verifyRequisition'])->name('verify');
             Route::post('/new/{requisition}/send-approval', [HrAdminController::class, 'sendForApproval'])->name('send-approval');
             Route::post('/new/{requisition}/request-correction', [HrAdminController::class, 'requestCorrection'])->name('request-correction');
-
             Route::get('/new/{requisition}/get-edit-form', [HrAdminController::class, 'getEditForm'])->name('get-edit-form');
             Route::put('/new/{requisition}/update', [HrAdminController::class, 'updateSection'])->name('update');
 
             // Approved Applications
             Route::post('/new/{requisition}/verify-application', [HrAdminController::class, 'verifyApplication'])->name('verify-application');
             Route::get('/approved', [HrAdminController::class, 'approvedApplications'])->name('approved');
-            // Route::get('/approved/{requisition}/process', [HrAdminController::class, 'processApplication'])->name('process');
-            // Route::post('/approved/{requisition}/generate-code', [HrAdminController::class, 'saveAndGenerateCode'])->name('generate-code');
-            // Process application from modal
-            // Get reporting managers for modal
             Route::get('get-reporting-managers/{requisition}', [HrAdminController::class, 'getReportingManagers'])->name('get-reporting-managers');
             Route::post('process-modal', [HrAdminController::class, 'processApplicationModal'])
                 ->name('process-modal');
-            // Show agreement upload page
-            // Route::get('upload-agreement/{employee}', [HrAdminController::class, 'showUploadAgreement'])
-            //     ->name('upload-agreement');    
             Route::get('upload-agreement/{candidate}', [HrAdminController::class, 'showUploadAgreementByEmployee'])->name('upload-agreement');
-            // Store agreement
-            // Route::post('upload-agreement/{employee}', [HrAdminController::class, 'uploadAgreementStore'])
-            //     ->name('upload-agreement-store');    
             Route::post('upload-agreement/{candidate}', [HrAdminController::class, 'uploadAgreementStoreByEmployee'])->name('upload-agreement-store');
-            // Show verify signed agreement
-            // Route::get('verify-signed/{employee}', [HrAdminController::class, 'showVerifySigned'])
-            //     ->name('verify-signed');
             Route::get('verify-signed/{candidate}', [HrAdminController::class, 'showVerifySignedByEmployee'])->name('verify-signed');
-             
         });
 
         // Master Tab
@@ -199,7 +188,7 @@ Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['a
 // Attendance Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    
+
     // AJAX routes
     Route::prefix('attendance')->group(function () {
         Route::post('/get', [AttendanceController::class, 'getAttendance'])->name('attendance.get');
@@ -209,17 +198,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/get-active-candidates', [AttendanceController::class, 'getActiveCandidates'])->name('attendance.get-active-candidates');
         Route::post('/submit-sunday-work', [AttendanceController::class, 'submitSundayWork'])->name('attendance.submit-sunday-work');
         Route::get('/export', [AttendanceController::class, 'export'])->name('attendance.export');
-
     });
 
-   Route::prefix('my-team')->middleware(['auth'])->group(function () {
-    Route::get('/', [MyTeamController::class, 'index'])->name('my-team.index');
-    Route::get('/get-candidates', [MyTeamController::class, 'getCandidates'])->name('my-team.get-candidates');
-    Route::get('/candidate/{id}', [MyTeamController::class, 'showCandidatePage'])->name('my-team.candidate.show');
-    Route::get('/candidate/{id}/documents', [MyTeamController::class, 'getCandidateDocuments'])->name('my-team.candidate.documents');
-    Route::get('/export', [MyTeamController::class, 'export'])->name('my-team.export');
-  });
-
+    Route::prefix('my-team')->middleware(['auth'])->group(function () {
+        Route::get('/', [MyTeamController::class, 'index'])->name('my-team.index');
+        Route::get('/get-candidates', [MyTeamController::class, 'getCandidates'])->name('my-team.get-candidates');
+        Route::get('/candidate/{id}', [MyTeamController::class, 'showCandidatePage'])->name('my-team.candidate.show');
+        Route::get('/candidate/{id}/documents', [MyTeamController::class, 'getCandidateDocuments'])->name('my-team.candidate.documents');
+        Route::get('/export', [MyTeamController::class, 'export'])->name('my-team.export');
+    });
 });
 
 Route::prefix('hr/salary')->group(function () {
@@ -228,6 +215,42 @@ Route::prefix('hr/salary')->group(function () {
     Route::post('/list', [SalaryController::class, 'list'])->name('salary.list');
     Route::post('/check-exists', [SalaryController::class, 'checkExists'])->name('salary.checkExists');
     Route::get('/payslip/{id}', [SalaryController::class, 'downloadPayslip'])->name('salary.payslip');
+    // Detailed Report Routes
+    Route::get('/detailed-report', [SalaryController::class, 'detailedReportView'])->name('salary.detailed.report.view');
+    Route::post('/detailed-report-data', [SalaryController::class, 'getDetailedReportData'])->name('salary.detailed.report.data');
+    Route::get('/export-detailed-report', [SalaryController::class, 'exportDetailedReport'])->name('salary.detailed.report.export');
+
+    // Management Report Routes
+    Route::get('/management-report', [SalaryController::class, 'managementReportView'])->name('salary.management.report');
+    Route::post('/management-report/data', [SalaryController::class, 'getManagementReportData'])->name('salary.management.report.data');
+    Route::get('/export-management-report', [SalaryController::class, 'exportManagementReport'])->name('salary.export.management.report');
+
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
+    Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
 });
 
+
+Route::middleware(['auth'])->group(function () {
+    Route::post(
+        '/candidate/{candidate}/deactivate',
+        [CandidateController::class, 'deactivate']
+    )->name('candidate.deactivate');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/master', [ReportController::class, 'master'])->name('master');
+    Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
+});
+
+// Route::post('/test/agreement-api', function(Request $request) {
+//     \Log::info('Agreement API Test Payload Received:', $request->all());
+    
+//     // Simulate API response
+//     return response()->json([
+//         'success' => true,
+//         'agreement_number' => 'TEST-' . date('Ymd-His'),
+//         'file_path' => 'test_agreements/TEST-' . date('Ymd-His') . '.pdf',
+//         'message' => 'Test agreement generated successfully',
+//         'received_data' => $request->all() // Return back for verification
+//     ]);
+// });

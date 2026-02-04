@@ -88,6 +88,9 @@ class HrAdminController extends Controller
 	/**
 	 * View Requisition Details
 	 */
+	/**
+	 * View Requisition Details
+	 */
 	public function viewRequisition(ManpowerRequisition $requisition)
 	{
 		// Only HR Admin can view
@@ -117,15 +120,16 @@ class HrAdminController extends Controller
 					->get();
 
 				foreach ($agreementDocs as $doc) {
+
 					$s3Url = null;
 					$hasFile = false;
 
 					if (!empty($doc->agreement_path) && $doc->agreement_path !== 'null') {
 						try {
-							$s3Url = Storage::disk('s3')->url($doc->agreement_path);
+							$s3Url = $doc->file_url;
 							$hasFile = true;
 						} catch (\Exception $e) {
-							\Log::error("Error generating S3 URL for agreement document: " . $e->getMessage());
+							Log::error("Error generating S3 URL for agreement document: " . $e->getMessage());
 						}
 					}
 
@@ -133,11 +137,11 @@ class HrAdminController extends Controller
 						'id' => $doc->id,
 						'type' => 'Agreement',
 						'document_type' => $this->formatDocumentType($doc->document_type),
+						'agreement_number' => $doc->agreement_number,
 						'file_name' => 'Agreement_' . ($doc->agreement_number ?? $doc->id) . '.pdf',
 						'uploaded_at' => $doc->created_at->format('d-m-Y H:i'),
-						's3_url' => $s3Url,
+						's3_url' => $s3Url,          // ✅ now correct
 						'has_file' => $hasFile,
-						'agreement_number' => $doc->agreement_number,
 						'document_category' => 'agreement',
 						'candidate_code' => $doc->candidate_code
 					];
@@ -172,25 +176,32 @@ class HrAdminController extends Controller
 	 */
 	public function verifyApplication(Request $request, ManpowerRequisition $requisition)
 	{
+		$isTfaOrCb = in_array($requisition->requisition_type, ['TFA', 'CB']);
+		//dd($request->all());
 		$request->validate([
-			'hr_verification_remarks' => 'nullable|string|max:1000'
+			'team_id' => $isTfaOrCb
+				? 'required|in:11'
+				: 'required|integer',
+			'hr_verification_remarks' => 'nullable|string|max:1000',
 		]);
 
 		DB::beginTransaction();
 		try {
-			// Get current HR user's employee ID
-			$hrEmployeeId = Auth::user()->employee_id ?? Auth::user()->emp_id ?? 'HR-' . Auth::id();
+			// HR employee id
+			$hrEmployeeId = Auth::user()->employee_id
+				?? Auth::user()->emp_id
+				?? 'HR-' . Auth::id();
 
-			// Update requisition status to "Verified"
-			$requisition->status = 'Hr Verified';
-			$requisition->hr_verification_date = now();
-			$requisition->hr_verification_remarks = $request->hr_verification_remarks;
-			$requisition->hr_verified_id = $hrEmployeeId;
-			$requisition->save();
+			$requisition->update([
+				'team_id' => $request->team_id, // ✅ STORE HERE
+				'status' => 'Hr Verified',
+				'hr_verification_date' => now(),
+				'hr_verification_remarks' => $request->hr_verification_remarks,
+				'hr_verified_id' => $hrEmployeeId,
+			]);
 
 			DB::commit();
 
-			// Redirect back with success message
 			return redirect()->back()
 				->with('success', 'Application verified successfully. You can now send it for approval.');
 		} catch (\Exception $e) {
@@ -787,6 +798,7 @@ class HrAdminController extends Controller
 			], 500);
 		}
 	}
+
 	public function processApplicationModal(Request $request)
 	{
 		$request->validate([
@@ -795,11 +807,25 @@ class HrAdminController extends Controller
 			'reporting_to' => 'required|string|max:255',
 		]);
 
+		$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
+		// if (config('services.agreement.test_mode')) {
+
+		// 	$candidateCode = 'TEST-' . time();
+
+		// 	$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidateCode);
+		//   //dd($agreementResponse);
+		// 	return response()->json([
+		// 		'success' => $agreementResponse['success'],
+		// 		'message' => 'Agreement API test mode response',
+		// 		'agreement_number' => $agreementResponse['agreement_number'] ?? null,
+		// 		'agreement_path' => $agreementResponse['agreement_path'] ?? null,
+		// 		'api_response' => $agreementResponse,
+		// 	]);
+		// }
+
 		DB::beginTransaction();
 		try {
-			$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
-          //dd($requisition);
-			// Check if already processed (in candidate_master)
+			// Check if already processed
 			if (CandidateMaster::where('requisition_id', $requisition->id)->exists()) {
 				return response()->json([
 					'success' => false,
@@ -807,36 +833,21 @@ class HrAdminController extends Controller
 				], 400);
 			}
 
-			// Check if already exists in agreement_temp
-			if (AgreementTemp::where('requisition_id', $requisition->id)->exists()) {
-				return response()->json([
-					'success' => false,
-					'message' => 'Application already exists in agreement processing queue'
-				], 400);
-			}
-
-			// Get reporting manager details
-			$reportingManager = DB::table('core_employee')
-				->where('employee_id', $request->reporting_manager_employee_id)
-				->first();
-
 			// Generate candidate code
 			$candidateCode = $this->generateCandidateCode($requisition->requisition_type);
 
-			// Calculate leave_credited for Contractual candidates based on contract_duration
+			// Calculate leave_credited for Contractual candidates
 			$leaveCredited = 0;
 			if ($requisition->requisition_type === 'Contractual') {
-				// 1 CL day per month of agreement duration
-				// Example: 6 months = 6 CL days, 9 months = 9 CL days
 				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration($requisition->contract_duration);
 			}
 
-			// Create candidate master record
+			// Create candidate master record WITH ALL REQUIRED FIELDS
 			$candidate = CandidateMaster::create([
 				'candidate_code' => $candidateCode,
 				'requisition_id' => $requisition->id,
 				'requisition_type' => $requisition->requisition_type,
-				'candidate_email' => $requisition->candidate_email,
+				'candidate_email' => $requisition->candidate_email, // REQUIRED FIELD
 				'candidate_name' => $requisition->candidate_name,
 				'father_name' => $requisition->father_name,
 				'mobile_no' => $requisition->mobile_no,
@@ -865,7 +876,7 @@ class HrAdminController extends Controller
 				'reporting_manager_address' => $requisition->reporting_manager_address,
 				'contract_start_date' => $requisition->contract_start_date,
 				'contract_duration' => $requisition->contract_duration,
-				'leave_credited' => $leaveCredited, // Add this line
+				'leave_credited' => $leaveCredited,
 				'contract_end_date' => $requisition->contract_end_date,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
 				'fuel_reimbursement_per_month' => $requisition->fuel_reimbursement_per_month,
@@ -880,13 +891,11 @@ class HrAdminController extends Controller
 				'updated_by_user_id' => auth()->id(),
 			]);
 
-			// Also create initial LeaveBalance record for Contractual candidates
+			// Create initial LeaveBalance record for Contractual candidates
 			if ($requisition->requisition_type === 'Contractual' && $leaveCredited > 0) {
-				$joiningYear = Carbon::parse($requisition->contract_start_date)->year;
-
 				LeaveBalance::create([
 					'CandidateID' => $candidate->id,
-					'calendar_year' => $joiningYear,
+					'calendar_year' => Carbon::parse($requisition->contract_start_date)->year,
 					'opening_cl_balance' => $leaveCredited,
 					'cl_utilized' => 0,
 					'lwp_days_accumulated' => 0,
@@ -895,26 +904,82 @@ class HrAdminController extends Controller
 				]);
 			}
 
-			// Store data in agreement_temp table for agreement generation
-			$this->storeAgreementTempData($requisition, $candidateCode);
+			// Call Agreement Generation API (CURL)
+			// In processApplicationModal method, after the API call:
+			// Call Agreement Generation API
+			$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidateCode);
 
-			// Update requisition status
-			$requisition->status = 'Agreement Pending';
-			$requisition->processing_date = now();
-			$requisition->save();
+			\Log::info('Agreement API Response in processApplicationModal:', $agreementResponse);
+
+			if (!$agreementResponse['success']) {
+				throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
+			}
+
+			$agreementId = $agreementResponse['agreement_id'] ?? null;
+
+			// Collect all pdf paths
+			$pdfPaths = array_filter([
+				$agreementResponse['pdf_path_old_stamp'] ?? null,
+				$agreementResponse['pdf_path_estamp'] ?? null,
+			]);
+
+			if (empty($agreementId) || count($pdfPaths) === 0) {
+				\Log::error('Agreement generated but PDFs missing', $agreementResponse);
+				throw new \Exception('Agreement generated but PDF files not received from API');
+			}
+
+			// Insert agreement documents (MULTIPLE ROWS)
+			foreach ($pdfPaths as $pdfPath) {
+
+				$fileUrl = 'https://s3.ap-south-1.amazonaws.com/vnragri.bkt/' . ltrim($pdfPath, '/');
+
+				AgreementDocument::create([
+					'candidate_id'        => $candidate->id,
+					'candidate_code'      => $candidateCode,
+					'document_type'       => 'unsigned',
+					'agreement_number'    => $agreementId,
+					'agreement_path'      => $pdfPath,
+					'file_url'            => $fileUrl,
+					'uploaded_by_user_id' => auth()->id(),
+					'uploaded_by_role'    => 'hr_admin',
+				]);
+			}
+
+			// Update candidate (ONLY agreement_id)
+			$candidate->update([
+				'agreement_number' => $agreementId,
+			]);
+
+			// Update requisition
+			$requisition->update([
+				'status' => 'Unsigned Agreement Uploaded',
+				'processing_date' => now(),
+			]);
+
+			// Update candidate status
+			$candidate->update([
+				'candidate_status' => 'Unsigned Agreement Uploaded',
+			]);
 
 			DB::commit();
+
+			\Log::info('Process completed successfully for candidate: ' . $candidateCode);
 
 			return response()->json([
 				'success' => true,
 				'message' => 'Candidate created successfully! Candidate Code: ' . $candidateCode .
 					($leaveCredited > 0 ? " with {$leaveCredited} CL days" : "") .
-					'. Agreement generation is pending.',
-				'candidate_code' => $candidateCode
+					'. Agreement has been generated.',
+				'candidate_code' => $candidateCode,
+				'agreement_number' => $agreementId ?? null,
+				'agreement_id' => $agreementId ?? null,
+				'pdf_path' => $pdfPath ?? null,
+				'view_url' => $s3Url ?? null,
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error processing application: ' . $e->getMessage());
+			\Log::error('Error processing application: ' . $e->getMessage());
+			\Log::error('Stack trace: ' . $e->getTraceAsString());
 
 			return response()->json([
 				'success' => false,
@@ -922,6 +987,158 @@ class HrAdminController extends Controller
 			], 500);
 		}
 	}
+	// Helper method to calculate age from DOB
+	private function calculateAge($dob)
+	{
+		return $dob ? Carbon::parse($dob)->age : null;
+	}
+
+	private function generateMockResponse($apiData, $candidateCode)
+	{
+		// For testing purposes only
+		$agreementNumber = 'MOCK-' . date('Ymd-His') . '-' . $candidateCode;
+
+		// Create a mock file in storage
+		$filePath = 'mock_agreements/' . $agreementNumber . '.pdf';
+
+		// Create directory if not exists
+		if (!Storage::disk('public')->exists('mock_agreements')) {
+			Storage::disk('public')->makeDirectory('mock_agreements');
+		}
+
+		// Create mock PDF content (simple text for testing)
+		$content = "MOCK AGREEMENT DOCUMENT\n\n";
+		$content .= "Agreement Number: {$agreementNumber}\n";
+		$content .= "Generated: " . now()->toDateTimeString() . "\n\n";
+		$content .= "Candidate Details:\n";
+		foreach ($apiData as $key => $value) {
+			$content .= "  " . str_pad($key . ':', 15) . " {$value}\n";
+		}
+
+		Storage::disk('public')->put($filePath, $content);
+
+		return [
+			'success' => true,
+			'agreement_number' => $agreementNumber,
+			'file_path' => $filePath,
+			'file_url' => Storage::disk('public')->url($filePath),
+			'message' => 'Mock agreement generated successfully (DEBUG MODE)',
+			'debug_data' => $apiData
+		];
+	}
+
+	// New method to handle API call for agreement generation
+	private function generateAgreementViaAPI($requisition, $candidateCode)
+	{
+		try {
+			// Calculate age
+			$age = $this->calculateAge($requisition->date_of_birth);
+
+			$dobFormatted = $requisition->date_of_birth;
+			if ($dobFormatted instanceof \Carbon\Carbon) {
+				$dobFormatted = $dobFormatted->format('Y-m-d');
+			} else {
+				$dobFormatted = \Carbon\Carbon::parse($dobFormatted)->format('Y-m-d');
+			}
+
+			$district = $requisition->district ?? $requisition->city ?? 'Unknown';
+
+			$date_of_agreement = now()->format('Y-m-d');
+
+			$grossAmount = (float) $requisition->remuneration_per_month;
+			$tdsAmount   = round($grossAmount * 0.02, 2);
+			$netAmount   = round($grossAmount - $tdsAmount, 2);
+
+			$apiData = [
+				'nature_type'       => '6',
+				'TypeId'            => '3',
+				'name'              => $requisition->candidate_name,
+				'designation'       => $requisition->requisition_type,
+				'father_name'       => $requisition->father_name,
+				'address'           => $requisition->address_line_1,
+				'country'           => 'India',
+				'state'             => $requisition->state_residence,
+				'hq'                => $requisition->work_location_hq,
+				'distric'           => $district,
+				'add1'              => $requisition->address_line_1,
+				'add2'              => $requisition->address_line_2 ?? '',
+				'village'           => $requisition->city,
+				'pincode'           => $requisition->pin_code,
+				'contact'           => $requisition->mobile_no,
+				'dob'               => $dobFormatted,
+				'age'               => (string) $age,
+				'start_date'        => $requisition->contract_start_date,
+				'end_date'          => $requisition->contract_end_date,
+				'amount'            => $netAmount,
+				'expenses'          => $requisition->fuel_reimbursement_per_month ?? 0,
+				'agreement_type'    => 'CONSULTANCY AGREEMENT',
+				'date_of_agreement' => $date_of_agreement,
+				'CreatePlace'       => $requisition->work_location_hq,
+				'serviceLocation'   => $requisition->work_location_hq,
+				'team_id'           => $requisition->team_id,
+			];
+
+			\Log::info('Agreement API Request Payload:', $apiData);
+
+			// CURL
+			$ch = curl_init();
+			curl_setopt_array($ch, [
+				CURLOPT_URL            => 'https://vnragro.com/agrisamvida/generate_consultancy_agreement.php',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_POST           => true,
+				CURLOPT_POSTFIELDS     => http_build_query($apiData),
+				CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+				CURLOPT_TIMEOUT        => 30,
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_SSL_VERIFYHOST => false,
+			]);
+
+			$response  = curl_exec($ch);
+			$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$curlError = curl_error($ch);
+			curl_close($ch);
+
+			\Log::info('API Response: ' . $response);
+			\Log::info('HTTP Code: ' . $httpCode);
+
+			if ($curlError || !$response) {
+				return [
+					'success' => false,
+					'message' => $curlError ?: 'No response from API',
+				];
+			}
+
+			$apiResponse = json_decode($response, true);
+
+			if (!$apiResponse || !$apiResponse['success']) {
+				return [
+					'success' => false,
+					'message' => $apiResponse['message'] ?? 'Agreement API failed',
+				];
+			}
+
+			\Log::info('Full API Response for debugging:', $apiResponse);
+
+			// ✅ Extract CORRECT fields
+			return [
+				'success'             => true,
+				'agreement_id'        => $apiResponse['agreement_id'] ?? null,
+				'pdf_path_old_stamp'  => $apiResponse['pdf_path_old_stamp'] ?? null,
+				'pdf_path_estamp'     => $apiResponse['pdf_path_estamp'] ?? null,
+				'message'             => $apiResponse['message'] ?? 'Agreement generated',
+				'full_response'       => $apiResponse,
+			];
+		} catch (\Exception $e) {
+			\Log::error('Exception in generateAgreementViaAPI: ' . $e->getMessage());
+
+			return [
+				'success' => false,
+				'message' => $e->getMessage(),
+			];
+		}
+	}
+
+
 
 	// Helper method to calculate leave credited from agreement duration
 	private function calculateLeaveCreditedFromAgreementDuration($agreementDuration)
@@ -981,40 +1198,40 @@ class HrAdminController extends Controller
 	/**
 	 * Store data in agreement_temp table with document paths
 	 */
-	private function storeAgreementTempData($requisition, $candidateCode)
-	{
-		// Calculate age from date of birth
-		$dateOfBirth = new \DateTime($requisition->date_of_birth);
-		$today = new \DateTime();
-		$age = $today->diff($dateOfBirth)->y;
+	// private function storeAgreementTempData($requisition, $candidateCode)
+	// {
+	// 	// Calculate age from date of birth
+	// 	$dateOfBirth = new \DateTime($requisition->date_of_birth);
+	// 	$today = new \DateTime();
+	// 	$age = $today->diff($dateOfBirth)->y;
 
-		// Fetch document paths from requisition_documents table
-		$documentPaths = $this->getDocumentPaths($requisition->id);
+	// 	// Fetch document paths from requisition_documents table
+	// 	$documentPaths = $this->getDocumentPaths($requisition->id);
 
-		// Store in agreement_temp table
-		AgreementTemp::create([
-			'candidate_code' => $candidateCode,
-			'requisition_id' => $requisition->id,
-			'candidate_name' => $requisition->candidate_name,
-			'contract_start_date' => $requisition->contract_start_date,
-			'emp_type' => $requisition->requisition_type, // Store the employee type (Contractual/TFA/CB)
-			'contact_number' => $requisition->mobile_no,
-			'father_name' => $requisition->father_name,
-			'address_line_1' => $requisition->address_line_1,
-			'country' => 'India', // Default country
-			'state' => $requisition->state_residence,
-			'district' => $requisition->district ?? $requisition->city,
-			'pin_code' => $requisition->pin_code,
-			'date_of_birth' => $requisition->date_of_birth,
-			'age' => $age,
-			'aadhaar_number' => $requisition->aadhaar_no,
-			'id_proof_path' => $documentPaths['id_proof'] ?? null,
-			'address_proof_path' => $documentPaths['address_proof'] ?? null,
-			'agreement_generated' => 'No',
-			'agreement_generated_at' => null,
-			'agreement_response' => null
-		]);
-	}
+	// 	// Store in agreement_temp table
+	// 	AgreementTemp::create([
+	// 		'candidate_code' => $candidateCode,
+	// 		'requisition_id' => $requisition->id,
+	// 		'candidate_name' => $requisition->candidate_name,
+	// 		'contract_start_date' => $requisition->contract_start_date,
+	// 		'emp_type' => $requisition->requisition_type, // Store the employee type (Contractual/TFA/CB)
+	// 		'contact_number' => $requisition->mobile_no,
+	// 		'father_name' => $requisition->father_name,
+	// 		'address_line_1' => $requisition->address_line_1,
+	// 		'country' => 'India', // Default country
+	// 		'state' => $requisition->state_residence,
+	// 		'district' => $requisition->district ?? $requisition->city,
+	// 		'pin_code' => $requisition->pin_code,
+	// 		'date_of_birth' => $requisition->date_of_birth,
+	// 		'age' => $age,
+	// 		'aadhaar_number' => $requisition->aadhaar_no,
+	// 		'id_proof_path' => $documentPaths['id_proof'] ?? null,
+	// 		'address_proof_path' => $documentPaths['address_proof'] ?? null,
+	// 		'agreement_generated' => 'No',
+	// 		'agreement_generated_at' => null,
+	// 		'agreement_response' => null
+	// 	]);
+	// }
 
 	/**
 	 * Get document paths from requisition_documents table
@@ -1340,65 +1557,130 @@ class HrAdminController extends Controller
 	 */
 	public function uploadSignedAgreement(Request $request, CandidateMaster $candidate)
 	{
+		/* ---------------- VALIDATION ---------------- */
 		$request->validate([
-			'agreement_file' => 'required|file|mimes:pdf|max:10240',
+			'agreement_file'   => 'required|file|mimes:pdf|max:10240',
 			'agreement_number' => 'required|string|max:100',
 		]);
-
+		//dd($candidate);
 		DB::beginTransaction();
+
 		try {
-			// Delete old signed agreement if exists
-			$candidate->agreementDocuments()
+			/* ---------------- REMOVE OLD SIGNED AGREEMENT ---------------- */
+			$oldSigned = $candidate->agreementDocuments()
 				->where('document_type', 'signed')
-				->delete();
+				->first();
 
-			// Upload file to S3
-			$file = $request->file('agreement_file');
-			$fileName = 'signed_' . $candidate->candidate_code . '.pdf';
-			$filePath = 'agreements/signed/' . $fileName;
-
-			Storage::disk('s3')->put($filePath, file_get_contents($file));
-
-			// Create new signed agreement
-			AgreementDocument::create([
-				'candidate_id' => $candidate->id,
-				'candidate_code' => $candidate->candidate_code,
-				'document_type' => 'signed',
-				'agreement_number' => $request->agreement_number,
-				'agreement_path' => $filePath,
-				'uploaded_by_user_id' => Auth::id(),
-				'uploaded_by_role' => 'hr_admin',
-			]);
-
-			// Update status to completed
-			$candidate->candidate_status = 'Active';
-			$candidate->final_status = 'A';
-			$candidate->save();
-
-			$requisition = $candidate->requisition;
-			if ($requisition) {
-				$requisition->status = 'Agreement Completed';
-				$requisition->save();
+			if ($oldSigned) {
+				Storage::disk('s3')->delete($oldSigned->agreement_path);
+				$oldSigned->delete();
 			}
 
-			DB::commit();
-			if ($request->ajax()) {
-				return response()->json([
-					'success' => true,
-					'message' => 'Signed agreement uploaded successfully.. Process completed.',
-					'status' => $candidate->candidate_status
+			/* ---------------- UPLOAD FILE TO S3 ---------------- */
+			$file     = $request->file('agreement_file');
+			$fileName = 'signed_' . $candidate->candidate_code . '_' . time() . '.pdf';
+			$filePath = 'agreements/signed/' . $fileName;
+
+			Storage::disk('s3')->put(
+				$filePath,
+				file_get_contents($file),
+				'public'
+			);
+
+			$fileUrl = Storage::disk('s3')->url($filePath);
+
+			/* ---------------- CREATE AGREEMENT RECORD ---------------- */
+			AgreementDocument::create([
+				'candidate_id'        => $candidate->id,
+				'candidate_code'      => $candidate->candidate_code,
+				'document_type'       => 'signed',
+				'agreement_number'    => $request->agreement_number,
+				'agreement_path'      => $filePath,
+				'file_url'            => $fileUrl,
+				'uploaded_by_user_id' => Auth::id(),
+				'uploaded_by_role'    => 'hr_admin',
+			]);
+
+			/* ---------------- UPDATE CANDIDATE ---------------- */
+			$candidate->update([
+				'candidate_status' => 'Active',
+				'final_status'     => 'A',
+			]);
+
+			/* ---------------- UPDATE REQUISITION ---------------- */
+			if ($candidate->requisition) {
+				$candidate->requisition->update([
+					'status' => 'Agreement Completed',
 				]);
 			}
 
-
-			return redirect()->back()
-				->with('success', 'Signed agreement uploaded. Process completed.');
+			/* ---------------- COMMIT DATABASE ---------------- */
+			DB::commit();
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error uploading signed agreement: ' . $e->getMessage());
-			return redirect()->back()->with('error', 'Failed to upload signed agreement.');
+
+			Log::error('Signed agreement upload failed', [
+				'candidate_id' => $candidate->id,
+				'error'        => $e->getMessage(),
+			]);
+
+			return $request->ajax()
+				? response()->json([
+					'success' => false,
+					'message' => 'Failed to upload signed agreement.',
+				], 500)
+				: redirect()->back()->with('error', 'Failed to upload signed agreement.');
 		}
+
+		/* ---------------- SYNC TO SUBMITTER PORTAL (POST-COMMIT) ---------------- */
+		try {
+			$apiPayload = [
+				'agreement_id' => $request->agreement_number,
+				'file_url'     => $fileUrl,
+			];
+
+			$ch = curl_init();
+			curl_setopt_array($ch, [
+				CURLOPT_URL            => 'https://vnragro.com/agrisamvida/generated_signed_agreement.php',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_POST           => true,
+				CURLOPT_POSTFIELDS     => http_build_query($apiPayload),
+				CURLOPT_HTTPHEADER     => [
+					'Content-Type: application/x-www-form-urlencoded',
+				],
+				CURLOPT_TIMEOUT        => 30,
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_SSL_VERIFYHOST => false,
+			]);
+
+			$response  = curl_exec($ch);
+			$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$curlError = curl_error($ch);
+			curl_close($ch);
+
+			Log::info('Submitter portal sync response', [
+				'http_code' => $httpCode,
+				'response'  => $response,
+				'error'     => $curlError,
+				'payload'   => $apiPayload,
+			]);
+		} catch (\Exception $apiEx) {
+			Log::warning('Submitter portal API exception', [
+				'message' => $apiEx->getMessage(),
+			]);
+		}
+
+		/* ---------------- FINAL RESPONSE ---------------- */
+		return $request->ajax()
+			? response()->json([
+				'success' => true,
+				'message' => 'Signed agreement uploaded successfully. Process completed.',
+				'status'  => $candidate->candidate_status,
+			])
+			: redirect()->back()->with('success', 'Signed agreement uploaded successfully.');
 	}
+
+
 
 	/**
 	 * Get agreement details (API)

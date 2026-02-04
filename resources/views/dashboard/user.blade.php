@@ -375,7 +375,7 @@
 											@endif
 
 											<!-- User is approver -->
-											@elseif($req->approver_id == Auth::user()->employee_id && $req->status == 'Pending Approval')
+											@elseif($req->approver_id == Auth::user()->emp_id && $req->status == 'Pending Approval')
 											<a href="{{ route('approver.requisition.view', $req) }}"
 												class="btn btn-sm btn-outline-warning" title="Review">
 												<i class="ri-search-eye-line"></i>
@@ -388,6 +388,29 @@
 												<i class="ri-eye-line"></i>
 											</a>
 											@endif
+
+											@php
+											$candidate = $req->candidate;
+											@endphp
+
+											@if(
+											Auth::user()->id == $req->submitted_by_user_id &&
+											$candidate &&
+											$candidate->candidate_status === 'Active' &&
+											(!$candidate->contract_end_date || $candidate->contract_end_date->gte(now()))
+											)
+											<button
+												type="button"
+												class="btn btn-sm btn-outline-danger"
+												data-bs-toggle="modal"
+												data-bs-target="#deactivateModal"
+												data-action="{{ route('candidate.deactivate', $candidate) }}"
+												data-name="{{ $candidate->candidate_name }}"
+												title="Deactivate Team Member">
+												<i class="ri-user-unfollow-line"></i>
+											</button>
+											@endif
+
 										</div>
 									</td>
 								</tr>
@@ -449,6 +472,34 @@
 	</div>
 </div>
 
+<div class="modal fade" id="deactivateModal" tabindex="-1">
+	<div class="modal-dialog">
+		<form method="POST" id="deactivateForm">
+			@csrf
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Deactivate Team Member</h5>
+				</div>
+				<div class="modal-body">
+					<p id="deactivateCandidateName"></p>
+
+					<label class="form-label">Last Working Date *</label>
+					<input type="date"
+						name="last_working_date"
+						class="form-control"
+						required
+						max="{{ now()->toDateString() }}">
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button class="btn btn-danger">Deactivate</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+
 @endsection
 
 @section('script_section')
@@ -462,6 +513,21 @@
 			$('#rejectReqId').text(reqId);
 			$('#rejectForm').attr('action', route);
 			$('#rejectModal').modal('show');
+		});
+
+		document.addEventListener('DOMContentLoaded', function() {
+			const deactivateModal = document.getElementById('deactivateModal');
+
+			deactivateModal.addEventListener('show.bs.modal', function(event) {
+				const button = event.relatedTarget;
+
+				const action = button.getAttribute('data-action');
+				const name = button.getAttribute('data-name');
+
+				deactivateModal.querySelector('#deactivateForm').action = action;
+				deactivateModal.querySelector('#deactivateCandidateName').innerText =
+					`Deactivate ${name}?`;
+			});
 		});
 	});
 </script>

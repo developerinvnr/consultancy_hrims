@@ -37,7 +37,7 @@
                         </div>
                         <div>
                             @if($employee)
-                                <span class="badge bg-info">Employee Code: {{ $employee->employee_code }}</span>
+                                <span class="badge bg-info">: {{ $employee->employee_code }}</span>
                             @endif
                         </div>
                     </div>
@@ -96,8 +96,8 @@
                                     @if(!$employee)
                                         <!-- Step 1: Create Employee Record -->
                                         <div id="step1" class="processing-step">
-                                            <h6>Step 1: Generate Employee Code & Create Record</h6>
-                                            <p class="text-muted">Create employee record and generate employee code. This will also trigger API calls to external systems.</p>
+                                            <h6>Step 1: Generate Party Code & Create Record</h6>
+                                            <p class="text-muted">Create party record and generate party code. This will also trigger API calls to external systems.</p>
                                             
                                             <form id="processForm" action="{{ route('hr-admin.applications.generate-code', $requisition) }}" method="POST">
                                                 @csrf
@@ -241,8 +241,8 @@
                                                     <i class="ri-information-line me-2"></i>
                                                     This action will:
                                                     <ul class="mb-0 mt-2">
-                                                        <li>Generate a unique employee code</li>
-                                                        <li>Create employee record in master database</li>
+                                                        <li>Generate a unique party code</li>
+                                                        <li>Create party record in master database</li>
                                                         <li>Send data to Agri Samvida platform</li>
                                                         <li>Mark requisition as "Processed"</li>
                                                     </ul>
@@ -250,7 +250,7 @@
                                                 
                                                 <div class="d-flex gap-2">
                                                     <button type="submit" class="btn btn-success">
-                                                        <i class="ri-save-line me-1"></i> Generate Employee Code & Process
+                                                        <i class="ri-save-line me-1"></i> Generate Party Code & Process
                                                     </button>
                                                     <a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-light">
                                                         <i class="ri-arrow-left-line me-1"></i> Cancel
@@ -262,14 +262,14 @@
                                         <!-- Step 2: Upload Agreement -->
                                         <div id="step2" class="processing-step">
                                             <h6>Step 2: Upload Agreement Documents</h6>
-                                            <p class="text-muted">Employee Code: <strong>{{ $employee->employee_code }}</strong></p>
+                                            <p class="text-muted">Party Code: <strong>{{ $employee->employee_code }}</strong></p>
                                             
                                             <!-- Employee Details -->
                                             <div class="row mb-4">
                                                 <div class="col-md-6">
                                                     <div class="card border">
                                                         <div class="card-header bg-light py-2">
-                                                            <h6 class="mb-0">Employee Details</h6>
+                                                            <h6 class="mb-0">Party Details</h6>
                                                         </div>
                                                         <div class="card-body">
                                                             <p class="mb-1"><strong>Name:</strong> {{ $employee->candidate_name }}</p>
@@ -478,10 +478,10 @@
                                         <div id="step4" class="processing-step">
                                             <div class="alert alert-success">
                                                 <i class="ri-check-double-line me-2"></i>
-                                                <h5 class="alert-heading">Employee Activation Complete!</h5>
+                                                <h5 class="alert-heading">Party Activation Complete!</h5>
                                                 <p class="mb-0">
-                                                    Employee <strong>{{ $employee->candidate_name }}</strong> has been successfully activated.<br>
-                                                    Employee Code: <strong>{{ $employee->employee_code }}</strong><br>
+                                                    Party <strong>{{ $employee->candidate_name }}</strong> has been successfully activated.<br>
+                                                    Party Code: <strong>{{ $employee->employee_code }}</strong><br>
                                                     Activation Date: <strong>{{ $employee->actual_joining_date->format('d-M-Y') }}</strong>
                                                 </p>
                                             </div>
@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p><strong>Employee:</strong> {{ $requisition->candidate_name }}</p>
                     <p><strong>Reporting To:</strong> ${reportingName}</p>
                     <p><strong>Reporting ID:</strong> ${reportingManager}</p>
-                    <p class="mt-3">This will generate employee code and send data to external systems.</p>
+                    <p class="mt-3">This will generate party code and send data to external systems.</p>
                 </div>
             `,
             icon: 'question',

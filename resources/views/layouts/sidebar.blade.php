@@ -81,12 +81,14 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
 
 
                 {{-- Consultancy --}}
+                @if(!auth()->user()->hasAnyRole(['hr_admin']))
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('requisitions.*')" href="{{ route('requisitions.index') }}">
                         <i class="ri-file-list-3-line"></i>
                         <span>Requisitions</span>
                     </a>
                 </li>
+                @endif
 
 
 
@@ -120,21 +122,35 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link @activeRoute('communication.*')" href="{{ route('communication.index') }}">
-                        <i class="ri-message-2-line"></i>
-                        <span>Communication Control</span>
+                    <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
+                        <i class="ri-database-2-line"></i>
+                        <span>Master Report</span>
                     </a>
                 </li>
 
-                
+               <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('salary.detailed.report.*')"
+                    href="{{ route('salary.detailed.report.view') }}">
+                        <i class="ri-money-rupee-circle-line"></i>
+                        <span>Remuneration Report</span>
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a href="{{ route('salary.management.report') }}" class="nav-link">
+                        <i class="ri-bar-chart-line"></i>
+                        <span>Management Report</span>
+                    </a>
+                </li>  
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('communication.*')" href="{{ route('communication.index') }}">
+                        <i class="ri-message-2-line"></i>
+                        <span>Control</span>
+                    </a>
+                </li>                
                 @endif
-
-
-
-
-
-
-
 
             </ul>
         </div>

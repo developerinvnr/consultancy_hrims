@@ -14,6 +14,7 @@ class AgreementDocument extends Model
         'document_type', // 'unsigned', 'signed'
         'agreement_number',
         'agreement_path',
+        'file_url',
         'uploaded_by_user_id',
         'uploaded_by_role', // 'hr_admin', 'submitter'
     ];

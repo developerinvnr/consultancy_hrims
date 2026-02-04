@@ -23,19 +23,38 @@
 </div>
 
 <div class="info">
-    <p><strong>Employee Code:</strong> {{ $salary->candidate->candidate_code ?? '—' }}</p>
+    <p><strong>Party Code:</strong> {{ $salary->candidate->candidate_code ?? '—' }}</p>
     <p><strong>Name:</strong> {{ $salary->candidate->candidate_name ?? '—' }}</p>
     <p><strong>Designation/Type:</strong> {{ $salary->candidate->requisition_type ?? '—' }}</p>
 </div>
 
 <table>
-    <thead><tr><th colspan="2">Earnings</th></tr></thead>
+    <thead>
+        <tr><th colspan="2">Earnings</th></tr>
+    </thead>
     <tbody>
-        <tr><td>Fixed Monthly Remuneration</td><td align="right">₹ {{ number_format($salary->monthly_salary, 2) }}</td></tr>
-        <tr><td>Approved Sunday Work Extra</td><td align="right">₹ {{ number_format($salary->extra_amount, 2) }}</td></tr>
-        <tr class="total"><td>Gross Earnings</td><td align="right">₹ {{ number_format($salary->monthly_salary + $salary->extra_amount, 2) }}</td></tr>
+        <tr>
+            <td>Monthly Remuneration (Reference)</td>
+            <td align="right">₹ {{ number_format($salary->monthly_salary, 2) }}</td>
+        </tr>
+
+        <tr>
+            <td>Paid Days</td>
+            <td align="right">{{ $salary->paid_days }}</td>
+        </tr>
+
+        <tr>
+            <td>Approved Sunday Work</td>
+            <td align="right">₹ {{ number_format($salary->extra_amount, 2) }}</td>
+        </tr>
+
+        <tr class="total">
+            <td>Total Payable Earnings</td>
+            <td align="right">₹ {{ number_format($salary->net_pay + $salary->deduction_amount, 2) }}</td>
+        </tr>
     </tbody>
 </table>
+
 
 <table>
     <thead><tr><th colspan="2">Deductions</th></tr></thead>

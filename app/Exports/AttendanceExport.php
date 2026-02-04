@@ -73,7 +73,7 @@ class AttendanceExport implements
         // Role-based filtering
         if ($this->user) {
             if (!$this->user->hasRole('hr_admin') && !$this->user->hasRole('admin')) {
-                $query->where('reporting_manager_employee_id', $this->user->emp_id);
+                $query->where('reporting_manager_employee_code', $this->user->emp_code);
             }
         }
 
