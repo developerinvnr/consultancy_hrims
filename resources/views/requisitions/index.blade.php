@@ -156,16 +156,13 @@
                             </tbody>
                         </table>
                     </div>
-                    
+                     @if($requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+							<div class="d-flex justify-content-end mt-3">
+								{{ $requisitions->links('pagination::bootstrap-5') }}
+							</div>
+						@endif
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            Showing {{ $requisitions->firstItem() }} to {{ $requisitions->lastItem() }} of {{ $requisitions->total() }} entries
-                        </div>
-                        <div>
-                            {{ $requisitions->appends(request()->except('page'))->links() }}
-                        </div>
-                    </div>
+                  
                 </div>
             </div>
         </div>
