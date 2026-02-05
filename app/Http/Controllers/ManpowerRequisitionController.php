@@ -436,12 +436,29 @@ class ManpowerRequisitionController extends Controller
 
     public function show(ManpowerRequisition $requisition)
     {
-        //$this->authorize('view', $requisition);
-        if (Auth::id() !== $requisition->submitted_by_user_id) {
+        $user = Auth::user();
+
+        $isSubmitter = $user->id === $requisition->submitted_by_user_id;
+
+        $isApprover = (
+            $requisition->approver_id &&
+            $user->emp_id === $requisition->approver_id
+        );
+
+        // Optional: HR role access
+        $isHr = $user->hasRole('hr_admin'); // only if using roles
+
+        if (! $isSubmitter && ! $isApprover && ! $isHr) {
             abort(403, 'You are not authorized to view this requisition.');
         }
 
-        $requisition->load(['function', 'department', 'vertical', 'submittedBy']);
+        $requisition->load([
+            'function',
+            'department',
+            'vertical',
+            'submittedBy',
+            'candidate'
+        ]);
 
         return view('requisitions.show', compact('requisition'));
     }

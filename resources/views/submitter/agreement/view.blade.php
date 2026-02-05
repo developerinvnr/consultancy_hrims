@@ -133,32 +133,38 @@
 
 
 								@if($isCompleted && $signedAgreement)
-<div class="border rounded p-2 mb-2">
-    <div class="fw-semibold">
-        Signed Agreement
-        <span class="badge bg-success ms-1">Final</span>
-    </div>
+								<div class="border rounded p-2 mb-2">
+									<div class="fw-semibold">
+										Signed Agreement
+										<span class="badge bg-success ms-1">Final</span>
+									</div>
 
-    <div class="small text-muted">
-        Agreement No: {{ $signedAgreement->agreement_number }} <br>
-        Signed On: {{ $signedAgreement->created_at->format('d M Y, h:i A') }}
-    </div>
+									<div class="small text-muted">
+										Agreement No: {{ $signedAgreement->agreement_number }} <br>
+										Signed On: {{ $signedAgreement->created_at->format('d M Y, h:i A') }}
+									</div>
 
-    <div class="mt-2 d-flex gap-2">
-        <a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $signedAgreement->id]) }}"
-           class="btn btn-sm btn-outline-success">
-            <i class="ri-download-line"></i> Download
-        </a>
-    </div>
-</div>
-@endif
+									<div class="mt-2 d-flex gap-2">
+										<a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $signedAgreement->id]) }}"
+											class="btn btn-sm btn-outline-success">
+											<i class="ri-download-line"></i> Download
+										</a>
+									</div>
+								</div>
+								@endif
 
 
 								@if(!$isCompleted)
-								<button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#uploadSignedModal">
-									<i class="ri-upload-2-line"></i> Upload
-								</button>
+								<div class="small">
+									<button type="button"
+										class="btn btn-sm btn-warning"
+										data-bs-toggle="modal"
+										data-bs-target="#uploadSignedModal">
+										<i class="ri-upload-2-line"></i> Upload Signed
+									</button>
+								</div>
 								@endif
+
 							</div>
 
 						</div>
@@ -240,7 +246,7 @@
 						<label class="form-label">Agreement Number *</label>
 						<input type="text" class="form-control" name="agreement_number" required
 							placeholder="Enter agreement number" maxlength="100"
-							value="{{ $unsignedAgreement->agreement_number ?? '' }}">
+							value="{{ $unsignedAgreements->last()?->agreement_number }}">
 						<small class="text-muted">Same agreement number as provided by HR</small>
 					</div>
 

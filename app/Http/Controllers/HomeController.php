@@ -24,7 +24,7 @@ class HomeController extends Controller
             return $this->hrAdminDashboard();
         }
 
-          
+
         if ($user->hasRole('management')) {
             return redirect()->route('dashboard.management');
         }
@@ -41,26 +41,34 @@ class HomeController extends Controller
             'pending_verification' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
             'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
             'pending_approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
-            'approved' => ManpowerRequisition::where(function($query) {
+            'approved' => ManpowerRequisition::where(function ($query) {
                 $query->where('status', 'Approved')
-                      ->orWhere('status', 'Agreement Pending')
-                      ->orWhere('status', 'Unsigned Agreement Uploaded')
-                      ->orWhere('status', 'Agreement Completed');
+                    ->orWhere('status', 'Agreement Pending')
+                    ->orWhere('status', 'Unsigned Agreement Uploaded')
+                    ->orWhere('status', 'Agreement Completed');
             })->count(),
             'rejected' => ManpowerRequisition::where('status', 'Rejected')->count(),
             'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
             'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
-            
+
             // Agreement Workflow Stats
             'agreement_pending' => ManpowerRequisition::where('status', 'Agreement Pending')->count(),
             'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Uploaded')->count(),
             'agreement_completed' => ManpowerRequisition::where('status', 'Agreement Completed')->count(),
-            
+
             // Candidate Master Stats
             'total_candidates' => CandidateMaster::count(),
             'active_candidates' => CandidateMaster::where('candidate_status', 'Active')->count(),
             'signed_agreement_uploaded' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
             'rejected_candidates' => CandidateMaster::where('candidate_status', 'Rejected')->count(),
+
+            // ADD THESE 2 LINES:
+            'verification_count' => ManpowerRequisition::whereNotNull('hr_verification_date')
+                ->whereNotNull('submission_date')
+                ->count(),
+            'approval_count' => ManpowerRequisition::whereNotNull('approval_date')
+                ->whereNotNull('submission_date')
+                ->count(),
         ];
 
         // Requisition Type Breakdown
@@ -94,22 +102,61 @@ class HomeController extends Controller
             ->limit(5)
             ->get();
 
-        // Average Processing Times
+        // Average Processing Times - NEW FORMAT
         $stats['avg_times'] = [
-            'verification_time' => ManpowerRequisition::whereNotNull('hr_verification_date')
-                ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, submission_date, hr_verification_date)) as avg_hours')
-                ->value('avg_hours'),
-            'approval_time' => ManpowerRequisition::whereNotNull('approval_date')
-                ->whereNotNull('hr_verification_date')
-                ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, hr_verification_date, approval_date)) as avg_hours')
-                ->value('avg_hours'),
+            'verification_time' => 0,
+            'approval_time' => 0,
+            'verification_display' => 'N/A',
+            'approval_display' => 'N/A',
         ];
+
+        // Calculate verification time (submission to HR verification)
+        $verificationData = ManpowerRequisition::whereNotNull('hr_verification_date')
+            ->whereNotNull('submission_date')
+            ->selectRaw('TIMESTAMPDIFF(HOUR, submission_date, hr_verification_date) as hours_diff')
+            ->get();
+
+        if ($verificationData->isNotEmpty()) {
+            $avgVerificationHours = $verificationData->avg('hours_diff');
+            if ($avgVerificationHours > 0) {
+                $stats['avg_times']['verification_time'] = $avgVerificationHours;
+                $stats['avg_times']['verification_display'] = $this->formatHours($avgVerificationHours);
+            }
+        }
+
+        // Calculate approval time (HR verification to approval)
+        $approvalData = ManpowerRequisition::whereNotNull('approval_date')
+            ->whereNotNull('submission_date')
+            ->selectRaw('
+                TIMESTAMPDIFF(
+                    DAY,
+                    submission_date,
+                    approval_date
+                ) as days_diff
+            ')
+            ->get();
+
+
+
+        if ($approvalData->isNotEmpty()) {
+            $avgApprovalDays = $approvalData->avg('days_diff');
+
+            if ($avgApprovalDays !== null && $avgApprovalDays >= 0) {
+                $stats['avg_times']['approval_time'] = $avgApprovalDays;
+                $stats['avg_times']['approval_display'] =
+                    number_format($avgApprovalDays, 1) . 'd';
+            }
+        } else {
+            $stats['avg_times']['approval_display'] = 'N/A';
+        }
+
+
 
         // Recent requisitions
         $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate', 'candidate'])
             ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+            ->paginate(10);
+
 
         // Status Distribution for Chart
         $stats['status_distribution'] = ManpowerRequisition::select('status', DB::raw('count(*) as count'))
@@ -118,6 +165,24 @@ class HomeController extends Controller
             ->toArray();
 
         return view('dashboard.hr-admin', compact('stats', 'recent_requisitions'));
+    }
+
+    // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
+    private function formatHours($hours)
+    {
+        if ($hours == 0 || $hours == null || $hours < 0) {
+            return 'N/A';
+        }
+
+        $days = $hours / 24;
+
+        if ($days >= 1) {
+            // Show days if 1 or more days
+            return number_format($days, 1) . 'd';
+        } else {
+            // Show hours if less than 1 day
+            return number_format($hours, 1) . 'h';
+        }
     }
 
     private function userDashboard($user)
@@ -166,17 +231,19 @@ class HomeController extends Controller
             }
         }
 
-        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy','candidate'])
+        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
             ->where(function ($query) use ($user, $isApprover) {
                 $query->where('submitted_by_user_id', $user->id);
+
                 if ($isApprover) {
                     $query->orWhere('approver_id', $user->emp_id);
                 }
             })
             ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+            ->paginate(10);
 
+
+        // dd($data);
         $data['user_stats'] = [
             'total_submissions' => ManpowerRequisition::where('submitted_by_user_id', $user->id)->count(),
             'pending_hr_verification' => ManpowerRequisition::where('submitted_by_user_id', $user->id)

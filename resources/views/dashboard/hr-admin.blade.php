@@ -125,27 +125,41 @@
 		</div>
 		@endforeach
 
+		{{-- Avg Verify Time Card --}}
 		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-1 d-flex justify-content-between align-items-center">
 					<div class="flex-grow-1">
-						<p class="text-muted mb-0 fs-10 text-truncate">Avg Verify Time</p>
+						<p class="text-muted mb-0 fs-10 text-truncate">
+							Avg Verify Time
+							<small class="d-block text-muted fs-9">
+								{{ $stats['verification_count'] }} processed
+							</small>
+						</p>
 					</div>
 					<div class="flex-shrink-0">
-						<h5 class="mb-0 fw-bold">{{ number_format($stats['avg_times']['verification_time'] ?? 0, 1) }}h</h5>
+						<h5 class="mb-0 fw-bold">{{ $stats['avg_times']['verification_display'] }}</h5>
 					</div>
 				</div>
 			</div>
 		</div>
 
+		{{-- Avg Approval Time Card --}}
 		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-1 d-flex justify-content-between align-items-center">
 					<div class="flex-grow-1">
-						<p class="text-muted mb-0 fs-10 text-truncate">Avg Approval Time</p>
+						<p class="text-muted mb-0 fs-10 text-truncate">
+							Avg Time to Approval
+							<small class="d-block text-muted fs-9">
+								{{ $stats['approval_count'] }} with dates
+							</small>
+						</p>
 					</div>
 					<div class="flex-shrink-0">
-						<h5 class="mb-0 fw-bold">{{ number_format($stats['avg_times']['approval_time'] ?? 0, 1) }}h</h5>
+						<h5 class="mb-0 fw-bold {{ $stats['avg_times']['approval_display'] == 'N/A' ? 'text-muted' : '' }}">
+							{{ $stats['avg_times']['approval_display'] }}
+						</h5>
 					</div>
 				</div>
 			</div>
@@ -231,50 +245,50 @@
 									</td>
 									<td class="fs-11">
 
-    @switch($req->status)
+										@switch($req->status)
 
-        @case('Pending HR Verification')
-            <span class="badge bg-warning fs-10">Pending HR Verification</span>
-            @break
+										@case('Pending HR Verification')
+										<span class="badge bg-warning fs-10">Pending HR Verification</span>
+										@break
 
-        @case('Correction Required')
-            <span class="badge bg-danger fs-10">Correction Required</span>
-            @break
+										@case('Correction Required')
+										<span class="badge bg-danger fs-10">Correction Required</span>
+										@break
 
-        @case('Pending Approval')
-            <span class="badge bg-info fs-10">Pending Approval</span>
-            @break
+										@case('Pending Approval')
+										<span class="badge bg-info fs-10">Pending Approval</span>
+										@break
 
-        @case('Approved')
-            <span class="badge bg-primary fs-10">Ready to Process</span>
-            @break
+										@case('Approved')
+										<span class="badge bg-primary fs-10">Ready to Process</span>
+										@break
 
-        @case('Processed')
-            @php
-                $statusColors = [
-                    'Agreement Pending' => 'warning',
-                    'Unsigned Agreement Uploaded' => 'info',
-                    'Agreement Completed' => 'secondary',
-                    'Active' => 'success'
-                ];
-            @endphp
+										@case('Processed')
+										@php
+										$statusColors = [
+										'Agreement Pending' => 'warning',
+										'Unsigned Agreement Uploaded' => 'info',
+										'Agreement Completed' => 'secondary',
+										'Active' => 'success'
+										];
+										@endphp
 
-            <span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
-                {{ $empStatus }}
-            </span>
+										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
+											{{ $empStatus }}
+										</span>
 
-            @if($candidate?->candidate_code)
-                <br>
-                <small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
-            @endif
-            @break
+										@if($candidate?->candidate_code)
+										<br>
+										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
+										@endif
+										@break
 
-        @default
-            <span class="badge bg-secondary fs-10">{{ $req->status }}</span>
+										@default
+										<span class="badge bg-secondary fs-10">{{ $req->status }}</span>
 
-    @endswitch
+										@endswitch
 
-</td>
+									</td>
 
 
 									<td class="fs-11">{{ $req->created_at->format('d-M') }}</td>
@@ -286,19 +300,19 @@
 											</a>
 
 											@if($req->status === 'Approved' && !$isProcessed)
-												<button type="button" class="btn btn-success process-btn"
+											<button type="button" class="btn btn-success process-btn"
 												data-bs-toggle="modal" data-bs-target="#processModal"
 												data-requisition-id="{{ $req->id }}"
 												data-requisition-name="{{ $req->candidate_name }}"
 												data-current-reporting="{{ $req->reporting_to }}"
 												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
 												<i class="ri-play-line fs-10"></i>
-											@elseif($req->status === 'Pending Approval')
+												@elseif($req->status === 'Pending Approval')
 												<span class="badge bg-info fs-9">Awaiting Approval</span>
-											@endif
+												@endif
 
 
-											{{--@if(!$isProcessed && !empty($req->approver_id))
+												{{--@if(!$isProcessed && !empty($req->approver_id))
 											<button type="button" class="btn btn-success process-btn"
 												data-bs-toggle="modal" data-bs-target="#processModal"
 												data-requisition-id="{{ $req->id }}"
@@ -327,7 +341,7 @@
 
 											@if($empStatus == "Active")
 											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
-											
+
 											@elseif($hasUnsigned && !$hasSigned)
 											<button type="button"
 												class="btn btn-outline-primary upload-signed-btn"
@@ -353,6 +367,11 @@
 								@endforeach
 							</tbody>
 						</table>
+						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+							<div class="d-flex justify-content-end mt-3">
+								{{ $recent_requisitions->links('pagination::bootstrap-5') }}
+							</div>
+						@endif
 					</div>
 				</div>
 			</div>

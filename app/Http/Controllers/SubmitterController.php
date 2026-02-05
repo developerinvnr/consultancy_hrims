@@ -20,92 +20,92 @@ class SubmitterController extends Controller
 	 * View unsigned agreement details
 	 */
 	public function viewAgreement(ManpowerRequisition $requisition)
-{
-    if ($requisition->submitted_by_user_id !== Auth::id()) {
-        abort(403, 'Unauthorized access.');
-    }
+	{
+		if ($requisition->submitted_by_user_id !== Auth::id()) {
+			abort(403, 'Unauthorized access.');
+		}
 
-    if (!in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Agreement Completed'])) {
-        return redirect()->route('dashboard')->with('error', 'No agreement available.');
-    }
+		if (!in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Agreement Completed'])) {
+			return redirect()->route('dashboard')->with('error', 'No agreement available.');
+		}
 
-    $candidate = CandidateMaster::where('requisition_id', $requisition->id)->firstOrFail();
+		$candidate = CandidateMaster::where('requisition_id', $requisition->id)->firstOrFail();
 
-    // ✅ MULTIPLE unsigned
-    $unsignedAgreements = AgreementDocument::where('candidate_id', $candidate->id)
-        ->where('document_type', 'unsigned')
-        ->orderBy('created_at')
-        ->get();
+		// ✅ MULTIPLE unsigned
+		$unsignedAgreements = AgreementDocument::where('candidate_id', $candidate->id)
+			->where('document_type', 'unsigned')
+			->orderBy('created_at')
+			->get();
 
-    // ✅ SINGLE signed (latest)
-    $signedAgreement = AgreementDocument::where('candidate_id', $candidate->id)
-        ->where('document_type', 'signed')
-        ->latest()
-        ->first();
+		// ✅ SINGLE signed (latest)
+		$signedAgreement = AgreementDocument::where('candidate_id', $candidate->id)
+			->where('document_type', 'signed')
+			->latest()
+			->first();
 
-    $isCompleted = $requisition->status === 'Agreement Completed';
+		$isCompleted = $requisition->status === 'Agreement Completed';
 
-    return view('submitter.agreement.view', compact(
-        'requisition',
-        'candidate',
-        'unsignedAgreements',
-        'signedAgreement',
-        'isCompleted'
-    ));
-}
+		return view('submitter.agreement.view', compact(
+			'requisition',
+			'candidate',
+			'unsignedAgreements',
+			'signedAgreement',
+			'isCompleted'
+		));
+	}
 
 	/**
 	 * Download unsigned agreement
 	 */
-public function downloadAgreement(ManpowerRequisition $requisition)
-{
-    // Auth check
-    if ($requisition->submitted_by_user_id !== Auth::id()) {
-        abort(403, 'Unauthorized access.');
-    }
+	public function downloadAgreement(ManpowerRequisition $requisition)
+	{
+		// Auth check
+		if ($requisition->submitted_by_user_id !== Auth::id()) {
+			abort(403, 'Unauthorized access.');
+		}
 
-    // Document id from query
-    $docId = request()->query('doc');
+		// Document id from query
+		$docId = request()->query('doc');
 
-    if (!$docId) {
-        abort(400, 'Document ID missing.');
-    }
+		if (!$docId) {
+			abort(400, 'Document ID missing.');
+		}
 
-    // Fetch agreement document
-    $agreement = AgreementDocument::find($docId);
+		// Fetch agreement document
+		$agreement = AgreementDocument::find($docId);
 
-    if (!$agreement) {
-        abort(404, 'Agreement document not found.');
-    }
+		if (!$agreement) {
+			abort(404, 'Agreement document not found.');
+		}
 
-    // Fetch candidate for requisition
-    $candidate = CandidateMaster::where('requisition_id', $requisition->id)->first();
+		// Fetch candidate for requisition
+		$candidate = CandidateMaster::where('requisition_id', $requisition->id)->first();
 
-    if (!$candidate) {
-        abort(404, 'Candidate not found.');
-    }
+		if (!$candidate) {
+			abort(404, 'Candidate not found.');
+		}
 
-    // Security check: doc must belong to this candidate
-    if ($agreement->candidate_id !== $candidate->id) {
-        abort(403, 'Invalid agreement document.');
-    }
+		// Security check: doc must belong to this candidate
+		if ($agreement->candidate_id !== $candidate->id) {
+			abort(403, 'Invalid agreement document.');
+		}
 
-    // File existence
-    if ($agreement->file_url) {
-    return redirect()->away($agreement->file_url);
-}
+		// File existence
+		if ($agreement->file_url) {
+			return redirect()->away($agreement->file_url);
+		}
 
-// 🔹 Otherwise fallback to internal S3 (signed agreements)
-if (!Storage::disk('s3')->exists($agreement->agreement_path)) {
-    abort(404, 'Agreement file not found in storage.');
-}
+		// 🔹 Otherwise fallback to internal S3 (signed agreements)
+		if (!Storage::disk('s3')->exists($agreement->agreement_path)) {
+			abort(404, 'Agreement file not found in storage.');
+		}
 
-return Storage::disk('s3')->download(
-    $agreement->agreement_path,
-    "{$candidate->candidate_code}_{$agreement->document_type}_agreement.pdf",
-    ['Content-Type' => 'application/pdf']
-);
-}
+		return Storage::disk('s3')->download(
+			$agreement->agreement_path,
+			"{$candidate->candidate_code}_{$agreement->document_type}_agreement.pdf",
+			['Content-Type' => 'application/pdf']
+		);
+	}
 
 
 
@@ -172,6 +172,10 @@ return Storage::disk('s3')->download(
 
 			$fileUrl = Storage::disk('s3')->url($filePath);
 
+			if (empty($fileUrl)) {
+				throw new \Exception('Failed to generate S3 file URL');
+			}
+
 			/* ---------------- SAVE SIGNED AGREEMENT ---------------- */
 			AgreementDocument::create([
 				'candidate_id'        => $candidate->id,
@@ -185,11 +189,6 @@ return Storage::disk('s3')->download(
 			]);
 
 			/* ---------------- UPDATE CANDIDATE & REQUISITION ---------------- */
-			// $candidate->update([
-			// 	'candidate_status' => 'Signed Agreement Uploaded',
-			// 	'final_status'     => 'A',
-			// ]);
-
 			$candidate->update([
 				'candidate_status' => 'Active',
 				'final_status'     => 'A',
@@ -199,7 +198,6 @@ return Storage::disk('s3')->download(
 				'status' => 'Agreement Completed',
 			]);
 
-			/* ---------------- COMMIT FIRST ---------------- */
 			DB::commit();
 		} catch (\Exception $e) {
 			DB::rollBack();
@@ -216,7 +214,7 @@ return Storage::disk('s3')->download(
 			], 500);
 		}
 
-		/* ---------------- SYNC TO HR PORTAL (POST-COMMIT) ---------------- */
+		/* ---------------- SYNC TO AGRISAMVIDA (POST-COMMIT) ---------------- */
 		try {
 			$apiPayload = [
 				'agreement_id' => $request->agreement_number,
@@ -243,14 +241,14 @@ return Storage::disk('s3')->download(
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-			Log::info('HR portal sync response', [
+			Log::info('Agrisamvida signed agreement sync', [
 				'http_code' => $httpCode,
 				'response'  => $response,
 				'error'     => $curlError,
 				'payload'   => $apiPayload,
 			]);
 		} catch (\Exception $apiEx) {
-			Log::warning('HR portal API exception', [
+			Log::warning('Agrisamvida API sync exception', [
 				'message' => $apiEx->getMessage(),
 			]);
 		}
@@ -259,7 +257,7 @@ return Storage::disk('s3')->download(
 		return response()->json([
 			'success' => true,
 			'message' => 'Signed agreement uploaded successfully. Agreement process completed.',
-			'status'  => $candidate->candidate_status
+			'status'  => $candidate->candidate_status,
 		]);
 	}
 }

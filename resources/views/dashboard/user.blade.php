@@ -417,6 +417,11 @@
 								@endforeach
 							</tbody>
 						</table>
+						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+<div class="d-flex justify-content-end mt-3">
+    {{ $recent_requisitions->links('pagination::bootstrap-5') }}
+</div>
+@endif
 					</div>
 				</div>
 			</div>
