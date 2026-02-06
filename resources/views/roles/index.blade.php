@@ -74,7 +74,8 @@
                                     <td>
                                         <span class="badge bg-primary">{{ $role->permissions_count }}</span>
                                     </td>
-                                    <td>{{ $role->created_at->format('Y-m-d H:i') }}</td>
+                                    <td>{{ optional($role->created_at)->format('Y-m-d H:i') ?? '-' }}</td>
+
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{{ route('roles.edit', $role->id) }}" 
