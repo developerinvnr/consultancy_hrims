@@ -17,6 +17,7 @@ use App\Http\Controllers\CommunicationControlController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HrRequisitionController;
 
 use Symfony\Component\HttpFoundation\Request;
 
@@ -242,6 +243,28 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/master', [ReportController::class, 'master'])->name('master');
     Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
+});
+
+Route::middleware(['auth'])->group(function () {
+    // Direct creation routes
+    Route::get('/hr_requisitions', [HrRequisitionController::class, 'index'])->name('hr_requisitions.index');
+
+    Route::get('/hr_requisitions/direct/create/{type}', [HrRequisitionController::class, 'create'])->name('hr_requisitions.direct.create');
+    Route::post('/hr_requisitions/direct/store', [HrRequisitionController::class, 'store'])->name('hr_requisitions.direct.store');
+    Route::get('/get-cities-by-state', [HrRequisitionController::class, 'getCitiesByState'])->name('hr.get.cities.by.state');
+    Route::get('/hr/get-employees-by-department', [HrRequisitionController::class, 'getEmployeesByDepartment'])->name('hr.get.employees.by.department');
+    Route::get('/hr/get-employee-details', [HrRequisitionController::class, 'getEmployeeDetails'])->name('hr.get.employee.details');
+
+
+    // Add these routes to your routes/web.php
+
+    Route::post('hr/get-vertical-by-function', [HrRequisitionController::class, 'getVerticalByFunction'])->name('hr.get.vertical.by.function');
+    Route::post('hr/get-department-by-function', [HrRequisitionController::class, 'getDepartmentByFunction'])->name('hr.get.department.by.function');
+    Route::post('hr/get-subdepartment-by-department', [HrRequisitionController::class, 'getSubDepartmentByDepartment'])->name('hr.get.subdepartment.by.department');
+    Route::post('hr/get-businessunit-by-vertical', [HrRequisitionController::class, 'getBusinessUnitByVertical'])->name('hr.get.businessunit.by.vertical');
+    Route::post('hr/get-zone-by-bu', [HrRequisitionController::class, 'getZoneByBu'])->name('hr.get.zone.by.bu');
+    Route::post('hr/get-region-by-zone', [HrRequisitionController::class, 'getRegionByZone'])->name('hr.get.region.by.zone');
+    Route::post('hr/get-territory-by-region', [HrRequisitionController::class, 'getTerritoryByRegion'])->name('hr.get.territory.by.region');
 });
 
 // Route::post('/test/agreement-api', function(Request $request) {

@@ -81,9 +81,18 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
 
 
                 {{-- Consultancy --}}
-                @if(!auth()->user()->hasAnyRole(['hr_admin']))
+                {{--@if(!auth()->user()->hasAnyRole(['hr_admin']))
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('requisitions.*')" href="{{ route('requisitions.index') }}">
+                        <i class="ri-file-list-3-line"></i>
+                        <span>Requisitions</span>
+                    </a>
+                </li>
+                @endif--}}
+
+                 @if(auth()->user()->hasAnyRole(['hr_admin']))
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('hr_requisitions.*')" href="{{ route('hr_requisitions.index') }}">
                         <i class="ri-file-list-3-line"></i>
                         <span>Requisitions</span>
                     </a>
