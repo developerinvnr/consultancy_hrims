@@ -64,7 +64,7 @@
                                     </button>
                                     <ul class="dropdown-menu">
                                         {{--<li><a class="dropdown-item" href="{{ route('hr_requisitions.direct.create', ['type' => 'Contractual']) }}">Contractual</a></li>--}}
-                                        <li><a class="dropdown-item" href="{{ route('hr_requisitions.direct.create', ['type' => 'TFA']) }}">TFA</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('hr_requisitions.direct.create', ['type' => 'tfa']) }}">TFA</a></li>
                                         {{--<li><a class="dropdown-item" href="{{ route('hr_requisitions.direct.create', ['type' => 'CB']) }}">CB</a></li>--}}
                                     </ul>
                                 </div>
