@@ -33,12 +33,12 @@ class ExtLoginController extends Controller
                 if (Auth::check()) {
 
                     // Redirect to the dashboard or authenticated page
-                    return redirect()->route('home');
+                    return redirect('/');
                 } else {
                     return redirect('/login')->withErrors(['Unable to log in']);
                 }
             } else {
-                return redirect('/login')->withErrors(['User not found in OJAS']);
+                return redirect('/login')->withErrors(['User not found in Counsultancy']);
             }
 
         } catch (\Exception $e) {
