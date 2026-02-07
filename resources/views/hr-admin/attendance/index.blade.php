@@ -304,10 +304,11 @@
                     currentYear === today.getFullYear() &&
                     currentMonth === (today.getMonth() + 1);
 
-                const canEdit =
-                    isCurrentMonth &&
-                    date >= minAllowedDate &&
-                    date <= today;
+                // const canEdit =
+                //     isCurrentMonth &&
+                //     date >= minAllowedDate &&
+                //     date <= today;
+                const canEdit = true;
 
                 const disabledAttr = 'disabled';
                 const readonlyClass = canEdit ? '' : 'readonly-cell';

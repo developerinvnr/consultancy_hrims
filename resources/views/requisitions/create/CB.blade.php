@@ -673,7 +673,7 @@
                 citySelect.html('<option value="">Select City</option>');
             }
         });
-		initContractDateValidation("#contract_start_date");
+		//initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
