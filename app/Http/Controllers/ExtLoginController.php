@@ -41,9 +41,9 @@ class ExtLoginController extends Controller
                 return redirect('/login')->withErrors(['User not found in Counsultancy']);
             }
 
-        } catch (\Exception $e) {
-            // Invalid token or other error
-            return redirect('/login')->withErrors(['Invalid token or session expired']);
-        }
+        } catch (\Throwable $e) {
+				dd($e->getMessage());
+			}
+
     }
 }
