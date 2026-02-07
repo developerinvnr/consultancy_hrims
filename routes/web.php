@@ -25,6 +25,8 @@ Route::get('/', function () {
 });
 
 Auth::routes();
+Route::get('/consultancy_login', [\App\Http\Controllers\ExtLoginController::class, 'login']);
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');

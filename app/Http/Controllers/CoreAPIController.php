@@ -7,6 +7,8 @@ use App\Models\Masters\EmployeeReporting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
+
 use Illuminate\Support\Facades\Log;
 
 class CoreAPIController extends Controller
@@ -78,15 +80,15 @@ class CoreAPIController extends Controller
         // Increase execution time and memory limit
         ini_set('max_execution_time', 0); // UNLIMITED
         set_time_limit(0); // UNLIMITED
-        ini_set('memory_limit', '2048M'); 
-        
+        ini_set('memory_limit', '2048M');
+
         $apiEndPoints = $request->input('api_end_points');
         $CoreAPI = DB::table('core_api_setup')->first();
-        
+
         if (!$CoreAPI) {
             return response()->json(['status' => 400, 'msg' => 'API configuration not found']);
         }
-        
+
         $apiKey = $CoreAPI->api_key;
         $baseUrl = $CoreAPI->base_url;
         $prefix = 'core_';
@@ -97,27 +99,95 @@ class CoreAPIController extends Controller
         $results = [];
         foreach ($sortedApis as $api) {
             Log::info("Starting sync for API: $api");
-            
+
             try {
                 $apiData = DB::table('core_apis')->where('api_end_point', $api)->first(['parameters', 'table_name']);
-                
+
                 if (!$apiData) {
                     Log::error("API configuration not found for: $api");
                     $results[$api] = ['status' => 'error', 'message' => 'API configuration not found'];
                     continue;
                 }
-                
+
                 $parameter = $apiData->parameters ?? null;
                 $tableName = $prefix . $apiData->table_name;
+
+                if ($api === 'employee_tools') {
+                    $applicationName = 'Consultancy HRIMS';
+                    $response = Http::withHeaders([
+                        'api-key' => $apiKey,
+                        'Accept' => 'application/json',
+                    ])->get("$baseUrl/api/$api", ['application_name' => $applicationName]);
+
+                    if ($response->failed()) {
+                        Log::error("API sync failed for $api: HTTP Status {$response->status()}");
+                        continue;
+                    }
+
+                    $data = $response->json();
+                    if (!isset($data['list']) || !is_array($data['list'])) {
+                        Log::error("Invalid API response structure for $api");
+                        continue;
+                    }
+
+                    // Get ALL employee IDs from API response (regardless of status)
+                    $apiEmployeeIds = array_column($data['list'], 'employee_id');
+
+                    // Get existing employee IDs from our database
+                    $existingEmployeeIds = DB::table('users')
+                        ->whereNotNull('emp_id')
+                        ->pluck('emp_id')
+                        ->toArray();
+
+                    // Find employees in DB but not in API response at all
+                    $missingEmployeeIds = array_diff($existingEmployeeIds, $apiEmployeeIds);
+
+                    // Disable completely missing employees
+                    if (!empty($missingEmployeeIds)) {
+                        DB::table('users')
+                            ->whereIn('emp_id', $missingEmployeeIds)
+                            ->update([
+                                'status' => 'D',
+                                'updated_at' => now()
+                            ]);
+                    }
+
+                    // Process all employees from API (both active and inactive)
+                    foreach ($data['list'] as $employee) {
+                        try {
+                            $userData = [
+                                'name' => $employee['emp_name'] ?? '',
+                                'emp_id' => $employee['employee_id'],
+                                'emp_code' => $employee['emp_code'],
+                                'status' => 'A',
+                                'reporting_id' => $employee['emp_reporting'],                               
+                                'email' => $employee['emp_email'] ?? null,
+                                'password' => Hash::make($employee['emp_contact'] ?? 'default123'),
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+
+                            // Only set created_at for new records
+                            DB::table('users')->updateOrInsert(
+                                ['emp_id' => $employee['employee_id']],
+                                $userData
+                            );
+                        } catch (\Throwable $e) {
+                            Log::error("Failed processing employee {$employee['employee_id']}: {$e->getMessage()}");
+                        }
+                    }
+
+                    continue;
+                }
+
 
                 if ($parameter) {
                     $result = $this->processParameterBasedApi($api, $parameter, $tableName, $apiKey, $baseUrl);
                 } else {
                     $result = $this->processSimpleApi($api, $tableName, $apiKey, $baseUrl);
                 }
-                
+
                 $results[$api] = $result;
-                
             } catch (\Exception $e) {
                 Log::error("Error processing API $api: " . $e->getMessage() . "\n" . $e->getTraceAsString());
                 $results[$api] = ['status' => 'error', 'message' => $e->getMessage()];
@@ -147,7 +217,7 @@ class CoreAPIController extends Controller
     private function processSimpleApi($api, $tableName, $apiKey, $baseUrl)
     {
         Log::info("Processing simple API: $api");
-        
+
         try {
             $response = Http::withHeaders([
                 'api-key' => $apiKey,
@@ -184,22 +254,22 @@ class CoreAPIController extends Controller
                 Log::error("First item in list is invalid for $api");
                 return ['status' => 'error', 'message' => 'Invalid data structure in list'];
             }
-            
+
             $columns = array_keys($firstItem);
             $this->createTableIfNotExists($tableName, $columns);
 
             // Insert data
             $insertedCount = 0;
             $updatedCount = 0;
-            
+
             foreach ($data['list'] as $item) {
                 if (!isset($item['id'])) {
                     Log::warning("Item missing 'id' field in $api, skipping");
                     continue;
                 }
-                
+
                 $existing = DB::table($tableName)->where('id', $item['id'])->exists();
-                
+
                 if ($existing) {
                     DB::table($tableName)->where('id', $item['id'])->update($item);
                     $updatedCount++;
@@ -217,7 +287,6 @@ class CoreAPIController extends Controller
                 'inserted' => $insertedCount,
                 'updated' => $updatedCount
             ];
-            
         } catch (\Exception $e) {
             Log::error("Exception in processSimpleApi for $api: " . $e->getMessage());
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -227,44 +296,43 @@ class CoreAPIController extends Controller
     private function processParameterBasedApi($api, $parameter, $tableName, $apiKey, $baseUrl)
     {
         Log::info("Processing parameter-based API: $api with parameter: $parameter");
-        
+
         try {
             // First, try to get table structure by testing the API
             $tableStructure = $this->getTableStructureFromApi($api, $parameter, $apiKey, $baseUrl);
-            
+
             if (!$tableStructure) {
                 Log::error("Failed to get table structure for $api");
                 return ['status' => 'error', 'message' => 'Failed to get table structure from API'];
             }
-            
+
             // Create table with the structure
             $this->createTableIfNotExists($tableName, $tableStructure['columns']);
-            
+
             // Try to get all data at once first
             $bulkResult = $this->tryBulkFetch($api, $tableName, $apiKey, $baseUrl);
             if ($bulkResult['success']) {
                 return $bulkResult;
             }
-            
+
             Log::info("Bulk fetch failed, trying parameter-based fetching for $api");
-            
+
             // Get source IDs for the parameter
             $ids = $this->getIdsForParameter($parameter);
-            
+
             if ($ids->isEmpty()) {
                 Log::warning("No source IDs found for parameter: $parameter");
                 return [
-                    'status' => 'warning', 
+                    'status' => 'warning',
                     'message' => "No source data found for parameter: $parameter",
                     'action' => 'Please sync parent tables first'
                 ];
             }
 
             Log::info("Found " . $ids->count() . " source IDs for $api");
-            
+
             // Process IDs in batches
             return $this->processIdsInBatches($api, $parameter, $tableName, $ids, $apiKey, $baseUrl);
-            
         } catch (\Exception $e) {
             Log::error("Exception in processParameterBasedApi for $api: " . $e->getMessage());
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -274,7 +342,7 @@ class CoreAPIController extends Controller
     private function getTableStructureFromApi($api, $parameter, $apiKey, $baseUrl)
     {
         Log::info("Getting table structure for $api");
-        
+
         // Try multiple approaches to get structure
         $approaches = [
             // Approach 1: Try with parameter = 1
@@ -284,7 +352,7 @@ class CoreAPIController extends Controller
             // Approach 3: Try without parameter
             ['method' => 'without_param'],
         ];
-        
+
         foreach ($approaches as $approach) {
             try {
                 if ($approach['method'] === 'with_param') {
@@ -298,10 +366,10 @@ class CoreAPIController extends Controller
                         'Accept' => 'application/json',
                     ])->timeout(15)->get("$baseUrl/api/$api");
                 }
-                
+
                 if ($response->successful()) {
                     $data = $response->json();
-                    
+
                     if (isset($data['list']) && is_array($data['list']) && !empty($data['list'])) {
                         $firstItem = $data['list'][0];
                         if (is_array($firstItem) && !empty($firstItem)) {
@@ -317,17 +385,17 @@ class CoreAPIController extends Controller
                 continue;
             }
         }
-        
+
         // If all approaches fail, try to guess columns based on parameter name
         Log::warning("Could not determine table structure for $api, using default columns");
-        
+
         $defaultColumns = ['id', 'name', 'code', 'status'];
-        
+
         // Add parameter column if it's a foreign key
         if (str_ends_with($parameter, '_id')) {
             $defaultColumns[] = $parameter;
         }
-        
+
         return [
             'columns' => $defaultColumns,
             'sample_data' => null
@@ -337,32 +405,32 @@ class CoreAPIController extends Controller
     private function tryBulkFetch($api, $tableName, $apiKey, $baseUrl)
     {
         Log::info("Attempting bulk fetch for $api");
-        
+
         try {
             $response = Http::withHeaders([
                 'api-key' => $apiKey,
                 'Accept' => 'application/json',
             ])->timeout(30)->get("$baseUrl/api/$api");
-            
+
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 if (isset($data['list']) && is_array($data['list']) && !empty($data['list'])) {
                     $firstItem = $data['list'][0];
                     if (is_array($firstItem) && !empty($firstItem)) {
                         $columns = array_keys($firstItem);
                         $this->createTableIfNotExists($tableName, $columns);
-                        
+
                         $insertedCount = 0;
                         $updatedCount = 0;
-                        
+
                         foreach ($data['list'] as $item) {
                             if (!isset($item['id'])) {
                                 continue;
                             }
-                            
+
                             $existing = DB::table($tableName)->where('id', $item['id'])->exists();
-                            
+
                             if ($existing) {
                                 DB::table($tableName)->where('id', $item['id'])->update($item);
                                 $updatedCount++;
@@ -371,7 +439,7 @@ class CoreAPIController extends Controller
                                 $insertedCount++;
                             }
                         }
-                        
+
                         Log::info("Bulk sync successful for $api: Inserted: $insertedCount, Updated: $updatedCount");
                         return [
                             'success' => true,
@@ -387,7 +455,7 @@ class CoreAPIController extends Controller
         } catch (\Exception $e) {
             Log::warning("Bulk fetch failed for $api: " . $e->getMessage());
         }
-        
+
         return ['success' => false];
     }
 
@@ -396,18 +464,18 @@ class CoreAPIController extends Controller
         $batchSize = 50; // Smaller batch size for stability
         $idBatches = $ids->chunk($batchSize);
         $totalBatches = count($idBatches);
-        
+
         $totalProcessed = 0;
         $totalInserted = 0;
         $totalUpdated = 0;
         $failedIds = [];
-        
+
         Log::info("Starting batch processing for $api with $totalBatches batches");
-        
+
         foreach ($idBatches as $batchIndex => $batchIds) {
             $batchNumber = $batchIndex + 1;
             Log::info("Processing batch $batchNumber/$totalBatches for $api");
-            
+
             // Process each ID in the batch
             foreach ($batchIds as $id) {
                 try {
@@ -415,12 +483,12 @@ class CoreAPIController extends Controller
                         'api-key' => $apiKey,
                         'Accept' => 'application/json',
                     ])->timeout(20)->get("$baseUrl/api/$api", [$parameter => $id]);
-                    
+
                     $totalProcessed++;
-                    
+
                     if ($response->successful()) {
                         $data = $response->json();
-                        
+
                         if (isset($data['list']) && is_array($data['list']) && !empty($data['list'])) {
                             $batchResult = $this->processApiBatch($tableName, $data['list']);
                             $totalInserted += $batchResult['inserted'];
@@ -432,30 +500,29 @@ class CoreAPIController extends Controller
                         Log::warning("Failed to fetch $api with $parameter=$id - Status: " . $response->status());
                         $failedIds[] = $id;
                     }
-                    
                 } catch (\Exception $e) {
                     Log::error("Exception fetching $api with $parameter=$id: " . $e->getMessage());
                     $failedIds[] = $id;
                 }
-                
+
                 // Log progress every 10 records
                 if ($totalProcessed % 10 === 0) {
                     Log::info("Progress: Processed $totalProcessed/" . $ids->count() . " for $api");
                 }
-                
+
                 // Small delay between requests
                 usleep(100000); // 0.2 second delay
             }
-            
+
             // Log batch completion
             Log::info("Completed batch $batchNumber/$totalBatches for $api");
-            
+
             // Add delay between batches
             if ($batchNumber < $totalBatches) {
                 sleep(0.5); // Reduced from 1 second to 0.5 seconds
             }
         }
-        
+
         // Prepare result
         $result = [
             'status' => 'success',
@@ -464,20 +531,20 @@ class CoreAPIController extends Controller
             'inserted' => $totalInserted,
             'updated' => $totalUpdated
         ];
-        
+
         if (!empty($failedIds)) {
             $result['status'] = 'warning';
             $result['message'] = "Sync completed with some failures";
             $result['failed_count'] = count($failedIds);
             $result['failed_ids'] = array_slice($failedIds, 0, 10); // Show first 10 failed IDs
         }
-        
-        Log::info("Completed parameter-based sync for $api: " . 
-                 "Total: $totalProcessed, " .
-                 "Inserted: $totalInserted, " .
-                 "Updated: $totalUpdated, " .
-                 "Failed: " . count($failedIds));
-        
+
+        Log::info("Completed parameter-based sync for $api: " .
+            "Total: $totalProcessed, " .
+            "Inserted: $totalInserted, " .
+            "Updated: $totalUpdated, " .
+            "Failed: " . count($failedIds));
+
         return $result;
     }
 
@@ -485,16 +552,16 @@ class CoreAPIController extends Controller
     {
         $inserted = 0;
         $updated = 0;
-        
+
         foreach ($items as $item) {
             if (!isset($item['id'])) {
                 Log::warning("Item missing 'id' field, skipping");
                 continue;
             }
-            
+
             try {
                 $existing = DB::table($tableName)->where('id', $item['id'])->exists();
-                
+
                 if ($existing) {
                     DB::table($tableName)->where('id', $item['id'])->update($item);
                     $updated++;
@@ -506,7 +573,7 @@ class CoreAPIController extends Controller
                 Log::error("Failed to process item in $tableName: " . $e->getMessage());
             }
         }
-        
+
         return ['inserted' => $inserted, 'updated' => $updated];
     }
 
@@ -587,21 +654,21 @@ class CoreAPIController extends Controller
         ];
 
         $sorted = [];
-        
+
         // Add APIs in dependency order
         foreach ($dependencyOrder as $apiName) {
             if (in_array($apiName, $apis)) {
                 $sorted[] = $apiName;
             }
         }
-        
+
         // Add remaining APIs
         foreach ($apis as $api) {
             if (!in_array($api, $sorted)) {
                 $sorted[] = $api;
             }
         }
-        
+
         return $sorted;
     }
 
@@ -617,7 +684,7 @@ class CoreAPIController extends Controller
             // Check if we need to add missing columns
             $existingColumns = DB::getSchemaBuilder()->getColumnListing($tableName);
             $missingColumns = array_diff($columns, $existingColumns);
-            
+
             if (!empty($missingColumns)) {
                 Log::info("Adding missing columns to $tableName: " . implode(', ', $missingColumns));
                 foreach ($missingColumns as $column) {
@@ -633,7 +700,7 @@ class CoreAPIController extends Controller
 
         // Create new table
         $createTableQuery = "CREATE TABLE `$tableName` (";
-        
+
         $columnDefinitions = [];
         foreach ($columns as $column) {
             if ($column === 'id') {
@@ -648,10 +715,10 @@ class CoreAPIController extends Controller
                 $columnDefinitions[] = "`$column` TEXT NULL";
             }
         }
-        
+
         $createTableQuery .= implode(', ', $columnDefinitions);
         $createTableQuery .= ", PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-        
+
         try {
             DB::statement($createTableQuery);
             Log::info("Created table: $tableName with columns: " . implode(', ', $columns));
