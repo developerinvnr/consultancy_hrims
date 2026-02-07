@@ -13,7 +13,7 @@ class ExtLoginController extends Controller
     public function login(Request $request)
     {
        $token = $request->query('token');
-       $secretKey ='v7n90l9uvy';
+       $secretKey ='w3P1a5Z4sN0fXQhYz6nGkP9cT8Bv0F3q2mRZ7J8K4Lw=';
 
         try {
             // Decode the JWT token
@@ -42,7 +42,7 @@ class ExtLoginController extends Controller
             }
 
         } catch (\Throwable $e) {
-				dd($e->getMessage());
+				//dd($e->getMessage());
 			}
 
     }
