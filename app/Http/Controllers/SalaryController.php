@@ -385,6 +385,10 @@ class SalaryController extends Controller
                 'zoneRef',
                 'regionRef',
                 'territoryRef',
+                'cityMaster',
+                'residenceState',
+                'workState',
+                'qualification',
                 'salaryProcessings' => function ($q) use ($month, $year) {
                     $q->where('month', $month)
                         ->where('year', $year);
@@ -452,8 +456,8 @@ class SalaryController extends Controller
                 'vertical' => $verticalName,
                 'department' => $departmentName,
                 'sub_department' => $sub_departmentName,
-                'section' => '', // You may need to add this field to candidate_master
-                'state' => $candidate->state_work_location,
+                'work_state' => $candidate->workState?->state_name ?? '',
+                'residence_state' => $candidate->residenceState?->state_name ?? '',
                 'bu' => $buName,
                 'zone' => $zoneName,
                 'region' => $regionName,
@@ -461,7 +465,6 @@ class SalaryController extends Controller
                 'job_location' => $candidate->work_location_hq,
                 'date_of_joining' => $candidate->contract_start_date,
                 'date_of_separation' => $candidate->contract_end_date,
-                'state_address' => $candidate->state_residence,
                 'hq' => $candidate->work_location_hq,
                 'paid_days' => $paidDays,
                 'remuneration' => (float) $remuneration,

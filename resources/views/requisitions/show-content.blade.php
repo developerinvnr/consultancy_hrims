@@ -136,9 +136,15 @@
                         <td class="small">{{ $requisition->gender }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted small">Qualification:</td>
-                        <td class="small">{{ $requisition->highest_qualification }}</td>
-                    </tr>
+    <td class="text-muted small">Qualification:</td>
+    <td class="small">
+        {{ $requisition->qualification->EducationName ?? 'N/A' }}
+        @if($requisition->qualification?->EducationCode)
+            ({{ $requisition->qualification->EducationCode }})
+        @endif
+    </td>
+</tr>
+
                     @if($requisition->alternate_email)
                     <tr>
                         <td class="text-muted small">Alt. Email:</td>
@@ -170,11 +176,11 @@
                     </tr>
                     <tr>
                         <td class="text-muted small">City:</td>
-                        <td class="small">{{ $requisition->city }}</td>
+                        <td class="small"> {{ $requisition->cityMaster->city_village_name ?? 'N/A' }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted small">State:</td>
-                        <td class="small">{{ $requisition->state_residence }}</td>
+                        <td class="small"> {{ $requisition->residenceState->state_name ?? 'N/A' }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted small">PIN Code:</td>
@@ -205,7 +211,9 @@
                     @endif
                     <tr>
                         <td class="text-muted small">Work State:</td>
-                        <td class="small">{{ $requisition->state_work_location }}</td>
+                        <td class="small">
+                            {{ $requisition->workState->state_name ?? 'N/A' }}
+                        </td>
                     </tr>
                     <tr>
                         <td class="text-muted small">Function:</td>

@@ -72,6 +72,8 @@ class ManpowerRequisition extends Model
         'other_reimbursement_remark',
         'out_of_pocket_expense',
         'last_working_date',
+        'other_reimbursement_required',
+        'out_of_pocket_required',
     ];
 
     protected $casts = [
@@ -114,10 +116,10 @@ class ManpowerRequisition extends Model
         return $this->belongsTo(User::class, 'approver_id');
     }
 
-    public function employeeGeneral()
-    {
-        return $this->belongsTo(\App\Models\HrmEmployeeGeneral::class, 'submitted_by_employee_id', 'EmployeeID');
-    }
+    // public function employeeGeneral()
+    // {
+    //     return $this->belongsTo(\App\Models\HrmEmployeeGeneral::class, 'submitted_by_employee_id', 'EmployeeID');
+    // }
 
     public function documents()
     {
@@ -151,5 +153,30 @@ class ManpowerRequisition extends Model
     public function candidate()
     {
         return $this->hasOne(CandidateMaster::class, 'requisition_id', 'id');
+    }
+
+
+    // City
+    public function cityMaster()
+    {
+        return $this->belongsTo(\App\Models\CoreCityVillage::class, 'city');
+    }
+
+    // State (Residence)
+    public function residenceState()
+    {
+        return $this->belongsTo(\App\Models\CoreState::class, 'state_residence');
+    }
+
+    // State (Work Location)
+    public function workState()
+    {
+        return $this->belongsTo(\App\Models\CoreState::class, 'state_work_location');
+    }
+
+    // Highest Qualification
+    public function qualification()
+    {
+        return $this->belongsTo(\App\Models\MasterEducation::class, 'highest_qualification', 'EducationId');
     }
 }

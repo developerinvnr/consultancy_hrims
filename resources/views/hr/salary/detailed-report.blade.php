@@ -82,7 +82,6 @@
                             <th>Vertical</th>
                             <th>Department</th>
                             <th>Sub-Department</th>
-                            <th>Section</th>
                             <th>State</th>
                             <th>BU</th>
                             <th>Zone</th>
@@ -234,8 +233,7 @@
                     <td>${item.vertical || '-'}</td>
                     <td>${item.department || '-'}</td>
                     <td>${item.sub_department || '-'}</td>
-                    <td>${item.section || '-'}</td>
-                    <td>${item.state || '-'}</td>
+                    <td>${item.work_state  || '-'}</td>
                     <td>${item.bu || '-'}</td>
                     <td>${item.zone || '-'}</td>
                     <td>${item.region || '-'}</td>
@@ -243,7 +241,7 @@
                     <td>${item.job_location || '-'}</td>
                     <td>${joinDate}</td>
                     <td>${separationDate}</td>
-                    <td>${item.state_address || item.state || '-'}</td>
+                    <td>${item.residence_state || '-'}</td>
                     <td>${item.hq || '-'}</td>
                     <td class="text-center">${item.paid_days ?? 0}</td>
                     <td class="text-end">₹ ${item.remuneration?.toLocaleString('en-IN') || '0'}</td>

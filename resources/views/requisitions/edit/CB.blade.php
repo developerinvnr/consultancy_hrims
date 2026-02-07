@@ -124,12 +124,24 @@
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
-												<label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="highest_qualification" name="highest_qualification"
-													value="{{ old('highest_qualification', $requisition->highest_qualification) }}" required>
-												<div class="invalid-feedback"></div>
-											</div>
+    <label for="highest_qualification" class="form-label">
+        Highest Qualification <span class="text-danger">*</span>
+    </label>
+    <select class="form-select form-select-sm select2"
+            id="highest_qualification"
+            name="highest_qualification"
+            required>
+        <option value="">Select Qualification</option>
+        @foreach($educations as $education)
+            <option value="{{ $education->EducationId }}"
+                {{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
+                {{ $education->EducationName }} ({{ $education->EducationCode }})
+            </option>
+        @endforeach
+    </select>
+    <div class="invalid-feedback"></div>
+</div>
+
 										</div>
 
 										<div class="row">
@@ -142,14 +154,26 @@
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-2 mb-3">
-												<label for="state_residence" class="form-label">State (Residence) <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_residence" name="state_residence" required>
+												<label for="state_residence" class="form-label">State <span class="text-danger">*</span></label>
+												<select class="form-select form-select-sm"
+													id="state_residence"
+													name="state_residence" required>
 													<option value="">Select State</option>
 													@foreach($states as $state)
-													<option value="{{ $state }}" {{ old('state_residence', $requisition->state_residence) == $state ? 'selected' : '' }}>
-														{{ $state }}
+													<option value="{{ $state->id }}"
+														{{ old('state_residence', $requisition->state_residence) == $state->id ? 'selected' : '' }}>
+														{{ $state->state_name }}
 													</option>
 													@endforeach
+												</select>
+												<div class="invalid-feedback"></div>
+											</div>
+											<div class="col-md-2 mb-3">
+												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
+												<select class="form-select form-select-sm select2"
+													id="city"
+													name="city" required>
+													<option value="">Select City</option>
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
@@ -160,13 +184,7 @@
 												{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
-												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="city" name="city"
-													value="{{ old('city', $requisition->city) }}" required>
-												<div class="invalid-feedback"></div>
-											</div>
+										
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -243,14 +261,19 @@
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
-													<option value="">Select State</option>
-													@foreach($states as $state)
-													<option value="{{ $state }}" {{ old('state_work_location', $requisition->state_work_location) == $state ? 'selected' : '' }}>
-														{{ $state }}
-													</option>
-													@endforeach
-												</select>
+											<select class="form-select form-select-sm"
+        id="state_work_location"
+        name="state_work_location"
+        required>
+    <option value="">Select State</option>
+    @foreach($states as $state)
+        <option value="{{ $state->id }}"
+            {{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
+            {{ $state->state_name }}
+        </option>
+    @endforeach
+</select>
+
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
@@ -823,7 +846,62 @@
 
 <script>
 	$(document).ready(function() {
-		 initContractDateValidation("#contract_start_date");
+		const existingState = "{{ $requisition->state_residence }}";
+		const existingCity = "{{ $requisition->city }}";
+
+		if (existingState) {
+			$('#state_residence').val(existingState).trigger('change');
+
+			$.ajax({
+				url: '{{ route("get.cities.by.state") }}',
+				type: 'GET',
+				data: {
+					state_id: existingState
+				},
+				success: function(response) {
+					const citySelect = $('#city');
+					citySelect.html('<option value="">Select City</option>');
+
+					$.each(response, function(_, city) {
+						citySelect.append(
+							`<option value="${city.id}" ${city.id == existingCity ? 'selected' : ''}>
+                        ${city.name}
+                    </option>`
+						);
+					});
+				}
+			});
+		}
+
+		$('#state_residence').on('change', function() {
+			const stateId = $(this).val();
+			const citySelect = $('#city');
+
+			citySelect.html('<option value="">Select City</option>');
+
+			if (!stateId) return;
+
+			citySelect.prop('disabled', true)
+				.append('<option value="">Loading...</option>');
+
+			$.ajax({
+				url: '{{ route("get.cities.by.state") }}',
+				type: 'GET',
+				data: {
+					state_id: stateId
+				},
+				success: function(response) {
+					citySelect.html('<option value="">Select City</option>');
+					$.each(response, function(_, city) {
+						citySelect.append(
+							`<option value="${city.id}">${city.name}</option>`
+						);
+					});
+					citySelect.prop('disabled', false);
+				}
+			});
+		});
+		initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 

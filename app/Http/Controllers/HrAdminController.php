@@ -136,7 +136,8 @@ class HrAdminController extends Controller
 					$agreementDocuments[] = [
 						'id' => $doc->id,
 						'type' => 'Agreement',
-						'document_type' => $this->formatDocumentType($doc->document_type),
+						'stamp_type' => $this->formatDocumentType($doc->stamp_type),
+						'sign_status' => $this->formatDocumentType($doc->sign_status),
 						'agreement_number' => $doc->agreement_number,
 						'file_name' => 'Agreement_' . ($doc->agreement_number ?? $doc->id) . '.pdf',
 						'uploaded_at' => $doc->created_at->format('d-m-Y H:i'),
@@ -340,7 +341,8 @@ class HrAdminController extends Controller
 					'contract_duration',
 					'contract_end_date',
 					'remuneration_per_month',
-					'fuel_reimbursement_per_month'
+					'other_reimbursement_required',
+					'out_of_pocket_required',
 				]);
 				break;
 
@@ -879,7 +881,8 @@ class HrAdminController extends Controller
 				'leave_credited' => $leaveCredited,
 				'contract_end_date' => $requisition->contract_end_date,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
-				'fuel_reimbursement_per_month' => $requisition->fuel_reimbursement_per_month,
+				'other_reimbursement_required' => $requisition->other_reimbursement_required,
+				'out_of_pocket_required' => $requisition->out_of_pocket_required,
 				'account_holder_name' => $requisition->account_holder_name,
 				'bank_account_no' => $requisition->bank_account_no,
 				'bank_ifsc' => $requisition->bank_ifsc,
@@ -918,32 +921,62 @@ class HrAdminController extends Controller
 			$agreementId = $agreementResponse['agreement_id'] ?? null;
 
 			// Collect all pdf paths
-			$pdfPaths = array_filter([
-				$agreementResponse['pdf_path_old_stamp'] ?? null,
-				$agreementResponse['pdf_path_estamp'] ?? null,
-			]);
+			// $pdfPaths = array_filter([
+			// 	$agreementResponse['pdf_path_old_stamp'] ?? null,
+			// 	$agreementResponse['pdf_path_estamp'] ?? null,
+			// ]);
 
-			if (empty($agreementId) || count($pdfPaths) === 0) {
+			$agreements = [];
+
+
+			$agreements = [
+				[
+					'stamp_type' => 'NONE',
+					'pdf_path'   => $agreementResponse['pdf_path_old_stamp'] ?? null,
+				],
+				[
+					'stamp_type' => 'E_STAMP',
+					'pdf_path'   => $agreementResponse['pdf_path_estamp'] ?? null,
+				],
+			];
+
+			if (empty($agreementId) || count($agreements) === 0) {
 				\Log::error('Agreement generated but PDFs missing', $agreementResponse);
 				throw new \Exception('Agreement generated but PDF files not received from API');
 			}
 
-			// Insert agreement documents (MULTIPLE ROWS)
-			foreach ($pdfPaths as $pdfPath) {
+			foreach ($agreements as $agreement) {
 
+				if (empty($agreement['pdf_path'])) {
+					continue;
+				}
+
+				$pdfPath = $agreement['pdf_path'];
 				$fileUrl = 'https://s3.ap-south-1.amazonaws.com/vnragri.bkt/' . ltrim($pdfPath, '/');
 
 				AgreementDocument::create([
 					'candidate_id'        => $candidate->id,
 					'candidate_code'      => $candidateCode,
-					'document_type'       => 'unsigned',
+
+					// WHAT IT IS
+					'document_type'       => 'agreement',
+
+					// ATTRIBUTES
+					'stamp_type'          => $agreement['stamp_type'], // NONE / E_STAMP
+					'sign_status'         => 'UNSIGNED',
+
 					'agreement_number'    => $agreementId,
 					'agreement_path'      => $pdfPath,
 					'file_url'            => $fileUrl,
+
 					'uploaded_by_user_id' => auth()->id(),
 					'uploaded_by_role'    => 'hr_admin',
 				]);
 			}
+
+
+
+
 
 			// Update candidate (ONLY agreement_id)
 			$candidate->update([
@@ -1070,7 +1103,7 @@ class HrAdminController extends Controller
 				'start_date' => optional($requisition->contract_start_date)->format('Y-m-d'),
 				'end_date'   => optional($requisition->contract_end_date)->format('Y-m-d'),
 				'amount'            => $netAmount,
-				'expenses'          => $requisition->fuel_reimbursement_per_month ?? 0,
+				'expenses'          => $requisition->out_of_pocket_required ?? 0,
 				'agreement_type'    => 'CONSULTANCY AGREEMENT',
 				'date_of_agreement' => $date_of_agreement,
 				'CreatePlace'       => $requisition->work_location_hq,
@@ -1268,76 +1301,6 @@ class HrAdminController extends Controller
 
 		return $documentPaths;
 	}
-	/**
-	 * Show agreement upload page
-	 */
-	// public function showUploadAgreement(CandidateMaster $candidate)
-	// {
-	// 	if ($candidate->candidate_status !== 'Agreement Pending') {
-	// 		return redirect()->route('hr-admin.applications.approved')
-	// 			->with('error', 'Agreement cannot be uploaded for this employee');
-	// 	}
-
-	// 	$candidate->load(['department', 'function', 'agreementDocuments']);
-
-	// 	return view('hr-admin.approved-applications.upload-agreement', compact('employee'));
-	// }
-
-	/**
-	 * Upload agreement
-	 */
-	// public function uploadAgreementStore(Request $request, CandidateMaster $candidate)
-	// {
-	// 	$request->validate([
-	// 		'agreement_file' => 'required|file|mimes:pdf|max:10240'
-	// 	]);
-
-	// 	DB::beginTransaction();
-	// 	try {
-	// 		// Upload file
-	// 		$file = $request->file('agreement_file');
-	// 		$fileName = time() . '_unsigned_' . $candidate->candidate_code . '_' . $file->getClientOriginalName();
-	// 		$filePath = $file->storeAs('agreements/unsigned', $fileName, 's3');
-
-	// 		// Create document record
-	// 		AgreementDocument::create([
-	// 			'employee_id' => $candidate->id,
-	// 			'employee_code' => $candidate->candidate_code,
-	// 			'document_type' => 'unsigned',
-	// 			'file_name' => $fileName,
-	// 			'file_path' => $filePath,
-	// 			'file_size' => $file->getSize(),
-	// 			'mime_type' => $file->getMimeType(),
-	// 			'uploaded_by_user_id' => Auth::id(),
-	// 			'uploaded_by_role' => 'hr_admin',
-	// 			'upload_date' => now(),
-	// 			'verification_status' => 'verified',
-	// 			'verified_by_user_id' => Auth::id(),
-	// 			'verification_date' => now()
-	// 		]);
-
-	// 		// Update employee status
-	// 		$candidate->candidate_status = 'Unsigned Agreement Uploaded';
-	// 		$candidate->save();
-
-	// 		// Notify submitter
-	// 		// $submitter = $candidate->requisition->submittedBy;
-	// 		// if ($submitter) {
-	// 		// 	Mail::to($submitter->email)->send(new \App\Mail\UnsignedAgreementUploaded($employee, $submitter));
-	// 		// }
-
-	// 		DB::commit();
-
-	// 		return redirect()->route('hr-admin.applications.approved')
-	// 			->with('success', 'Unsigned agreement uploaded successfully. Submitter has been notified.');
-	// 	} catch (\Exception $e) {
-	// 		DB::rollBack();
-	// 		Log::error('Error uploading agreement: ' . $e->getMessage());
-
-	// 		return redirect()->back()
-	// 			->with('error', 'Failed to upload agreement. Please try again.');
-	// 	}
-	// }
 
 	/**
 	 * Show verify signed agreement page
@@ -1450,77 +1413,6 @@ class HrAdminController extends Controller
 		return view('hr-admin.agreement-management.list', compact('candidates', 'statusOptions'));
 	}
 
-	/**
-	 * Upload Unsigned Agreement
-	 */
-	public function uploadUnsignedAgreement(Request $request, CandidateMaster $candidate)
-	{
-		//dd($request->all());
-		$request->validate([
-			'agreement_file' => 'required|file|mimes:pdf|max:10240',
-			'agreement_number' => 'required|string|max:100',
-		]);
-
-		DB::beginTransaction();
-		try {
-			// Delete old unsigned agreement if exists
-			$candidate->agreementDocuments()
-				->where('document_type', 'unsigned')
-				->delete();
-
-			// Upload file to S3
-			$file = $request->file('agreement_file');
-			$fileName = 'unsigned_' . $candidate->candidate_code . '_' . time() . '.pdf';
-			$filePath = 'agreements/unsigned/' . $fileName;
-
-			Storage::disk('s3')->put($filePath, file_get_contents($file));
-
-			// Create new unsigned agreement
-			AgreementDocument::create([
-				'candidate_id' => $candidate->id,
-				'candidate_code' => $candidate->candidate_code,
-				'document_type' => 'unsigned',
-				'agreement_number' => $request->agreement_number,
-				'agreement_path' => $filePath,
-				'uploaded_by_user_id' => Auth::id(),
-				'uploaded_by_role' => 'hr_admin',
-			]);
-
-			// Update status
-			$candidate->candidate_status = 'Unsigned Agreement Uploaded';
-			$candidate->save();
-
-			if ($candidate->requisition) {
-				$candidate->requisition->status = 'Unsigned Agreement Uploaded';
-				$candidate->requisition->save();
-			}
-
-			DB::commit();
-
-			if ($request->ajax()) {
-				return response()->json([
-					'success' => true,
-					'message' => 'Unsigned agreement uploaded successfully.',
-					'status' => $candidate->candidate_status
-				]);
-			}
-
-			return redirect()->back()
-				->with('success', 'Unsigned agreement uploaded. Submitter notified.');
-		} catch (\Exception $e) {
-			DB::rollBack();
-			Log::error('Error uploading unsigned agreement: ' . $e->getMessage());
-
-			if ($request->ajax()) {
-				return response()->json([
-					'success' => false,
-					'message' => 'Failed to upload agreement: ' . $e->getMessage()
-				], 500);
-			}
-
-			return redirect()->back()->with('error', 'Failed to upload agreement.');
-		}
-	}
 
 	public function verifySignedAgreement(Request $request, CandidateMaster $candidate)
 	{
@@ -1593,7 +1485,9 @@ class HrAdminController extends Controller
 			AgreementDocument::create([
 				'candidate_id'        => $candidate->id,
 				'candidate_code'      => $candidate->candidate_code,
-				'document_type'       => 'signed',
+				'document_type'       => 'agreement',
+				'sign_status'         => 'SIGNED',
+				'stamp_type'          => 'NONE',
 				'agreement_number'    => $request->agreement_number,
 				'agreement_path'      => $filePath,
 				'file_url'            => $fileUrl,

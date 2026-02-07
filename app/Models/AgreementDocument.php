@@ -12,6 +12,8 @@ class AgreementDocument extends Model
         'candidate_id',
         'candidate_code',
         'document_type', // 'unsigned', 'signed'
+        'stamp_type',      // NONE / E_STAMP
+        'sign_status',     // UNSIGNED / SIGNED
         'agreement_number',
         'agreement_path',
         'file_url',

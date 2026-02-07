@@ -106,12 +106,18 @@
 													id="alternate_email" name="alternate_email">
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-3 mb-3">
-												<label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="highest_qualification" name="highest_qualification" required>
-												<div class="invalid-feedback"></div>
-											</div>
+											   <div class="col-md-3 mb-3">
+                                                <label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm select2" id="highest_qualification" name="highest_qualification" required>
+                                                    <option value="">Select Qualification</option>
+                                                    @foreach($educations as $education)
+                                                    <option value="{{ $education->EducationId }}" {{ old('highest_qualification') == $education->EducationId ? 'selected' : '' }}>
+                                                        {{ $education->EducationName }} ({{ $education->EducationCode }})
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
 										</div>
 
 										<div class="row">
@@ -122,28 +128,31 @@
 													id="college_name" name="college_name">
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
-												<label for="state_residence" class="form-label">State (Residence) <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_residence" name="state_residence" required>
-													<option value="">Select State</option>
-													@foreach($states as $state)
-													<option value="{{ $state }}">{{ $state }}</option>
-													@endforeach
-												</select>
-												<div class="invalid-feedback"></div>
-											</div>
+												<div class="col-md-2 mb-3">
+                                                <label for="state_residence" class="form-label">State <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm" id="state_residence" name="state_residence" required>
+                                                    <option value="">Select State</option>
+                                                    @foreach($states as $state)
+                                                    <option value="{{ $state->id }}">{{ $state->state_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm select2" id="city" name="city" required>
+                                                    <option value="">Select City</option>
+                                                    <!-- Cities will be loaded dynamically -->
+                                                </select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
 											<div class="col-md-3 mb-3">
 												<label for="address_line_1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
 												<textarea class="form-control form-select-sm"
 													id="address_line_1" name="address_line_1" rows="2" required></textarea>
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
-												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="city" name="city" required>
-												<div class="invalid-feedback"></div>
-											</div>
+											
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -223,12 +232,12 @@
 											</div>
 											<div class="col-md-3 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
-													<option value="">Select State</option>
-													@foreach($states as $state)
-													<option value="{{ $state }}">{{ $state }}</option>
-													@endforeach
-												</select>
+												  <select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
+                                                    <option value="">Select State</option>
+                                                    @foreach($states as $state)
+                                                    <option value="{{ $state->id }}">{{ $state->state_name }}</option>
+                                                    @endforeach
+                                                </select>
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
@@ -634,6 +643,41 @@
 <script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
 	$(document).ready(function() {
+		   // Initialize Select2
+        $('.select2').select2({
+            width: '100%',
+            theme: 'bootstrap-5'
+        });
+
+          // Load cities when state is selected
+        $('#state_residence').on('change', function() {
+            const stateId = $(this).val();
+            const citySelect = $('#city');
+            
+            if (stateId) {
+                citySelect.prop('disabled', true);
+                citySelect.html('<option value="">Loading cities...</option>');
+                
+                $.ajax({
+                    url: '{{ route("get.cities.by.state") }}',
+                    type: 'GET',
+                    data: { state_id: stateId },
+                    success: function(response) {
+                        citySelect.html('<option value="">Select City</option>');
+                        $.each(response, function(index, city) {
+                            citySelect.append(`<option value="${city.id}">${city.name}</option>`);
+                        });
+                        citySelect.prop('disabled', false);
+                    },
+                    error: function() {
+                        citySelect.html('<option value="">Error loading cities</option>');
+                        citySelect.prop('disabled', false);
+                    }
+                });
+            } else {
+                citySelect.html('<option value="">Select City</option>');
+            }
+        });
 		initContractDateValidation("#contract_start_date");
 
 		// Get requisition type from hidden input

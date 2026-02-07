@@ -46,7 +46,6 @@ class CandidateMaster extends Model
         'contract_duration',
         'contract_end_date',
         'remuneration_per_month',
-        'fuel_reimbursement_per_month',
         'account_holder_name',
         'bank_account_no',
         'bank_ifsc',
@@ -61,6 +60,8 @@ class CandidateMaster extends Model
         'external_response',
         'created_by_user_id',
         'updated_by_user_id',
+        'other_reimbursement_required',
+        'out_of_pocket_required'
     ];
 
     protected $casts = [
@@ -68,7 +69,6 @@ class CandidateMaster extends Model
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
         'remuneration_per_month' => 'decimal:2',
-        'fuel_reimbursement_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
     ];
 
@@ -83,17 +83,19 @@ class CandidateMaster extends Model
         return $this->hasMany(AgreementDocument::class, 'candidate_id');
     }
 
-    public function unsignedAgreement()
-    {
-        return $this->hasOne(AgreementDocument::class, 'candidate_id')
-            ->where('document_type', 'unsigned');
-    }
+public function unsignedAgreements()
+{
+    return $this->hasMany(AgreementDocument::class, 'candidate_id')
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'UNSIGNED');
+}
 
-    public function signedAgreement()
-    {
-        return $this->hasOne(AgreementDocument::class, 'candidate_id')
-            ->where('document_type', 'signed');
-    }
+public function signedAgreements()
+{
+    return $this->hasMany(AgreementDocument::class, 'candidate_id')
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'SIGNED');
+}
 
     public function salaryProcessings()
     {
@@ -155,5 +157,30 @@ class CandidateMaster extends Model
         return $this->hasOne(SalaryProcessing::class, 'candidate_id')
             ->where('month', $month)
             ->where('year', $year);
+    }
+
+    
+    // City
+    public function cityMaster()
+    {
+        return $this->belongsTo(\App\Models\CoreCityVillage::class, 'city');
+    }
+
+    // State (Residence)
+    public function residenceState()
+    {
+        return $this->belongsTo(\App\Models\CoreState::class, 'state_residence');
+    }
+
+    // State (Work Location)
+    public function workState()
+    {
+        return $this->belongsTo(\App\Models\CoreState::class, 'state_work_location');
+    }
+
+    // Highest Qualification
+    public function qualification()
+    {
+        return $this->belongsTo(\App\Models\MasterEducation::class, 'highest_qualification', 'EducationId');
     }
 }

@@ -11,6 +11,8 @@ use App\Models\CoreFunction;
 use App\Models\CoreDepartment;
 use App\Models\CoreVertical;
 use App\Models\CoreState;
+use App\Models\CoreCityVillage;
+use App\Models\MasterEducation;
 use App\Models\RequisitionDocument;
 use Illuminate\Support\Facades\Log;
 use App\Services\S3Service;
@@ -94,10 +96,14 @@ class ManpowerRequisitionController extends Controller
         $territories = DB::table('core_territory')->where('is_active', '1')->orderBy('territory_name')->get();
 
         // Get states list from core_state table
+        // Get states list from core_state table
         $states = CoreState::where('is_active', '1')
             ->orderBy('state_name')
-            ->pluck('state_name')
-            ->toArray();
+            ->get();
+        // Get education qualifications
+        $educations = MasterEducation::where('Status', 'A')
+            ->orderBy('EducationName')
+            ->get();
         //dd($employeeDetails);
         // Auto-fill data based on employee details
         $autoFillData = [
@@ -137,12 +143,26 @@ class ManpowerRequisitionController extends Controller
             'sub_departments',
             'verticals',
             'states',
+            'educations',
             'businessUnits',
             'zones',
             'regions',
             'territories',
             'autoFillData'
         ));
+    }
+
+    public function getCitiesByState(Request $request)
+    {
+        $stateId = $request->input('state_id');
+
+        $cities = CoreCityVillage::where('state_id', $stateId)
+            ->where('is_active', 1)
+            ->select('id', 'city_village_name as name')
+            ->orderBy('city_village_name')
+            ->get();
+
+        return response()->json($cities);
     }
 
     /**
@@ -188,7 +208,7 @@ class ManpowerRequisitionController extends Controller
             $user = Auth::user();
             $employeeDetails = DB::table('core_employee')
                 ->where('employee_id', $user->emp_id)
-                ->orWhere('emp_code', $user->emp_id)
+                ->orWhere('emp_code', $user->emp_code)
                 ->first();
 
             // Create requisition
@@ -229,7 +249,7 @@ class ManpowerRequisitionController extends Controller
                 'contract_duration' => $validatedData['contract_duration'] ?? null,
                 'contract_end_date' => $validatedData['contract_end_date'],
                 'remuneration_per_month' => $validatedData['remuneration_per_month'],
-                'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? null,
+                //'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? null,
                 'reporting_manager_address' => $validatedData['reporting_manager_address'],
                 'bank_account_no' => $validatedData['bank_account_no'] ?? null,
                 'account_holder_name' => $validatedData['account_holder_name'] ?? null,
@@ -383,7 +403,7 @@ class ManpowerRequisitionController extends Controller
 
     protected function validateRequisition(Request $request)
     {
-        return $request->validate([
+        $rules = [
             'requisition_type' => 'required|in:Contractual,TFA,CB',
             'candidate_name' => 'required|string|max:255',
             'father_name' => 'required|string|max:255',
@@ -392,11 +412,11 @@ class ManpowerRequisitionController extends Controller
             'mobile_no' => 'required|digits:10',
             'candidate_email' => 'required|email|max:255',
             'alternate_email' => 'nullable|email|max:255',
-            'highest_qualification' => 'required|string|max:255',
+            'highest_qualification' => 'required|exists:master_education,EducationId',
             'college_name' => 'nullable|string|max:255',
             'address_line_1' => 'required|string|max:500',
-            'city' => 'required|string|max:100',
-            'state_residence' => 'required|string|max:100',
+            'city' => 'required|exists:core_city_village,id',
+            'state_residence' => 'required|exists:core_state,id',
             'pin_code' => 'required|digits:6',
             'sub_department_id' => 'nullable|integer',
             'business_unit'     => 'nullable|integer',
@@ -408,12 +428,12 @@ class ManpowerRequisitionController extends Controller
             'department_id' => 'required|exists:core_department,id',
             'vertical_id' => 'required|exists:core_vertical,id',
             'work_location_hq' => 'required|string|max:255',
-            'state_work_location' => 'required|string|max:100',
+            'state_work_location' => 'required|exists:core_state,id',
             'contract_start_date' => 'required|date',
             'contract_duration' => 'required|integer|min:15|max:270',
             'contract_end_date' => 'required|date',
             'remuneration_per_month' => 'required|numeric|min:0',
-            'fuel_reimbursement_per_month' => 'nullable|numeric|min:0',
+            // 'fuel_reimbursement_per_month' => 'nullable|numeric|min:0',
             'reporting_manager_address' => 'required|string|max:500',
 
             // Document number fields
@@ -431,7 +451,18 @@ class ManpowerRequisitionController extends Controller
             'driving_licence' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'bank_document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
-        ]);
+        ];
+
+        // ✅ Only for Contractual
+        if ($request->requisition_type === 'Contractual') {
+            $rules['other_reimbursement_required'] = 'required|in:Y,N';
+            $rules['out_of_pocket_required']       = 'required|in:Y,N';
+        } else {
+            // ✅ CB / TFA → optional
+            $rules['other_reimbursement_required'] = 'nullable|in:Y,N';
+            $rules['out_of_pocket_required']       = 'nullable|in:Y,N';
+        }
+        return $request->validate($rules);
     }
 
     public function show(ManpowerRequisition $requisition)
@@ -457,7 +488,11 @@ class ManpowerRequisitionController extends Controller
             'department',
             'vertical',
             'submittedBy',
-            'candidate'
+            'candidate',
+            'qualification',
+            'cityMaster',
+            'residenceState',
+            'workState',
         ]);
 
         return view('requisitions.show', compact('requisition'));
@@ -486,10 +521,13 @@ class ManpowerRequisitionController extends Controller
         $territories = DB::table('core_territory')->where('is_active', '1')->orderBy('territory_name')->get();
 
         // FIX: Use the same states source as create()
-        $states = CoreState::where('is_active', '1')
+        $states = CoreState::where('is_active', 1)
             ->orderBy('state_name')
-            ->pluck('state_name')
-            ->toArray();
+            ->get();
+        // Get education qualifications
+        $educations = MasterEducation::where('Status', 'A')
+            ->orderBy('EducationName')
+            ->get();
 
         // ADD THIS: Get autoFillData like in create method
         $user = Auth::user();
@@ -535,6 +573,7 @@ class ManpowerRequisitionController extends Controller
             'departments',
             'verticals',
             'states',
+            'educations',
             'autoFillData',
             'sub_departments',
             'businessUnits',
@@ -546,7 +585,7 @@ class ManpowerRequisitionController extends Controller
 
     protected function validateUpdateRequisition(Request $request)
     {
-        return $request->validate([
+        $rules = [
             'requisition_type' => 'required|in:Contractual,TFA,CB',
             'candidate_name' => 'required|string|max:255',
             'father_name' => 'required|string|max:255',
@@ -555,11 +594,11 @@ class ManpowerRequisitionController extends Controller
             'mobile_no' => 'required|digits:10',
             'candidate_email' => 'required|email|max:255',
             'alternate_email' => 'nullable|email|max:255',
-            'highest_qualification' => 'required|string|max:255',
+            'highest_qualification' => 'required|exists:master_education,EducationId',
             'college_name' => 'nullable|string|max:255',
             'address_line_1' => 'required|string|max:500',
-            'city' => 'required|string|max:100',
-            'state_residence' => 'required|string|max:100',
+            'state_residence' => 'required|exists:core_state,id',
+            'city'            => 'required|exists:core_city_village,id',
             'pin_code' => 'required|digits:6',
 
             'function_id' => 'required|exists:core_org_function,id',
@@ -567,7 +606,7 @@ class ManpowerRequisitionController extends Controller
             'vertical_id' => 'required|exists:core_vertical,id',
 
             'work_location_hq' => 'required|string|max:255',
-            'state_work_location' => 'required|string|max:100',
+            'state_work_location' => 'required|exists:core_state,id',
             'contract_start_date' => 'required|date',
             'contract_duration' => 'required|integer|min:15|max:270',
             'contract_end_date' => 'required|date',
@@ -589,7 +628,17 @@ class ManpowerRequisitionController extends Controller
             'driving_licence' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'bank_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
-        ]);
+        ];
+
+        if ($request->requisition_type === 'Contractual') {
+            $rules['other_reimbursement_required'] = 'required|in:Y,N';
+            $rules['out_of_pocket_required']       = 'required|in:Y,N';
+        } else {
+            $rules['other_reimbursement_required'] = 'nullable|in:Y,N';
+            $rules['out_of_pocket_required']       = 'nullable|in:Y,N';
+        }
+
+        return $request->validate($rules);
     }
     public function update(Request $request, ManpowerRequisition $requisition)
     {
@@ -618,6 +667,8 @@ class ManpowerRequisitionController extends Controller
                 'gender' => $validatedData['gender'],
                 'highest_qualification' => $validatedData['highest_qualification'],
                 'college_name' => $validatedData['college_name'] ?? $requisition->college_name,
+                // 'other_reimbursement_required' => $validatedData['other_reimbursement_required'],
+                // 'out_of_pocket_required'       => $validatedData['out_of_pocket_required'],
 
                 'work_location_hq' => $validatedData['work_location_hq'],
                 'district' => $validatedData['district'] ?? $requisition->district,
@@ -637,7 +688,7 @@ class ManpowerRequisitionController extends Controller
                 'contract_duration' => $validatedData['contract_duration'],
                 'contract_end_date' => $validatedData['contract_end_date'],
                 'remuneration_per_month' => $validatedData['remuneration_per_month'],
-                'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? $requisition->fuel_reimbursement_per_month,
+                // 'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? $requisition->fuel_reimbursement_per_month,
 
                 'reporting_manager_address' => $validatedData['reporting_manager_address'],
 
@@ -772,42 +823,5 @@ class ManpowerRequisitionController extends Controller
         }
     }
 
-    /**
-     * Helper method to get function ID from function code
-     */
-    private function getFunctionIdFromCode($functionCode)
-    {
-        if (!$functionCode) {
-            return null;
-        }
-
-        $function = CoreFunction::where('function_code', $functionCode)->first();
-        return $function ? $function->id : null;
-    }
-
-    /**
-     * Helper method to get department ID from department code
-     */
-    private function getDepartmentIdFromCode($departmentCode)
-    {
-        if (!$departmentCode) {
-            return null;
-        }
-
-        $department = CoreDepartment::where('department_code', $departmentCode)->first();
-        return $department ? $department->id : null;
-    }
-
-    /**
-     * Helper method to get vertical ID from vertical code
-     */
-    private function getVerticalIdFromCode($verticalCode)
-    {
-        if (!$verticalCode) {
-            return null;
-        }
-
-        $vertical = CoreVertical::where('vertical_code', $verticalCode)->first();
-        return $vertical ? $vertical->id : null;
-    }
+   
 }

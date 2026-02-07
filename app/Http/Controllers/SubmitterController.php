@@ -33,15 +33,17 @@ class SubmitterController extends Controller
 
 		// ✅ MULTIPLE unsigned
 		$unsignedAgreements = AgreementDocument::where('candidate_id', $candidate->id)
-			->where('document_type', 'unsigned')
-			->orderBy('created_at')
-			->get();
+    ->where('document_type', 'agreement')
+    ->where('sign_status', 'UNSIGNED')
+    ->orderBy('created_at')
+    ->get();
 
 		// ✅ SINGLE signed (latest)
 		$signedAgreement = AgreementDocument::where('candidate_id', $candidate->id)
-			->where('document_type', 'signed')
-			->latest()
-			->first();
+    ->where('document_type', 'agreement')
+    ->where('sign_status', 'SIGNED')
+    ->latest()
+    ->first();
 
 		$isCompleted = $requisition->status === 'Agreement Completed';
 
@@ -180,7 +182,9 @@ class SubmitterController extends Controller
 			AgreementDocument::create([
 				'candidate_id'        => $candidate->id,
 				'candidate_code'      => $candidate->candidate_code,
-				'document_type'       => 'signed',
+				'document_type'       => 'agreement',
+				'sign_status'         => 'SIGNED',
+				'stamp_type'          => 'NONE',
 				'agreement_number'    => $request->agreement_number,
 				'agreement_path'      => $filePath,
 				'file_url'            => $fileUrl,

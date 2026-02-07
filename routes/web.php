@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/document/{document}/download', [\App\Http\Controllers\ManpowerRequisitionController::class, 'downloadDocument'])->name('document.download');
     });
 
-
+    Route::get('/get-cities-by-state', [\App\Http\Controllers\ManpowerRequisitionController::class, 'getCitiesByState'])->name('get.cities.by.state');
     Route::post('/process-pan-card', [DocumentController::class, 'processPANCard'])->name('process.pan.card');
     Route::post('/process-bank-document', [DocumentController::class, 'processBankDocument'])->name('process.bank.document');
     Route::post('/process-aadhaar-card', [DocumentController::class, 'processAadhaarCard'])->name('process.aadhaar.card');

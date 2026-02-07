@@ -101,10 +101,15 @@
                                 <td class="text-muted small">Gender:</td>
                                 <td class="small">{{ $requisition->gender }}</td>
                             </tr>
-                            <tr>
-                                <td class="text-muted small">Qualification:</td>
-                                <td class="small">{{ $requisition->highest_qualification }}</td>
-                            </tr>
+                             <tr>
+                        <td class="text-muted small">Qualification:</td>
+                        <td class="small">
+                            {{ $requisition->qualification->EducationName ?? 'N/A' }}
+                            @if($requisition->qualification?->EducationCode)
+                                ({{ $requisition->qualification->EducationCode }})
+                            @endif
+                        </td>
+                    </tr>
                             <tr>
                                 <td class="text-muted small">Address:</td>
                                 <td class="small">{{ $requisition->address_line_1 }}, {{ $requisition->city }}, {{ $requisition->state_residence }} - {{ $requisition->pin_code }}</td>
@@ -178,7 +183,7 @@
                             </tr>
                             <tr>
                                 <td class="text-muted small">State:</td>
-                                <td class="small">{{ $requisition->state_work_location }}</td>
+                                 <td class="small"> {{ $requisition->workState->state_name ?? 'N/A' }}</td>
                             </tr>
                         </table>
                     </div>
@@ -309,7 +314,7 @@
                                 <i class="ri-file-contract-line me-1 {{ $doc['has_file'] ? 'text-success' : 'text-muted' }} fs-6"></i>
                                 <div>
                                     <small class="d-block {{ $doc['has_file'] ? 'text-dark' : 'text-muted' }}">
-                                        {{ $doc['document_type'] }}
+                                        {{ $doc['stamp_type'] }} {{ $doc['sign_status'] }}
                                         @if(!empty($doc['agreement_number']))
                                         <span class="text-muted">#{{ $doc['agreement_number'] }}</span>
                                         @endif
@@ -766,7 +771,7 @@
                 success: function(response) {
                     if (response.success) {
                         $('#editModal').modal('hide');
-                        location.reload();
+                        window.location.href = "{{ route('hr-admin.applications.view', $requisition) }}";
                     }
                 },
                 error: function(xhr) {

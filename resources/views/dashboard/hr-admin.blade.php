@@ -312,31 +312,19 @@
 												@endif
 
 
-												{{--@if(!$isProcessed && !empty($req->approver_id))
-											<button type="button" class="btn btn-success process-btn"
-												data-bs-toggle="modal" data-bs-target="#processModal"
-												data-requisition-id="{{ $req->id }}"
-												data-requisition-name="{{ $req->candidate_name }}"
-												data-current-reporting="{{ $req->reporting_to }}"
-												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
-												<i class="ri-play-line fs-10"></i>
-											</button>
-											@elseif(!$isProcessed && empty($req->approver_id))
-											<span class="badge bg-warning fs-9">Not Verified</span>
-											@endif--}}
-
 											@if($candidate)
 											@php
-											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'unsigned')
+											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')
+											->where('sign_status', 'UNSIGNED')
+											->exists();											$hasSigned =\App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'agreement')
+											->where('sign_status', 'SIGNED')
 											->exists();
-											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'signed')
-											->exists();
-											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'signed')
-											->where('uploaded_by_role', 'submitter')
-											->exists();
+											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')->where('sign_status', 'SIGNED')->where('uploaded_by_role', 'submitter')->exists();
+											$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+												->where('document_type', 'agreement')
+												->where('sign_status', 'UNSIGNED')
+												->value('agreement_number');
 											@endphp
 
 											@if($empStatus == "Active")
@@ -348,7 +336,7 @@
 												data-candidate-id="{{ $candidate->id }}"
 												data-candidate-code="{{ $candidate->candidate_code }}"
 												data-candidate-name="{{ $candidate->candidate_name }}"
-												data-agreement-number="{{ \App\Models\AgreementDocument::where('candidate_id',$candidate->id)->where('document_type','unsigned')->value('agreement_number') }}">
+												data-agreement-number="{{ $agreementNumber }}">
 												<i class="ri-upload-line fs-10"></i>
 											</button>
 											@elseif($hasSigned && $submitterSigned)

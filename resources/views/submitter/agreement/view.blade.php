@@ -78,17 +78,7 @@
 							</div>
 						</div>
 
-						<div class="col-md-6">
-							<div class="border rounded p-2 h-100">
-								<strong class="d-block mb-1 text-muted">Agreement</strong>
-
-								@if($isCompleted && $signedAgreement)
-								<div>Signed On: {{ $signedAgreement->created_at->format('d M Y H:i') }}</div>
-								<div>By: {{ $signedAgreement->uploadedBy->name ?? 'N/A' }}</div>
-								@endif
-							</div>
-						</div>
-
+					
 					</div>
 
 
@@ -102,10 +92,10 @@
 								<div class="border rounded p-2 mb-2">
 									<div class="fw-semibold">
 										Unsigned Agreement {{ $index + 1 }}
-										@if(str_contains($unsigned->agreement_path, 'stamp'))
-										<span class="badge bg-warning ms-1">With Stamp</span>
+										@if($unsigned->stamp_type === 'E_STAMP')
+											<span class="badge bg-warning ms-1">E-Stamp</span>
 										@else
-										<span class="badge bg-secondary ms-1">Without Stamp</span>
+											<span class="badge bg-secondary ms-1">No Stamp</span>
 										@endif
 									</div>
 

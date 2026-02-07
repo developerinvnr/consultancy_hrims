@@ -129,12 +129,24 @@
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
-												<label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="highest_qualification" name="highest_qualification"
-													value="{{ old('highest_qualification', $requisition->highest_qualification) }}" required>
-												<div class="invalid-feedback"></div>
-											</div>
+    <label for="highest_qualification" class="form-label">
+        Highest Qualification <span class="text-danger">*</span>
+    </label>
+    <select class="form-select form-select-sm select2"
+            id="highest_qualification"
+            name="highest_qualification"
+            required>
+        <option value="">Select Qualification</option>
+        @foreach($educations as $education)
+            <option value="{{ $education->EducationId }}"
+                {{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
+                {{ $education->EducationName }} ({{ $education->EducationCode }})
+            </option>
+        @endforeach
+    </select>
+    <div class="invalid-feedback"></div>
+</div>
+
 										</div>
 
 										<div class="row">
@@ -149,13 +161,25 @@
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="state_residence" class="form-label">State <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_residence" name="state_residence" required>
+												<select class="form-select form-select-sm"
+													id="state_residence"
+													name="state_residence" required>
 													<option value="">Select State</option>
 													@foreach($states as $state)
-													<option value="{{ $state }}" {{ old('state_residence', $requisition->state_residence) == $state ? 'selected' : '' }}>
-														{{ $state }}
+													<option value="{{ $state->id }}"
+														{{ old('state_residence', $requisition->state_residence) == $state->id ? 'selected' : '' }}>
+														{{ $state->state_name }}
 													</option>
 													@endforeach
+												</select>
+												<div class="invalid-feedback"></div>
+											</div>
+											<div class="col-md-2 mb-3">
+												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
+												<select class="form-select form-select-sm select2"
+													id="city"
+													name="city" required>
+													<option value="">Select City</option>
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
@@ -166,14 +190,8 @@
 												{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
 												<div class="invalid-feedback"></div>
 											</div>
-											<div class="col-md-2 mb-3">
-												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="city" name="city"
-													value="{{ old('city', $requisition->city) }}" required>
+											
 
-												<div class="invalid-feedback"></div>
-											</div>
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -266,14 +284,19 @@
 											</div>
 											<div class="col-md-6 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
-												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
-													<option value="">Select State</option>
-													@foreach($states as $state)
-													<option value="{{ $state }}" {{ old('state_work_location', $requisition->state_work_location) == $state ? 'selected' : '' }}>
-														{{ $state }}
-													</option>
-													@endforeach
-												</select>
+												<select class="form-select form-select-sm"
+        id="state_work_location"
+        name="state_work_location"
+        required>
+    <option value="">Select State</option>
+    @foreach($states as $state)
+        <option value="{{ $state->id }}"
+            {{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
+            {{ $state->state_name }}
+        </option>
+    @endforeach
+</select>
+
 												<div class="invalid-feedback"></div>
 											</div>
 										</div>
@@ -353,7 +376,7 @@
 
 											<div class="invalid-feedback"></div>
 										</div>
-										<div class="col-md-4 mb-3">
+										<div class="col-md-2 mb-3">
 											<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
 											<div class="input-group input-group-sm">
 												<span class="input-group-text">₹</span>
@@ -364,16 +387,24 @@
 											</div>
 											<div class="invalid-feedback"></div>
 										</div>
-										<div class="col-md-4 mb-3">
-											<label for="fuel_reimbursement_per_month" class="form-label">Fuel Reimbursement</label>
-											<div class="input-group input-group-sm">
-												<span class="input-group-text">₹</span>
-												<input type="number" class="form-control"
-													id="fuel_reimbursement_per_month" name="fuel_reimbursement_per_month"
-													step="0.01" min="0"
-													value="{{ old('fuel_reimbursement_per_month', $requisition->fuel_reimbursement_per_month) }}">
-											</div>
-											<div class="invalid-feedback"></div>
+										<div class="col-md-3 mb-3">
+											<label class="form-label">Fuel & Other Reimbursement Required?</label>
+											<select class="form-select form-select-sm"
+												name="other_reimbursement_required" required>
+												<option value="">Select</option>
+												<option value="Y" {{ old('other_reimbursement_required', $requisition->other_reimbursement_required) == 'Y' ? 'selected' : '' }}>Yes</option>
+												<option value="N" {{ old('other_reimbursement_required', $requisition->other_reimbursement_required) == 'N' ? 'selected' : '' }}>No</option>
+											</select>
+										</div>
+
+										<div class="col-md-3 mb-3">
+											<label class="form-label">Out of Pocket Expense Required?</label>
+											<select class="form-select form-select-sm"
+												name="out_of_pocket_required" required>
+												<option value="">Select</option>
+												<option value="Y" {{ old('out_of_pocket_required', $requisition->out_of_pocket_required) == 'Y' ? 'selected' : '' }}>Yes</option>
+												<option value="N" {{ old('out_of_pocket_required', $requisition->out_of_pocket_required) == 'N' ? 'selected' : '' }}>No</option>
+											</select>
 										</div>
 									</div>
 
@@ -740,6 +771,64 @@
 
 <script>
 	$(document).ready(function() {
+
+		const existingState = "{{ $requisition->state_residence }}";
+		const existingCity = "{{ $requisition->city }}";
+
+		if (existingState) {
+			$('#state_residence').val(existingState).trigger('change');
+
+			$.ajax({
+				url: '{{ route("get.cities.by.state") }}',
+				type: 'GET',
+				data: {
+					state_id: existingState
+				},
+				success: function(response) {
+					const citySelect = $('#city');
+					citySelect.html('<option value="">Select City</option>');
+
+					$.each(response, function(_, city) {
+						citySelect.append(
+							`<option value="${city.id}" ${city.id == existingCity ? 'selected' : ''}>
+                        ${city.name}
+                    </option>`
+						);
+					});
+				}
+			});
+		}
+
+		$('#state_residence').on('change', function() {
+			const stateId = $(this).val();
+			const citySelect = $('#city');
+
+			citySelect.html('<option value="">Select City</option>');
+
+			if (!stateId) return;
+
+			citySelect.prop('disabled', true)
+				.append('<option value="">Loading...</option>');
+
+			$.ajax({
+				url: '{{ route("get.cities.by.state") }}',
+				type: 'GET',
+				data: {
+					state_id: stateId
+				},
+				success: function(response) {
+					citySelect.html('<option value="">Select City</option>');
+					$.each(response, function(_, city) {
+						citySelect.append(
+							`<option value="${city.id}">${city.name}</option>`
+						);
+					});
+					citySelect.prop('disabled', false);
+				}
+			});
+		});
+
+
 		initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
@@ -983,7 +1072,7 @@
 		}
 
 
-        	// Event listeners for date calculation
+		// Event listeners for date calculation
 		$('#contract_start_date').on('change', function() {
 			if ($('#contract_duration').val()) {
 				calculateSeparationDate();
