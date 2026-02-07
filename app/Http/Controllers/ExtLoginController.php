@@ -24,7 +24,7 @@ class ExtLoginController extends Controller
 
 
             // Find the user in OJAS by employee ID
-            $user = User::where('emp_id', $employeeId)->first();
+            $user = User::where('emp_id', $employeeId)->where('status','A')->first();
 
             if ($user) {
                 // Log the user in
