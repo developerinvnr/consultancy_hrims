@@ -218,22 +218,22 @@
                                                 </select>
                                             </div>
                                             <!-- Department (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
-    <select class="form-select form-select-sm" id="department_id" name="department_id" required disabled>
-        <option value="">Select Function First</option>
-    </select>
-    <div class="invalid-feedback">Please select a department</div>
-</div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm" id="department_id" name="department_id" required disabled>
+                                                    <option value="">Select Function First</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a department</div>
+                                            </div>
                                             <!-- Vertical (Editable for HR) -->
-<!-- Vertical (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
-    <select class="form-select form-select-sm" id="vertical_id" name="vertical_id" required disabled>
-        <option value="">Select Function First</option>
-    </select>
-    <div class="invalid-feedback">Please select a vertical</div>
-</div>
+                                            <!-- Vertical (Editable for HR) -->
+                                            <div class="col-md-2 mb-3">
+                                                <label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm" id="vertical_id" name="vertical_id" required disabled>
+                                                    <option value="">Select Function First</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a vertical</div>
+                                            </div>
                                             <div class="col-md-2 mb-3">
                                                 <label for="work_location_hq" class="form-label">Work Location/HQ<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-select-sm"
@@ -260,40 +260,40 @@
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                             <!-- Sub-department (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="sub_department_id" class="form-label">Sub-department</label>
-    <select class="form-select form-select-sm" id="sub_department_id" name="sub_department_id" disabled>
-        <option value="">Select Department First</option>
-    </select>
-</div>
-                                           <!-- Business Unit (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="business_unit" class="form-label">Business Unit</label>
-    <select class="form-select form-select-sm" id="business_unit" name="business_unit" disabled>
-        <option value="">Select Vertical First</option>
-    </select>
-</div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="sub_department_id" class="form-label">Sub-department</label>
+                                                <select class="form-select form-select-sm" id="sub_department_id" name="sub_department_id" disabled>
+                                                    <option value="">Select Department First</option>
+                                                </select>
+                                            </div>
+                                            <!-- Business Unit (Editable for HR) -->
+                                            <div class="col-md-2 mb-3">
+                                                <label for="business_unit" class="form-label">Business Unit</label>
+                                                <select class="form-select form-select-sm" id="business_unit" name="business_unit" disabled>
+                                                    <option value="">Select Vertical First</option>
+                                                </select>
+                                            </div>
                                             <!-- Zone (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="zone" class="form-label">Zone</label>
-    <select class="form-select form-select-sm" id="zone" name="zone" disabled>
-        <option value="">Select Business Unit First</option>
-    </select>
-</div>
-                                           <!-- Region (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="region" class="form-label">Region</label>
-    <select class="form-select form-select-sm" id="region" name="region" disabled>
-        <option value="">Select Zone First</option>
-    </select>
-</div>
-                                           <!-- Territory (Editable for HR) -->
-<div class="col-md-2 mb-3">
-    <label for="territory" class="form-label">Territory</label>
-    <select class="form-select form-select-sm" id="territory" name="territory" disabled>
-        <option value="">Select Region First</option>
-    </select>
-</div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="zone" class="form-label">Zone</label>
+                                                <select class="form-select form-select-sm" id="zone" name="zone" disabled>
+                                                    <option value="">Select Business Unit First</option>
+                                                </select>
+                                            </div>
+                                            <!-- Region (Editable for HR) -->
+                                            <div class="col-md-2 mb-3">
+                                                <label for="region" class="form-label">Region</label>
+                                                <select class="form-select form-select-sm" id="region" name="region" disabled>
+                                                    <option value="">Select Zone First</option>
+                                                </select>
+                                            </div>
+                                            <!-- Territory (Editable for HR) -->
+                                            <div class="col-md-2 mb-3">
+                                                <label for="territory" class="form-label">Territory</label>
+                                                <select class="form-select form-select-sm" id="territory" name="territory" disabled>
+                                                    <option value="">Select Region First</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -311,19 +311,26 @@
                                     <div class="card-body">
                                         <div class="row">
                                             <!-- Reporting Manager (will be populated based on department) -->
-                                            <div class="col-md-3 mb-3">
-                                                <label for="reporting_manager_name" class="form-label">Reporting To <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" id="reporting_manager_name" name="reporting_manager_name" required disabled>
-                                                    <option value="">Select Department First</option>
-                                                </select>
-                                            </div>
+                                       <div class="col-md-3 mb-3">
+    <label class="form-label">
+        Reporting To <span class="text-danger">*</span>
+    </label>
 
-                                            <!-- Reporting Manager ID (will be auto-filled) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="reporting_manager_id" class="form-label">Reporting Manager ID <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-select-sm"
-                                                    id="reporting_manager_id" name="reporting_manager_id" required readonly>
-                                            </div>
+    <select class="form-select form-select-sm"
+            id="reporting_manager_id"
+            name="reporting_manager_id"
+            required>
+        <option value="">Select Reporting Manager</option>
+    </select>
+
+    <!-- hidden name -->
+    <input type="hidden"
+           id="reporting_manager_name"
+           name="reporting_manager_name">
+</div>
+
+
+                                           
 
                                             <div class="col-md-2 mb-3">
                                                 <label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
@@ -620,19 +627,19 @@
         });
 
         // 3. When Department changes: Update Sub-department
-        $('#department_id').on('change', function() {
-            const departmentId = $(this).val();
+        // $('#department_id').on('change', function() {
+        //     const departmentId = $(this).val();
 
-            // Reset sub-department dropdown
-            resetDropdown('#sub_department_id');
+        //     // Reset sub-department dropdown
+        //     resetDropdown('#sub_department_id');
 
-            // Also trigger reporting manager load
-            loadReportingManagers(departmentId);
+        //     // Also trigger reporting manager load
+        //     loadReportingManagers(departmentId);
 
-            if (departmentId) {
-                loadSubDepartments(departmentId);
-            }
-        });
+        //     if (departmentId) {
+        //         loadSubDepartments(departmentId);
+        //     }
+        // });
 
         // 4. When Business Unit changes: Update Zone
         $('#business_unit').on('change', function() {
@@ -676,42 +683,42 @@
         // ============ HELPER FUNCTIONS ============
 
         function resetDropdown(selector) {
-    $(selector).html('<option value="">Select</option>');
-    $(selector).val('');
-    $(selector).prop('disabled', true);
-    $(selector).trigger('change');
-}
+            $(selector).html('<option value="">Select</option>');
+            $(selector).val('');
+            $(selector).prop('disabled', true);
+            $(selector).trigger('change');
+        }
 
         function loadVerticals(functionId) {
-    const dropdown = $('#vertical_id');
-    dropdown.prop('disabled', true);
-    dropdown.html('<option value="">Loading...</option>');
-
-    $.ajax({
-        url: '{{ route("hr.get.vertical.by.function") }}',
-        type: 'POST',
-        data: {
-            function_id: functionId,
-            _token: '{{ csrf_token() }}'
-        },
-        success: function(response) {
-            dropdown.html('<option value="">Select Vertical</option>');
-            if (response.length > 0) {
-                $.each(response, function(index, vertical) {
-                    dropdown.append(`<option value="${vertical.id}">${vertical.vertical_name}</option>`);
-                });
-                dropdown.prop('disabled', false); // Enable if data exists
-            } else {
-                dropdown.append('<option value="">No verticals found</option>');
-                dropdown.prop('disabled', true); // Keep disabled if no data
-            }
-        },
-        error: function() {
-            dropdown.html('<option value="">Error loading verticals</option>');
+            const dropdown = $('#vertical_id');
             dropdown.prop('disabled', true);
+            dropdown.html('<option value="">Loading...</option>');
+
+            $.ajax({
+                url: '{{ route("hr.get.vertical.by.function") }}',
+                type: 'POST',
+                data: {
+                    function_id: functionId,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    dropdown.html('<option value="">Select Vertical</option>');
+                    if (response.length > 0) {
+                        $.each(response, function(index, vertical) {
+                            dropdown.append(`<option value="${vertical.id}">${vertical.vertical_name}</option>`);
+                        });
+                        dropdown.prop('disabled', false); // Enable if data exists
+                    } else {
+                        dropdown.append('<option value="">No verticals found</option>');
+                        dropdown.prop('disabled', true); // Keep disabled if no data
+                    }
+                },
+                error: function() {
+                    dropdown.html('<option value="">Error loading verticals</option>');
+                    dropdown.prop('disabled', true);
+                }
+            });
         }
-    });
-}
 
         function loadDepartments(functionId) {
             const dropdown = $('#department_id');
@@ -883,44 +890,43 @@
             });
         }
 
-        function loadReportingManagers(departmentId) {
-            const dropdown = $('#reporting_manager_name');
-            const idField = $('#reporting_manager_id');
+    function loadReportingManagers(departmentId) {
+    const dropdown = $('#reporting_manager_id');
 
-            dropdown.prop('disabled', true);
-            dropdown.html('<option value="">Loading...</option>');
-            idField.val('');
+    dropdown.prop('disabled', true)
+            .html('<option value="">Loading...</option>');
 
-            $.ajax({
-                url: '{{ route("hr.get.employees.by.department") }}',
-                type: 'GET',
-                data: {
-                    department_id: departmentId
-                },
-                success: function(response) {
-                    dropdown.html('<option value="">Select Reporting Manager</option>');
-                    if (response.length > 0) {
-                        $.each(response, function(index, employee) {
-                            dropdown.append(`<option value="${employee.employee_id}">${employee.emp_name} (${employee.employee_id})</option>`);
-                        });
-                    } else {
-                        dropdown.html('<option value="">No employees found</option>');
-                    }
-                    dropdown.prop('disabled', false);
-                },
-                error: function() {
-                    dropdown.html('<option value="">Error loading managers</option>');
-                    dropdown.prop('disabled', false);
-                }
+    $.ajax({
+        url: '{{ route("hr.get.employees.by.department") }}',
+        type: 'GET',
+        data: { department_id: departmentId },
+        success: function (response) {
+            dropdown.html('<option value="">Select Reporting Manager</option>');
+
+            $.each(response, function (i, emp) {
+                dropdown.append(`
+                    <option value="${emp.employee_id}"
+                            data-name="${emp.emp_name}">
+                        ${emp.emp_name} (${emp.employee_id})
+                    </option>
+                `);
             });
+
+            dropdown.prop('disabled', false);
         }
+    });
+}
+
 
         // When reporting manager is selected, auto-fill the ID
-        $('#reporting_manager_name').on('change', function() {
-            const selectedOption = $(this).find(':selected');
-            const employeeId = selectedOption.val();
-            $('#reporting_manager_id').val(employeeId || '');
-        });
+      $('#reporting_manager_id').on('change', function () {
+    const selected = $(this).find(':selected');
+    const empName  = selected.data('name') || '';
+
+    $('#reporting_manager_name').val(empName);
+});
+
+
         // Load cities when state is selected
         $('#state_residence').on('change', function() {
             const stateId = $(this).val();
@@ -1202,6 +1208,7 @@
         });
 
         // File size validation
+
         $('input[type="file"]').on('change', function() {
             const file = this.files[0];
             const maxSize = 5 * 1024 * 1024;
@@ -1217,70 +1224,20 @@
         });
 
         // Load reporting managers when department is selected
-        $('#department_id').on('change', function() {
-            const departmentId = $(this).val();
-            const reportingManagerSelect = $('#reporting_manager_name');
-            const reportingManagerIdInput = $('#reporting_manager_id');
+     $('#department_id').on('change', function () {
+    const departmentId = $(this).val();
+    resetDropdown('#sub_department_id');
+    loadReportingManagers(departmentId);
 
-            if (departmentId) {
-                reportingManagerSelect.prop('disabled', true);
-                reportingManagerSelect.html('<option value="">Loading managers...</option>');
-                reportingManagerIdInput.val('');
-
-                $.ajax({
-                    url: '{{ route("hr.get.employees.by.department") }}',
-                    type: 'GET',
-                    data: {
-                        department_id: departmentId
-                    },
-                    success: function(response) {
-                        reportingManagerSelect.html('<option value="">Select Reporting Manager</option>');
-                        if (response.length > 0) {
-                            $.each(response, function(index, employee) {
-                                reportingManagerSelect.append(`<option value="${employee.emp_name}" data-name="${employee.emp_name}">${employee.emp_name} (${employee.employee_id})</option>`);
-                            });
-                            reportingManagerSelect.prop('disabled', false);
-                        } else {
-                            reportingManagerSelect.html('<option value="">No employees found in this department</option>');
-                        }
-                    },
-                    error: function() {
-                        reportingManagerSelect.html('<option value="">Error loading managers</option>');
-                    }
-                });
-            } else {
-                reportingManagerSelect.html('<option value="">Select Department First</option>');
-                reportingManagerSelect.prop('disabled', true);
-                reportingManagerIdInput.val('');
-            }
-        });
-
+    if (departmentId) {
+        loadSubDepartments(departmentId);
+    }
+});
         // Auto-fill reporting manager ID when reporting manager is selected
-        $('#reporting_manager_name').on('change', function() {
-            const selectedOption = $(this).find(':selected');
-            const employeeId = selectedOption.val();
-
-            if (employeeId) {
-                $('#reporting_manager_id').val(employeeId);
-
-                // If you want to fetch more details about the employee
-                $.ajax({
-                    url: '{{ route("hr.get.employee.details") }}',
-                    type: 'GET',
-                    data: {
-                        employee_id: employeeId
-                    },
-                    success: function(response) {
-                        if (response) {
-                            // You can use employee details if needed
-                            // Example: $('#reporting_manager_email').val(response.emp_email);
-                        }
-                    }
-                });
-            } else {
-                $('#reporting_manager_id').val('');
-            }
-        });
+        $('#reporting_manager_name').on('change', function () {
+    const empId = $(this).val();
+    $('#reporting_manager_id').val(empId);
+});
     });
 </script>
 @endsection
