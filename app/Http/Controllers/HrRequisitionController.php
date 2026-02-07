@@ -56,7 +56,7 @@ class HrRequisitionController extends Controller
 
     public function create($type)
     {
-        if (!in_array($type, ['Contractual', 'TFA', 'CB'])) {
+        if (!in_array($type, ['Contractual', 'tfa', 'CB'])) {
             abort(404);
         }
 
