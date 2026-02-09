@@ -317,15 +317,11 @@
 												</select>
 											</div>
 
-											<div class="col-md-3 mb-3">
+											<div class="col-md-2 mb-3">
 												<label class="form-label">Contract End Date <span class="text-danger">*</span></label>
 												<input type="date" class="form-control form-select-sm"
 													id="contract_end_date" name="contract_end_date" readonly required>
 											</div>
-										</div>
-
-
-										<div class="row">
 											<div class="col-md-3 mb-3">
 												<label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
 												<div class="input-group input-group-sm">
@@ -335,7 +331,12 @@
 														step="0.01" min="0" required>
 												</div>
 											</div>
-											<div class="col-md-9 mb-3">
+										</div>
+
+
+										<div class="row">
+											
+											<div class="col-md-12 mb-3">
 												<label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
 												<textarea class="form-control form-select-sm"
 													id="reporting_manager_address" name="reporting_manager_address"
