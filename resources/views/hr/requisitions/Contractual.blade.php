@@ -380,9 +380,12 @@
                                             <!-- Resume -->
                                             <div class="col-md-3 mb-3">
                                                 <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-select-sm"
-                                                    id="resume" name="resume" accept=".pdf,.doc,.docx" required>
-                                                <small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
+                                                 <input type="file"
+                                                    class="form-control form-select-sm"
+                                                    id="resume"
+                                                    name="resume"
+                                                    accept=".jpg,.jpeg,.png,.pdf">
+                                                <small class="text-muted">JPG, PNG, PDF (Optional, Max 5MB)</small>
                                                 <div class="invalid-feedback"></div>
                                             </div>
 

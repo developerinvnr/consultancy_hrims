@@ -258,7 +258,7 @@ class HrRequisitionController extends Controller
             'account_holder_name' => 'nullable|string|max:255',
             'bank_ifsc' => 'nullable|string|max:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
             'bank_name' => 'nullable|string|max:255',
-            'resume' => 'required|file|mimes:pdf,doc,docx|max:5120',
+            'resume' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'pan_card' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'aadhaar_card' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'driving_licence' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
