@@ -96,9 +96,9 @@
 												<div class="invalid-feedback">10-digit number required</div>
 											</div>
 											<div class="col-md-3 mb-3">
-												<label for="candidate_email" class="form-label">Email <span class="text-danger">*</span></label>
+												<label for="candidate_email" class="form-label">Email <span class="text-danger"></span></label>
 												<input type="email" class="form-control form-select-sm"
-													id="candidate_email" name="candidate_email" required>
+													id="candidate_email" name="candidate_email">
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
