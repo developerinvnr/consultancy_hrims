@@ -912,7 +912,7 @@
                         dropdown.append(`
                     <option value="${emp.employee_id}"
                             data-name="${emp.emp_name}">
-                        ${emp.emp_name} (${emp.employee_id})
+                        ${emp.emp_name} (${emp.emp_code})
                     </option>
                 `);
                     });
