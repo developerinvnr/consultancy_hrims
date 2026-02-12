@@ -18,6 +18,8 @@ use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrRequisitionController;
+use App\Http\Controllers\ImportController;
+
 
 use Symfony\Component\HttpFoundation\Request;
 
@@ -265,6 +267,22 @@ Route::middleware(['auth'])->group(function () {
     Route::post('hr/get-zone-by-bu', [HrRequisitionController::class, 'getZoneByBu'])->name('hr.get.zone.by.bu');
     Route::post('hr/get-region-by-zone', [HrRequisitionController::class, 'getRegionByZone'])->name('hr.get.region.by.zone');
     Route::post('hr/get-territory-by-region', [HrRequisitionController::class, 'getTerritoryByRegion'])->name('hr.get.territory.by.region');
+});
+
+// Import routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/import/candidates', [ImportController::class, 'showImportPage'])->name('import.candidates');
+    Route::post('/import/candidates/preview', [ImportController::class, 'previewExcel'])->name('import.preview');
+    Route::post('/import/candidates/import', [ImportController::class, 'importData'])->name('import.data');
+    Route::get('/import/candidates/list', [ImportController::class, 'getImportedCandidates'])->name('import.candidates.list');
+    // Route::get('/import/candidates/template', [ImportController::class, 'downloadTemplate'])->name('import.template.download');
+    
+    // Document routes
+    Route::get('/import/candidates/{requisitionId}/documents', [ImportController::class, 'getCandidateDocuments'])->name('import.candidates.documents');
+    Route::post('/import/documents/upload', [ImportController::class, 'uploadDocument'])->name('import.documents.upload');
+    Route::delete('/import/documents/{documentId}', [ImportController::class, 'deleteDocument'])->name('import.documents.delete');
+    Route::get('/import/documents/{documentId}/download', [ImportController::class, 'downloadDocument'])->name('import.documents.download');
+    Route::post('/import/candidates/update-candidate-data', [ImportController::class, 'updateCandidateData'])->name('import.update.candidate.data');
 });
 
 // Route::post('/test/agreement-api', function(Request $request) {

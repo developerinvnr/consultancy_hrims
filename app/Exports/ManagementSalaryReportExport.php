@@ -31,7 +31,7 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 
 	protected function prepareData()
 	{
-		$query = CandidateMaster::where('final_status', 'A')
+		$query = CandidateMaster::whereIn('final_status', ['A', 'D'])
 			->with([
 				'salaryProcessings' => function ($q) {
 					$q->where('year', $this->year)

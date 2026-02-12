@@ -37,7 +37,7 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
     
     public function collection()
     {
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->with(['salaryProcessings' => function($q) {
                 $q->where('month', $this->month)
                   ->where('year', $this->year);

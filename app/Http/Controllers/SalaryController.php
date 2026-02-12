@@ -54,7 +54,8 @@ class SalaryController extends Controller
 
         try {
             // Build candidate query
-            $query = CandidateMaster::where('final_status', 'A');
+            $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
+
 
             if ($requisitionType && $requisitionType !== 'All') {
                 $query->where('requisition_type', $requisitionType);
@@ -235,7 +236,7 @@ class SalaryController extends Controller
         //$query = CandidateMaster::where('final_status', 'A');
         $salaryMonthEnd = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
 
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->whereDate('contract_start_date', '<=', $salaryMonthEnd);
 
         // Apply requisition_type filter if provided and not 'All'
@@ -375,7 +376,7 @@ class SalaryController extends Controller
         $requisitionType = $request->requisition_type ?? 'All';
 
         // Build query
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->with([
                 'function',
                 'vertical',
@@ -551,7 +552,7 @@ class SalaryController extends Controller
         $filters = $request->only(['department', 'bu', 'zone', 'region', 'territory', 'requisition_type']);
 
         // Build query for active candidates
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->with([
                 'department',
                 'businessUnit',

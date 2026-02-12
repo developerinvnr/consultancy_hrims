@@ -31,7 +31,7 @@ class SalaryExport implements FromCollection, WithHeadings, WithMapping, WithSty
     public function collection()
     {
         // Get candidates based on filter
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->orderBy('candidate_code');
 
         if ($this->requisitionType && $this->requisitionType !== 'All') {

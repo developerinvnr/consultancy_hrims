@@ -25,7 +25,7 @@ class ReportController extends Controller
         $departmentId = $request->get('department_id', '');
         $search = $request->get('search', '');
         // Build query
-        $query = CandidateMaster::where('final_status', 'A')
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->with(['salaryProcessings' => function($q) use ($month, $year) {
                 $q->where('month', $month)->where('year', $year);
             }])
@@ -63,7 +63,7 @@ class ReportController extends Controller
         $candidates = $query->orderBy('candidate_code')->paginate(20)->withQueryString();
         
         // Get unique work locations for filter dropdown
-        $workLocations = CandidateMaster::where('final_status', 'A')
+        $workLocations = CandidateMaster::whereIn('final_status', ['A', 'D'])
             ->whereNotNull('work_location_hq')
             ->where('work_location_hq', '!=', '')
             ->distinct()
@@ -95,7 +95,7 @@ class ReportController extends Controller
     private function getMasterReportStats($month, $year, $requisitionType, $workLocation, $departmentId)
     {
         // Base query for candidates
-        $candidateQuery = CandidateMaster::where('final_status', 'A');
+        $candidateQuery = CandidateMaster::whereIn('final_status', ['A', 'D']);
         
         // Apply filters for candidate count
         if ($requisitionType !== 'All') {
@@ -112,7 +112,7 @@ class ReportController extends Controller
         $salaryQuery = SalaryProcessing::where('month', $month)
             ->where('year', $year)
             ->join('candidate_master', 'salary_processings.candidate_id', '=', 'candidate_master.id')
-            ->where('candidate_master.final_status', 'A');
+            ->whereIn('candidate_master.final_status', ['A', 'D']);
         
         if ($requisitionType !== 'All') {
             $salaryQuery->where('candidate_master.requisition_type', $requisitionType);
@@ -142,7 +142,7 @@ class ReportController extends Controller
             'total_extras' => $salaryStats->total_extras ?? 0,
             
             // Requisition type breakdown
-            'type_breakdown' => CandidateMaster::where('final_status', 'A')
+            'type_breakdown' => CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->when($requisitionType !== 'All', function($q) use ($requisitionType) {
                     return $q->where('requisition_type', $requisitionType);
                 })
@@ -158,7 +158,7 @@ class ReportController extends Controller
                 ->toArray(),
             
             // Location breakdown
-            'location_breakdown' => CandidateMaster::where('final_status', 'A')
+            'location_breakdown' => CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->when($requisitionType !== 'All', function($q) use ($requisitionType) {
                     return $q->where('requisition_type', $requisitionType);
                 })
