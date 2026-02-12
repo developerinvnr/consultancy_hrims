@@ -15,6 +15,8 @@
 <script src="https://cdn.datatables.net/v/bs5/dt-2.1.8/b-3.1.2/b-html5-3.1.2/fc-5.0.4/fh-4.0.1/datatables.min.js"></script>
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+
 <!-- App js -->
 <script src="{{URL::to('/')}}/assets/js/app.js"></script>
 <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
