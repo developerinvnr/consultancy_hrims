@@ -72,41 +72,7 @@
 
 <body class="login-bg-b">
     @yield('content')
-    
-    <!-- Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    
-    <!-- Custom login script -->
-    <script>
-    $(document).ready(function () {
-        // Form submission handler
-        $('form').on('submit', function() {
-            const btn = $(this).find('button[type="submit"]');
-            btn.prop('disabled', true);
-            btn.html('<i class="fa fa-spinner fa-spin me-2"></i>Logging in...');
-        });
-        
-        // Show/hide password
-        $('.toggle-password').on('click', function() {
-            const input = $(this).closest('.ad-auth-feilds').find('input');
-            const icon = $(this).find('i');
-            
-            if (input.attr('type') === 'password') {
-                input.attr('type', 'text');
-                icon.removeClass('fa-eye').addClass('fa-eye-slash');
-            } else {
-                input.attr('type', 'password');
-                icon.removeClass('fa-eye-slash').addClass('fa-eye');
-            }
-        });
-        
-        // Auto-hide alerts after 5 seconds
-        setTimeout(function() {
-            $('.alert').fadeOut('slow');
-        }, 5000);
-    });
-    </script>
-    
+
     @stack('scripts')
 </body>
 

@@ -52,6 +52,7 @@ class AttendanceController extends Controller
                 'requisition_type',
                 'remuneration_per_month',
                 'contract_start_date',
+                'contract_end_date',
                 'leave_credited',
                 'reporting_manager_employee_id'
             ])
@@ -69,7 +70,12 @@ class AttendanceController extends Controller
             if ($employeeType && $employeeType !== 'all') {
                 $query->where('requisition_type', $employeeType);
             }
+            $query->where(function ($q) use ($year, $month) {
+                $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
 
+                $q->whereNull('contract_end_date')
+                ->orWhere('contract_end_date', '>=', $monthStart);
+            });
             $candidates = $query->get();
 
             // If user is not HR admin and no candidates found, return empty with message
@@ -192,6 +198,9 @@ class AttendanceController extends Controller
                     'candidate_name' => $candidate->candidate_name,
                     'requisition_type' => $candidate->requisition_type,
                     'leave_credited' => $candidate->leave_credited ?: 0,
+                    'contract_end_date' => $candidate->contract_end_date
+                    ? Carbon::parse($candidate->contract_end_date)->format('Y-m-d')
+                    : null,
                     'attendance' => $dayAttendance,
                     'total_present' => $totalPresent,
                     'total_absent' => $totalAbsent,
@@ -314,11 +323,27 @@ class AttendanceController extends Controller
             $totalLWP = 0;
 
             /* ---------------- DAY LOOP ---------------- */
+            $contractEndDate = $candidate->contract_end_date
+            ? Carbon::parse($candidate->contract_end_date)
+            : null;
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
 
                 $status = $attendanceData[$day] ?? null;
                 $date = Carbon::create($year, $month, $day);
+
+                  if ($contractEndDate && $date->greaterThan($contractEndDate)) {
+                        if (!empty($status)) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Attendance cannot be filled after contract end date'
+                            ]);
+                        }
+
+                        // force clear
+                        $attendance->{"A{$day}"} = null;
+                        continue;
+                    }
 
                 if ($date->dayOfWeek === Carbon::SUNDAY && $status !== 'P') {
                     $status = 'W';

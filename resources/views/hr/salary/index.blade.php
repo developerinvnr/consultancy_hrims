@@ -23,7 +23,10 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-2 col-sm-6">
                     <label class="form-label form-label-sm">Select Month-Year</label>
-                    <input type="month" id="monthYear" class="form-control form-control-sm" required>
+                    {{--<input type="month" id="monthYear" class="form-control form-control-sm" required>--}}
+                    <input type="text" id="monthYear" class="form-control form-control-sm" placeholder="Select Month-Year" required>
+
+
                 </div>
 
                 <div class="col-md-2 col-sm-6">
@@ -216,6 +219,17 @@
     let currentRequisitionType = 'All';
     let dailyRate = 0;
     let localArrearData = {}; // Store arrear data locally before processing
+
+   flatpickr("#monthYear", {
+    plugins: [
+        new monthSelectPlugin({
+            shorthand: true,        // Jan, Feb, Mar
+            dateFormat: "Y-m",      // 2026-02
+            altFormat: "F Y"        // February 2026
+        })
+    ]
+});
+
 
     // Load list when month or requisition type changes
     $('#monthYear, #requisitionType').on('change', function() {

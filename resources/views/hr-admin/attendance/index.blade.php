@@ -281,6 +281,14 @@
         let bodyHtml = '';
 
         candidates.forEach((candidate, index) => {
+
+            const contractEndDate = candidate.contract_end_date
+                ? new Date(candidate.contract_end_date)
+                : null;
+
+            if (contractEndDate) {
+                contractEndDate.setHours(0, 0, 0, 0);
+            }
             const isContractual = candidate.requisition_type === 'Contractual';
 
             bodyHtml += `

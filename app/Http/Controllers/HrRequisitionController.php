@@ -127,7 +127,7 @@ class HrRequisitionController extends Controller
                 'submitted_by_employee_id' => $user->emp_id,
                 'submission_date' => now(),
 
-                'candidate_email' => $validatedData['candidate_email'],
+                'candidate_email' => $validatedData['candidate_email'] ?? null,
                 'candidate_name' => $validatedData['candidate_name'],
                 'father_name' => $validatedData['father_name'],
                 'mobile_no' => $validatedData['mobile_no'],
@@ -226,7 +226,7 @@ class HrRequisitionController extends Controller
             'date_of_birth' => 'required|date|before:-18 years',
             'gender' => 'required|in:Male,Female,Other',
             'mobile_no' => 'required|digits:10',
-            'candidate_email' => 'required|email|max:255',
+            'candidate_email' => 'nullable|email|max:255',
             'alternate_email' => 'nullable|email|max:255',
             'highest_qualification' => 'required|exists:master_education,EducationId',
             'college_name' => 'nullable|string|max:255',
@@ -442,7 +442,7 @@ class HrRequisitionController extends Controller
             ->where('department', $departmentId)
             ->where('emp_status', 'A') // Active employees only
             ->where('company_id', '1')
-            ->select('employee_id', 'emp_name')
+            ->select('employee_id', 'emp_code','emp_name')
             ->distinct()
             ->orderBy('id')
             ->get();
