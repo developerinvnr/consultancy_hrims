@@ -234,10 +234,15 @@ class SalaryController extends Controller
 
         // Build query
         //$query = CandidateMaster::where('final_status', 'A');
-        $salaryMonthEnd = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+        $salaryMonthStart = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $salaryMonthEnd   = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
 
         $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->whereDate('contract_start_date', '<=', $salaryMonthEnd);
+            ->whereDate('contract_start_date', '<=', $salaryMonthEnd)
+            ->where(function ($q) use ($salaryMonthStart) {
+                $q->whereNull('contract_end_date')
+                ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
+            });
 
         // Apply requisition_type filter if provided and not 'All'
         if ($requisitionType && $requisitionType !== 'All') {

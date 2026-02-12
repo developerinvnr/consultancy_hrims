@@ -880,5 +880,19 @@
     if ($('#monthYear').val()) {
         $('#monthYear').trigger('change');
     }
+
+    // Select / Unselect all rows
+$(document).on('change', '#selectAll', function () {
+    const isChecked = $(this).is(':checked');
+    $('.row-check').prop('checked', isChecked);
+});
+
+// Auto update "Select All" when individual checkbox changes
+$(document).on('change', '.row-check', function () {
+    const total = $('.row-check').length;
+    const checked = $('.row-check:checked').length;
+
+    $('#selectAll').prop('checked', total > 0 && total === checked);
+});
 </script>
 @endsection

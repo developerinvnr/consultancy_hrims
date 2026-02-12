@@ -149,7 +149,9 @@
                                 <td>
                                     @if($salary)
                                         <span class="badge bg-success">Processed</span>
-                                        <div class="text-muted small">{{ $salary->processed_at ? $salary->processed_at->format('d-m-Y') : '' }}</div>
+                                        <div class="text-muted small">
+                                                    {{ optional(\Carbon\Carbon::parse($salary->processed_at))->format('d-m-Y') }}
+                                        </div>
                                     @else
                                         <span class="badge bg-warning">Pending</span>
                                     @endif
@@ -176,7 +178,7 @@
                     Showing {{ $candidates->firstItem() ?? 0 }} to {{ $candidates->lastItem() ?? 0 }} of {{ $candidates->total() }} entries
                 </div>
                 <div>
-                    {{ $candidates->links() }}
+                    {{ $candidates->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>
