@@ -1852,7 +1852,7 @@ class ImportController extends Controller
 			'pan_no' => null,
 			'candidate_status' => 'Inactive',
 			'final_status' => 'D',
-			'leave_credited' => 12,
+			'leave_credited' => 0,
 			'other_reimbursement_required' => 'N',
 			'out_of_pocket_required' => 'N',
 			'external_reference_id' => 'EXCEL-IMPORT-' . date('YmdHis'),
