@@ -261,7 +261,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Contractual Specific Fields -->
                                         <div class="row mt-3">
                                             <div class="col-md-6 mb-3">
@@ -342,7 +342,7 @@
                                                 <input type="date" class="form-control form-select-sm"
                                                     id="contract_end_date" name="contract_end_date" readonly required>
                                             </div>
-											  <div class="col-md-3 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="remuneration_per_month" class="form-label">Remuneration/Month <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text">₹</span>
@@ -354,7 +354,7 @@
                                         </div>
 
                                         <div class="row">
-                                          
+
                                             <div class="col-md-12 mb-3">
                                                 <label for="reporting_manager_address" class="form-label">Address for Agreement Dispatch <span class="text-danger">*</span></label>
                                                 <textarea class="form-control form-select-sm"
@@ -379,8 +379,8 @@
                                         <div class="row">
                                             <!-- Resume -->
                                             <div class="col-md-3 mb-3">
-                                                <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-                                                 <input type="file"
+                                                <label for="resume" class="form-label">Resume</label>
+                                                <input type="file"
                                                     class="form-control form-select-sm"
                                                     id="resume"
                                                     name="resume"
@@ -910,7 +910,9 @@
             $.ajax({
                 url: '{{ route("hr.get.employees.by.department") }}',
                 type: 'GET',
-                data: { department_id: departmentId },
+                data: {
+                    department_id: departmentId
+                },
                 success: function(response) {
                     dropdown.html('<option value="">Select Reporting Manager</option>');
                     $.each(response, function(i, emp) {
@@ -944,7 +946,9 @@
                 $.ajax({
                     url: '{{ route("hr.get.cities.by.state") }}',
                     type: 'GET',
-                    data: { state_id: stateId },
+                    data: {
+                        state_id: stateId
+                    },
                     success: function(response) {
                         citySelect.html('<option value="">Select City</option>');
                         $.each(response, function(index, city) {
@@ -989,6 +993,196 @@
                 loadSubDepartments(departmentId);
             }
         });
+
+
+        // ============ DOCUMENT EXTRACTION FUNCTIONS ============
+        const requisitionType = $('input[name="requisition_type"]').val();
+
+        // Process PAN Card
+        $('#pan_card').on('change', function() {
+             console.log('PAN card change event triggered');
+            const file = this.files[0];
+            if (!file) return;
+
+            const panNoField = $('#pan_no');
+            panNoField.prop('disabled', true).val('Extracting...');
+
+            const formData = new FormData();
+            formData.append('pan_file', file);
+            formData.append('requisition_type', requisitionType);
+
+            $.ajax({
+                url: '{{ route("process.pan.card") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.status === 'SUCCESS') {
+                        panNoField.val(response.data.panNumber)
+                            .removeClass('is-invalid')
+                            .addClass(response.data.isVerified ? 'is-valid' : '');
+
+                        if (!response.data.isVerified) {
+                            showToast('PAN extracted but not verified. Please verify manually.', 'warning');
+                        } else {
+                            showToast('PAN extracted and verified successfully!', 'success');
+                        }
+
+                        $('#pan_filename').val(response.data.filename);
+                        $('#pan_filepath').val(response.data.filePath);
+                    }
+                },
+                error: function(xhr) {
+                    panNoField.val('').addClass('is-invalid');
+                    showToast('Failed to extract PAN. Please enter manually.', 'error');
+                },
+                complete: function() {
+                    panNoField.prop('disabled', false);
+                }
+            });
+        });
+
+        // Process Bank Document
+        $('#bank_document').on('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name')
+                .prop('disabled', true)
+                .val('Extracting...');
+
+            const formData = new FormData();
+            formData.append('bank_file', file);
+            formData.append('requisition_type', requisitionType);
+
+            $.ajax({
+                url: '{{ route("process.bank.document") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.status === 'SUCCESS') {
+                        const data = response.data;
+
+                        if (data.accountNumber) {
+                            $('#bank_account_no').val(data.accountNumber)
+                                .removeClass('is-invalid')
+                                .addClass(data.isVerified ? 'is-valid' : '');
+                        }
+
+                        if (data.ifscCode) {
+                            $('#bank_ifsc').val(data.ifscCode)
+                                .removeClass('is-invalid')
+                                .addClass(data.isVerified ? 'is-valid' : '');
+                        }
+
+                        if (data.verificationData?.ifsc_details?.name) {
+                            $('#bank_name')
+                                .val(data.verificationData.ifsc_details.name)
+                                .removeClass('is-invalid')
+                                .addClass(data.isVerified ? 'is-valid' : '');
+                        }
+
+                        if (data.verificationData?.beneficiary_name) {
+                            $('#account_holder_name')
+                                .val(data.verificationData.beneficiary_name)
+                                .removeClass('is-invalid')
+                                .addClass(data.isVerified ? 'is-valid' : '');
+                        }
+
+                        if (!data.isVerified) {
+                            showToast('Bank details extracted but not verified. Please verify manually.', 'warning');
+                        } else {
+                            showToast('Bank details extracted and verified successfully!', 'success');
+                        }
+
+                        $('#bank_filename').val(data.filename);
+                        $('#bank_filepath').val(data.filePath);
+                    }
+                },
+                error: function(xhr) {
+                    $('#bank_account_no, #bank_ifsc, #bank_name')
+                        .val('').addClass('is-invalid');
+                    showToast('Failed to extract bank details. Please enter manually.', 'error');
+                },
+                complete: function() {
+                    $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+                }
+            });
+        });
+
+        // Process Aadhaar Card
+        $('#aadhaar_card').on('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            const aadhaarField = $('#aadhaar_no');
+            aadhaarField.prop('disabled', true).val('Extracting...');
+
+            const formData = new FormData();
+            formData.append('aadhaar_file', file);
+            formData.append('requisition_type', requisitionType);
+
+            $.ajax({
+                url: '{{ route("process.aadhaar.card") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.status === 'SUCCESS') {
+                        aadhaarField.val(response.data.aadhaarNumber);
+
+                        if (response.data.isVerified) {
+                            showToast('Aadhaar extracted and verified successfully!', 'success');
+                        } else {
+                            showToast('Aadhaar extracted but not verified.', 'warning');
+                        }
+
+                        $('#aadhaar_filename').val(response.data.filename);
+                        $('#aadhaar_filepath').val(response.data.filePath);
+                    }
+                },
+                error: function(xhr) {
+                    aadhaarField.val('');
+                    showToast('Failed to extract Aadhaar. Please enter manually.', 'error');
+                },
+                complete: function() {
+                    aadhaarField.prop('disabled', false);
+                }
+            });
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = `<div class="toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show position-fixed" role="alert" style="bottom: 20px; right: 20px; z-index: 1050;">
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>`;
+
+            $('.toast').remove();
+            $('body').append(toast);
+
+            setTimeout(() => {
+                $('.toast').remove();
+            }, 5000);
+        }
+
 
         // Form submission
         $('#requisition-form').on('submit', function(e) {

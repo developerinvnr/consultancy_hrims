@@ -303,6 +303,7 @@
 											<button type="button" class="btn btn-success process-btn"
 												data-bs-toggle="modal" data-bs-target="#processModal"
 												data-requisition-id="{{ $req->id }}"
+												data-requisition-type="{{ $req->requisition_type }}"
 												data-requisition-name="{{ $req->candidate_name }}"
 												data-current-reporting="{{ $req->reporting_to }}"
 												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
@@ -312,43 +313,43 @@
 												@endif
 
 
-											@if($candidate)
-											@php
-											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')
-											->where('sign_status', 'UNSIGNED')
-											->exists();											$hasSigned =\App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'SIGNED')
-											->exists();
-											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')->where('sign_status', 'SIGNED')->where('uploaded_by_role', 'submitter')->exists();
-											$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+												@if($candidate)
+												@php
+												$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')
+												->where('sign_status', 'UNSIGNED')
+												->exists(); $hasSigned =\App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+												->where('document_type', 'agreement')
+												->where('sign_status', 'SIGNED')
+												->exists();
+												$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')->where('sign_status', 'SIGNED')->where('uploaded_by_role', 'submitter')->exists();
+												$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 												->where('document_type', 'agreement')
 												->where('sign_status', 'UNSIGNED')
 												->value('agreement_number');
-											@endphp
+												@endphp
 
-											@if($empStatus == "Active")
-											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
+												@if($empStatus == "Active")
+												<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
 
-											@elseif($hasUnsigned && !$hasSigned)
-											<button type="button"
-												class="btn btn-outline-primary upload-signed-btn"
-												data-candidate-id="{{ $candidate->id }}"
-												data-candidate-code="{{ $candidate->candidate_code }}"
-												data-candidate-name="{{ $candidate->candidate_name }}"
-												data-agreement-number="{{ $agreementNumber }}">
-												<i class="ri-upload-line fs-10"></i>
-											</button>
-											@elseif($hasSigned && $submitterSigned)
-											<button type="button"
-												class="btn btn-outline-info verify-signed-modal-btn"
-												data-candidate-id="{{ $candidate->id }}"
-												data-candidate-code="{{ $candidate->candidate_code }}"
-												data-candidate-name="{{ $candidate->candidate_name }}">
-												<i class="ri-check-line fs-10"></i>
-											</button>
-											@endif
-											@endif
+												@elseif($hasUnsigned && !$hasSigned)
+												<button type="button"
+													class="btn btn-outline-primary upload-signed-btn"
+													data-candidate-id="{{ $candidate->id }}"
+													data-candidate-code="{{ $candidate->candidate_code }}"
+													data-candidate-name="{{ $candidate->candidate_name }}"
+													data-agreement-number="{{ $agreementNumber }}">
+													<i class="ri-upload-line fs-10"></i>
+												</button>
+												@elseif($hasSigned && $submitterSigned)
+												<button type="button"
+													class="btn btn-outline-info verify-signed-modal-btn"
+													data-candidate-id="{{ $candidate->id }}"
+													data-candidate-code="{{ $candidate->candidate_code }}"
+													data-candidate-name="{{ $candidate->candidate_name }}">
+													<i class="ri-check-line fs-10"></i>
+												</button>
+												@endif
+												@endif
 										</div>
 									</td>
 								</tr>
@@ -356,9 +357,9 @@
 							</tbody>
 						</table>
 						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
-							<div class="d-flex justify-content-end mt-3">
-								{{ $recent_requisitions->links('pagination::bootstrap-5') }}
-							</div>
+						<div class="d-flex justify-content-end mt-3">
+							{{ $recent_requisitions->links('pagination::bootstrap-5') }}
+						</div>
 						@endif
 					</div>
 				</div>
@@ -413,19 +414,45 @@
 					</div>
 
 					<div class="row">
-						<div class="col-md-6">
+						<div class="col-md-4">
 							<div class="mb-3">
 								<label for="reporting_to" class="form-label">Reporting To Name *</label>
 								<input type="text" class="form-control form-control-sm" id="reporting_to"
 									name="reporting_to" required readonly>
 							</div>
 						</div>
-						<div class="col-md-6">
+						<div class="col-md-4">
 							<div class="mb-3">
 								<label for="reporting_manager_id" class="form-label-sm">Reporting Manager ID *</label>
 								<input type="text" class="form-control form-control-sm" id="reporting_manager_id"
 									name="reporting_manager_id" required readonly>
 							</div>
+						</div>
+
+						<div class="col-md-4">
+							<label for="team_id" class="form-label small">
+								Team <span class="text-danger">*</span>
+							</label>
+
+							<select name="team_id"
+								id="team_id"
+								class="form-select form-select-sm"
+								required>
+
+								<option value="">Select Team</option>
+								<option value="1">BTS-RnD FCzzz</option>
+								<option value="2">Contractual</option>
+								<option value="3">Marketing</option>
+								<option value="4">PD VC+FC</option>
+								<option value="5">Production VC KushDutt Sir</option>
+								<option value="6">Production VC</option>
+								<option value="7">QA VC+FC</option>
+								<option value="8">RnD VC</option>
+								<option value="9">Sales (P Srinivas Sir) 2</option>
+								<option value="10">Sales (P Srinivas Sir)</option>
+								<option value="11">TFA-CB</option>
+							</select>
+
 						</div>
 					</div>
 				</div>
@@ -583,6 +610,28 @@
 		// Process Modal Show Event
 		$('#processModal').on('shown.bs.modal', function(event) {
 			let button = $(event.relatedTarget);
+
+			let requisitionType = button.data('requisition-type');
+			let teamSelect = $('#team_id');
+
+			if (requisitionType === 'TFA' || requisitionType === 'CB') {
+				teamSelect.val('11');
+				teamSelect.prop('disabled', true);
+
+				if (!$('#hiddenTeamInput').length) {
+					$('<input>').attr({
+						type: 'hidden',
+						id: 'hiddenTeamInput',
+						name: 'team_id',
+						value: '11'
+					}).appendTo('#processForm');
+				}
+			} else {
+				teamSelect.val('');
+				teamSelect.prop('disabled', false);
+				$('#hiddenTeamInput').remove();
+			}
+
 			let requisitionId = button.data('requisition-id');
 			let candidateName = button.data('requisition-name');
 			let currentReporting = button.data('current-reporting');

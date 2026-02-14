@@ -101,15 +101,15 @@
                                 <td class="text-muted small">Gender:</td>
                                 <td class="small">{{ $requisition->gender }}</td>
                             </tr>
-                             <tr>
-                        <td class="text-muted small">Qualification:</td>
-                        <td class="small">
-                            {{ $requisition->qualification->EducationName ?? 'N/A' }}
-                            @if($requisition->qualification?->EducationCode)
-                                ({{ $requisition->qualification->EducationCode }})
-                            @endif
-                        </td>
-                    </tr>
+                            <tr>
+                                <td class="text-muted small">Qualification:</td>
+                                <td class="small">
+                                    {{ $requisition->qualification->EducationName ?? 'N/A' }}
+                                    @if($requisition->qualification?->EducationCode)
+                                    ({{ $requisition->qualification->EducationCode }})
+                                    @endif
+                                </td>
+                            </tr>
                             <tr>
                                 <td class="text-muted small">Address:</td>
                                 <td class="small">{{ $requisition->address_line_1 }}, {{ $requisition->city }}, {{ $requisition->state_residence }} - {{ $requisition->pin_code }}</td>
@@ -183,7 +183,7 @@
                             </tr>
                             <tr>
                                 <td class="text-muted small">State:</td>
-                                 <td class="small"> {{ $requisition->workState->state_name ?? 'N/A' }}</td>
+                                <td class="small"> {{ $requisition->workState->state_name ?? 'N/A' }}</td>
                             </tr>
                         </table>
                     </div>
@@ -255,19 +255,19 @@
                 <div class="card-header py-1 px-2 bg-light d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fs-6">Documents</h6>
                     <div>
-                        <span class="badge bg-primary fs-6">{{ $requisition->documents->count() }}</span>
+                        <span class="badge bg-primary fs-6">{{ $latestDocuments->count() }}</span>
                         @if(!empty($agreementDocuments) && count($agreementDocuments) > 0)
                         <span class="badge bg-success ms-1 fs-6">{{ count($agreementDocuments) }} A</span>
                         @endif
                     </div>
                 </div>
                 <div class="card-body p-2">
-                    <!-- Application Documents -->
-                    @if($requisition->documents && $requisition->documents->count() > 0)
+                    <!-- Application Documents - Using latestDocuments -->
+                    @if($latestDocuments && $latestDocuments->count() > 0)
                     <div class="mb-3">
                         <h6 class="text-muted small mb-2">Application Documents</h6>
                         <div class="row g-1">
-                            @foreach($requisition->documents as $document)
+                            @foreach($latestDocuments as $document)
                             <div class="col-12">
                                 <div class="d-flex justify-content-between align-items-center p-1 border rounded mb-1">
                                     <div class="d-flex align-items-center">
@@ -275,13 +275,26 @@
                                         <div>
                                             <small class="d-block text-muted">
                                                 @switch($document->document_type)
-                                                @case('pan_card') PAN @break
-                                                @case('aadhaar_card') Aadhaar @break
-                                                @case('bank_document') Bank @break
-                                                @case('resume') Resume @break
-                                                @case('driving_licence') DL @break
-                                                @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
-                                                @endswitch
+                                                @case('pan_card') PAN
+                                                @if($document->created_at->diffInHours(now()) < 24)
+                                                    <span class="badge bg-success ms-1">New</span>
+                                                    @endif
+                                                    @break
+                                                    @case('aadhaar_card') Aadhaar
+                                                    @if($document->created_at->diffInHours(now()) < 24)
+                                                        <span class="badge bg-success ms-1">New</span>
+                                                        @endif
+                                                        @break
+                                                        @case('bank_document') Bank
+                                                        @if($document->created_at->diffInHours(now()) < 24)
+                                                            <span class="badge bg-success ms-1">New</span>
+                                                            @endif
+                                                            @break
+                                                            @case('resume') Resume @break
+                                                            @case('driving_licence') DL @break
+                                                            @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
+                                                            @endswitch
+                                                            <span class="text-muted ms-1">({{ $document->created_at->format('d-m-Y') }})</span>
                                             </small>
                                         </div>
                                     </div>
@@ -304,7 +317,7 @@
                     </div>
                     @endif
 
-                    <!-- Agreement Documents -->
+                    <!-- Agreement Documents (unchanged) -->
                     @if(!empty($agreementDocuments) && count($agreementDocuments) > 0)
                     <div class="mt-3 pt-2 border-top">
                         <h6 class="text-muted small mb-2">Agreement Documents</h6>
@@ -326,7 +339,7 @@
                                 <button class="btn btn-outline-primary btn-xs view-agreement-document-btn"
                                     data-document-url="{{ $doc['s3_url'] }}"
                                     data-document-name="{{ $doc['file_name'] }}">
-                                    <i class="ri-eye-line fs-6"></i>                
+                                    <i class="ri-eye-line fs-6"></i>
                                 </button>
                                 <a href="{{ $doc['s3_url'] }}"
                                     download="{{ $doc['file_name'] }}"

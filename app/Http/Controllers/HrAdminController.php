@@ -88,9 +88,6 @@ class HrAdminController extends Controller
 	/**
 	 * View Requisition Details
 	 */
-	/**
-	 * View Requisition Details
-	 */
 	public function viewRequisition(ManpowerRequisition $requisition)
 	{
 		// Only HR Admin can view
@@ -103,7 +100,7 @@ class HrAdminController extends Controller
 			'department',
 			'vertical',
 			'submittedBy',
-			'documents'
+			'documents'  // Still load all documents
 		]);
 
 		// Get candidate from CandidateMaster using requisition_id
@@ -141,7 +138,7 @@ class HrAdminController extends Controller
 						'agreement_number' => $doc->agreement_number,
 						'file_name' => 'Agreement_' . ($doc->agreement_number ?? $doc->id) . '.pdf',
 						'uploaded_at' => $doc->created_at->format('d-m-Y H:i'),
-						's3_url' => $s3Url,          // ✅ now correct
+						's3_url' => $s3Url,
 						'has_file' => $hasFile,
 						'document_category' => 'agreement',
 						'candidate_code' => $doc->candidate_code
@@ -158,12 +155,25 @@ class HrAdminController extends Controller
 		$approvers = $this->getApproversHierarchy($requisition);
 		$showSendApprovalButton = $requisition->status === 'Hr Verified';
 
+		// Add this: Group documents by type and get only the latest one
+		$latestDocuments = collect();
+		if ($requisition->documents && $requisition->documents->count() > 0) {
+			// Group by document_type and get the latest (by created_at) for each type
+			$latestDocuments = $requisition->documents
+				->groupBy('document_type')
+				->map(function ($group) {
+					return $group->sortByDesc('created_at')->first();
+				})
+				->values(); // Reset keys to maintain proper indexing
+		}
+
 		return view('hr-admin.new-applications.view', compact(
 			'requisition',
 			'approvers',
 			'showSendApprovalButton',
 			'agreementDocuments',
-			'candidate'
+			'candidate',
+			'latestDocuments' // Pass this to the view
 		));
 	}
 
@@ -803,13 +813,18 @@ class HrAdminController extends Controller
 
 	public function processApplicationModal(Request $request)
 	{
+		//dd($request->all());
 		$request->validate([
 			'requisition_id' => 'required|exists:manpower_requisitions,id',
 			'reporting_manager_employee_id' => 'required|string',
 			'reporting_to' => 'required|string|max:255',
+			 'team_id' => 'required|integer'
 		]);
 
 		$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
+		$requisition->update([
+			'team_id' => $request->team_id
+		]);
 		// if (config('services.agreement.test_mode')) {
 
 		// 	$candidateCode = 'TEST-' . time();
@@ -1078,9 +1093,18 @@ class HrAdminController extends Controller
 
 			$date_of_agreement = now()->format('Y-m-d');
 
-			$grossAmount = (float) $requisition->remuneration_per_month;
-			$tdsAmount   = round($grossAmount * 0.02, 2);
-			$netAmount   = round($grossAmount - $tdsAmount, 2);
+			$baseAmount = (float) $requisition->remuneration_per_month;
+			$finalAmount = $baseAmount;
+
+			// Apply 2% TDS ADDITION only for Contractual & TFA
+			if (in_array($requisition->requisition_type, ['Contractual', 'TFA'])) {
+				$tdsAmount   = round($baseAmount * 0.02, 2);
+				$finalAmount = round($baseAmount + $tdsAmount, 2);
+			} else {
+				// For CB (Counter Boy) send original amount
+				$tdsAmount   = 0;
+				$finalAmount = $baseAmount;
+			}
 
 			$apiData = [
 				'nature_type'       => '6',
@@ -1102,7 +1126,7 @@ class HrAdminController extends Controller
 				'age'               => (string) $age,
 				'start_date' => optional($requisition->contract_start_date)->format('Y-m-d'),
 				'end_date'   => optional($requisition->contract_end_date)->format('Y-m-d'),
-				'amount'            => $netAmount,
+				'amount'            => $finalAmount,
 				'expenses'          => $requisition->out_of_pocket_required ?? 0,
 				'agreement_type'    => 'CONSULTANCY AGREEMENT',
 				'date_of_agreement' => $date_of_agreement,

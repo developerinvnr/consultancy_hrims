@@ -314,19 +314,66 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="reporting_to" class="form-label">Reporting To Name *</label>
                                 <input type="text" class="form-control form-control-sm" id="reporting_to"
                                     name="reporting_to" required readonly>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="reporting_manager_id" class="form-label-sm">Reporting Manager ID *</label>
                                 <input type="text" class="form-control form-control-sm" id="reporting_manager_id"
                                     name="reporting_manager_id" required readonly>
                             </div>
+                        </div>
+
+                        @php
+                        $isTfaOrCb = in_array($requisition->requisition_type, ['TFA', 'CB']);
+                        @endphp
+
+                        <div class="col-md-4">
+                            <label for="team_id" class="form-label small">
+                                Team <span class="text-danger">*</span>
+                            </label>
+
+                            <select name="team_id"
+                                id="team_id"
+                                class="form-select form-select-sm"
+                                style="border-color:#007bff;"
+                                {{ $isTfaOrCb ? 'readonly disabled' : '' }}
+                                required>
+
+                                @if($isTfaOrCb)
+                                {{-- TFA / CB → fixed --}}
+                                <option value="11" selected>TFA-CB</option>
+                                @else
+                                {{-- Contractual → selectable --}}
+                                <option value="">Select Team</option>
+                                <option value="1">BTS-RnD FCzzz</option>
+                                <option value="2">Contractual</option>
+                                <option value="3">Marketing</option>
+                                <option value="4">PD VC+FC</option>
+                                <option value="5">Production VC KushDutt Sir</option>
+                                <option value="6">Production VC</option>
+                                <option value="7">QA VC+FC</option>
+                                <option value="8">RnD VC</option>
+                                <option value="9">Sales (P Srinivas Sir) 2</option>
+                                <option value="10">Sales (P Srinivas Sir)</option>
+                                @endif
+                            </select>
+
+                            {{-- IMPORTANT: disabled fields are NOT submitted --}}
+                            @if($isTfaOrCb)
+                            <input type="hidden" name="team_id" value="11">
+                            @endif
+
+                            <small class="text-muted">
+                                {{ $isTfaOrCb 
+                            ? 'Team is fixed for TFA / CB requisitions.'
+                            : 'Select the appropriate team for this Contractual requisition.' }}
+                            </small>
                         </div>
                     </div>
                 </div>
