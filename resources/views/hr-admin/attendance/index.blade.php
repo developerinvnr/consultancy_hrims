@@ -17,67 +17,91 @@
     </div>
 
     <!-- Compact Filters -->
-    <div class="row mb-2">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body py-2">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-auto">
-                            <label class="form-label mb-0 small text-muted">Month</label>
-                        </div>
-                        <div class="col-md-2 col-sm-3">
-                            <select name="month" id="monthFilter" class="form-select form-select-sm">
-                                @php
-                                $currentMonth = date('n');
-                                $currentYear = date('Y');
-                                $months = [];
-                                for ($i = 0; $i < 6; $i++) {
-                                    $date=date_create(date('Y-m-01'));
-                                    date_modify($date, "-{$i} months" );
-                                    $months[]=[ 'value'=> date_format($date, 'Y-m'),
-                                    'label' => date_format($date, 'F Y')
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label class="form-label mb-0 small text-muted">Month</label>
+                    </div>
+                    <div class="col-md-2 col-sm-3">
+                        <select name="month" id="monthFilter" class="form-select form-select-sm">
+                            @php
+                            // Start from April 2025
+                            $startMonth = 4; // April
+                            $startYear = 2025;
+                            $currentDate = now();
+
+                            // Generate months from April 2025 to current month
+                            $months = [];
+
+                            // Create start date (April 1, 2025)
+                            $startDate = date_create("2025-04-01");
+                            $endDate = date_create($currentDate->format('Y-m-01'));
+
+                            // If current date is before April 2025, only show April
+                            if ($startDate > $endDate) {
+                                $months[] = [
+                                    'value' => '2025-04',
+                                    'label' => 'April 2025'
+                                ];
+                            } else {
+                                // Loop from April 2025 to current month
+                                $currentMonthDate = clone $endDate;
+                                while ($currentMonthDate >= $startDate) {
+                                    $months[] = [
+                                        'value' => date_format($currentMonthDate, 'Y-m'),
+                                        'label' => date_format($currentMonthDate, 'F Y')
                                     ];
-                                    }
-                                    @endphp
-                                    @foreach($months as $month)
-                                    <option value="{{ $month['value'] }}" {{ $loop->first ? 'selected' : '' }}>
-                                        {{ $month['label'] }}
-                                    </option>
-                                    @endforeach
-                            </select>
-                        </div>
+                                    date_modify($currentMonthDate, '-1 month');
+                                }
+                                // Sort months in ascending order (oldest to newest)
+                                $months = array_reverse($months);
+                            }
+                            @endphp
 
-                        <div class="col-auto">
-                            <label class="form-label mb-0 small text-muted">Type</label>
-                        </div>
-                        <div class="col-md-2 col-sm-3">
-                            <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
-                                <option value="all">All Candidates</option>
-                                <option value="Contractual">Contractual</option>
-                                <option value="TFA">TFA</option>
-                                <option value="CB">CB</option>
-                            </select>
-                        </div>
+                            @foreach($months as $index => $month)
+                                <option value="{{ $month['value'] }}"
+                                    {{ $month['value'] == $currentDate->format('Y-m') ? 'selected' : '' }}>
+                                    {{ $month['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                        <div class="col-auto">
-                            <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
-                                <i class="ri-refresh-line align-middle"></i> Load
-                            </button>
-                        </div>
+                    <!-- Rest of your filter controls remain the same -->
+                    <div class="col-auto">
+                        <label class="form-label mb-0 small text-muted">Type</label>
+                    </div>
+                    <div class="col-md-2 col-sm-3">
+                        <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
+                            <option value="all">All Candidates</option>
+                            <option value="Contractual">Contractual</option>
+                            <option value="TFA">TFA</option>
+                            <option value="CB">CB</option>
+                        </select>
+                    </div>
 
-                        <div class="col-auto ms-auto">
-                            <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
-                                <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
-                            </button>
-                            <button type="button" onclick="exportAttendance()" class="btn btn-sm btn-success me-2">
-                                <i class="ri-download-line align-middle"></i> Export
-                            </button>
-                        </div>
+                    <div class="col-auto">
+                        <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
+                            <i class="ri-refresh-line align-middle"></i> Load
+                        </button>
+                    </div>
+
+                    <div class="col-auto ms-auto">
+                        <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
+                            <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
+                        </button>
+                        <button type="button" onclick="exportAttendance()" class="btn btn-sm btn-success me-2">
+                            <i class="ri-download-line align-middle"></i> Export
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="text-center" style="display: none;">
@@ -113,7 +137,6 @@
     </div>
 </div>
 
-<!-- Sunday Work Modal -->
 <div class="modal fade" id="sundayWorkModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -128,17 +151,42 @@
                         <div class="col-md-4">
                             <label class="form-label">Select Month *</label>
                             <select name="month" id="swMonth" class="form-select" required>
-                                @for($i = 1; $i <= 12; $i++)
-                                    <option value="{{ $i }}" {{ $i == $currentMonth ? 'selected' : '' }}>
-                                    {{ DateTime::createFromFormat('!m', $i)->format('F') }}
-                                    </option>
+                                @php
+                                $currentDate = now();
+                                $currentMonth = $currentDate->month;
+                                $currentYear = $currentDate->year;
+                                $startYear = 2025;
+                                $startMonth = 4; // April
+                                @endphp
+                                
+                                @for($year = $startYear; $year <= $currentYear; $year++)
+                                    @php
+                                    $monthStart = ($year == $startYear) ? $startMonth : 1;
+                                    $monthEnd = ($year == $currentYear) ? $currentMonth : 12;
+                                    @endphp
+                                    
+                                    @for($month = $monthStart; $month <= $monthEnd; $month++)
+                                        @php
+                                        $dateObj = DateTime::createFromFormat('!m', $month);
+                                        $monthName = $dateObj->format('F');
+                                        @endphp
+                                        <option value="{{ $month }}" 
+                                            {{ ($year == $currentYear && $month == $currentMonth) ? 'selected' : '' }}>
+                                            {{ $monthName }} {{ $year }}
+                                        </option>
                                     @endfor
+                                @endfor
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Select Year *</label>
-                            <input type="text" name="year" id="swYear" class="form-control"
-                                value="{{ $currentYear }}" readonly>
+                            <select name="year" id="swYear" class="form-select" required>
+                                @for($year = 2025; $year <= date('Y'); $year++)
+                                    <option value="{{ $year }}" {{ $year == date('Y') ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endfor
+                            </select>
                         </div>
                     </div>
 
@@ -282,9 +330,9 @@
 
         candidates.forEach((candidate, index) => {
 
-            const contractEndDate = candidate.contract_end_date
-                ? new Date(candidate.contract_end_date)
-                : null;
+            const contractEndDate = candidate.contract_end_date ?
+                new Date(candidate.contract_end_date) :
+                null;
 
             if (contractEndDate) {
                 contractEndDate.setHours(0, 0, 0, 0);
