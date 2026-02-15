@@ -380,8 +380,22 @@ class SalaryController extends Controller
         $year = $request->year;
         $requisitionType = $request->requisition_type ?? 'All';
 
+        $monthStart = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $monthEnd   = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+
+
         // Build query
         $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+    ->whereDate('contract_start_date', '<=', $monthEnd)
+    ->where(function ($q) use ($monthStart) {
+        $q->whereNull('contract_end_date')
+          ->orWhereDate('contract_end_date', '>=', $monthStart);
+    })
+    ->whereHas('salaryProcessings', function ($q) use ($month, $year) {
+        $q->where('month', $month)
+          ->where('year', $year)
+          ->whereNotNull('processed_at');
+    })
             ->with([
                 'function',
                 'vertical',

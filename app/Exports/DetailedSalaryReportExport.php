@@ -27,26 +27,40 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
         $this->month = $month;
         $this->year = $year;
         $this->requisitionType = $requisitionType;
-        
+
         // Pre-fetch data with all necessary relationships
         $this->data = $this->prepareData();
     }
 
     protected function prepareData()
     {
-        $query = CandidateMaster::where('final_status', 'A')
+        $monthStart = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfMonth()->toDateString();
+        $monthEnd   = \Carbon\Carbon::create($this->year, $this->month, 1)->endOfMonth()->toDateString();
+
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereDate('contract_start_date', '<=', $monthEnd)
+            ->where(function ($q) use ($monthStart) {
+                $q->whereNull('contract_end_date')
+                    ->orWhereDate('contract_end_date', '>=', $monthStart);
+            })
+            ->whereHas('salaryProcessings', function ($q) {
+                $q->where('month', $this->month)
+                    ->where('year', $this->year)
+                    ->whereNotNull('processed_at');
+            })
             ->with([
                 'function',
                 'vertical',
                 'department',
                 'subDepartmentRef',
-                'businessUnit',  // Changed from business_unit
-                'zoneRef',       // Changed from zone
-                'regionRef',     // Changed from region
-                'territoryRef',  // Changed from territory
-                'salaryProcessings' => function($q) {
+                'businessUnit',
+                'zoneRef',
+                'regionRef',
+                'territoryRef',
+                'salaryProcessings' => function ($q) {
                     $q->where('month', $this->month)
-                      ->where('year', $this->year);
+                        ->where('year', $this->year)
+                        ->whereNotNull('processed_at');
                 }
             ]);
 
@@ -56,6 +70,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
 
         return $query->orderBy('candidate_code')->get();
     }
+
 
     public function collection()
     {
@@ -97,7 +112,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
         $index++;
 
         $salary = $candidate->salaryProcessings->first();
-        
+
         // Get paid days and remuneration
         $paidDays = $salary ? $salary->paid_days : 0;
         $remuneration = $salary ? $salary->monthly_salary : ($candidate->remuneration_per_month ?? 0);
@@ -146,7 +161,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 // Auto-size columns
                 $columns = range('A', 'W'); // A to W for 23 columns
                 foreach ($columns as $column) {
@@ -168,31 +183,31 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
 
                 // Format number columns
                 $event->sheet->getStyle('S2:W1000')->getNumberFormat()->setFormatCode('#,##0.00');
-                
+
                 // Center align columns
                 $event->sheet->getStyle('A2:A1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $event->sheet->getStyle('S2:S1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Paid days
                 $event->sheet->getStyle('T2:W1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT); // Amount columns
-                
+
                 // Add borders
                 $event->sheet->getStyle('A1:W1000')
                     ->getBorders()
                     ->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN);
-                
+
                 // Freeze header row
                 $event->sheet->getDelegate()->freezePane('A2');
-                
+
                 // Add filter
                 $event->sheet->getDelegate()->setAutoFilter('A1:W1');
-                
+
                 // Add title
                 $monthName = date('F', mktime(0, 0, 0, $this->month, 1));
                 $title = "Detailed Remuneration Report - {$monthName} {$this->year}";
                 if ($this->requisitionType && $this->requisitionType !== 'All') {
                     $title .= " ({$this->requisitionType})";
                 }
-                
+
                 $event->sheet->getDelegate()->insertNewRowBefore(1, 2);
                 $event->sheet->getDelegate()->mergeCells('A1:W1');
                 $event->sheet->setCellValue('A1', $title);
@@ -201,10 +216,10 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F4FD']]
                 ]);
-                
+
                 // Move header row down
                 $event->sheet->getDelegate()->fromArray($this->headings(), null, 'A3', true);
-                
+
                 // Style the new header row
                 $event->sheet->getStyle('A3:W3')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
