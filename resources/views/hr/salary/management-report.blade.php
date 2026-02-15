@@ -26,9 +26,17 @@
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Year</label>
 					<select id="year" class="form-select form-select-sm">
-						@for($i = date('Y'); $i >= 2026; $i--)
-						<option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
-						@endfor
+						@php
+    $startYear = 2025;
+    $currentYear = date('Y');
+@endphp
+
+@for($i = $currentYear; $i >= $startYear; $i--)
+    <option value="{{ $i }}" {{ $i == $currentYear ? 'selected' : '' }}>
+        {{ $i }}
+    </option>
+@endfor
+
 					</select>
 				</div>
 

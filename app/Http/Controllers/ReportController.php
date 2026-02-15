@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MasterReportExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
@@ -18,14 +19,25 @@ class ReportController extends Controller
     public function master(Request $request)
     {
         // Get filter parameters with defaults
-        $month = $request->get('month', date('m'));
-        $year = $request->get('year', date('Y'));
+        if ($request->filled('month_year')) {
+            [$year, $month] = explode('-', $request->month_year);
+        } else {
+            $month = date('m');
+            $year  = date('Y');
+        }
         $requisitionType = $request->get('requisition_type', 'All');
         $workLocation = $request->get('work_location', '');
         $departmentId = $request->get('department_id', '');
         $search = $request->get('search', '');
+
+        $selectedDate = Carbon::createFromDate($year, $month, 1);
+
+        $monthStart = $selectedDate->startOfMonth()->toDateString();
+        $monthEnd   = $selectedDate->endOfMonth()->toDateString();
         // Build query
         $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereDate('contract_start_date', '<=', $monthEnd)
+            ->whereDate('contract_end_date', '>=', $monthStart)
             ->with(['salaryProcessings' => function($q) use ($month, $year) {
                 $q->where('month', $month)->where('year', $year);
             }])

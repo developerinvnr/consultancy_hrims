@@ -241,7 +241,7 @@ class SalaryController extends Controller
             ->whereDate('contract_start_date', '<=', $salaryMonthEnd)
             ->where(function ($q) use ($salaryMonthStart) {
                 $q->whereNull('contract_end_date')
-                ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
+                    ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
             });
 
         // Apply requisition_type filter if provided and not 'All'
@@ -452,7 +452,13 @@ class SalaryController extends Controller
             $remuneration = $salary ? $salary->monthly_salary : ($candidate->remuneration_per_month ?? 0);
             $overtime = $salary ? $salary->extra_amount : 0;
             $arrear = $salary ? ($salary->arrear_amount ?? 0) : 0;
-            $totalPayable = $salary ? ($salary->net_pay + $arrear) : $remuneration;
+            if ($salary) {
+                $totalPayable = $salary->net_pay + $arrear;
+            } else {
+                $perDay = $candidate->remuneration_per_month / 30;
+                $totalPayable = $perDay * $paidDays;
+            }
+
 
             $result[] = [
                 'id' => $candidate->id,
