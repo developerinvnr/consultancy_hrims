@@ -74,7 +74,7 @@
                 </div>
 
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="table-responsive requisition-table-wrapper">
                         <table class="table table-bordered table-hover w-100">
                             <thead>
                                 <tr>
@@ -658,33 +658,48 @@
 </script>
 <style>
     .select2-container {
-        z-index: 1065 !important; /* Higher than Bootstrap modal */
+        z-index: 1065 !important;
+        /* Higher than Bootstrap modal */
     }
-    
+
     .table {
         font-size: 0.85rem;
     }
-    
+
     .table th {
         font-size: 0.8rem;
         text-transform: uppercase;
         background-color: #f3f6f9;
         font-weight: 600;
     }
-    
+
     .badge {
         font-size: 0.7rem;
         padding: 0.3em 0.6em;
         font-weight: 500;
     }
-    
+
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
     }
-    
+
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
+    }
+
+    .requisition-table-wrapper {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    /* Sticky Header */
+    .requisition-table-wrapper thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background-color: #f3f6f9;
+        /* Same as your current header */
     }
 </style>
 @endsection

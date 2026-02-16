@@ -207,44 +207,21 @@
 </div>
 @endsection
 
-@push('styles')
 <style>
-    .avatar-sm {
-        width: 48px;
-        height: 48px;
-    }
-    
-    .avatar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        font-size: 20px;
-    }
-    
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    .table th {
-        font-weight: 600;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-    }
-    
-    .table td {
-        vertical-align: middle;
-    }
-    
-    .column-checkbox {
-        margin-bottom: 10px;
-    }
+   
+    .table-responsive {
+    max-height: 65vh; /* adjust height as needed */
+    overflow-y: auto;
+}
+
+#masterReportTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #f8f9fa; /* same as table-light */
+}
 </style>
-@endpush
+
 
 @section('script_section')
 <script>

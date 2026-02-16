@@ -132,7 +132,7 @@
 				<div class="text-muted small" id="reportSummary"></div>
 			</div>
 
-			<div class="table-responsive">
+			<div class="table-responsive management-table-wrapper">
 				<table class="table table-bordered table-hover mb-0" id="reportTable">
 					<thead class="table-light">
 						<tr>
@@ -390,34 +390,28 @@
 </script>
 @endsection
 
-@push('styles')
 <style>
-	.table th {
-		white-space: nowrap;
-		font-size: 0.85rem;
-	}
+.management-table-wrapper {
+    max-height: 70vh;
+    overflow-y: auto;
+}
 
-	.table td {
-		font-size: 0.85rem;
-		vertical-align: middle;
-	}
+/* Base header style */
+.management-table-wrapper thead th {
+    position: sticky;
+    background: #f8f9fa;
+    color: #000;
+    z-index: 10;
+}
 
-	#reportTable {
-		font-size: 0.8rem;
-	}
+/* First header row */
+.management-table-wrapper thead tr:first-child th {
+    top: 0;
+    height: 45px;
+}
 
-	#reportTable thead th {
-		background-color: #2c3e50;
-		color: white;
-		border-color: #2c3e50;
-	}
-
-	.table-dark {
-		background-color: #343a40 !important;
-	}
-
-	.form-select-sm {
-		font-size: 0.85rem;
-	}
+/* Second header row */
+.management-table-wrapper thead tr:nth-child(2) th {
+    top: 45px; /* match first row height exactly */
+}
 </style>
-@endpush
