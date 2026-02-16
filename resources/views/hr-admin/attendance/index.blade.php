@@ -350,7 +350,7 @@
         `;
 
             for (let day = 1; day <= currentDaysInMonth; day++) {
-                const status = candidate.attendance?.[day] || '';  
+                const status = candidate.attendance?.[day] || '';
                 const date = new Date(currentYear, currentMonth - 1, day);
                 const isSunday = date.getDay() === 0;
 
@@ -388,8 +388,8 @@
                 /* ===== WEEKDAYS ===== */
                 let optionsHtml = '';
 
-               if (isContractual) {
-    optionsHtml = `
+                if (isContractual) {
+                    optionsHtml = `
         <option value=""></option>
         <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
         <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
@@ -398,14 +398,14 @@
         <option value="OD" ${status === 'OD' ? 'selected' : ''}>OD</option>
         <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
     `;
-} else {
-    optionsHtml = `
+                } else {
+                    optionsHtml = `
         <option value=""></option>
         <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
         <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
         <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
     `;
-}
+                }
 
 
                 bodyHtml += `
@@ -489,7 +489,7 @@
             }
         });
 
-    
+
         $(`#present-${candidateId}`).text(present);
         $(`#absent-${candidateId}`).text(absent);
         $(`#cl-${candidateId}`).text(cl);
@@ -524,15 +524,13 @@
         if (currentDaysInMonth) {
             for (let day = 1; day <= currentDaysInMonth; day++) {
 
-    const date = new Date(currentYear, currentMonth - 1, day);
-    const isSunday = date.getDay() === 0;
+                const date = new Date(currentYear, currentMonth - 1, day);
+                const isSunday = date.getDay() === 0;
 
-    if (isSunday) {
-        attendanceData[day] = 'W';
-    } else if (!attendanceData.hasOwnProperty(day)) {
-        attendanceData[day] = '';
-    }
-}
+                    if (!attendanceData.hasOwnProperty(day)) {
+                            attendanceData[day] = '';
+                        }
+            }
         }
 
         const btn = $(`#btn-${candidateId}`);
@@ -800,7 +798,7 @@
                 }
             });
 
-            
+
             row.addClass('editing-row');
             btn.html('<i class="ri-save-line"></i>')
                 .removeClass('btn-outline-primary')
@@ -926,40 +924,40 @@
         line-height: 1.2;
     }
 
-/* Default = readonly text look */
-.compact-select {
-    width: 42px;
-    height: 22px;
-    font-size: 11px;
-    border: none;
-    background: transparent;
-    font-weight: 600;
-    text-align: center;
-    appearance: none;
-    pointer-events: none;
-    cursor: default;
-}
+    /* Default = readonly text look */
+    .compact-select {
+        width: 42px;
+        height: 22px;
+        font-size: 11px;
+        border: none;
+        background: transparent;
+        font-weight: 600;
+        text-align: center;
+        appearance: none;
+        pointer-events: none;
+        cursor: default;
+    }
 
-/* Remove arrow completely in readonly */
-.compact-select {
-    background-image: none;
-}
+    /* Remove arrow completely in readonly */
+    .compact-select {
+        background-image: none;
+    }
 
-/* Edit mode */
-.editing-row .compact-select {
-    pointer-events: auto;
-    cursor: pointer;
-    border: 1px solid #0d6efd;
-    background-color: #ffffff;
-    border-radius: 4px;
-    padding: 1px 14px 1px 4px;
-    text-align: left;
+    /* Edit mode */
+    .editing-row .compact-select {
+        pointer-events: auto;
+        cursor: pointer;
+        border: 1px solid #0d6efd;
+        background-color: #ffffff;
+        border-radius: 4px;
+        padding: 1px 14px 1px 4px;
+        text-align: left;
 
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%230d6efd' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 4px center;
-    background-size: 8px 8px;
-}
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%230d6efd' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+        background-size: 8px 8px;
+    }
 
 
 
@@ -969,18 +967,19 @@
     }
 
 
-.compact-select:disabled:hover {
-    border: none !important;
-    box-shadow: none !important;
-}
+    .compact-select:disabled:hover {
+        border: none !important;
+        box-shadow: none !important;
+    }
 
-.compact-select:disabled:focus {
-    outline: none !important;
-    box-shadow: none !important;
-}
-.compact-select:disabled {
-    background-image: none !important;
-}
+    .compact-select:disabled:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .compact-select:disabled {
+        background-image: none !important;
+    }
 
 
 
@@ -1037,67 +1036,67 @@
     }
 
     /* ================= HEADER ================= */
-#attendanceTable thead th {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    z-index: 30;
-}
+    #attendanceTable thead th {
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 30;
+    }
 
-/* ================= FROZEN LEFT COLUMNS ================= */
+    /* ================= FROZEN LEFT COLUMNS ================= */
 
-/* Apply sticky */
-#attendanceTable th:nth-child(-n+4),
-#attendanceTable td:nth-child(-n+4) {
-    position: sticky;
-    background: #ffffff;
-}
+    /* Apply sticky */
+    #attendanceTable th:nth-child(-n+4),
+    #attendanceTable td:nth-child(-n+4) {
+        position: sticky;
+        background: #ffffff;
+    }
 
-/* Header frozen columns must be above body */
-#attendanceTable thead th:nth-child(-n+4) {
-    z-index: 35;
-    background: #f8f9fa;
-}
+    /* Header frozen columns must be above body */
+    #attendanceTable thead th:nth-child(-n+4) {
+        z-index: 35;
+        background: #f8f9fa;
+    }
 
-/* Body frozen columns */
-#attendanceTable tbody td:nth-child(-n+4) {
-    z-index: 20;
-}
+    /* Body frozen columns */
+    #attendanceTable tbody td:nth-child(-n+4) {
+        z-index: 20;
+    }
 
-/* Fixed widths */
-#attendanceTable th:nth-child(1),
-#attendanceTable td:nth-child(1) {
-    width: 50px;
-    min-width: 50px;
-    left: 0;
-}
+    /* Fixed widths */
+    #attendanceTable th:nth-child(1),
+    #attendanceTable td:nth-child(1) {
+        width: 50px;
+        min-width: 50px;
+        left: 0;
+    }
 
-#attendanceTable th:nth-child(2),
-#attendanceTable td:nth-child(2) {
-    width: 110px;
-    min-width: 110px;
-    left: 50px;
-}
+    #attendanceTable th:nth-child(2),
+    #attendanceTable td:nth-child(2) {
+        width: 110px;
+        min-width: 110px;
+        left: 50px;
+    }
 
-#attendanceTable th:nth-child(3),
-#attendanceTable td:nth-child(3) {
-    width: 220px;
-    min-width: 220px;
-    left: 160px;
-}
+    #attendanceTable th:nth-child(3),
+    #attendanceTable td:nth-child(3) {
+        width: 220px;
+        min-width: 220px;
+        left: 160px;
+    }
 
-#attendanceTable th:nth-child(4),
-#attendanceTable td:nth-child(4) {
-    width: 100px;
-    min-width: 100px;
-    left: 380px;
-}
+    #attendanceTable th:nth-child(4),
+    #attendanceTable td:nth-child(4) {
+        width: 100px;
+        min-width: 100px;
+        left: 380px;
+    }
 
-/* Divider shadow */
-#attendanceTable th:nth-child(4),
-#attendanceTable td:nth-child(4) {
-    box-shadow: 5px 0 6px -2px rgba(0,0,0,0.15);
-}
+    /* Divider shadow */
+    #attendanceTable th:nth-child(4),
+    #attendanceTable td:nth-child(4) {
+        box-shadow: 5px 0 6px -2px rgba(0, 0, 0, 0.15);
+    }
 
 
 
