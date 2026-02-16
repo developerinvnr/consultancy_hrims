@@ -17,91 +17,91 @@
     </div>
 
     <!-- Compact Filters -->
-<div class="row mb-2">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body py-2">
-                <div class="row g-2 align-items-center">
-                    <div class="col-auto">
-                        <label class="form-label mb-0 small text-muted">Month</label>
-                    </div>
-                    <div class="col-md-2 col-sm-3">
-                        <select name="month" id="monthFilter" class="form-select form-select-sm">
-                            @php
-                            // Start from April 2025
-                            $startMonth = 4; // April
-                            $startYear = 2025;
-                            $currentDate = now();
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <label class="form-label mb-0 small text-muted">Month</label>
+                        </div>
+                        <div class="col-md-2 col-sm-3">
+                            <select name="month" id="monthFilter" class="form-select form-select-sm">
+                                @php
+                                // Start from April 2025
+                                $startMonth = 4; // April
+                                $startYear = 2025;
+                                $currentDate = now();
 
-                            // Generate months from April 2025 to current month
-                            $months = [];
+                                // Generate months from April 2025 to current month
+                                $months = [];
 
-                            // Create start date (April 1, 2025)
-                            $startDate = date_create("2025-04-01");
-                            $endDate = date_create($currentDate->format('Y-m-01'));
+                                // Create start date (April 1, 2025)
+                                $startDate = date_create("2025-04-01");
+                                $endDate = date_create($currentDate->format('Y-m-01'));
 
-                            // If current date is before April 2025, only show April
-                            if ($startDate > $endDate) {
+                                // If current date is before April 2025, only show April
+                                if ($startDate > $endDate) {
                                 $months[] = [
-                                    'value' => '2025-04',
-                                    'label' => 'April 2025'
+                                'value' => '2025-04',
+                                'label' => 'April 2025'
                                 ];
-                            } else {
+                                } else {
                                 // Loop from April 2025 to current month
                                 $currentMonthDate = clone $endDate;
                                 while ($currentMonthDate >= $startDate) {
-                                    $months[] = [
-                                        'value' => date_format($currentMonthDate, 'Y-m'),
-                                        'label' => date_format($currentMonthDate, 'F Y')
-                                    ];
-                                    date_modify($currentMonthDate, '-1 month');
+                                $months[] = [
+                                'value' => date_format($currentMonthDate, 'Y-m'),
+                                'label' => date_format($currentMonthDate, 'F Y')
+                                ];
+                                date_modify($currentMonthDate, '-1 month');
                                 }
                                 // Sort months in ascending order (oldest to newest)
                                 $months = array_reverse($months);
-                            }
-                            @endphp
+                                }
+                                @endphp
 
-                            @foreach($months as $index => $month)
+                                @foreach($months as $index => $month)
                                 <option value="{{ $month['value'] }}"
                                     {{ $month['value'] == $currentDate->format('Y-m') ? 'selected' : '' }}>
                                     {{ $month['label'] }}
                                 </option>
-                            @endforeach
-                        </select>
-                    </div>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    <!-- Rest of your filter controls remain the same -->
-                    <div class="col-auto">
-                        <label class="form-label mb-0 small text-muted">Type</label>
-                    </div>
-                    <div class="col-md-2 col-sm-3">
-                        <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
-                            <option value="all">All Candidates</option>
-                            <option value="Contractual">Contractual</option>
-                            <option value="TFA">TFA</option>
-                            <option value="CB">CB</option>
-                        </select>
-                    </div>
+                        <!-- Rest of your filter controls remain the same -->
+                        <div class="col-auto">
+                            <label class="form-label mb-0 small text-muted">Type</label>
+                        </div>
+                        <div class="col-md-2 col-sm-3">
+                            <select name="employee_type" id="employeeTypeFilter" class="form-select form-select-sm">
+                                <option value="all">All Candidates</option>
+                                <option value="Contractual">Contractual</option>
+                                <option value="TFA">TFA</option>
+                                <option value="CB">CB</option>
+                            </select>
+                        </div>
 
-                    <div class="col-auto">
-                        <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
-                            <i class="ri-refresh-line align-middle"></i> Load
-                        </button>
-                    </div>
+                        <div class="col-auto">
+                            <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
+                                <i class="ri-refresh-line align-middle"></i> Load
+                            </button>
+                        </div>
 
-                    <div class="col-auto ms-auto">
-                        <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
-                            <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
-                        </button>
-                        <button type="button" onclick="exportAttendance()" class="btn btn-sm btn-success me-2">
-                            <i class="ri-download-line align-middle"></i> Export
-                        </button>
+                        <div class="col-auto ms-auto">
+                            <button type="button" onclick="openSundayWorkModal()" class="btn btn-sm btn-success">
+                                <i class="ri-calendar-2-line align-middle"></i> Add Sunday Work
+                            </button>
+                            <button type="button" onclick="exportAttendance()" class="btn btn-sm btn-success me-2">
+                                <i class="ri-download-line align-middle"></i> Export
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="text-center" style="display: none;">
@@ -119,8 +119,8 @@
                     <h6 class="card-title mb-0">Attendance Sheet</h6>
                 </div>
                 <div class="card-body p-2">
-                    <div class="table-responsive" id="tableContainer" style="display: none;">
-                        <table class="table table-bordered table-hover table-sm mb-0" id="attendanceTable">
+                    <div class="table-responsive attendance-wrapper" id="tableContainer" style="display: none;">
+                        <table class="table table-bordered table-sm mb-0" id="attendanceTable">
                             <thead class="table-light">
                                 <tr id="tableHeader">
                                     <!-- Dynamic headers will be loaded here -->
@@ -158,24 +158,24 @@
                                 $startYear = 2025;
                                 $startMonth = 4; // April
                                 @endphp
-                                
+
                                 @for($year = $startYear; $year <= $currentYear; $year++)
                                     @php
-                                    $monthStart = ($year == $startYear) ? $startMonth : 1;
-                                    $monthEnd = ($year == $currentYear) ? $currentMonth : 12;
+                                    $monthStart=($year==$startYear) ? $startMonth : 1;
+                                    $monthEnd=($year==$currentYear) ? $currentMonth : 12;
                                     @endphp
-                                    
-                                    @for($month = $monthStart; $month <= $monthEnd; $month++)
-                                        @php
-                                        $dateObj = DateTime::createFromFormat('!m', $month);
-                                        $monthName = $dateObj->format('F');
-                                        @endphp
-                                        <option value="{{ $month }}" 
-                                            {{ ($year == $currentYear && $month == $currentMonth) ? 'selected' : '' }}>
-                                            {{ $monthName }} {{ $year }}
-                                        </option>
+
+                                    @for($month=$monthStart; $month <=$monthEnd; $month++)
+                                    @php
+                                    $dateObj=DateTime::createFromFormat('!m', $month);
+                                    $monthName=$dateObj->format('F');
+                                    @endphp
+                                    <option value="{{ $month }}"
+                                        {{ ($year == $currentYear && $month == $currentMonth) ? 'selected' : '' }}>
+                                        {{ $monthName }} {{ $year }}
+                                    </option>
                                     @endfor
-                                @endfor
+                                    @endfor
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -183,9 +183,9 @@
                             <select name="year" id="swYear" class="form-select" required>
                                 @for($year = 2025; $year <= date('Y'); $year++)
                                     <option value="{{ $year }}" {{ $year == date('Y') ? 'selected' : '' }}>
-                                        {{ $year }}
+                                    {{ $year }}
                                     </option>
-                                @endfor
+                                    @endfor
                             </select>
                         </div>
                     </div>
@@ -350,81 +350,77 @@
         `;
 
             for (let day = 1; day <= currentDaysInMonth; day++) {
+                const status = candidate.attendance?.[day] || '';  
                 const date = new Date(currentYear, currentMonth - 1, day);
-                date.setHours(0, 0, 0, 0);
-
-                const status = candidate.attendance[day] || '';
                 const isSunday = date.getDay() === 0;
 
-                const isCurrentMonth =
-                    currentYear === today.getFullYear() &&
-                    currentMonth === (today.getMonth() + 1);
+                const joiningDate = new Date(candidate.contract_start_date);
+                joiningDate.setHours(0, 0, 0, 0);
 
-                // const canEdit =
-                //     isCurrentMonth &&
-                //     date >= minAllowedDate &&
-                //     date <= today;
-                const canEdit = true;
+                const contractEndDate = candidate.contract_end_date ?
+                    new Date(candidate.contract_end_date) :
+                    null;
 
-                const disabledAttr = 'disabled';
-                const readonlyClass = canEdit ? '' : 'readonly-cell';
+                if (contractEndDate) {
+                    contractEndDate.setHours(0, 0, 0, 0);
+                }
 
+                date.setHours(0, 0, 0, 0);
+
+                const beforeJoining = date < joiningDate;
+                const afterEnd = contractEndDate && date > contractEndDate;
+                const canEdit = !(beforeJoining || afterEnd);
+
+                /* ===== SUNDAY (LOCKED FOREVER) ===== */
+                if (isSunday) {
+
+                    bodyHtml += `
+            <td class="text-center sunday-cell"
+                data-day="${day}"
+                data-can-edit="false">
+                <span class="badge bg-light text-muted">W</span>
+            </td>
+        `;
+
+                    continue; // VERY IMPORTANT
+                }
+
+                /* ===== WEEKDAYS ===== */
                 let optionsHtml = '';
 
-                if (isSunday) {
-                    if (isContractual) {
-                        optionsHtml = `
-                        <option value="W" ${status !== 'P' ? 'selected' : ''}>W</option>
-                        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
-                    `;
-                    } else {
-                        optionsHtml = `<option value="W" selected>W</option>`;
-                    }
+               if (isContractual) {
+    optionsHtml = `
+        <option value=""></option>
+        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
+        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
+        <option value="CL" ${status === 'CL' ? 'selected' : ''}>CL</option>
+        <option value="CH" ${status === 'CH' ? 'selected' : ''}>CH</option>
+        <option value="OD" ${status === 'OD' ? 'selected' : ''}>OD</option>
+        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
+    `;
+} else {
+    optionsHtml = `
+        <option value=""></option>
+        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
+        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
+        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
+    `;
+}
 
-                    bodyHtml += `
-                <td class="text-center sunday-cell ${readonlyClass}"
+
+                bodyHtml += `
+        <td class="text-center ${canEdit ? '' : 'readonly-cell'}"
+            data-day="${day}"
+            data-can-edit="${canEdit}">
+            <select class="edit-select compact-select"
                     data-day="${day}"
-                    data-can-edit="${canEdit}">
-                    
-                    <select class="sunday-select" data-day="${day}" ${disabledAttr} style="display:none">
-                        ${optionsHtml}
-                    </select>
-
-                    <span class="badge bg-light text-muted">W</span>
-                </td>
-                `;
-                } else {
-                    if (isContractual) {
-                        optionsHtml = `
-                        <option value=""></option>
-                        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
-                        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
-                        <option value="CL" ${status === 'CL' ? 'selected' : ''}>CL</option>
-                        <option value="CH" ${status === 'CH' ? 'selected' : ''}>CH</option>
-                        <option value="OD" ${status === 'OD' ? 'selected' : ''}>OD</option>
-                        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
-                    `;
-                    } else {
-                        optionsHtml = `
-                        <option value=""></option>
-                        <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
-                        <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
-                        <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
-                    `;
-                    }
-
-                    bodyHtml += `
-                <td class="text-center ${readonlyClass}"
-                    data-day="${day}"
-                    data-can-edit="${canEdit}">
-                    <select class="form-select form-select-sm edit-select compact-select"
-                            data-day="${day}" ${disabledAttr}>
-                        ${optionsHtml}
-                    </select>
-                </td>
-                `;
-                }
+                    ${canEdit ? '' : 'disabled'}>
+                ${optionsHtml}
+            </select>
+        </td>
+    `;
             }
+
 
             bodyHtml += `
             <td>${candidate.total_present || 0}</td>
@@ -452,7 +448,7 @@
 
         $('#tableBody').html(bodyHtml);
         $('#tableContainer').show();
-        $('td[data-can-edit="true"]').css('background', '#d1fae5');
+        // $('td[data-can-edit="true"]:not(:nth-child(-n+4))').css('background', '#d1fae5');
 
     }
 
@@ -493,14 +489,7 @@
             }
         });
 
-        // Count Sunday attendance (P counts as present)
-        row.find('.sunday-select').each(function() {
-            const status = $(this).val();
-            if (status === 'P') {
-                present++;
-            }
-        });
-
+    
         $(`#present-${candidateId}`).text(present);
         $(`#absent-${candidateId}`).text(absent);
         $(`#cl-${candidateId}`).text(cl);
@@ -525,19 +514,25 @@
         });
 
         // Collect Sunday attendance - ONLY from enabled selects
-        row.find('.sunday-select:enabled').each(function() {
-            const day = $(this).data('day');
-            const status = $(this).val() || 'W';
-            attendanceData[day] = status;
-        });
+        // row.find('.sunday-select:enabled').each(function() {
+        //     const day = $(this).data('day');
+        //     const status = $(this).val() || 'W';
+        //     attendanceData[day] = status;
+        // });
 
         // Fill missing days with empty strings
         if (currentDaysInMonth) {
             for (let day = 1; day <= currentDaysInMonth; day++) {
-                if (!attendanceData.hasOwnProperty(day)) {
-                    attendanceData[day] = '';
-                }
-            }
+
+    const date = new Date(currentYear, currentMonth - 1, day);
+    const isSunday = date.getDay() === 0;
+
+    if (isSunday) {
+        attendanceData[day] = 'W';
+    } else if (!attendanceData.hasOwnProperty(day)) {
+        attendanceData[day] = '';
+    }
+}
         }
 
         const btn = $(`#btn-${candidateId}`);
@@ -599,10 +594,11 @@
                     }
 
                     // Disable all selects after saving
-                    row.find('.edit-select, .sunday-select').prop('disabled', true);
+                    row.find('.edit-select').prop('disabled', true);
                     row.removeClass('editing-row');
                     btn.html('<i class="ri-edit-line"></i>');
                     btn.removeClass('btn-success').addClass('btn-outline-primary');
+                    row.find('td[data-day]').css('background', '');
                     cancelBtn.hide();
 
                 } else {
@@ -740,6 +736,7 @@
                     btn.html('<i class="ri-edit-line"></i>');
                     btn.removeClass('btn-success').addClass('btn-outline-primary');
                     btn.prop('disabled', false);
+                    row.find('td[data-day]').css('background', '');
                     cancelBtn.hide();
 
                     toastr.info('Changes cancelled');
@@ -781,7 +778,6 @@
         const cancelBtn = $(`#cancel-${candidateId}`);
 
         const weekdaySelects = row.find('.edit-select');
-        const sundaySelects = row.find('.sunday-select');
 
         const isEditMode = btn.find('i').hasClass('ri-edit-line');
 
@@ -797,30 +793,14 @@
                 if (canEdit) {
                     $(this).prop('disabled', false);
                     cell.removeClass('readonly-cell');
+                    //cell.css('background', '#d1fae5'); 
                 } else {
                     $(this).prop('disabled', true);
                     cell.addClass('readonly-cell');
                 }
             });
 
-            // Sundays
-            sundaySelects.each(function() {
-                const day = $(this).data('day');
-                const cell = row.find(`td[data-day="${day}"]`);
-                const canEdit = String(cell.data('can-edit')) === 'true';
-                const isContractual = row.find('.badge.bg-secondary').text() === 'Contractual';
-
-                if (canEdit && isContractual) {
-                    cell.find('.badge').hide();
-                    $(this).show().prop('disabled', false);
-                    cell.removeClass('readonly-cell');
-                } else {
-                    cell.find('.badge').show();
-                    $(this).hide().prop('disabled', true);
-                    cell.addClass('readonly-cell');
-                }
-            });
-
+            
             row.addClass('editing-row');
             btn.html('<i class="ri-save-line"></i>')
                 .removeClass('btn-outline-primary')
@@ -911,6 +891,11 @@
 </script>
 
 <style>
+    #attendanceTable {
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
     /* Sunday column color */
     .sunday-cell {
         background-color: #f3f6ff !important;
@@ -918,7 +903,7 @@
 
     /* Row being edited */
     .editing-row {
-        background-color: #fff8e1 !important;
+        background-color: #f0f7ff !important;
     }
 
     /* Compact table styling */
@@ -941,40 +926,63 @@
         line-height: 1.2;
     }
 
-    /* Compact dropdown style */
-    .compact-select {
-        width: 42px !important;
-        height: 24px !important;
-        padding: 1px 16px 1px 4px !important;
-        font-size: 10px !important;
-        text-align: left;
-        border: 1px solid #d1d5db;
-        border-radius: 3px;
-        background-color: #ffffff;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23333' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 3px center;
-        background-size: 7px 7px;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-    }
+/* Default = readonly text look */
+.compact-select {
+    width: 42px;
+    height: 22px;
+    font-size: 11px;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    text-align: center;
+    appearance: none;
+    pointer-events: none;
+    cursor: default;
+}
+
+/* Remove arrow completely in readonly */
+.compact-select {
+    background-image: none;
+}
+
+/* Edit mode */
+.editing-row .compact-select {
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid #0d6efd;
+    background-color: #ffffff;
+    border-radius: 4px;
+    padding: 1px 14px 1px 4px;
+    text-align: left;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%230d6efd' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    background-size: 8px 8px;
+}
+
+
 
     .compact-select:not(:disabled):hover {
         border-color: #86b7fe;
         box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
     }
 
-    .compact-select:disabled {
-        background-color: transparent;
-        border-color: transparent;
-        color: #495057;
-        font-weight: 600;
-        background-image: none;
-        padding-right: 4px !important;
-    }
+
+.compact-select:disabled:hover {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.compact-select:disabled:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+.compact-select:disabled {
+    background-image: none !important;
+}
+
+
 
     .compact-select:focus {
         box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
@@ -999,6 +1007,9 @@
         color: #6c757d;
     }
 
+
+
+
     /* Sunday modal */
     #sundayWorkModal .modal-body {
         padding: 1.25rem;
@@ -1018,6 +1029,77 @@
     #sundayWorkModal .modal-xl {
         max-width: 1000px;
     }
+
+    .attendance-wrapper {
+        max-height: 65vh;
+        overflow: auto;
+        position: relative;
+    }
+
+    /* ================= HEADER ================= */
+#attendanceTable thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 30;
+}
+
+/* ================= FROZEN LEFT COLUMNS ================= */
+
+/* Apply sticky */
+#attendanceTable th:nth-child(-n+4),
+#attendanceTable td:nth-child(-n+4) {
+    position: sticky;
+    background: #ffffff;
+}
+
+/* Header frozen columns must be above body */
+#attendanceTable thead th:nth-child(-n+4) {
+    z-index: 35;
+    background: #f8f9fa;
+}
+
+/* Body frozen columns */
+#attendanceTable tbody td:nth-child(-n+4) {
+    z-index: 20;
+}
+
+/* Fixed widths */
+#attendanceTable th:nth-child(1),
+#attendanceTable td:nth-child(1) {
+    width: 50px;
+    min-width: 50px;
+    left: 0;
+}
+
+#attendanceTable th:nth-child(2),
+#attendanceTable td:nth-child(2) {
+    width: 110px;
+    min-width: 110px;
+    left: 50px;
+}
+
+#attendanceTable th:nth-child(3),
+#attendanceTable td:nth-child(3) {
+    width: 220px;
+    min-width: 220px;
+    left: 160px;
+}
+
+#attendanceTable th:nth-child(4),
+#attendanceTable td:nth-child(4) {
+    width: 100px;
+    min-width: 100px;
+    left: 380px;
+}
+
+/* Divider shadow */
+#attendanceTable th:nth-child(4),
+#attendanceTable td:nth-child(4) {
+    box-shadow: 5px 0 6px -2px rgba(0,0,0,0.15);
+}
+
+
 
     /* Responsive adjustments */
     @media (max-width: 768px) {

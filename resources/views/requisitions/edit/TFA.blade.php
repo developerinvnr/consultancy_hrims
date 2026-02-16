@@ -818,7 +818,7 @@
 			$('#state_residence').val(existingState).trigger('change');
 
 			$.ajax({
-				url: '{{ route("get.cities.by.state") }}',
+				url: '{{ route("hr.get.cities.by.state") }}',
 				type: 'GET',
 				data: {
 					state_id: existingState
@@ -850,7 +850,7 @@
 				.append('<option value="">Loading...</option>');
 
 			$.ajax({
-				url: '{{ route("get.cities.by.state") }}',
+				url: '{{ route("hr.get.cities.by.state") }}',
 				type: 'GET',
 				data: {
 					state_id: stateId
