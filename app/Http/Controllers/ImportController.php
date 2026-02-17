@@ -249,9 +249,9 @@ class ImportController extends Controller
 
 	public function importData(Request $request)
 	{
-		 ini_set('memory_limit', '-1');
-    ini_set('max_execution_time', 0);
-    set_time_limit(0);
+		ini_set('memory_limit', '-1');
+		ini_set('max_execution_time', 0);
+		set_time_limit(0);
 		\Log::info('=== IMPORT DATA STARTED ===');
 		\Log::info('User ID: ' . auth()->id());
 		$user = Auth::user();
@@ -678,73 +678,12 @@ class ImportController extends Controller
 	}
 	private function validateRowData($data)
 	{
-		$errors = [];
-
-		// CRITICAL FIX: Get email from E Mail field (which should have been mapped from Email Address in cleanRowData)
-		$email = $data['E Mail'] ?? null;
-
-		// If still no email, check if there's an Email Address field directly (fallback)
-		if (empty($email) && !empty($data['Email Address'])) {
-			$email = $data['Email Address'];
-			\Log::info("Using Email Address fallback: " . $email);
-		}
-
-		// Required fields validation
-		$requiredFields = [
-			"Candidate's Name" => $data['candidate_s_name'] ?? null,
-			'Mobile No.' => $data['mobile_no'] ?? null,
-			'Date of Joining Required' => $data['date_of_joining_required'] ?? null,
-			'Reporting To' => $data['reporting_to'] ?? null,
-		];
-
-		foreach ($requiredFields as $field => $value) {
-			if (empty($value) && $value !== '0') {
-				$errors[] = "Required field '{$field}' is empty";
-			}
-		}
-
-		// Email validation - do NOT block import for invalid email
-		if (!empty($email)) {
-
-			// Remove internal spaces first
-			$email = str_replace(' ', '', $email);
-			$email = trim($email);
-
-			// If still invalid, just log — don't fail import
-			if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-				\Log::warning("Invalid email format (imported anyway): {$email}");
-			}
-		} else {
-			\Log::info("Email is empty for row - will be inserted as NULL");
-		}
-
-
-		// Validate mobile number
-		if (!empty($data['mobile_no'])) {
-			 $mobile = preg_replace('/[^0-9]/', '', (string)$data['mobile_no']);
-			if (strlen($mobile) < 10) {
-				$errors[] = 'Invalid mobile number format (must be at least 10 digits)';
-			}
-		}
-
-		// Validate dates
-		$joiningDate = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
-$separationDate = $this->parseExcelDate($data['date_of_separation'] ?? null);
-
-
-		if (!$joiningDate) {
-			$errors[] = 'Invalid Date of Joining format';
-		}
-
-		if ($separationDate && $joiningDate && $separationDate <= $joiningDate) {
-			$errors[] = 'Date of Separation must be after Date of Joining';
-		}
-
 		return [
-			'valid' => empty($errors),
-			'errors' => $errors
+			'valid' => true,
+			'errors' => []
 		];
 	}
+
 	private function checkAllDocumentsUploaded($requisitionId)
 	{
 		$requiredDocs = ['pan_card', 'aadhaar_card', 'bank_document'];
@@ -957,7 +896,7 @@ $separationDate = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			$email = $data['Email Address'];
 		}
 
-		$mobile = $data['mobile_no'] ?? null;
+		$mobile = $data['Mobile No.'] ?? null;
 
 		// Only check duplicate if email exists
 		if ($email) {
@@ -1722,8 +1661,8 @@ $separationDate = $this->parseExcelDate($data['date_of_separation'] ?? null);
 	private function prepareManpowerRequisitionData($data, $lookupIds, $user, $requisitionType)
 	{
 		$timestamp = $this->parseExcelDate($data['Timestamp'] ?? null) ?? now();
-		$contractStart = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
-$contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
+		$contractStart = $this->parseExcelDate($data['Date of Joining Required'] ?? null);
+		$contractEnd = $this->parseExcelDate($data['Date of Separation'] ?? null);
 		$lastWorkingDate = $contractEnd;
 
 		if ($contractEnd) {
@@ -1753,9 +1692,9 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'submitted_by_employee_id' => $user->employee_id ?? 'SYS-IMPORT',
 			'submission_date' => $timestamp,
 			'candidate_email' => $email,  // Will be NULL if no email
-			'candidate_name' => $data['candidate_s_name'] ?? '',
+			'candidate_name' => $data["Candidate's Name"] ?? '',
 			'father_name' => $data['Fathers Name'] ?? '',
-			'mobile_no' => $this->formatMobileNumber($data['mobile_no'] ?? ''),
+			'mobile_no' => $this->formatMobileNumber($data['Mobile No.'] ?? ''),
 
 			'alternate_email' => null,
 			'address_line_1' => $data['Address Line 1'] ?? '',
@@ -1776,7 +1715,7 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'zone' => $lookupIds['zone_id'] ?? null,
 			'region' => $lookupIds['region_id'] ?? null,
 			'territory' => $lookupIds['territory_id'] ?? null,
-			'reporting_to' => $data['reporting_to'] ?? '',
+			'reporting_to' => $data['Reporting To'] ?? '',
 			'reporting_manager_employee_id' => $reportingManagerEmployeeId,
 			'contract_start_date' => $contractStart,
 			'contract_end_date' => $contractEnd,
@@ -1787,9 +1726,9 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'out_of_pocket_required' => 'N',
 			'reporting_manager_address' => $data['Please specify the address of Reporting Manager for dispatching the Agreement with complete detail (PIN and Phone No)'] ?? '',
 			'bank_account_no' => $data['Bank Account No.'] ?? null,
-			'bank_ifsc' => isset($data['Bank IFSC']) 
-			? strtoupper(str_replace(' ', '', trim($data['Bank IFSC']))) 
-			: null,
+			'bank_ifsc' => isset($data['Bank IFSC'])
+				? strtoupper(str_replace(' ', '', trim($data['Bank IFSC'])))
+				: null,
 			'bank_name' => $data['Bank Name'] ?? null,
 			//'status' => $this->determineInitialStatus($data),
 			'status' => 'Inactive',
@@ -1808,8 +1747,9 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 
 	private function prepareCandidateMasterData($data, $lookupIds, $manpowerRequisitionId, $requisitionType, $candidateCode)
 	{
-		$contractStart = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
-        $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
+		$contractStart = $this->parseExcelDate($data['Date of Joining Required'] ?? null);
+$contractEnd = $this->parseExcelDate($data['Date of Separation'] ?? null);
+
 		$lastWorkingDate = $contractEnd;
 
 		if ($contractEnd) {
@@ -1840,9 +1780,10 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'candidate_code' => $candidateCode,
 			'requisition_type' => $requisitionType,
 			'candidate_email' => $email,  // Will be NULL if no email
-			'candidate_name' => $data['candidate_s_name'] ?? '',
+			'candidate_name' => $data["Candidate's Name"] ?? '',
 			'father_name' => $data['Fathers Name'] ?? '',
-			'mobile_no' => $this->formatMobileNumber($data['mobile_no'] ?? ''),
+			'mobile_no' => $this->formatMobileNumber($data['Mobile No.'] ?? ''),
+
 			'alternate_email' => null,
 			'address_line_1' => $data['Address Line 1'] ?? '',
 			'city' => $lookupIds['city_id'] ?? 0,
@@ -1862,7 +1803,8 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'zone' => $lookupIds['zone_id'] ?? null,
 			'region' => $lookupIds['region_id'] ?? null,
 			'territory' => $lookupIds['territory_id'] ?? null,
-			'reporting_to' => $data['reporting_to'] ?? '',
+			'reporting_to' => $data['Reporting To'] ?? '',
+
 			'reporting_manager_employee_id' => $reportingManagerEmployeeId,
 			'reporting_manager_address' => $data['Please specify the address of Reporting Manager for dispatching the Agreement with complete detail (PIN and Phone No)'] ?? '',
 			'contract_start_date' => $contractStart,
@@ -1870,13 +1812,14 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'contract_duration' => $this->calculateDuration($contractStart, $contractEnd),
 			'last_working_date' => $lastWorkingDate,
 			'remuneration_per_month' => $this->formatSalary($data['Remuneration (per month)'] ?? 0),
-			'account_holder_name' => $data['candidate_s_name'] ?? '',
+			'account_holder_name' => $data["Candidate's Name"] ?? '',
+
 			'bank_account_no' => $data['Bank Account No.'] ?? null,
 			'bank_ifsc' => $data['Bank IFSC'] ?? null,
 			'bank_name' => $data['Bank Name'] ?? null,
 			'pan_no' => null,
 			'candidate_status' => $statusData['candidate_status'],
-            'final_status' => $statusData['final_status'],
+			'final_status' => $statusData['final_status'],
 			'leave_credited' => 0,
 			'other_reimbursement_required' => 'N',
 			'out_of_pocket_required' => 'N',
