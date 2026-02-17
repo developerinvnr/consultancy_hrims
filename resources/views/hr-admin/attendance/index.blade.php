@@ -320,7 +320,7 @@
         }
 
         headerHtml += `
-        <th>P</th><th>A</th><th>CL</th><th>CH</th><th>OD</th><th>Bal</th><th>Action</th>
+        <th>P</th><th>A</th><th>CL</th><th>OD</th><th>Bal</th><th>Action</th>
     `;
 
         $('#tableHeader').html(headerHtml);
@@ -426,7 +426,6 @@
             <td>${candidate.total_present || 0}</td>
             <td>${candidate.total_absent || 0}</td>
             <td>${candidate.cl_used || 0}</td>
-            <td>${candidate.ch_days || 0}</td>
             <td>${candidate.od_days || 0}</td>
             <td>${isContractual ? candidate.cl_remaining : 'N/A'}</td>
             <td>
@@ -459,7 +458,6 @@
         let present = 0,
             absent = 0,
             cl = 0,
-            ch = 0,
             od = 0;
 
         // Count weekday attendance
@@ -473,11 +471,12 @@
                     absent++;
                     break;
                 case 'CL':
-                    cl++;
+                    cl += 1;
                     break;
+
                 case 'CH':
-                    ch++;
-                    present++; // CH counts as present
+                    cl += 0.5;   // Half day CL deduction
+                    present += 0.5;  // Optional depending on rule
                     break;
                 case 'OD':
                     od++;
@@ -493,7 +492,6 @@
         $(`#present-${candidateId}`).text(present);
         $(`#absent-${candidateId}`).text(absent);
         $(`#cl-${candidateId}`).text(cl);
-        $(`#ch-${candidateId}`).text(ch);
         $(`#od-${candidateId}`).text(od);
     }
 
@@ -521,17 +519,17 @@
         // });
 
         // Fill missing days with empty strings
-        if (currentDaysInMonth) {
-            for (let day = 1; day <= currentDaysInMonth; day++) {
+        // if (currentDaysInMonth) {
+        //     for (let day = 1; day <= currentDaysInMonth; day++) {
 
-                const date = new Date(currentYear, currentMonth - 1, day);
-                const isSunday = date.getDay() === 0;
+        //         const date = new Date(currentYear, currentMonth - 1, day);
+        //         const isSunday = date.getDay() === 0;
 
-                    if (!attendanceData.hasOwnProperty(day)) {
-                            attendanceData[day] = '';
-                        }
-            }
-        }
+        //             if (!attendanceData.hasOwnProperty(day)) {
+        //                     attendanceData[day] = '';
+        //                 }
+        //     }
+        // }
 
         const btn = $(`#btn-${candidateId}`);
         const cancelBtn = $(`#cancel-${candidateId}`);
@@ -779,25 +777,53 @@
 
         const isEditMode = btn.find('i').hasClass('ri-edit-line');
 
-        // ---------------- ENTER EDIT MODE ----------------
         if (isEditMode) {
 
-            // Weekdays
-            weekdaySelects.each(function() {
-                const day = $(this).data('day');
-                const cell = row.find(`td[data-day="${day}"]`);
-                const canEdit = String(cell.data('can-edit')) === 'true';
+            const isHrAdmin = window.currentIsHrAdmin;
 
-                if (canEdit) {
+            const today = new Date();
+            const selectedMonth = currentMonth; // already set
+            const selectedYear = currentYear;
+
+            const isCurrentMonth =
+                (today.getMonth() + 1 === selectedMonth) &&
+                (today.getFullYear() === selectedYear);
+
+            let allowedDays = [];
+
+            if (!isHrAdmin && isCurrentMonth) {
+
+                today.setHours(0, 0, 0, 0);
+                let cursor = new Date(today);
+
+                while (allowedDays.length < 7) {
+                    if (cursor.getDay() !== 0) {
+                        allowedDays.push(cursor.getDate());
+                    }
+                    cursor.setDate(cursor.getDate() - 1);
+                }
+            }
+
+            weekdaySelects.each(function() {
+                const day = parseInt($(this).data('day'));
+                const cell = row.find(`td[data-day="${day}"]`);
+                const canEditBase = String(cell.data('can-edit')) === 'true';
+
+                if (isHrAdmin && canEditBase) {
                     $(this).prop('disabled', false);
                     cell.removeClass('readonly-cell');
-                    //cell.css('background', '#d1fae5'); 
+                } else if (!isHrAdmin && isCurrentMonth && canEditBase && allowedDays.includes(day)) {
+                    $(this).prop('disabled', false);
+                    cell.removeClass('readonly-cell');
+                } else if (!isHrAdmin && !isCurrentMonth && canEditBase) {
+                    // Past month: allow full edit
+                    $(this).prop('disabled', false);
+                    cell.removeClass('readonly-cell');
                 } else {
                     $(this).prop('disabled', true);
                     cell.addClass('readonly-cell');
                 }
             });
-
 
             row.addClass('editing-row');
             btn.html('<i class="ri-save-line"></i>')
@@ -805,8 +831,6 @@
                 .addClass('btn-success');
 
             cancelBtn.show();
-
-            // ---------------- SAVE MODE ----------------
         } else {
             saveAttendance(candidateId);
         }
@@ -1097,6 +1121,19 @@
     #attendanceTable td:nth-child(4) {
         box-shadow: 5px 0 6px -2px rgba(0, 0, 0, 0.15);
     }
+
+    /* Hard disabled cells */
+    .readonly-cell {
+        background-color: #f5f5f5 !important;
+        cursor: not-allowed;
+    }
+
+    .readonly-cell select {
+        pointer-events: none;
+        background-color: transparent !important;
+        color: #6c757d !important;
+    }
+
 
 
 

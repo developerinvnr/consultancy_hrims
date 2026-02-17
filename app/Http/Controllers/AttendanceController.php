@@ -120,7 +120,6 @@ class AttendanceController extends Controller
                 $totalCL = 0;
                 $totalLWP = 0;
                 $totalOD = 0;
-                $totalCH = 0;
 
                 if ($attendance) {
                     for ($day = 1; $day <= $daysInMonth; $day++) {
@@ -146,9 +145,9 @@ class AttendanceController extends Controller
                                 $totalOD++;
                                 break;
                             case 'CH':
-                                $totalCH++;
+                                $totalCL += 0.5;
                                 break;
-                        }
+                         }
                     }
                 }
 
@@ -209,7 +208,6 @@ class AttendanceController extends Controller
                     'cl_used' => $totalCL,
                     'lwp_days' => $totalLWP,
                     'od_days' => $totalOD,
-                    'ch_days' => $totalCH,
                     'cl_remaining' => $clRemaining,
                     'daily_rate' => $candidate->remuneration_per_month ? $candidate->remuneration_per_month / 26 : 0
                 ];
@@ -320,7 +318,6 @@ class AttendanceController extends Controller
             $totalPresent = 0;
             $totalAbsent  = 0;
             $totalCL = 0;
-            $totalCH = 0;
             $totalOD = 0;
             $totalLWP = 0;
 
@@ -393,8 +390,8 @@ class AttendanceController extends Controller
                         break;
 
                     case 'CH':
-                        $totalPresent += 1;
-                        $totalCH += 0.5;
+                        $totalPresent += 0.5;  // half day present
+                        $totalCL += 0.5;       // half day CL deduction
                         $availableCL -= 0.5;
                         break;
 
@@ -426,7 +423,6 @@ class AttendanceController extends Controller
             $attendance->total_present = $totalPresent;
             $attendance->total_absent  = $totalAbsent;
             $attendance->total_cl      = $totalCL;
-            $attendance->total_ch      = $totalCH;
             $attendance->total_od      = $totalOD;
             $attendance->total_lwp     = $totalLWP;
             $attendance->submitted_by  = $user->id;
@@ -446,7 +442,6 @@ class AttendanceController extends Controller
                 'message' => 'Attendance updated successfully',
                 'cl_remaining' => $availableCL,
                 'od_days' => $totalOD,
-                'ch_days' => $totalCH
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -857,8 +852,7 @@ class AttendanceController extends Controller
                 ];
             }
 
-            $clChanges = 0; // Positive = adding CL, Negative = removing CL (in full day units)
-            $chChanges = 0; // Positive = adding CH, Negative = removing CH (in half day units)
+            $clUnitChanges = 0;
             $lwpChanges = 0; // Positive = adding LWP, Negative = removing LWP
 
             // Calculate changes for each day
@@ -870,23 +864,13 @@ class AttendanceController extends Controller
                     continue;
                 }
 
-                // Handle CL changes (full day)
-                if ($oldStatus === 'CL' && $newStatus !== 'CL') {
-                    // Removing CL - restore 1 day leave balance
-                    $clChanges--;
-                } elseif ($oldStatus !== 'CL' && $newStatus === 'CL') {
-                    // Adding CL - deduct 1 day leave balance
-                    $clChanges++;
-                }
+               // CL full day
+if ($oldStatus === 'CL') $clUnitChanges -= 1;
+if ($newStatus === 'CL') $clUnitChanges += 1;
 
-                // Handle CH changes (half day)
-                if ($oldStatus === 'CH' && $newStatus !== 'CH') {
-                    // Removing CH - restore 0.5 day leave balance
-                    $chChanges--;
-                } elseif ($oldStatus !== 'CH' && $newStatus === 'CH') {
-                    // Adding CH - deduct 0.5 day leave balance
-                    $chChanges++;
-                }
+// CH half day
+if ($oldStatus === 'CH') $clUnitChanges -= 0.5;
+if ($newStatus === 'CH') $clUnitChanges += 0.5;
 
                 // Handle LWP changes
                 if ($oldStatus === 'LWP' && $newStatus !== 'LWP') {
@@ -904,7 +888,8 @@ class AttendanceController extends Controller
             $warning = null;
 
             // Convert CH changes to CL units (0.5 each)
-            $totalCLUnitsNeeded = $clChanges + ($chChanges * 0.5);
+           $totalCLUnitsNeeded = $clUnitChanges;
+
 
             // Process CL and CH changes
             if ($totalCLUnitsNeeded > 0) {

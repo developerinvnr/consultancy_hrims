@@ -6,7 +6,7 @@
     <div class="row mb-3">
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Master Employee Report</h4>
+                <h4 class="mb-0">Party Master Report</h4>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-success" onclick="exportReport()">
                         <i class="ri-file-excel-2-line"></i> Export Excel
@@ -162,7 +162,7 @@
                                 <td colspan="20" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="ri-inbox-line display-4"></i>
-                                        <h5 class="mt-2">No employees found</h5>
+                                        <h5 class="mt-2">No Party found</h5>
                                         <p>Try adjusting your filters</p>
                                     </div>
                                 </td>
@@ -258,7 +258,7 @@
     function populateColumnVisibilityList() {
         const container = document.getElementById('columnVisibilityList');
         const columns = [
-            'Serial Number', 'Employee Code', 'Name', 'Type', 'Department', 
+            'Serial Number', 'Party Code', 'Name', 'Type', 'Department', 
             'Designation', 'Work Location','Contract Start', 
             'Contract End', 'Monthly Salary', 'Total Days', 'Paid Days', 
             'Absent Days', 'Extra Amount', 'Deduction Amount', 'Net Pay', 
