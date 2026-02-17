@@ -933,7 +933,7 @@ class ImportController extends Controller
 		return [
 			'function_id' => $this->getFunctionId($data['Function'] ?? null),
 			'department_id' => $this->getDepartmentId($data['Department'] ?? null),
-			'state_residence_id' => $this->getStateId($data['State_Residence'] ?? null),
+			'state_residence' => $lookupIds['state_residence_id'] ?? 0,
 			'state_work_id'      => $this->getStateId($data['State_Work'] ?? null),
 			'business_unit_id' => $this->getBusinessUnitId($data['Business Unit'] ?? null),
 			'zone_id' => $this->getZoneId($data['Zone'] ?? null),
