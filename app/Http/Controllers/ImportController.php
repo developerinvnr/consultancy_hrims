@@ -599,7 +599,7 @@ class ImportController extends Controller
 			$email = $data['Email Address'];
 		}
 
-		\Log::info('Candidate name: ' . ($data["Candidate's Name"] ?? 'N/A'));
+		\Log::info('Candidate name: ' . ($data['candidate_s_name'] ?? 'N/A'));
 		\Log::info('Email: ' . ($email ?? 'NULL - will be inserted as null'));
 
 		// Check for duplicates - only if email exists
@@ -691,10 +691,10 @@ class ImportController extends Controller
 
 		// Required fields validation
 		$requiredFields = [
-			"Candidate's Name" => $data["Candidate's Name"] ?? null,
-			'Mobile No.' => $data['Mobile No.'] ?? null,
-			'Date of Joining Required' => $data['Date of Joining Required'] ?? null,
-			'Reporting To' => $data['Reporting To'] ?? null,
+			"Candidate's Name" => $data['candidate_s_name'] ?? null,
+			'Mobile No.' => $data['mobile_no'] ?? null,
+			'Date of Joining Required' => $data['date_of_joining_required'] ?? null,
+			'Reporting To' => $data['reporting_to'] ?? null,
 		];
 
 		foreach ($requiredFields as $field => $value) {
@@ -720,16 +720,17 @@ class ImportController extends Controller
 
 
 		// Validate mobile number
-		if (!empty($data['Mobile No.'])) {
-			$mobile = preg_replace('/[^0-9]/', '', (string)$data['Mobile No.']);
+		if (!empty($data['mobile_no'])) {
+			 $mobile = preg_replace('/[^0-9]/', '', (string)$data['mobile_no']);
 			if (strlen($mobile) < 10) {
 				$errors[] = 'Invalid mobile number format (must be at least 10 digits)';
 			}
 		}
 
 		// Validate dates
-		$joiningDate = $this->parseExcelDate($data['Date of Joining Required'] ?? null);
-		$separationDate = $this->parseExcelDate($data['Date of Separation'] ?? null);
+		$joiningDate = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
+$separationDate = $this->parseExcelDate($data['date_of_separation'] ?? null);
+
 
 		if (!$joiningDate) {
 			$errors[] = 'Invalid Date of Joining format';
@@ -956,7 +957,7 @@ class ImportController extends Controller
 			$email = $data['Email Address'];
 		}
 
-		$mobile = $data['Mobile No.'] ?? null;
+		$mobile = $data['mobile_no'] ?? null;
 
 		// Only check duplicate if email exists
 		if ($email) {
@@ -1721,8 +1722,8 @@ class ImportController extends Controller
 	private function prepareManpowerRequisitionData($data, $lookupIds, $user, $requisitionType)
 	{
 		$timestamp = $this->parseExcelDate($data['Timestamp'] ?? null) ?? now();
-		$contractStart = $this->parseExcelDate($data['Date of Joining Required'] ?? null);
-		$contractEnd = $this->parseExcelDate($data['Date of Separation'] ?? null);
+		$contractStart = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
+$contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 		$lastWorkingDate = $contractEnd;
 
 		if ($contractEnd) {
@@ -1752,7 +1753,7 @@ class ImportController extends Controller
 			'submitted_by_employee_id' => $user->employee_id ?? 'SYS-IMPORT',
 			'submission_date' => $timestamp,
 			'candidate_email' => $email,  // Will be NULL if no email
-			'candidate_name' => $data["Candidate's Name"] ?? '',
+			'candidate_name' => $data['candidate_s_name'] ?? '',
 			'father_name' => $data['Fathers Name'] ?? '',
 			'mobile_no' => $this->formatMobileNumber($data['Mobile No.'] ?? ''),
 			'alternate_email' => null,
@@ -1774,7 +1775,7 @@ class ImportController extends Controller
 			'zone' => $lookupIds['zone_id'] ?? null,
 			'region' => $lookupIds['region_id'] ?? null,
 			'territory' => $lookupIds['territory_id'] ?? null,
-			'reporting_to' => $data['Reporting To'] ?? '',
+			'reporting_to' => $data['reporting_to'] ?? '',
 			'reporting_manager_employee_id' => $reportingManagerEmployeeId,
 			'contract_start_date' => $contractStart,
 			'contract_end_date' => $contractEnd,
@@ -1806,8 +1807,8 @@ class ImportController extends Controller
 
 	private function prepareCandidateMasterData($data, $lookupIds, $manpowerRequisitionId, $requisitionType, $candidateCode)
 	{
-		$contractStart = $this->parseExcelDate($data['Date of Joining Required'] ?? null);
-		$contractEnd = $this->parseExcelDate($data['Date of Separation'] ?? null);
+		$contractStart = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
+$contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 		$lastWorkingDate = $contractEnd;
 
 		if ($contractEnd) {
@@ -1838,7 +1839,7 @@ class ImportController extends Controller
 			'candidate_code' => $candidateCode,
 			'requisition_type' => $requisitionType,
 			'candidate_email' => $email,  // Will be NULL if no email
-			'candidate_name' => $data["Candidate's Name"] ?? '',
+			'candidate_name' => $data['candidate_s_name'] ?? '',
 			'father_name' => $data['Fathers Name'] ?? '',
 			'mobile_no' => $this->formatMobileNumber($data['Mobile No.'] ?? ''),
 			'alternate_email' => null,
@@ -1860,7 +1861,7 @@ class ImportController extends Controller
 			'zone' => $lookupIds['zone_id'] ?? null,
 			'region' => $lookupIds['region_id'] ?? null,
 			'territory' => $lookupIds['territory_id'] ?? null,
-			'reporting_to' => $data['Reporting To'] ?? '',
+			'reporting_to' => $data['reporting_to'] ?? '',
 			'reporting_manager_employee_id' => $reportingManagerEmployeeId,
 			'reporting_manager_address' => $data['Please specify the address of Reporting Manager for dispatching the Agreement with complete detail (PIN and Phone No)'] ?? '',
 			'contract_start_date' => $contractStart,
@@ -1868,7 +1869,7 @@ class ImportController extends Controller
 			'contract_duration' => $this->calculateDuration($contractStart, $contractEnd),
 			'last_working_date' => $lastWorkingDate,
 			'remuneration_per_month' => $this->formatSalary($data['Remuneration (per month)'] ?? 0),
-			'account_holder_name' => $data["Candidate's Name"] ?? '',
+			'account_holder_name' => $data['candidate_s_name'] ?? '',
 			'bank_account_no' => $data['Bank Account No.'] ?? null,
 			'bank_ifsc' => $data['Bank IFSC'] ?? null,
 			'bank_name' => $data['Bank Name'] ?? null,
