@@ -195,7 +195,7 @@ class ManpowerRequisitionController extends Controller
 
     public function store(Request $request)
     {
-        dd($request->all());
+       // dd($request->all());
         try {
 
             $validatedData = $this->validateRequisition($request);

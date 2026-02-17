@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Payslip - {{ $salary->candidate->candidate_name ?? 'Employee' }}</title>
+    <title>invoice - {{ $salary->candidate->candidate_name ?? 'Employee' }}</title>
     <style>
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 13px; margin: 20px; line-height: 1.4; }
         .header { text-align: center; margin-bottom: 25px; }
@@ -18,7 +18,7 @@
 <body>
 
 <div class="header">
-    <h2>Salary Payslip</h2>
+    <h2>invoice</h2>
     <p>{{ date('F Y', strtotime("{$salary->year}-{$salary->month}-01")) }}</p>
 </div>
 
