@@ -38,8 +38,9 @@ class ImportController extends Controller
 
 	public function previewExcel(Request $request)
 	{
-		ini_set('memory_limit', '1024M');
-		set_time_limit(300);
+		ini_set('memory_limit', '-1');
+		ini_set('max_execution_time', 0);
+		set_time_limit(0);
 
 		// DISABLE MOST LOGGING TO PREVENT MEMORY EXHAUSTION
 		\Log::debug('Memory limit increased for import');
@@ -248,6 +249,9 @@ class ImportController extends Controller
 
 	public function importData(Request $request)
 	{
+		 ini_set('memory_limit', '-1');
+    ini_set('max_execution_time', 0);
+    set_time_limit(0);
 		\Log::info('=== IMPORT DATA STARTED ===');
 		\Log::info('User ID: ' . auth()->id());
 		$user = Auth::user();
@@ -1782,8 +1786,8 @@ class ImportController extends Controller
 			'reporting_manager_address' => $data['Please specify the address of Reporting Manager for dispatching the Agreement with complete detail (PIN and Phone No)'] ?? '',
 			'bank_account_no' => $data['Bank Account No.'] ?? null,
 			'bank_ifsc' => isset($data['Bank IFSC']) 
-    ? strtoupper(str_replace(' ', '', trim($data['Bank IFSC']))) 
-    : null,
+			? strtoupper(str_replace(' ', '', trim($data['Bank IFSC']))) 
+			: null,
 			'bank_name' => $data['Bank Name'] ?? null,
 			//'status' => $this->determineInitialStatus($data),
 			'status' => 'Inactive',
