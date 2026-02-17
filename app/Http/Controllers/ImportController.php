@@ -1755,7 +1755,8 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 			'candidate_email' => $email,  // Will be NULL if no email
 			'candidate_name' => $data['candidate_s_name'] ?? '',
 			'father_name' => $data['Fathers Name'] ?? '',
-			'mobile_no' => $this->formatMobileNumber($data['Mobile No.'] ?? ''),
+			'mobile_no' => $this->formatMobileNumber($data['mobile_no'] ?? ''),
+
 			'alternate_email' => null,
 			'address_line_1' => $data['Address Line 1'] ?? '',
 			'city' => $lookupIds['city_id'] ?? 0,
@@ -1808,7 +1809,7 @@ $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 	private function prepareCandidateMasterData($data, $lookupIds, $manpowerRequisitionId, $requisitionType, $candidateCode)
 	{
 		$contractStart = $this->parseExcelDate($data['date_of_joining_required'] ?? null);
-$contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
+        $contractEnd = $this->parseExcelDate($data['date_of_separation'] ?? null);
 		$lastWorkingDate = $contractEnd;
 
 		if ($contractEnd) {
