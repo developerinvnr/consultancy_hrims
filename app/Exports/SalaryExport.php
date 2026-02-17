@@ -64,7 +64,7 @@ class SalaryExport implements FromCollection, WithHeadings, WithMapping, WithSty
             'Party Code',
             'Party Name',
             'Requisition Type',
-            'Monthly Salary',
+            'Monthly Remuneration',
             'Extra Amount',
             'Deduction Amount',
             'Net Pay',

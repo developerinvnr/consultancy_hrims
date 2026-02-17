@@ -37,7 +37,7 @@ class MyTeamExport implements FromCollection, WithHeadings, WithMapping, WithSty
             'Mobile',
             'Work Location',
             'Joining Date',
-            'Monthly Salary',
+            'Monthly Remuneration',
             'Status',
         ];
     }
