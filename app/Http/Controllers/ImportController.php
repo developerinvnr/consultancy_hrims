@@ -606,10 +606,18 @@ class ImportController extends Controller
 		}
 
 		// Generate the requisition ID
-		$requisitionId = ManpowerRequisition::generateRequisitionId(
-			$requisitionType,
-			'IMPORT'
-		);
+		$partyCode = trim($data['Party Code'] ?? '');
+
+		if (!$partyCode) {
+			throw new \Exception('Party Code missing in Excel');
+		}
+
+		if (ManpowerRequisition::where('requisition_id', $partyCode)->exists()) {
+			throw new \Exception("Party Code {$partyCode} already exists in system.");
+		}
+
+		$requisitionId = $partyCode;
+
 		\Log::info('Generated requisition ID: ' . $requisitionId);
 
 		// Create Manpower Requisition
@@ -626,7 +634,8 @@ class ImportController extends Controller
 		}
 
 		// Generate candidate code
-		$candidateCode = $this->generateCandidateCode($requisitionType, $lookupIds);
+		//$candidateCode = $this->generateCandidateCode($requisitionType, $lookupIds);
+		$candidateCode = $requisitionId;
 		\Log::info('Generated candidate code: ' . $candidateCode);
 
 		// Create Candidate Master
@@ -690,15 +699,21 @@ class ImportController extends Controller
 			}
 		}
 
-		// Email validation - ONLY check if email exists, don't make it required
+		// Email validation - do NOT block import for invalid email
 		if (!empty($email)) {
+
+			// Remove internal spaces first
+			$email = str_replace(' ', '', $email);
+			$email = trim($email);
+
+			// If still invalid, just log — don't fail import
 			if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-				$errors[] = "Invalid email format: {$email}";
+				\Log::warning("Invalid email format (imported anyway): {$email}");
 			}
 		} else {
-			// Just log that email is missing, don't fail validation
 			\Log::info("Email is empty for row - will be inserted as NULL");
 		}
+
 
 		// Validate mobile number
 		if (!empty($data['Mobile No.'])) {
@@ -839,18 +854,17 @@ class ImportController extends Controller
 				}
 
 				// Handle duplicate State headers explicitly
+				// Map explicit headers correctly
 				if ($normalizedHeader === 'State') {
-					if (!isset($cleanData['State_Work'])) {
-						$cleanData['State_Work'] = $value;        // first State
-					} else {
-						$cleanData['State_Residence'] = $value;   // second State
-					}
+					$cleanData['State_Work'] = $value;
+				} elseif ($normalizedHeader === 'State Residence') {
+					$cleanData['State_Residence'] = $value;
 				} else {
 					$cleanData[$normalizedHeader] = $value;
 				}
 			}
 
-			unset($cleanData['State']);
+			//unset($cleanData['State']);
 		} else {
 			// Fallback mapping for when headers are not provided
 			$mapping = [
@@ -929,47 +943,47 @@ class ImportController extends Controller
 		return $cleanData;
 	}
 	private function candidateExists($data)
-{
-    // Get email from E Mail (mapped) or direct Email Address
-    $email = null;
-    if (!empty($data['E Mail'])) {
-        $email = $data['E Mail'];
-    } elseif (!empty($data['Email Address'])) {
-        $email = $data['Email Address'];
-    }
-    
-    $mobile = $data['Mobile No.'] ?? null;
+	{
+		// Get email from E Mail (mapped) or direct Email Address
+		$email = null;
+		if (!empty($data['E Mail'])) {
+			$email = $data['E Mail'];
+		} elseif (!empty($data['Email Address'])) {
+			$email = $data['Email Address'];
+		}
 
-    // Only check duplicate if email exists
-    if ($email) {
-        if (CandidateMaster::where('candidate_email', $email)->exists()) {
-            \Log::debug('Candidate exists by email in CandidateMaster');
-            return true;
-        }
-        if (ManpowerRequisition::where('candidate_email', $email)->exists()) {
-            \Log::debug('Candidate exists by email in ManpowerRequisition');
-            return true;
-        }
-    }
+		$mobile = $data['Mobile No.'] ?? null;
 
-    // Mobile check (always required)
-    if ($mobile) {
-        $cleanMobile = preg_replace('/[^0-9]/', '', (string)$mobile);
-        $cleanMobile = substr($cleanMobile, -10);
+		// Only check duplicate if email exists
+		if ($email) {
+			if (CandidateMaster::where('candidate_email', $email)->exists()) {
+				\Log::debug('Candidate exists by email in CandidateMaster');
+				return true;
+			}
+			if (ManpowerRequisition::where('candidate_email', $email)->exists()) {
+				\Log::debug('Candidate exists by email in ManpowerRequisition');
+				return true;
+			}
+		}
 
-        if (CandidateMaster::where('mobile_no', $cleanMobile)->exists()) {
-            \Log::debug('Candidate exists by mobile in CandidateMaster');
-            return true;
-        }
-        if (ManpowerRequisition::where('mobile_no', $cleanMobile)->exists()) {
-            \Log::debug('Candidate exists by mobile in ManpowerRequisition');
-            return true;
-        }
-    }
+		// Mobile check (always required)
+		if ($mobile) {
+			$cleanMobile = preg_replace('/[^0-9]/', '', (string)$mobile);
+			$cleanMobile = substr($cleanMobile, -10);
 
-    \Log::debug('Candidate does not exist');
-    return false;
-}
+			if (CandidateMaster::where('mobile_no', $cleanMobile)->exists()) {
+				\Log::debug('Candidate exists by mobile in CandidateMaster');
+				return true;
+			}
+			if (ManpowerRequisition::where('mobile_no', $cleanMobile)->exists()) {
+				\Log::debug('Candidate exists by mobile in ManpowerRequisition');
+				return true;
+			}
+		}
+
+		\Log::debug('Candidate does not exist');
+		return false;
+	}
 	private function getLookupIds($data)
 	{
 		return [
@@ -1810,6 +1824,9 @@ class ImportController extends Controller
 			$reportingManagerEmployeeId = $data['Reporting Manager Employee  ID'];
 		}
 
+		$statusData = $this->determineCandidateStatus($contractStart, $contractEnd);
+
+
 		return [
 			'requisition_id' => $manpowerRequisitionId,
 			'candidate_code' => $candidateCode,
@@ -1850,8 +1867,8 @@ class ImportController extends Controller
 			'bank_ifsc' => $data['Bank IFSC'] ?? null,
 			'bank_name' => $data['Bank Name'] ?? null,
 			'pan_no' => null,
-			'candidate_status' => 'Inactive',
-			'final_status' => 'D',
+			'candidate_status' => $statusData['candidate_status'],
+            'final_status' => $statusData['final_status'],
 			'leave_credited' => 0,
 			'other_reimbursement_required' => 'N',
 			'out_of_pocket_required' => 'N',
@@ -2172,6 +2189,45 @@ class ImportController extends Controller
 			// $candidate->update(['document_verification_status' => 'Verified']);
 		}
 	}
+
+
+	private function determineCandidateStatus($startDate, $endDate)
+	{
+		if (!$startDate) {
+			return [
+				'candidate_status' => 'Inactive',
+				'final_status' => 'D'
+			];
+		}
+
+		$today = Carbon::today();
+
+		$start = Carbon::parse($startDate);
+
+		if ($endDate) {
+			$end = Carbon::parse($endDate);
+
+			if ($end->lt($today)) {
+				return [
+					'candidate_status' => 'Inactive',
+					'final_status' => 'D'
+				];
+			}
+		}
+
+		if ($start->lte($today)) {
+			return [
+				'candidate_status' => 'Active',
+				'final_status' => 'A'
+			];
+		}
+
+		return [
+			'candidate_status' => 'Inactive',
+			'final_status' => 'D'
+		];
+	}
+
 
 	private function handleApprovalStatus($requisition, $approvalStatus)
 	{

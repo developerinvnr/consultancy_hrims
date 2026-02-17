@@ -33,12 +33,16 @@
                                     {{--<input type="text" name="search" class="form-control form-control-sm me-2" 
                                            placeholder="Search..." value="{{ request('search') }}">--}}
                                     <select name="type" class="form-select form-select-sm me-2" style="width: auto;">
+
+                                        @if($isSalesDepartment)
+                                        <option value="all" {{ request('type') == 'all' ? 'selected' : '' }}>All Types</option>
+                                        <option value="TFA" {{ request('type') == 'TFA' ? 'selected' : '' }}>TFA</option>
+                                        <option value="CB" {{ request('type') == 'CB' ? 'selected' : '' }}>CB</option>
+                                        @else
                                         <option value="all" {{ request('type') == 'all' ? 'selected' : '' }}>All Types</option>
                                         <option value="Contractual" {{ request('type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
-                                        @if($isSalesDepartment)
-                                            <option value="TFA" {{ request('type') == 'TFA' ? 'selected' : '' }}>TFA</option>
-                                            <option value="CB" {{ request('type') == 'CB' ? 'selected' : '' }}>CB</option>
                                         @endif
+
                                     </select>
                                     <select name="status" class="form-select form-select-sm me-2" style="width: auto;">
                                         <option value="">All Status</option>
@@ -58,19 +62,39 @@
                                         <i class="ri-refresh-line"></i>
                                     </a>
                                 </form>
-                                
+
                                 <!-- Create New Dropdown -->
                                 <div class="dropdown">
                                     <button class="btn btn-primary btn-sm dropdown-toggle" style="background-color:#a5cccd; color:#000; border-color:#a5cccd;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="ri-add-line me-1"></i> Create New
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="{{ route('requisitions.create', ['type' => 'Contractual']) }}">Contractual</a></li>
-                                        @if($isSalesDepartment)
-                                            <li><a class="dropdown-item" href="{{ route('requisitions.create', ['type' => 'TFA']) }}">TFA</a></li>
-                                            <li><a class="dropdown-item" href="{{ route('requisitions.create', ['type' => 'CB']) }}">CB</a></li>
-                                        @endif
-                                    </ul>
+
+    @if($isSalesDepartment)
+        <li>
+            <a class="dropdown-item" 
+               href="{{ route('requisitions.create', ['type' => 'TFA']) }}">
+                TFA
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item" 
+               href="{{ route('requisitions.create', ['type' => 'CB']) }}">
+                CB
+            </a>
+        </li>
+    @else
+        <li>
+            <a class="dropdown-item" 
+               href="{{ route('requisitions.create', ['type' => 'Contractual']) }}">
+                Contractual
+            </a>
+        </li>
+    @endif
+
+</ul>
+
                                 </div>
                             </div>
                         </div>
@@ -102,49 +126,49 @@
                                     <td>{{ $requisition->candidate_email }}</td>
                                     <td>
                                         @php
-                                            $statusColors = [
-                                                'Pending HR Verification' => 'warning',
-                                                'Correction Required' => 'danger',
-                                                'Pending Approval' => 'info',
-                                                'Approved' => 'success',
-                                                'Rejected' => 'dark',
-                                                'Processed' => 'primary',
-                                                'Agreement Pending' => 'secondary',
-                                                'Completed' => 'success'
-                                            ];
-                                            $color = $statusColors[$requisition->status] ?? 'secondary';
+                                        $statusColors = [
+                                        'Pending HR Verification' => 'warning',
+                                        'Correction Required' => 'danger',
+                                        'Pending Approval' => 'info',
+                                        'Approved' => 'success',
+                                        'Rejected' => 'dark',
+                                        'Processed' => 'primary',
+                                        'Agreement Pending' => 'secondary',
+                                        'Completed' => 'success'
+                                        ];
+                                        $color = $statusColors[$requisition->status] ?? 'secondary';
                                         @endphp
                                         <span class="badge bg-{{ $color }}">{{ $requisition->status }}</span>
                                     </td>
                                     <td>{{ $requisition->created_at->format('d-m-Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('requisitions.show', $requisition->id) }}" 
-                                               class="btn btn-sm btn-info" title="View">
+                                            <a href="{{ route('requisitions.show', $requisition->id) }}"
+                                                class="btn btn-sm btn-info" title="View">
                                                 <i class="ri-eye-line"></i>
                                             </a>
                                             @if($requisition->status == 'Correction Required')
-                                            <a href="{{ route('requisitions.edit', $requisition->id) }}" 
-                                               class="btn btn-sm btn-warning" title="Edit">
+                                            <a href="{{ route('requisitions.edit', $requisition->id) }}"
+                                                class="btn btn-sm btn-warning" title="Edit">
                                                 <i class="ri-edit-line"></i>
                                             </a>
                                             @endif
 
                                             <!-- View/Download Unsigned Agreement -->
-											@if($requisition->status == 'Unsigned Agreement Uploaded')
-											<a href="{{ route('submitter.agreement.view', $requisition) }}"
-												class="btn btn-sm btn-outline-primary" title="View Agreement">
-												<i class="ri-file-text-line"></i>
-											</a>
-											@endif
+                                            @if($requisition->status == 'Unsigned Agreement Uploaded')
+                                            <a href="{{ route('submitter.agreement.view', $requisition) }}"
+                                                class="btn btn-sm btn-outline-primary" title="View Agreement">
+                                                <i class="ri-file-text-line"></i>
+                                            </a>
+                                            @endif
 
-                                            	<!-- View Completed Agreement -->
-											@if($requisition->status == 'Agreement Completed')
-											<a href="{{ route('submitter.agreement.view', $requisition) }}"
-												class="btn btn-sm btn-outline-success" title="View Completed Agreement">
-												<i class="ri-check-double-line"></i>
-											</a>
-											@endif
+                                            <!-- View Completed Agreement -->
+                                            @if($requisition->status == 'Agreement Completed')
+                                            <a href="{{ route('submitter.agreement.view', $requisition) }}"
+                                                class="btn btn-sm btn-outline-success" title="View Completed Agreement">
+                                                <i class="ri-check-double-line"></i>
+                                            </a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -156,13 +180,13 @@
                             </tbody>
                         </table>
                     </div>
-                     @if($requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
-							<div class="d-flex justify-content-end mt-3">
-								{{ $requisitions->links('pagination::bootstrap-5') }}
-							</div>
-						@endif
+                    @if($requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                    <div class="d-flex justify-content-end mt-3">
+                        {{ $requisitions->links('pagination::bootstrap-5') }}
+                    </div>
+                    @endif
                     <!-- Pagination -->
-                  
+
                 </div>
             </div>
         </div>
@@ -174,13 +198,13 @@
     .table {
         font-size: 0.85rem;
     }
-    
+
     .table th {
         font-size: 0.8rem;
         text-transform: uppercase;
         background-color: #f3f6f9;
     }
-    
+
     .badge {
         font-size: 0.7rem;
         padding: 0.3em 0.6em;

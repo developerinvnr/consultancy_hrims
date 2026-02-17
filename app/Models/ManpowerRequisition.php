@@ -129,21 +129,30 @@ class ManpowerRequisition extends Model
     // Generate Requisition ID
     public static function generateRequisitionId($type)
     {
+        // Define prefixes
         $prefix = match ($type) {
-            'Contractual' => 'CON',
-            'TFA' => 'TFA',
-            'CB' => 'CB',
-            default => 'REQ'
+            'Contractual' => 'CRS',
+            'TFA'         => 'TFA-',
+            'CB'          => 'CBS',
+            default       => 'REQ'
         };
 
-        $year = date('Y');
-        $month = date('m');
-        $sequence = static::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->count() + 1;
+        // Count records only for that type
+        $lastRecord = static::where('requisition_type', $type)
+            ->orderBy('id', 'desc')
+            ->first();
 
-        return $prefix . '-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        if ($lastRecord) {
+            // Extract numeric part
+            preg_match('/(\d+)$/', $lastRecord->requisition_id, $matches);
+            $nextNumber = isset($matches[1]) ? ((int)$matches[1] + 1) : 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
+
 
     public function hrVerifier()
     {

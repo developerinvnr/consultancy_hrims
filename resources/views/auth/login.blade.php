@@ -209,15 +209,36 @@
 
 @push('scripts')
 <script>
-    // Add password toggle button dynamically
-    $(document).ready(function() {
-        if ($('#password').length && !$('.toggle-password').length) {
-            $('#password').after(`
-                <button type="button" class="toggle-password">
-                    <i class="fa fa-eye"></i>
-                </button>
-            `);
-        }
-    });
+document.addEventListener("DOMContentLoaded", function () {
+
+    const passwordInput = document.getElementById('password');
+
+    if (passwordInput && !document.querySelector('.toggle-password')) {
+
+        const button = document.createElement('button');
+        button.type = "button";
+        button.className = "toggle-password";
+        button.innerHTML = '<i class="fa fa-eye"></i>';
+
+        passwordInput.parentNode.appendChild(button);
+
+        button.addEventListener('click', function () {
+
+            const icon = this.querySelector('i');
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+
+        });
+    }
+
+});
 </script>
 @endpush
