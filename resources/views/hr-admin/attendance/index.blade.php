@@ -275,6 +275,7 @@
                 if (response.success) {
                     // Store currentDay from response
                     currentDay = response.data.current_day;
+                    window.currentIsHrAdmin = response.data.is_hr_admin;
                     renderAttendanceTable(response.data);
                 } else {
                     toastr.error(response.message || 'Error loading attendance data');
@@ -778,7 +779,7 @@
         const isEditMode = btn.find('i').hasClass('ri-edit-line');
 
         if (isEditMode) {
-
+                    console.log(window.currentIsHrAdmin);
             const isHrAdmin = window.currentIsHrAdmin;
 
             const today = new Date();

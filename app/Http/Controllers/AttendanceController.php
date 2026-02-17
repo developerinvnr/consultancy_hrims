@@ -100,6 +100,7 @@ class AttendanceController extends Controller
                 'days_in_month' => $daysInMonth,
                 'current_date' => $currentDate->format('Y-m-d'),
                 'current_day' => $currentDate->day,
+                'is_hr_admin' => $user->hasRole('admin') || $user->hasRole('hr_admin'),
                 'candidates' => []
             ];
 
@@ -209,7 +210,7 @@ class AttendanceController extends Controller
                     'lwp_days' => $totalLWP,
                     'od_days' => $totalOD,
                     'cl_remaining' => $clRemaining,
-                    'daily_rate' => $candidate->remuneration_per_month ? $candidate->remuneration_per_month / 26 : 0
+                    'daily_rate' => $candidate->remuneration_per_month ? $candidate->remuneration_per_month / 26 : 0,
                 ];
             }
 
