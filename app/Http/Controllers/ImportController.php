@@ -1754,9 +1754,9 @@ class ImportController extends Controller
 			'alternate_email' => null,
 			'address_line_1' => $data['Address Line 1'] ?? '',
 			'city' => $lookupIds['city_id'] ?? 0,
-			'state_residence' => $lookupIds['state_residence_id'] ?? null,
+			'state_residence' => $lookupIds['state_residence_id'] ?? 0,
 			'pin_code' => $this->formatPinCode($data['Pin Code'] ?? ''),
-			'date_of_birth' => $this->parseExcelDate($data['Date of Birth'] ?? null),
+			'date_of_birth' => $this->parseExcelDate($data['Date of Birth'] ?? '01-01-1970'),
 			'gender' => $this->formatGender($data['Gender'] ?? ''),
 			'highest_qualification' => $lookupIds['qualification_id'] ?? null,
 			'work_location_hq' => $data['Work Location/HQ'] ?? '',
@@ -1781,7 +1781,9 @@ class ImportController extends Controller
 			'out_of_pocket_required' => 'N',
 			'reporting_manager_address' => $data['Please specify the address of Reporting Manager for dispatching the Agreement with complete detail (PIN and Phone No)'] ?? '',
 			'bank_account_no' => $data['Bank Account No.'] ?? null,
-			'bank_ifsc' => $data['Bank IFSC'] ?? null,
+			'bank_ifsc' => isset($data['Bank IFSC']) 
+    ? strtoupper(str_replace(' ', '', trim($data['Bank IFSC']))) 
+    : null,
 			'bank_name' => $data['Bank Name'] ?? null,
 			//'status' => $this->determineInitialStatus($data),
 			'status' => 'Inactive',
