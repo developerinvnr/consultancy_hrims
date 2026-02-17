@@ -3,7 +3,6 @@
 namespace App\Exports;
 
 use App\Models\CandidateMaster;
-use App\Models\CoreDepartment;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -14,6 +13,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class MasterReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents
@@ -35,46 +35,53 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
         $this->search = $search;
     }
     
-    public function collection()
-    {
-        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->with(['salaryProcessings' => function($q) {
-                $q->where('month', $this->month)
-                  ->where('year', $this->year);
-            }])
-            ->with('department');
-        
-        if ($this->requisitionType && $this->requisitionType !== 'All') {
-            $query->where('requisition_type', $this->requisitionType);
-        }
-        
-        if ($this->workLocation) {
-            $query->where('work_location_hq', $this->workLocation);
-        }
-        
-        if ($this->departmentId) {
-            $query->where('department_id', $this->departmentId);
-        }
-        
-        if ($this->search) {
-            $query->where(function($q) {
-                $q->where('candidate_code', 'like', "%{$this->search}%")
-                  ->orWhere('candidate_name', 'like', "%{$this->search}%")
-                  ->orWhere('mobile_no', 'like', "%{$this->search}%")
-                  ->orWhere('pan_no', 'like', "%{$this->search}%")
-                  ->orWhere('aadhaar_no', 'like', "%{$this->search}%");
-            });
-        }
-        
-        return $query->orderBy('candidate_code')->get();
+   public function collection()
+{
+    $selectedDate = \Carbon\Carbon::createFromDate($this->year, $this->month, 1);
+    $monthStart = $selectedDate->startOfMonth()->toDateString();
+    $monthEnd   = $selectedDate->endOfMonth()->toDateString();
+
+    $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+        ->whereDate('contract_start_date', '<=', $monthEnd)
+        ->whereDate('contract_end_date', '>=', $monthStart)
+        ->with(['salaryProcessings' => function($q) {
+            $q->where('month', $this->month)
+              ->where('year', $this->year);
+        }])
+        ->with('department');
+
+    if ($this->requisitionType && $this->requisitionType !== 'All') {
+        $query->where('requisition_type', $this->requisitionType);
     }
+
+    if (!empty($this->workLocation)) {
+        $query->where('work_location_hq', $this->workLocation);
+    }
+
+    if (!empty($this->departmentId)) {
+        $query->where('department_id', $this->departmentId);
+    }
+
+    if (!empty($this->search)) {
+        $query->where(function($q) {
+            $q->where('candidate_code', 'like', "%{$this->search}%")
+              ->orWhere('candidate_name', 'like', "%{$this->search}%")
+              ->orWhere('mobile_no', 'like', "%{$this->search}%")
+              ->orWhere('pan_no', 'like', "%{$this->search}%")
+              ->orWhere('aadhaar_no', 'like', "%{$this->search}%");
+        });
+    }
+
+    return $query->orderBy('candidate_code')->get();
+}
+
     
     public function headings(): array
     {
         $monthName = date('F', mktime(0, 0, 0, $this->month, 1));
         $title = "MASTER Party REPORT - {$monthName} {$this->year}";
         
-        if ($this->requisitionType !== 'All') {
+        if ($this->requisitionType !== 'All' && $this->requisitionType) {
             $title .= " ({$this->requisitionType})";
         }
         if ($this->workLocation) {
@@ -102,8 +109,8 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
                 'Reporting Manager',
                 'Contract Start Date',
                 'Contract End Date',
-                'Remuneration/Month',
-                'Net Pay',
+                'Remuneration/Month (₹)',
+                'Net Pay (₹)',
                 'Bank Name',
                 'Account No',
                 'IFSC Code',
@@ -147,7 +154,9 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
             $candidate->pan_no ?? 'N/A',
             $candidate->aadhaar_no ?? 'N/A',
             $salary ? 'Processed' : 'Pending',
-            $salary && $salary->processed_at ? $salary->processed_at->format('d-m-Y H:i') : 'Not Processed'
+            $salary && $salary->processed_at
+                ? \Carbon\Carbon::parse($salary->processed_at)->format('d-m-Y H:i')
+                : 'Not Processed'
         ];
     }
     
@@ -166,15 +175,7 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
                 'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2c3e50']],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true]
-            ],
-            
-            // Status column styling
-            'Z' => function($cell) {
-                if ($cell->getValue() == 'Pending') {
-                    return ['font' => ['italic' => true, 'color' => ['rgb' => 'FF9900']]];
-                }
-                return ['font' => ['bold' => true, 'color' => ['rgb' => '007F00']]];
-            },
+            ]
         ];
     }
     
@@ -237,10 +238,6 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
                         ->setFormatCode(NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1);
                 }
                 
-                // Add ₹ symbol to currency columns in header row
-                $event->sheet->setCellValue('R3', 'Remuneration/Month (₹)');
-                $event->sheet->setCellValue('S3', 'Net Pay (₹)');
-                
                 // Center align columns
                 $centerColumns = ['A', 'G', 'Z'];
                 foreach ($centerColumns as $column) {
@@ -265,9 +262,25 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
                         ->setWrapText(true);
                 }
                 
-                // Add serial numbers
+                // Add serial numbers and apply conditional formatting to Status column
                 for ($i = 4; $i <= $highestRow; $i++) {
                     $sheet->setCellValue('A' . $i, $i - 3);
+                    
+                    // Apply conditional styling to Status column (Z)
+                    $status = $sheet->getCell('Z' . $i)->getValue();
+                    if ($status == 'Pending') {
+                        $event->sheet->getStyle('Z' . $i)
+                            ->getFont()
+                            ->setItalic(true)
+                            ->getColor()
+                            ->setARGB('FFFF9900'); // ARGB format with alpha
+                    } elseif ($status == 'Processed') {
+                        $event->sheet->getStyle('Z' . $i)
+                            ->getFont()
+                            ->setBold(true)
+                            ->getColor()
+                            ->setARGB('FF007F00'); // ARGB format with alpha
+                    }
                 }
                 
                 // Auto-filter for header row
@@ -313,7 +326,8 @@ class MasterReportExport implements FromCollection, WithHeadings, WithMapping, W
                 $event->sheet->getStyle('W' . ($summaryRow + 1) . ':X' . ($summaryRow + 1))
                     ->getFont()
                     ->setItalic(true)
-                    ->setColor(['rgb' => '666666']);
+                    ->getColor()
+                    ->setARGB('FF666666'); // ARGB format with alpha
                 
                 // Apply borders to summary section
                 $event->sheet->getStyle('A' . $summaryRow . ':B' . ($summaryRow + 4))

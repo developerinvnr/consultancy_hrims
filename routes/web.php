@@ -244,7 +244,8 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/master', [ReportController::class, 'master'])->name('master');
-    Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
+    Route::get('/master-report/export', [ReportController::class, 'masterExport'])->name('master.export');
+
 });
 
 Route::middleware(['auth'])->group(function () {

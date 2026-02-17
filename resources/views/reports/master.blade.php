@@ -331,7 +331,8 @@
         const [year, month] = monthYear.split('-');
         
         // Build export URL
-        let url = `/master/export?month=${month}&year=${year}`;
+        let url = `{{ route('master.export') }}?month=${month}&year=${year}`;
+
         
         // Add filters
         if (requisitionType && requisitionType !== 'All') {
@@ -347,8 +348,6 @@
             url += `&search=${encodeURIComponent(search)}`;
         }
         
-        // Add CSRF token
-        url += `&_token={{ csrf_token() }}`;
         
         // Show loading
         Swal.fire({
