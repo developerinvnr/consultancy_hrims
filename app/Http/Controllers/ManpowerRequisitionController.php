@@ -73,13 +73,19 @@ class ManpowerRequisitionController extends Controller
             ->orWhere('emp_code', $user->emp_code)
             ->first();
 
-        // Check department-based access control
-        if (in_array($type, ['TFA', 'CB'])) {
-            // Only allow if department is Sales (15)
-            $isSalesDepartment = $employeeDetails && $employeeDetails->department == '15';
+        $departmentId = $employeeDetails->department;
+        $isSalesDepartment = $departmentId == '15';
 
-            if (!$isSalesDepartment) {
-                abort(403, 'Access denied. TFA and CB requisitions can only be created by Sales department users.');
+        // 🔐 Department-based access control
+        if ($isSalesDepartment) {
+            // Sales can only access TFA & CB
+            if (!in_array($type, ['TFA', 'CB'])) {
+                abort(403, 'Sales department can only create TFA and CB requisitions.');
+            }
+        } else {
+            // Other departments can only access Contractual
+            if ($type !== 'Contractual') {
+                abort(403, 'Only Sales department can create TFA and CB requisitions.');
             }
         }
 
@@ -195,7 +201,7 @@ class ManpowerRequisitionController extends Controller
 
     public function store(Request $request)
     {
-       // dd($request->all());
+        // dd($request->all());
         try {
 
             $validatedData = $this->validateRequisition($request);
@@ -822,6 +828,4 @@ class ManpowerRequisitionController extends Controller
             }
         }
     }
-
-   
 }
