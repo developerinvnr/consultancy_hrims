@@ -1,11 +1,11 @@
 <?php
-
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CoreAPIController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+
+use Illuminate\Http\Request;
 
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\HrAdminController;
@@ -74,7 +74,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/document/{document}/download', [\App\Http\Controllers\ManpowerRequisitionController::class, 'downloadDocument'])->name('document.download');
     });
 
-    // Route::get('/get-cities-by-state', [\App\Http\Controllers\ManpowerRequisitionController::class, 'getCitiesByState'])->name('get.cities.by.state');
     Route::post('/process-pan-card', [DocumentController::class, 'processPANCard'])->name('process.pan.card');
     Route::post('/process-bank-document', [DocumentController::class, 'processBankDocument'])->name('process.bank.document');
     Route::post('/process-aadhaar-card', [DocumentController::class, 'processAadhaarCard'])->name('process.aadhaar.card');
@@ -124,6 +123,13 @@ Route::middleware('auth')->group(function () {
             ->name('download.document');
         Route::get('candidate/{candidate}/signed-documents', [HrAdminController::class, 'getSignedDocuments'])->name('candidate.signed-documents');
         Route::post('candidate/{candidate}/verify-signed-agreement', [HrAdminController::class, 'verifySignedAgreement'])->name('candidate.verify-signed-agreement');
+
+
+        // Edit Party Routes
+        Route::get('/party/{candidate}/edit', [HrAdminController::class, 'editParty'])->name('edit-party');
+        Route::put('/party/{candidate}/update', [HrAdminController::class, 'updateParty'])->name('update-party');
+        Route::post('/party/{candidate}/add-document', [HrAdminController::class, 'addPartyDocument'])->name('add-document');
+
     });
 
     Route::prefix('approver')->name('approver.')->group(function () {
@@ -138,20 +144,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/communication-controls', [CommunicationControlController::class, 'index'])->name('communication.index');
     Route::post('/communication-controls', [CommunicationControlController::class, 'store'])->name('communication.store');
     Route::post('/communication-controls/{communicationControl}/toggle', [CommunicationControlController::class, 'toggle'])->name('communication.toggle');
-});
-
-// Agreement Management Routes for HR Admin
-Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['auth'])->group(function () {
-    Route::get('/list', [HrAdminController::class, 'agreementPendingList'])->name('list');
-    Route::get('/{candidate}/management', [HrAdminController::class, 'agreementManagement'])->name('management');
-    Route::post('/{candidate}/upload-unsigned', [HrAdminController::class, 'uploadUnsignedAgreement'])->name('upload-unsigned.store');
-    Route::post('/{candidate}/upload-signed', [HrAdminController::class, 'uploadSignedAgreement'])->name('upload-signed.store');
-    Route::post('/{candidate}/update/{type}', [HrAdminController::class, 'updateAgreement'])->name('update');
-    Route::get('/document/{agreement}/download', [HrAdminController::class, 'downloadAgreementDocument'])->name('download');
-    Route::get('/document/{agreement}/view', [HrAdminController::class, 'viewAgreementDocument'])->name('view');
-
-    // API endpoint for getting unsigned agreement
-    Route::get('/{candidate}/get-unsigned', [HrAdminController::class, 'getUnsignedAgreement'])->name('get-unsigned');
 });
 
 // Submitter Agreement Routes (Simplified)
@@ -169,7 +161,7 @@ Route::middleware(['auth'])->group(function () {
 // HR Admin Agreement Routes
 Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['auth'])->group(function () {
     Route::get('/list', [HrAdminController::class, 'agreementPendingList'])->name('list');
-
+     Route::get('/{candidate}/management', [HrAdminController::class, 'agreementManagement'])->name('management');
     // Upload unsigned agreement (HR action)
     Route::post('/{candidate}/upload-unsigned', [HrAdminController::class, 'uploadUnsignedAgreement'])->name('upload-unsigned.store');
 
@@ -190,6 +182,7 @@ Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['a
         ->name('hr-admin.agreement.view');
     Route::put('/{agreement}/update', [HrAdminController::class, 'updateAgreement'])
         ->name('hr-admin.agreement.update');
+    Route::get('/{candidate}/get-unsigned', [HrAdminController::class, 'getUnsignedAgreement'])->name('get-unsigned');
 });
 
 // Attendance Routes

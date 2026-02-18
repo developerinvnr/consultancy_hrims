@@ -24,6 +24,7 @@ use App\Mail\CorrectionRequested;
 use App\Services\AgriSamvidaService;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\PartyEditHistory;
 
 class HrAdminController extends Controller
 {
@@ -291,7 +292,7 @@ class HrAdminController extends Controller
 
 			case 'personal_info':
 				$validations = [
-					'father_name' => 'required|string|max:255',
+					'father_name' => 'nullable|string|max:255',
 					'mobile_no' => 'required|string|max:20',
 					'date_of_birth' => 'required|date|before:today',
 					'address_line_1' => 'required|string|max:500',
@@ -318,9 +319,9 @@ class HrAdminController extends Controller
 				$validations = [
 					'work_location_hq' => 'nullable|string|max:255',
 					'state_work_location' => 'nullable|string|max:100',
-					'function_id' => 'nullable|exists:functions,id',
-					'department_id' => 'nullable|exists:departments,id',
-					'vertical_id' => 'nullable|exists:verticals,id'
+					'function_id' => 'nullable|exists:core_org_function,id',
+					'department_id' => 'nullable|exists:core_department,id',
+					'vertical_id' => 'nullable|exists:core_vertical,id',
 				];
 				$data = $request->only([
 					'work_location_hq',
@@ -819,7 +820,7 @@ class HrAdminController extends Controller
 			'requisition_id' => 'required|exists:manpower_requisitions,id',
 			'reporting_manager_employee_id' => 'required|string',
 			'reporting_to' => 'required|string|max:255',
-			 'team_id' => 'required|integer'
+			'team_id' => 'required|integer'
 		]);
 
 		$requisition = ManpowerRequisition::findOrFail($request->requisition_id);
@@ -2086,5 +2087,486 @@ class HrAdminController extends Controller
 		}
 
 		return $this->showVerifySigned($candidate);
+	}
+
+	/**
+	 * Show edit form for party
+	 */
+	public function editParty(CandidateMaster $candidate)
+	{
+		if (!auth()->user()->hasRole('hr_admin')) {
+			abort(403, 'Unauthorized');
+		}
+
+		// Load relationships
+		$candidate->load(['agreementDocuments', 'requisition']);
+
+		// Load dropdown data
+		$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
+		$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
+		$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
+
+		// Get all employees from candidate's department for reporting manager dropdown
+		$departmentEmployees = DB::table('core_employee')
+			->where('department', $candidate->department_id)
+			->where('emp_status', 'A')
+			->where('company_id', '1')
+			->select('employee_id', 'emp_name', 'emp_code', 'emp_designation')
+			->orderBy('emp_name')
+			->get();
+
+		// Load edit history
+		$editHistory = PartyEditHistory::where('candidate_id', $candidate->id)
+			->with('user')
+			->orderBy('created_at', 'desc')
+			->get();
+
+		return view('hr-admin.master.edit-party', compact(
+			'candidate',
+			'functions',
+			'departments',
+			'verticals',
+			'editHistory',
+			'departmentEmployees' // Pass to view
+		));
+	}
+
+	/**
+	 * Update party details
+	 */
+	public function updateParty(Request $request, CandidateMaster $candidate)
+	{
+
+		if (!auth()->user()->hasRole('hr_admin')) {
+			abort(403, 'Unauthorized');
+		}
+
+		// Determine which tab is being updated
+		$activeTab = $request->input('active_tab', 'personal');
+
+		$rules = [];
+
+		// Personal Info Tab
+		if ($activeTab == 'personal' || $activeTab == 'all') {
+			$rules = array_merge($rules, [
+				'candidate_name' => 'required|string|max:255',
+				'father_name' => 'nullable|string|max:255',
+				'candidate_email' => 'nullable|email|max:255',
+				'mobile_no' => 'nullable|string|max:15',
+				'date_of_birth' => 'required|date',
+				'gender' => 'required|in:Male,Female,Other',
+				'pan_no' => 'nullable|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/',
+				'aadhaar_no' => 'nullable|digits:12',
+				'highest_qualification' => 'required|integer',
+				'address_line_1' => 'required|string|max:500',
+				'city' => 'required|integer',
+				'state_residence' => 'required|integer',
+				'pin_code' => 'required|string|max:6',
+			]);
+		}
+
+		// Work Details Tab
+		if ($activeTab == 'work' || $activeTab == 'all') {
+			$rules = array_merge($rules, [
+				'work_location_hq' => 'required|string|max:255',
+				'state_work_location' => 'required|integer',
+				'function_id' => 'required|exists:core_org_function,id',
+				'department_id' => 'required|exists:core_department,id',
+				'vertical_id' => 'required|exists:core_vertical,id',
+				'contract_start_date' => 'nullable|date',
+				'contract_end_date' => 'required|date|after_or_equal:contract_start_date',
+				'remuneration_per_month' => 'required|numeric|min:0',
+				'team_id' => 'nullable|string|max:50',
+			]);
+		}
+
+		// Bank Details Tab
+		if ($activeTab == 'bank' || $activeTab == 'all') {
+			$rules = array_merge($rules, [
+				'account_holder_name' => 'nullable|string|max:255',
+				'bank_account_no' => 'nullable|string|max:50',
+				'bank_name' => 'nullable|string|max:255',
+				'bank_ifsc' => 'nullable|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
+			]);
+		}
+
+		// Reporting Changes Tab
+		 if ($activeTab == 'reporting' || $activeTab == 'all') {
+			$rules = array_merge($rules, [
+				'new_reporting_manager_employee_id' => 'required|string|max:50',
+				'new_reporting_to' => 'required|string|max:255', // From hidden field
+				'reporting_change_reason' => 'required|string|max:100',
+				'reporting_change_remarks' => 'nullable|string|max:500',
+			]);
+		}
+
+		// Documents Tab
+		if ($activeTab == 'documents' || $activeTab == 'all') {
+			$rules = array_merge($rules, [
+				'agreement_type' => 'nullable|in:unsigned,signed',
+				'new_agreement_number' => 'required_with:agreement_type|string|max:100',
+				'new_agreement_file' => 'required_with:agreement_type|file|mimes:pdf|max:10240',
+				'agreement_remarks' => 'nullable|string|max:500',
+				'other_doc_type' => 'nullable|string',
+				'other_doc_number' => 'required_with:other_doc_type|string|max:100',
+				'other_doc_file' => 'required_with:other_doc_type|file|mimes:pdf,jpg,jpeg,png|max:5120',
+			]);
+		}
+
+		// Validate only the rules for the active tab
+		$validated = $request->validate($rules);
+		DB::beginTransaction();
+		try {
+			$changes = [];
+			$reportingChanged = false;
+
+			/*
+		|--------------------------------------------------------------------------
+		| Fields allowed to update
+		|--------------------------------------------------------------------------
+		*/
+			$fieldsToCheck = [
+				'candidate_name',
+				'father_name',
+				'candidate_email',
+				'mobile_no',
+				'date_of_birth',
+				'gender',
+				'pan_no',
+				'aadhaar_no',
+				'highest_qualification',
+				'address_line_1',
+				'city',
+				'state_residence',
+				'pin_code',
+				'work_location_hq',
+				'state_work_location',
+				'function_id',
+				'department_id',
+				'vertical_id',
+				'contract_start_date',
+				'contract_end_date',
+				'remuneration_per_month',
+				'team_id',
+				'account_holder_name',
+				'bank_account_no',
+				'bank_name',
+				'bank_ifsc'
+			];
+
+			/*
+		|--------------------------------------------------------------------------
+		| Fill model but don't save yet
+		|--------------------------------------------------------------------------
+		*/
+			$candidate->fill($request->only($fieldsToCheck));
+
+			/*
+		|--------------------------------------------------------------------------
+		| Get only changed fields
+		|--------------------------------------------------------------------------
+		*/
+			$dirtyFields = $candidate->getDirty();
+
+			if (!empty($dirtyFields)) {
+
+				foreach ($dirtyFields as $field => $newValue) {
+
+					$oldValue = $candidate->getOriginal($field);
+
+					// Normalize date fields
+					if (in_array($field, ['date_of_birth', 'contract_start_date', 'contract_end_date'])) {
+						$oldValue = $oldValue ? \Carbon\Carbon::parse($oldValue)->format('Y-m-d') : null;
+						$newValue = $newValue ? \Carbon\Carbon::parse($newValue)->format('Y-m-d') : null;
+					}
+
+					$changes[$field] = [
+						'old' => $oldValue,
+						'new' => $newValue
+					];
+				}
+
+				// Save only changed fields
+				$candidate->save();
+			}
+
+			// Check if reporting manager is being changed
+			if (
+				$request->filled('new_reporting_to') &&
+				($request->new_reporting_to != $candidate->reporting_to ||
+					$request->new_reporting_manager_employee_id != $candidate->reporting_manager_employee_id)
+			) {
+
+				$reportingChanged = true;
+
+				// Store old reporting values for history
+				$oldReportingTo = $candidate->reporting_to;
+				$oldReportingManagerId = $candidate->reporting_manager_employee_id;
+				$oldReportingAddress = $candidate->reporting_manager_address;
+
+				// Update reporting fields first
+				$candidate->update([
+					'reporting_to' => $request->new_reporting_to,
+					'reporting_manager_employee_id' => $request->new_reporting_manager_employee_id,
+					'reporting_manager_address' => $request->new_reporting_manager_address ?? '',
+				]);
+
+				$changes['reporting_manager'] = [
+					'old' => $oldReportingTo . ' (' . $oldReportingManagerId . ')',
+					'new' => $request->new_reporting_to . ' (' . $request->new_reporting_manager_employee_id . ')'
+				];
+			}
+
+			// Handle new agreement upload (manual upload, not API generation)
+			if ($request->filled('agreement_type') && $request->hasFile('new_agreement_file')) {
+				$file = $request->file('new_agreement_file');
+				$fileName = $request->agreement_type . '_' . $candidate->candidate_code . '_' . time() . '.pdf';
+				$filePath = 'agreements/' . $request->agreement_type . '/' . $fileName;
+
+				// Upload to S3
+				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
+				$fileUrl = Storage::disk('s3')->url($filePath);
+
+				// If uploading new unsigned agreement, delete old one
+				if ($request->agreement_type == 'unsigned') {
+					$oldUnsigned = $candidate->agreementDocuments()
+						->where('document_type', 'agreement')
+						->where('sign_status', 'UNSIGNED')
+						->first();
+
+					if ($oldUnsigned) {
+						Storage::disk('s3')->delete($oldUnsigned->agreement_path);
+						$oldUnsigned->delete();
+					}
+				}
+
+				// Create new agreement document
+				AgreementDocument::create([
+					'candidate_id' => $candidate->id,
+					'candidate_code' => $candidate->candidate_code,
+					'document_type' => 'agreement',
+					'sign_status' => $request->agreement_type == 'signed' ? 'SIGNED' : 'UNSIGNED',
+					'stamp_type' => 'NONE',
+					'agreement_number' => $request->new_agreement_number,
+					'agreement_path' => $filePath,
+					'file_url' => $fileUrl,
+					'uploaded_by_user_id' => Auth::id(),
+					'uploaded_by_role' => 'hr_admin',
+					'remarks' => $request->agreement_remarks,
+				]);
+
+				$changes['agreement_uploaded'] = [
+					'old' => 'Previous agreement',
+					'new' => 'New ' . $request->agreement_type . ' agreement uploaded'
+				];
+			}
+
+			// Handle other document upload
+			if ($request->filled('other_doc_type') && $request->hasFile('other_doc_file')) {
+				$file = $request->file('other_doc_file');
+				$fileName = $request->other_doc_type . '_' . $candidate->candidate_code . '_' . time() . '.' . $file->getClientOriginalExtension();
+				$filePath = 'documents/' . $request->other_doc_type . '/' . $fileName;
+
+				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
+				$fileUrl = Storage::disk('s3')->url($filePath);
+
+				AgreementDocument::create([
+					'candidate_id' => $candidate->id,
+					'candidate_code' => $candidate->candidate_code,
+					'document_type' => $request->other_doc_type,
+					'sign_status' => 'UPLOADED',
+					'agreement_number' => $request->other_doc_number,
+					'agreement_path' => $filePath,
+					'file_url' => $fileUrl,
+					'uploaded_by_user_id' => Auth::id(),
+					'uploaded_by_role' => 'hr_admin',
+				]);
+			}
+
+			// Log all changes to history
+			foreach ($changes as $field => $change) {
+				PartyEditHistory::create([
+					'candidate_id' => $candidate->id,
+					'field_name' => $field,
+					'old_value' => is_array($change['old']) ? json_encode($change['old']) : $change['old'],
+					'new_value' => is_array($change['new']) ? json_encode($change['new']) : $change['new'],
+					'changed_by_user_id' => Auth::id(),
+					'reason' => $request->reporting_change_reason ?? $request->agreement_remarks ?? 'Manual update',
+				]);
+			}
+
+			// If reporting changed, generate new agreement via API
+			if ($reportingChanged) {
+				try {
+					// Get the requisition associated with this candidate
+					$requisition = $candidate->requisition;
+
+					if (!$requisition) {
+						throw new \Exception('Associated requisition not found');
+					}
+
+					// Generate new agreement via API
+					$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidate->candidate_code);
+
+					\Log::info('Agreement API Response for reporting change:', $agreementResponse);
+
+					if (!$agreementResponse['success']) {
+						throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
+					}
+
+					$agreementId = $agreementResponse['agreement_id'] ?? null;
+
+					// Delete old unsigned agreements
+					$oldUnsignedAgreements = $candidate->agreementDocuments()
+						->where('document_type', 'agreement')
+						->where('sign_status', 'UNSIGNED')
+						->get();
+
+					foreach ($oldUnsignedAgreements as $oldDoc) {
+						Storage::disk('s3')->delete($oldDoc->agreement_path);
+						$oldDoc->delete();
+					}
+
+					// Save new agreements
+					$agreements = [
+						[
+							'stamp_type' => 'NONE',
+							'pdf_path'   => $agreementResponse['pdf_path_old_stamp'] ?? null,
+						],
+						[
+							'stamp_type' => 'E_STAMP',
+							'pdf_path'   => $agreementResponse['pdf_path_estamp'] ?? null,
+						],
+					];
+
+					foreach ($agreements as $agreement) {
+						if (empty($agreement['pdf_path'])) {
+							continue;
+						}
+
+						$pdfPath = $agreement['pdf_path'];
+						$fileUrl = 'https://s3.ap-south-1.amazonaws.com/vnragri.bkt/' . ltrim($pdfPath, '/');
+
+						AgreementDocument::create([
+							'candidate_id'        => $candidate->id,
+							'candidate_code'      => $candidate->candidate_code,
+							'document_type'       => 'agreement',
+							'stamp_type'          => $agreement['stamp_type'],
+							'sign_status'         => 'UNSIGNED',
+							'agreement_number'    => $agreementId,
+							'agreement_path'      => $pdfPath,
+							'file_url'            => $fileUrl,
+							'uploaded_by_user_id' => Auth::id(),
+							'uploaded_by_role'    => 'hr_admin',
+							'remarks'              => 'Generated due to reporting manager change',
+						]);
+					}
+
+					// Update candidate with new agreement number
+					$candidate->update([
+						'agreement_number' => $agreementId,
+						'candidate_status' => 'Unsigned Agreement Uploaded',
+					]);
+
+					// Log agreement generation in history
+					PartyEditHistory::create([
+						'candidate_id' => $candidate->id,
+						'field_name' => 'agreement_generated',
+						'old_value' => 'Old agreement',
+						'new_value' => 'New agreement generated (ID: ' . $agreementId . ')',
+						'changed_by_user_id' => Auth::id(),
+						'reason' => 'Reporting manager changed',
+					]);
+
+					\Log::info('New agreement generated successfully for candidate: ' . $candidate->candidate_code . ' due to reporting change');
+				} catch (\Exception $e) {
+					\Log::error('Failed to generate agreement for reporting change: ' . $e->getMessage(), [
+						'candidate_id' => $candidate->id,
+						'reporting_from' => $oldReportingTo ?? 'unknown',
+						'reporting_to' => $request->new_reporting_to,
+					]);
+
+					// Don't rollback the entire transaction if agreement generation fails
+					// Just log it and continue - the reporting change is still saved
+					// PartyEditHistory::create([
+					// 	'candidate_id' => $candidate->id,
+					// 	'field_name' => 'agreement_generation_failed',
+					// 	'old_value' => '',
+					// 	'new_value' => 'Failed to generate agreement: ' . $e->getMessage(),
+					// 	'changed_by_user_id' => Auth::id(),
+					// 	'reason' => 'Reporting manager changed but agreement generation failed',
+					// ]);
+				}
+			}
+
+			DB::commit();
+
+			$message = 'Party details updated successfully.';
+			if ($reportingChanged) {
+				$message .= ' Reporting manager changed. New agreement has been generated.';
+			}
+			return redirect()->back()->with('success', $message);
+
+			// return redirect()->route('hr-admin.master.view-employee', $candidate)
+			// 	->with('success', $message);
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error updating party: ' . $e->getMessage(), [
+				'candidate_id' => $candidate->id,
+				'user_id' => Auth::id()
+			]);
+
+			return redirect()->back()
+				->with('error', 'Failed to update party details: ' . $e->getMessage())
+				->withInput();
+		}
+	}
+
+	/**
+	 * Add document to party
+	 */
+	public function addPartyDocument(Request $request, CandidateMaster $candidate)
+	{
+		if (!auth()->user()->hasRole('hr_admin')) {
+			return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+		}
+
+		$request->validate([
+			'document_type' => 'required|string',
+			'document_number' => 'required|string|max:100',
+			'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+		]);
+
+		try {
+			$file = $request->file('document_file');
+			$fileName = $request->document_type . '_' . $candidate->candidate_code . '_' . time() . '.' . $file->getClientOriginalExtension();
+			$filePath = 'documents/' . $request->document_type . '/' . $fileName;
+
+			Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
+			$fileUrl = Storage::disk('s3')->url($filePath);
+
+			$document = AgreementDocument::create([
+				'candidate_id' => $candidate->id,
+				'candidate_code' => $candidate->candidate_code,
+				'document_type' => $request->document_type,
+				'agreement_number' => $request->document_number,
+				'agreement_path' => $filePath,
+				'file_url' => $fileUrl,
+				'uploaded_by_user_id' => Auth::id(),
+				'uploaded_by_role' => 'hr_admin',
+			]);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Document uploaded successfully',
+				'document' => $document
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error uploading document: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to upload document: ' . $e->getMessage()
+			], 500);
+		}
 	}
 }

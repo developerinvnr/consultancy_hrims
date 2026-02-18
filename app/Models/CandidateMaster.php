@@ -83,19 +83,19 @@ class CandidateMaster extends Model
         return $this->hasMany(AgreementDocument::class, 'candidate_id');
     }
 
-public function unsignedAgreements()
-{
-    return $this->hasMany(AgreementDocument::class, 'candidate_id')
-        ->where('document_type', 'agreement')
-        ->where('sign_status', 'UNSIGNED');
-}
+    public function unsignedAgreements()
+    {
+        return $this->hasMany(AgreementDocument::class, 'candidate_id')
+            ->where('document_type', 'agreement')
+            ->where('sign_status', 'UNSIGNED');
+    }
 
-public function signedAgreements()
-{
-    return $this->hasMany(AgreementDocument::class, 'candidate_id')
-        ->where('document_type', 'agreement')
-        ->where('sign_status', 'SIGNED');
-}
+    public function signedAgreements()
+    {
+        return $this->hasMany(AgreementDocument::class, 'candidate_id')
+            ->where('document_type', 'agreement')
+            ->where('sign_status', 'SIGNED');
+    }
 
     public function salaryProcessings()
     {
@@ -159,7 +159,7 @@ public function signedAgreements()
             ->where('year', $year);
     }
 
-    
+
     // City
     public function cityMaster()
     {
@@ -182,5 +182,10 @@ public function signedAgreements()
     public function qualification()
     {
         return $this->belongsTo(\App\Models\MasterEducation::class, 'highest_qualification', 'EducationId');
+    }
+
+    public function editHistory()
+    {
+        return $this->hasMany(\App\Models\PartyEditHistory::class, 'candidate_id');
     }
 }

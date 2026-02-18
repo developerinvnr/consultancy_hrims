@@ -220,6 +220,12 @@
                                                 {{ $candidate->candidate_code ?? $candidate->employee_id }}
                                             </span>
 
+                                            <!-- EDIT PARTY BUTTON - ADD THIS LINE -->
+                                            <a href="{{ route('hr-admin.edit-party', $candidate->id) }}"
+                                                class="btn btn-sm btn-primary" title="Edit Party Details">
+                                                <i class="ri-pencil-line"></i>
+                                            </a>
+
                                             <!-- Upload Signed Agreement Button (for Unsigned Agreement Uploaded status) -->
                                             @if($hasUnsigned && !$hasSigned)
                                             <button type="button"
