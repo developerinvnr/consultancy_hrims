@@ -19,6 +19,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrRequisitionController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\HierarchyController;
+
 
 
 use Symfony\Component\HttpFoundation\Request;
@@ -214,32 +216,38 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-Route::prefix('hr/salary')->group(function () {
+Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
+
     Route::get('/', [SalaryController::class, 'index'])->name('salary.index');
     Route::post('/process', [SalaryController::class, 'process'])->name('salary.process');
     Route::post('/list', [SalaryController::class, 'list'])->name('salary.list');
     Route::post('/check-exists', [SalaryController::class, 'checkExists'])->name('salary.checkExists');
     Route::get('/payslip/{id}', [SalaryController::class, 'downloadPayslip'])->name('salary.payslip');
-    // Detailed Report Routes
+
     Route::get('/detailed-report', [SalaryController::class, 'detailedReportView'])->name('salary.detailed.report.view');
     Route::post('/detailed-report-data', [SalaryController::class, 'getDetailedReportData'])->name('salary.detailed.report.data');
     Route::get('/export-detailed-report', [SalaryController::class, 'exportDetailedReport'])->name('salary.detailed.report.export');
 
-    // Management Report Routes
     Route::get('/management-report', [SalaryController::class, 'managementReportView'])->name('salary.management.report');
     Route::post('/management-report/data', [SalaryController::class, 'getManagementReportData'])->name('salary.management.report.data');
     Route::get('/export-management-report', [SalaryController::class, 'exportManagementReport'])->name('salary.export.management.report');
 
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
     Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
+
+    
+
 });
 
 
+
 Route::middleware(['auth'])->group(function () {
-    Route::post(
-        '/candidate/{candidate}/deactivate',
-        [CandidateController::class, 'deactivate']
+    Route::post('/candidate/{candidate}/deactivate',[CandidateController::class, 'deactivate']
     )->name('candidate.deactivate');
+
+    Route::post('/hierarchy/zone-by-bu', [HierarchyController::class, 'getZoneByBU'])->name('hierarchy.zone.by.bu');
+Route::post('/hierarchy/region-by-zone', [HierarchyController::class, 'getRegionByZone'])->name('hierarchy.region.by.zone');
+Route::post('/hierarchy/territory-by-region', [HierarchyController::class, 'getTerritoryByRegion'])->name('hierarchy.territory.by.region');
 });
 
 Route::middleware(['auth'])->group(function () {

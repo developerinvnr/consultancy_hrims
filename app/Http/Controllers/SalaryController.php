@@ -14,6 +14,9 @@ use App\Exports\DetailedSalaryReportExport;
 use App\Exports\ManagementSalaryReportExport;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Services\HierarchyAccessService;
+use Illuminate\Support\Facades\Auth;
+
 
 
 
@@ -386,16 +389,16 @@ class SalaryController extends Controller
 
         // Build query
         $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-    ->whereDate('contract_start_date', '<=', $monthEnd)
-    ->where(function ($q) use ($monthStart) {
-        $q->whereNull('contract_end_date')
-          ->orWhereDate('contract_end_date', '>=', $monthStart);
-    })
-    ->whereHas('salaryProcessings', function ($q) use ($month, $year) {
-        $q->where('month', $month)
-          ->where('year', $year)
-          ->whereNotNull('processed_at');
-    })
+            ->whereDate('contract_start_date', '<=', $monthEnd)
+            ->where(function ($q) use ($monthStart) {
+                $q->whereNull('contract_end_date')
+                    ->orWhereDate('contract_end_date', '>=', $monthStart);
+            })
+            ->whereHas('salaryProcessings', function ($q) use ($month, $year) {
+                $q->where('month', $month)
+                    ->where('year', $year)
+                    ->whereNotNull('processed_at');
+            })
             ->with([
                 'function',
                 'vertical',
@@ -540,23 +543,47 @@ class SalaryController extends Controller
     /**
      * Display management report view
      */
-    public function managementReportView()
+    public function managementReportView(HierarchyAccessService $hierarchyService)
     {
-        // Get filter options
-        $departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
-        $businessUnits = \App\Models\CoreBusinessUnit::orderBy('business_unit_name')->get();
-        $zones = \App\Models\CoreZone::orderBy('zone_name')->get();
-        $regions = \App\Models\CoreRegion::orderBy('region_name')->get();
-        $territories = \App\Models\CoreTerritory::orderBy('territory_name')->get();
+        $user = Auth::user();
+
+        // Get logged in employee record (optional safety check)
+        $employee = \App\Models\Employee::where('employee_id', $user->emp_id)->first();
+
+        $access_level = $hierarchyService->getAccessLevel($employee);
+
+        // Hierarchy based location filters
+        $bu_list        = $hierarchyService->getAssociatedBusinessUnitList($user->emp_id);
+        $zone_list      = $hierarchyService->getAssociatedZoneList($user->emp_id);
+        $region_list    = $hierarchyService->getAssociatedRegionList($user->emp_id);
+        $territory_list = $hierarchyService->getAssociatedTerritoryList($user->emp_id);
+
+        // Department restriction
+        $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
+
+        // 🔥 NEW: Recursive reporting employee list
+        $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+
+        $employee_list = \DB::table('users')
+            ->whereIn('emp_id', $allowedEmpIds)
+            ->where('status', 'A')
+            ->orderBy('name')
+            ->pluck('name', 'emp_id')
+            ->toArray();
+        //dd($employee);
 
         return view('hr.salary.management-report', compact(
             'departments',
-            'businessUnits',
-            'zones',
-            'regions',
-            'territories'
+            'bu_list',
+            'zone_list',
+            'region_list',
+            'territory_list',
+            'employee_list',   // 🔥 Added
+            'access_level'
         ));
     }
+
+
 
     /**
      * Get management report data
@@ -565,19 +592,36 @@ class SalaryController extends Controller
     {
         $request->validate([
             'year' => 'required|integer|min:2020|max:' . (date('Y') + 1),
-            'department' => 'sometimes|string',
-            'bu' => 'sometimes|string',
-            'zone' => 'sometimes|string',
-            'region' => 'sometimes|string',
-            'territory' => 'sometimes|string',
+            'department' => 'nullable|integer',
+            'bu' => 'nullable|integer',
+            'zone' => 'nullable|integer',
+            'region' => 'nullable|integer',
+            'territory' => 'nullable|integer',
+            'employee' => 'nullable|integer',
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
         $year = (int) $request->year;
-        $filters = $request->only(['department', 'bu', 'zone', 'region', 'territory', 'requisition_type']);
 
-        // Build query for active candidates
+        $filters = $request->only([
+            'department',
+            'bu',
+            'zone',
+            'region',
+            'territory',
+            'employee',
+            'requisition_type'
+        ]);
+
+        $user = Auth::user();
+        $hierarchyService = app(\App\Services\HierarchyAccessService::class);
+
+        // 🔥 Get allowed employee IDs (recursive hierarchy)
+        $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+
+        // Build query
         $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereIn('reporting_manager_employee_id', $allowedEmpIds) // 🔥 hierarchy restriction
             ->with([
                 'department',
                 'businessUnit',
@@ -590,24 +634,12 @@ class SalaryController extends Controller
                             'candidate_id',
                             'month',
                             'year',
-                            'monthly_salary',
-                            'per_day_salary',
-                            'total_days',
-                            'paid_days',
-                            'absent_days',
-                            'approved_sundays',
-                            'deduction_amount',
-                            'extra_amount',
-                            'net_pay',
-                            'status',
-                            'processed_by',
-                            'processed_at'
+                            'net_pay'
                         );
-                    // Note: There's no 'arrear_amount' column in your table
                 }
             ]);
 
-        // Apply filters
+        // Apply Filters
         foreach ($filters as $key => $value) {
             if ($value && $value !== 'All') {
                 switch ($key) {
@@ -626,6 +658,9 @@ class SalaryController extends Controller
                     case 'territory':
                         $query->where('territory', $value);
                         break;
+                    case 'employee':
+                        $query->where('employee_id', $value);
+                        break;
                     case 'requisition_type':
                         $query->where('requisition_type', $value);
                         break;
@@ -635,57 +670,49 @@ class SalaryController extends Controller
 
         $candidates = $query->orderBy('candidate_code')->get();
 
-        $reportData = [];
-        $monthlyTotals = [
-            'january' => 0,
-            'february' => 0,
-            'march' => 0,
-            'april' => 0,
-            'may' => 0,
-            'june' => 0,
-            'july' => 0,
-            'august' => 0,
-            'september' => 0,
-            'october' => 0,
-            'november' => 0,
-            'december' => 0,
-            'grand_total' => 0
+        $months = [
+            'january',
+            'february',
+            'march',
+            'april',
+            'may',
+            'june',
+            'july',
+            'august',
+            'september',
+            'october',
+            'november',
+            'december'
         ];
 
+        $reportData = [];
+        $monthlyTotals = array_fill_keys($months, 0);
+        $monthlyTotals['grand_total'] = 0;
+
         foreach ($candidates as $candidate) {
+
             $employeeData = [
                 'id' => $candidate->id,
                 'code' => $candidate->candidate_code,
                 'name' => $candidate->candidate_name,
-                'january' => 0,
-                'february' => 0,
-                'march' => 0,
-                'april' => 0,
-                'may' => 0,
-                'june' => 0,
-                'july' => 0,
-                'august' => 0,
-                'september' => 0,
-                'october' => 0,
-                'november' => 0,
-                'december' => 0,
                 'grand_total' => 0
             ];
 
-            // Process salary for each month
+            foreach ($months as $month) {
+                $employeeData[$month] = 0;
+            }
+
             foreach ($candidate->salaryProcessings as $salary) {
+
                 $monthName = strtolower(date('F', mktime(0, 0, 0, $salary->month, 1)));
 
-                // Use net_pay directly from salary processing
-                // Since there's no arrear_amount column, we use net_pay as the total
-                $totalAmount = $salary->net_pay;
+                $amount = $salary->net_pay ?? 0;
 
-                $employeeData[$monthName] = $totalAmount;
-                $employeeData['grand_total'] += $totalAmount;
+                $employeeData[$monthName] = $amount;
+                $employeeData['grand_total'] += $amount;
 
-                // Add to monthly totals
-                $monthlyTotals[$monthName] += $totalAmount;
-                $monthlyTotals['grand_total'] += $totalAmount;
+                $monthlyTotals[$monthName] += $amount;
+                $monthlyTotals['grand_total'] += $amount;
             }
 
             $reportData[] = $employeeData;
@@ -701,6 +728,7 @@ class SalaryController extends Controller
         ]);
     }
 
+
     /**
      * Export management report to Excel
      */
@@ -708,11 +736,11 @@ class SalaryController extends Controller
     {
         $request->validate([
             'year' => 'required|integer|min:2020',
-            'department' => 'sometimes|string',
-            'bu' => 'sometimes|string',
-            'zone' => 'sometimes|string',
-            'region' => 'sometimes|string',
-            'territory' => 'sometimes|string',
+            'department' => 'nullable|integer',
+            'bu' => 'nullable|integer',
+            'zone' => 'nullable|integer',
+            'region' => 'nullable|integer',
+            'territory' => 'nullable|integer',
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
@@ -726,4 +754,5 @@ class SalaryController extends Controller
             "{$filename}.xlsx"
         );
     }
+    
 }

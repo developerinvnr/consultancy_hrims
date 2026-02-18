@@ -27,15 +27,15 @@
 					<label class="form-label form-label-sm mb-1">Year</label>
 					<select id="year" class="form-select form-select-sm">
 						@php
-    $startYear = 2025;
-    $currentYear = date('Y');
-@endphp
+						$startYear = 2025;
+						$currentYear = date('Y');
+						@endphp
 
-@for($i = $currentYear; $i >= $startYear; $i--)
-    <option value="{{ $i }}" {{ $i == $currentYear ? 'selected' : '' }}>
-        {{ $i }}
-    </option>
-@endfor
+						@for($i = $currentYear; $i >= $startYear; $i--)
+						<option value="{{ $i }}" {{ $i == $currentYear ? 'selected' : '' }}>
+							{{ $i }}
+						</option>
+						@endfor
 
 					</select>
 				</div>
@@ -44,56 +44,78 @@
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Department</label>
 					<select id="department" class="form-select form-select-sm">
-						<option value="All">All Departments</option>
-						@foreach($departments as $dept)
-						<option value="{{ $dept->id }}">{{ $dept->department_name }}</option>
+						@foreach($departments as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
 
+				<div class="col-md-3 col-lg-2">
+					<label class="form-label form-label-sm mb-1">Employee</label>
+					<select id="employee" class="form-select form-select-sm"
+						{{ count($employee_list) == 1 ? 'disabled' : '' }}>
+
+						@if(count($employee_list) > 1)
+						<option value="All">All Employees</option>
+						@endif
+
+						@foreach($employee_list as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
+						@endforeach
+					</select>
+				</div>
+
+
 				<!-- BU -->
+				@if($access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">BU</label>
 					<select id="bu" class="form-select form-select-sm">
-						<option value="All">All BUs</option>
-						@foreach($businessUnits as $bu)
-						<option value="{{ $bu->id }}">{{ $bu->business_unit_name }}</option>
+						@foreach($bu_list as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
+				@endif
+
 
 				<!-- Zone -->
+				@if($access_level == 'zone' || $access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Zone</label>
 					<select id="zone" class="form-select form-select-sm">
-						<option value="All">All Zones</option>
-						@foreach($zones as $zone)
-						<option value="{{ $zone->id }}">{{ $zone->zone_name }}</option>
+						@foreach($zone_list as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
+				@endif
+
 
 				<!-- Region -->
+				@if($access_level == 'region' || $access_level == 'zone' || $access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Region</label>
 					<select id="region" class="form-select form-select-sm">
-						<option value="All">All Regions</option>
-						@foreach($regions as $region)
-						<option value="{{ $region->id }}">{{ $region->region_name }}</option>
+						@foreach($region_list as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
+				@endif
 
 				<!-- Territory -->
+				@if($access_level == 'territory' || $access_level == 'region' || $access_level == 'zone' || $access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Territory</label>
 					<select id="territory" class="form-select form-select-sm">
-						<option value="All">All Territories</option>
-						@foreach($territories as $territory)
-						<option value="{{ $territory->id }}">{{ $territory->territory_name }}</option>
+						@foreach($territory_list as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
+				@endif
+
 
 				<!-- Party Type -->
 				<div class="col-md-3 col-lg-2">
@@ -199,13 +221,34 @@
 		// Collect all filter values
 		currentFilters = {
 			year: $('#year').val(),
-			department: $('#department').val(),
-			bu: $('#bu').val(),
-			zone: $('#zone').val(),
-			region: $('#region').val(),
-			territory: $('#territory').val(),
 			requisition_type: $('#requisition_type').val()
 		};
+
+		let department = $('#department').val();
+		if (department && department !== 'All') {
+			currentFilters.department = department;
+		}
+
+
+		if ($('#bu').length) {
+			let bu = $('#bu').val();
+			if (bu && bu !== 'All') currentFilters.bu = bu;
+		}
+
+		if ($('#zone').length) {
+			let zone = $('#zone').val();
+			if (zone && zone !== 'All') currentFilters.zone = zone;
+		}
+
+		if ($('#region').length) {
+			let region = $('#region').val();
+			if (region && region !== 'All') currentFilters.region = region;
+		}
+
+		if ($('#territory').length) {
+			let territory = $('#territory').val();
+			if (territory && territory !== 'All') currentFilters.territory = territory;
+		}
 
 		if (!currentFilters.year) {
 			toastr.error('Please select year');
@@ -382,6 +425,86 @@
 		});
 	}
 
+	$(document).on("change", "#bu", function () {
+
+    let bu = $(this).val();
+
+    $.ajax({
+        url: "{{ route('hierarchy.zone.by.bu') }}",
+        type: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            bu: bu
+        },
+        success: function (response) {
+
+            let zoneSelect = $('#zone');
+            zoneSelect.empty();
+            zoneSelect.append('<option value="All">All Zone</option>');
+
+            $.each(response.zoneList, function (index, zone) {
+                zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
+            });
+
+            $('#region').empty().append('<option value="All">All Region</option>');
+            $('#territory').empty().append('<option value="All">All Territory</option>');
+        }
+    });
+});
+
+
+$(document).on("change", "#zone", function () {
+
+    let zone = $(this).val();
+
+    $.ajax({
+        url: "{{ route('hierarchy.region.by.zone') }}",
+        type: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            zone: zone
+        },
+        success: function (response) {
+
+            let regionSelect = $('#region');
+            regionSelect.empty();
+            regionSelect.append('<option value="All">All Region</option>');
+
+            $.each(response.regionList, function (index, region) {
+                regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
+            });
+
+            $('#territory').empty().append('<option value="All">All Territory</option>');
+        }
+    });
+});
+
+
+$(document).on("change", "#region", function () {
+
+    let region = $(this).val();
+
+    $.ajax({
+        url: "{{ route('hierarchy.territory.by.region') }}",
+        type: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            region: region
+        },
+        success: function (response) {
+
+            let territorySelect = $('#territory');
+            territorySelect.empty();
+            territorySelect.append('<option value="All">All Territory</option>');
+
+            $.each(response.territoryList, function (index, territory) {
+                territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
+            });
+        }
+    });
+});
+
+
 
 	// Auto-load current year data on page load
 	$(document).ready(function() {
@@ -391,27 +514,28 @@
 @endsection
 
 <style>
-.management-table-wrapper {
-    max-height: 70vh;
-    overflow-y: auto;
-}
+	.management-table-wrapper {
+		max-height: 70vh;
+		overflow-y: auto;
+	}
 
-/* Base header style */
-.management-table-wrapper thead th {
-    position: sticky;
-    background: #f8f9fa;
-    color: #000;
-    z-index: 10;
-}
+	/* Base header style */
+	.management-table-wrapper thead th {
+		position: sticky;
+		background: #f8f9fa;
+		color: #000;
+		z-index: 10;
+	}
 
-/* First header row */
-.management-table-wrapper thead tr:first-child th {
-    top: 0;
-    height: 45px;
-}
+	/* First header row */
+	.management-table-wrapper thead tr:first-child th {
+		top: 0;
+		height: 45px;
+	}
 
-/* Second header row */
-.management-table-wrapper thead tr:nth-child(2) th {
-    top: 45px; /* match first row height exactly */
-}
+	/* Second header row */
+	.management-table-wrapper thead tr:nth-child(2) th {
+		top: 45px;
+		/* match first row height exactly */
+	}
 </style>

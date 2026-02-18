@@ -121,7 +121,6 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
-
                 @if($hasTeam)
                 @if($hasTeam)
                 <li class="nav-item">
@@ -155,15 +154,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                         <i class="ri-money-rupee-circle-line"></i>
                         <span>Remuneration Report</span>
                     </a>
-                </li>
-
-
-                <li class="nav-item">
-                    <a href="{{ route('salary.management.report') }}" class="nav-link">
-                        <i class="ri-bar-chart-line"></i>
-                        <span>Management Report</span>
-                    </a>
-                </li>
+                </li>                
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('communication.*')" href="{{ route('communication.index') }}">
@@ -172,6 +163,14 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
                 @endif
+
+                <li class="nav-item">
+                    <a href="{{ route('salary.management.report') }}" class="nav-link">
+                        <i class="ri-bar-chart-line"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+
 
             </ul>
         </div>

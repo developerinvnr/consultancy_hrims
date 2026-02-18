@@ -14,6 +14,9 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use App\Services\HierarchyAccessService;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Employee;
 
 class ManagementSalaryReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents
 {
@@ -21,13 +24,17 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 	protected $filters;
 	protected $data;
 	protected $monthlyTotals;
+	protected $hierarchyService;
 
 	public function __construct($year, $filters = [])
 	{
 		$this->year = $year;
 		$this->filters = $filters;
+		$this->hierarchyService = app(HierarchyAccessService::class);
+
 		$this->prepareData();
 	}
+
 
 	protected function prepareData()
 	{
@@ -39,7 +46,24 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 				}
 			]);
 
-		// Apply filters
+		// 🔐 Apply Hierarchy Restriction
+		$user = Auth::user();
+		$employee = Employee::where('employee_id', $user->emp_id)->first();
+		$accessLevel = $this->hierarchyService->getAccessLevel($employee);
+		if ($accessLevel !== 'all') {
+
+			if ($employee->territory > 0) {
+				$query->where('territory', $employee->territory);
+			} elseif ($employee->region > 0) {
+				$query->where('region', $employee->region);
+			} elseif ($employee->zone > 0) {
+				$query->where('zone', $employee->zone);
+			} elseif ($employee->bu > 0) {
+				$query->where('business_unit', $employee->bu);
+			}
+		}
+
+		// Apply UI filters
 		foreach ($this->filters as $key => $value) {
 			if ($value && $value !== 'All') {
 				switch ($key) {
@@ -72,6 +96,7 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 		$this->monthlyTotals['grand_total'] = 0;
 
 		foreach ($candidates as $candidate) {
+
 			$employeeData = [
 				'code' => $candidate->candidate_code,
 				'name' => $candidate->candidate_name,
@@ -93,6 +118,7 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 			$this->data[] = $employeeData;
 		}
 	}
+
 
 
 	public function collection()
@@ -257,7 +283,6 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 					'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
 					'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F4FD']]
 				]);
-
 			},
 		];
 	}
