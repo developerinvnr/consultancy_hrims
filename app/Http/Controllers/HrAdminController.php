@@ -2136,6 +2136,7 @@ class HrAdminController extends Controller
 	 */
 	public function updateParty(Request $request, CandidateMaster $candidate)
 	{
+		//dd($request->all());
 
 		if (!auth()->user()->hasRole('hr_admin')) {
 			abort(403, 'Unauthorized');
@@ -2191,7 +2192,7 @@ class HrAdminController extends Controller
 		}
 
 		// Reporting Changes Tab
-		 if ($activeTab == 'reporting' || $activeTab == 'all') {
+		if ($activeTab == 'reporting' || $activeTab == 'all') {
 			$rules = array_merge($rules, [
 				'new_reporting_manager_employee_id' => 'required|string|max:50',
 				'new_reporting_to' => 'required|string|max:255', // From hidden field
@@ -2199,7 +2200,7 @@ class HrAdminController extends Controller
 				'reporting_change_remarks' => 'nullable|string|max:500',
 			]);
 		}
-
+		//dd($request->all);
 		// Documents Tab
 		if ($activeTab == 'documents' || $activeTab == 'all') {
 			$rules = array_merge($rules, [
@@ -2217,42 +2218,85 @@ class HrAdminController extends Controller
 		$validated = $request->validate($rules);
 		DB::beginTransaction();
 		try {
+
 			$changes = [];
 			$reportingChanged = false;
+
+			// ===============================
+			// HANDLE REPORTING CHANGE FIRST
+			// ===============================
+			if ($activeTab == 'reporting' || $activeTab == 'all') {
+
+				$oldReportingTo = $candidate->getOriginal('reporting_to');
+				$oldReportingManagerId = $candidate->getOriginal('reporting_manager_employee_id');
+
+				if (
+					$request->new_reporting_to != $oldReportingTo ||
+					$request->new_reporting_manager_employee_id != $oldReportingManagerId
+				) {
+
+					$reportingChanged = true;
+
+					$candidate->reporting_to = $request->new_reporting_to;
+					$candidate->reporting_manager_employee_id = $request->new_reporting_manager_employee_id;
+					$candidate->reporting_manager_address = $request->new_reporting_manager_address ?? '';
+
+					$changes['reporting_manager'] = [
+						'old' => $oldReportingTo . ' (' . $oldReportingManagerId . ')',
+						'new' => $request->new_reporting_to . ' (' . $request->new_reporting_manager_employee_id . ')'
+					];
+				}
+			}
+
+
 
 			/*
 		|--------------------------------------------------------------------------
 		| Fields allowed to update
 		|--------------------------------------------------------------------------
 		*/
-			$fieldsToCheck = [
-				'candidate_name',
-				'father_name',
-				'candidate_email',
-				'mobile_no',
-				'date_of_birth',
-				'gender',
-				'pan_no',
-				'aadhaar_no',
-				'highest_qualification',
-				'address_line_1',
-				'city',
-				'state_residence',
-				'pin_code',
-				'work_location_hq',
-				'state_work_location',
-				'function_id',
-				'department_id',
-				'vertical_id',
-				'contract_start_date',
-				'contract_end_date',
-				'remuneration_per_month',
-				'team_id',
-				'account_holder_name',
-				'bank_account_no',
-				'bank_name',
-				'bank_ifsc'
-			];
+			$fieldsToCheck = [];
+
+			if ($activeTab == 'personal' || $activeTab == 'all') {
+				$fieldsToCheck = array_merge($fieldsToCheck, [
+					'candidate_name',
+					'father_name',
+					'candidate_email',
+					'mobile_no',
+					'date_of_birth',
+					'gender',
+					'pan_no',
+					'aadhaar_no',
+					'highest_qualification',
+					'address_line_1',
+					'city',
+					'state_residence',
+					'pin_code',
+				]);
+			}
+
+			if ($activeTab == 'work' || $activeTab == 'all') {
+				$fieldsToCheck = array_merge($fieldsToCheck, [
+					'work_location_hq',
+					'state_work_location',
+					'function_id',
+					'department_id',
+					'vertical_id',
+					'contract_start_date',
+					'contract_end_date',
+					'remuneration_per_month',
+					'team_id',
+				]);
+			}
+
+			if ($activeTab == 'bank' || $activeTab == 'all') {
+				$fieldsToCheck = array_merge($fieldsToCheck, [
+					'account_holder_name',
+					'bank_account_no',
+					'bank_name',
+					'bank_ifsc',
+				]);
+			}
 
 			/*
 		|--------------------------------------------------------------------------
@@ -2268,55 +2312,31 @@ class HrAdminController extends Controller
 		*/
 			$dirtyFields = $candidate->getDirty();
 
-			if (!empty($dirtyFields)) {
+			// if (!empty($dirtyFields)) {
 
-				foreach ($dirtyFields as $field => $newValue) {
+			// 	foreach ($dirtyFields as $field => $newValue) {
 
-					$oldValue = $candidate->getOriginal($field);
+			// 		$oldValue = $candidate->getOriginal($field);
 
-					// Normalize date fields
-					if (in_array($field, ['date_of_birth', 'contract_start_date', 'contract_end_date'])) {
-						$oldValue = $oldValue ? \Carbon\Carbon::parse($oldValue)->format('Y-m-d') : null;
-						$newValue = $newValue ? \Carbon\Carbon::parse($newValue)->format('Y-m-d') : null;
-					}
+			// 		// Normalize date fields
+			// 		if (in_array($field, ['date_of_birth', 'contract_start_date', 'contract_end_date'])) {
+			// 			$oldValue = $oldValue ? \Carbon\Carbon::parse($oldValue)->format('Y-m-d') : null;
+			// 			$newValue = $newValue ? \Carbon\Carbon::parse($newValue)->format('Y-m-d') : null;
+			// 		}
 
-					$changes[$field] = [
-						'old' => $oldValue,
-						'new' => $newValue
-					];
-				}
+			// 		$changes[$field] = [
+			// 			'old' => $oldValue,
+			// 			'new' => $newValue
+			// 		];
+			// 	}
 
-				// Save only changed fields
+			// 	// Save only changed fields
+			// 	$candidate->save();
+			// }
+
+			if ($candidate->isDirty()) {
 				$candidate->save();
 			}
-
-			// Check if reporting manager is being changed
-			if (
-				$request->filled('new_reporting_to') &&
-				($request->new_reporting_to != $candidate->reporting_to ||
-					$request->new_reporting_manager_employee_id != $candidate->reporting_manager_employee_id)
-			) {
-
-				$reportingChanged = true;
-
-				// Store old reporting values for history
-				$oldReportingTo = $candidate->reporting_to;
-				$oldReportingManagerId = $candidate->reporting_manager_employee_id;
-				$oldReportingAddress = $candidate->reporting_manager_address;
-
-				// Update reporting fields first
-				$candidate->update([
-					'reporting_to' => $request->new_reporting_to,
-					'reporting_manager_employee_id' => $request->new_reporting_manager_employee_id,
-					'reporting_manager_address' => $request->new_reporting_manager_address ?? '',
-				]);
-
-				$changes['reporting_manager'] = [
-					'old' => $oldReportingTo . ' (' . $oldReportingManagerId . ')',
-					'new' => $request->new_reporting_to . ' (' . $request->new_reporting_manager_employee_id . ')'
-				];
-			}
-
 			// Handle new agreement upload (manual upload, not API generation)
 			if ($request->filled('agreement_type') && $request->hasFile('new_agreement_file')) {
 				$file = $request->file('new_agreement_file');

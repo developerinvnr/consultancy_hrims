@@ -26,8 +26,10 @@ class HrRequisitionController extends Controller
     {
         $type = $request->get('type', 'all');
         $status = $request->get('status', '');
+            $employeeStatus = $request->get('employee_status', '');
+
         $search = $request->get('search', '');
-        $query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy'])
+        $query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy','candidate'])
             ->orderBy('created_at', 'desc');
 
         if ($type !== 'all') {
@@ -47,9 +49,24 @@ class HrRequisitionController extends Controller
             });
         }
 
+        // 👇 NEW FILTER
+        if ($employeeStatus) {
+            if ($employeeStatus === 'Active') {
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('final_status', 'A');
+                });
+            }
+
+            if ($employeeStatus === 'Inactive') {
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('final_status', 'D');
+                });
+            }
+        }
+
         $requisitions = $query->paginate(20);
 
-        return view('hr.requisitions.index', compact('requisitions', 'type', 'status'));
+        return view('hr.requisitions.index', compact('requisitions', 'type', 'status','employeeStatus'));
     }
 
 
@@ -442,7 +459,7 @@ class HrRequisitionController extends Controller
             ->where('department', $departmentId)
             ->where('emp_status', 'A') // Active employees only
             ->where('company_id', '1')
-            ->select('employee_id', 'emp_code','emp_name')
+            ->select('employee_id', 'emp_code', 'emp_name')
             ->distinct()
             ->orderBy('id')
             ->get();

@@ -49,6 +49,15 @@
                                         <option value="Agreement Pending" {{ request('status') == 'Agreement Pending' ? 'selected' : '' }}>Agreement Pending</option>
                                         <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
                                     </select>
+                                    <select name="employee_status" class="form-select form-select-sm me-2" style="width: auto;">
+                                                <option value="">All Party Status</option>
+                                                <option value="Active" {{ request('employee_status') == 'Active' ? 'selected' : '' }}>
+                                                    Active
+                                                </option>
+                                                <option value="Inactive" {{ request('employee_status') == 'Inactive' ? 'selected' : '' }}>
+                                                    Inactive
+                                                </option>
+                                            </select>
                                     <button type="submit" class="btn btn-primary btn-sm me-2" style="color:#000;">
                                         <i class="ri-search-line"></i>
                                     </button>

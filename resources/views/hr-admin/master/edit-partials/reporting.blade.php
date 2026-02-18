@@ -1,3 +1,5 @@
+<input type="hidden" name="active_tab" value="reporting">
+
 <div class="row">
     <div class="col-md-6">
         <div class="form-group">
