@@ -23,6 +23,7 @@ use App\Mail\RequisitionRejected;
 use App\Mail\CorrectionRequested;
 use App\Services\AgriSamvidaService;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class HrAdminController extends Controller
 {
@@ -1096,6 +1097,13 @@ class HrAdminController extends Controller
 			$baseAmount = (float) $requisition->remuneration_per_month;
 			$finalAmount = $baseAmount;
 
+			$submittedByUser = User::find($requisition->submitted_by_user_id);
+
+			$submittedByName  = $submittedByUser->name ?? '';
+			$submittedByEmail = $submittedByUser->email ?? '';
+			$submittedByEmpId = $submittedByUser->emp_id ?? '';
+
+
 			// Apply 2% TDS ADDITION only for Contractual & TFA
 			if (in_array($requisition->requisition_type, ['Contractual', 'TFA'])) {
 				$tdsAmount   = round($baseAmount * 0.02, 2);
@@ -1111,6 +1119,10 @@ class HrAdminController extends Controller
 				'TypeId'            => '3',
 				'name'              => $requisition->candidate_name,
 				'designation'       => $requisition->requisition_type,
+				// Submitter Details (FROM manpower_requisitions)
+				'submitted_by_name'  => $submittedByName,
+				'submitted_by_email' => $submittedByEmail,
+				'submitted_by_empid' => $submittedByEmpId,
 				'father_name'       => $requisition->father_name,
 				'address'           => $requisition->address_line_1,
 				'country'           => 'India',

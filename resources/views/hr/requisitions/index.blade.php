@@ -179,6 +179,7 @@
                                                 data-bs-toggle="modal" data-bs-target="#processModal"
                                                 data-requisition-id="{{ $requisition->id }}"
                                                 data-requisition-name="{{ $requisition->candidate_name }}"
+                                                data-requisition-type="{{ $requisition->requisition_type }}"
                                                 data-current-reporting="{{ $requisition->reporting_to }}"
                                                 data-current-manager-id="{{ $requisition->reporting_manager_employee_id }}">
                                                 <i class="ri-play-line"></i>
@@ -282,6 +283,7 @@
                 @csrf
                 <div class="modal-body">
                     <input type="hidden" name="requisition_id" id="modalRequisitionId">
+                    <input type="hidden" name="requisition_type" id="modalRequisitionType">
 
                     <div class="row">
                         <div class="col-md-4">
@@ -303,6 +305,7 @@
                             </div>
                         </div>
                     </div>
+
                     <h6>Change Reporting Manager</h6>
                     <div class="mb-3">
                         <label for="reporting_manager_employee_id" class="form-label-sm">Reporting Manager *</label>
@@ -329,10 +332,6 @@
                             </div>
                         </div>
 
-                        @php
-                        $isTfaOrCb = in_array($requisition->requisition_type, ['TFA', 'CB']);
-                        @endphp
-
                         <div class="col-md-4">
                             <label for="team_id" class="form-label small">
                                 Team <span class="text-danger">*</span>
@@ -342,15 +341,9 @@
                                 id="team_id"
                                 class="form-select form-select-sm"
                                 style="border-color:#007bff;"
-                                {{ $isTfaOrCb ? 'readonly disabled' : '' }}
                                 required>
-
-                                @if($isTfaOrCb)
-                                {{-- TFA / CB → fixed --}}
-                                <option value="11" selected>TFA-CB</option>
-                                @else
-                                {{-- Contractual → selectable --}}
                                 <option value="">Select Team</option>
+                                <option value="11">TFA-CB</option>
                                 <option value="1">BTS-RnD FCzzz</option>
                                 <option value="2">Contractual</option>
                                 <option value="3">Marketing</option>
@@ -361,18 +354,10 @@
                                 <option value="8">RnD VC</option>
                                 <option value="9">Sales (P Srinivas Sir) 2</option>
                                 <option value="10">Sales (P Srinivas Sir)</option>
-                                @endif
                             </select>
 
-                            {{-- IMPORTANT: disabled fields are NOT submitted --}}
-                            @if($isTfaOrCb)
-                            <input type="hidden" name="team_id" value="11">
-                            @endif
-
-                            <small class="text-muted">
-                                {{ $isTfaOrCb 
-                            ? 'Team is fixed for TFA / CB requisitions.'
-                            : 'Select the appropriate team for this Contractual requisition.' }}
+                            <small class="text-muted team-help-text">
+                                Select the appropriate team for this requisition.
                             </small>
                         </div>
                     </div>
@@ -458,16 +443,36 @@
             let candidateName = button.data('requisition-name');
             let currentReporting = button.data('current-reporting');
             let currentManagerId = button.data('current-manager-id');
+            let requisitionType = button.data('requisition-type');
 
             let modal = $(this);
             modal.find('#modalRequisitionId').val(requisitionId);
+            modal.find('#modalRequisitionType').val(requisitionType);
             modal.find('#modalCandidateName').val(candidateName);
             modal.find('#currentReporting').val(currentReporting);
             modal.find('#currentManagerId').val(currentManagerId);
 
+            // Handle team selection based on requisition type
+            let teamSelect = $('#team_id');
+            let isTfaOrCb = ['TFA', 'CB'].includes(requisitionType);
+
+            if (isTfaOrCb) {
+                // For TFA/CB, disable other options and select TFA-CB
+                teamSelect.val('11').prop('disabled', false);
+                teamSelect.find('option:not([value="11"])').prop('disabled', true);
+                $('.team-help-text').text('Team is fixed for TFA / CB requisitions.');
+            } else {
+                // For Contractual, enable all options
+                teamSelect.val('').prop('disabled', false);
+                teamSelect.find('option').prop('disabled', false);
+                $('.team-help-text').text('Select the appropriate team for this Contractual requisition.');
+            }
+
+            // Rest of your existing code for loading managers...
             let select = $('#reporting_manager_employee_id');
             select.html('<option value="">Loading...</option>');
             select.trigger('change');
+
 
             // AJAX call to load managers
             $.ajax({
