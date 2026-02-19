@@ -147,7 +147,7 @@
                     <div class="mb-3">
                         <label class="form-label">New Agreement File (Optional - Leave empty to keep current)</label>
                         <input type="file" name="agreement_file" class="form-control" accept=".pdf">
-                        <small class="text-muted">Max 10MB, PDF only</small>
+                        <small class="text-muted">Max 2MB, PDF only</small>
                     </div>
                     
                     <div class="mb-3">

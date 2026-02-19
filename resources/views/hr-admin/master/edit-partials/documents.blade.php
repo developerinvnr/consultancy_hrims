@@ -82,7 +82,7 @@
                     <input type="file" name="new_agreement_file" class="custom-file-input" accept=".pdf">
                     <label class="custom-file-label">Choose file</label>
                 </div>
-                <small class="text-muted">Max size: 10MB, PDF only</small>
+                <small class="text-muted">Max size: 2MB, PDF only</small>
             </div>
         </div>
         <div class="col-md-6">
