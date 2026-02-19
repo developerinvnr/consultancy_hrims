@@ -2094,6 +2094,13 @@ class HrAdminController extends Controller
 	 */
 	public function editParty(CandidateMaster $candidate)
 	{
+		\DB::listen(function ($query) {
+    \Log::info('SQL:', [
+        'sql' => $query->sql,
+        'bindings' => $query->bindings,
+        'time' => $query->time
+    ]);
+});
 		try {
 
 			\Log::info('EditParty started', [
@@ -2151,17 +2158,18 @@ $qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
 
 			\Log::info('EditParty finished successfully');
 
-			return view('hr-admin.master.edit-party', compact(
-				'candidate',
-				'functions',
-				'departments',
-				'verticals',
-				'editHistory',
-				'departmentEmployees',
-				'cities',
-				'states',
-				'qualifications'
-			));
+			return response()->view('hr-admin.master.edit-party', compact(
+    'candidate',
+    'functions',
+    'departments',
+    'verticals',
+    'editHistory',
+    'departmentEmployees',
+    'cities',
+    'states',
+    'qualifications'
+));
+
 		} catch (\Throwable $e) {
 
 			\Log::error('EditParty Error', [
