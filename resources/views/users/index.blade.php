@@ -49,9 +49,9 @@
                                 <button class="btn btn-success btn-sm export-users" title="Export to Excel">
                                     <i class="ri-file-excel-2-line me-1"></i>
                                 </button>
-                                <button class="btn btn-primary btn-sm add-user" title="Add New User">
+                                {{--<button class="btn btn-primary btn-sm add-user" title="Add New User">
                                     <i class="ri-add-line me-1"></i> Add User
-                                </button>
+                                </button>--}}
                             </div>
                         </div>
                     </div>
@@ -132,7 +132,7 @@
                             Showing {{ $users->firstItem() }} to {{ $users->lastItem() }} of {{ $users->total() }} entries
                         </div>
                         <div>
-                            {{ $users->appends(request()->except('page'))->links() }}
+                            {{ $users->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
                         </div>
                     </div>
                 </div>

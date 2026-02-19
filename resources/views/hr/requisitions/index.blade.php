@@ -30,8 +30,12 @@
                             <div class="d-flex justify-content-end gap-2">
                                 <!-- Filter Form -->
                                 <form method="GET" action="{{ route('hr_requisitions.index') }}" class="d-flex me-2">
-                                    {{--<input type="text" name="search" class="form-control form-control-sm me-2"
-                                        placeholder="Search by ID, Name, Email..." value="{{ request('search') }}">--}}
+                                     <input type="text" 
+                                        name="search" 
+                                        class="form-control form-control-sm me-2" 
+                                        placeholder="Search by ID, Name, Email, Code..." 
+                                        value="{{ request('search') }}"
+                                        style="width: 200px;">
                                     <select name="type" class="form-select form-select-sm me-2" style="width: auto;">
                                         <option value="all" {{ request('type') == 'all' ? 'selected' : '' }}>All Types</option>
                                         <option value="Contractual" {{ request('type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>

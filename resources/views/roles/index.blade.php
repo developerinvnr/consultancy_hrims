@@ -111,7 +111,7 @@
                             Showing {{ $roles->firstItem() }} to {{ $roles->lastItem() }} of {{ $roles->total() }} entries
                         </div>
                         <div>
-                            {{ $roles->appends(request()->except('page'))->links() }}
+                            {{ $roles->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
                         </div>
                     </div>
                 </div>
@@ -141,7 +141,7 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
 <script>
     $(document).ready(function() {
         $.ajaxSetup({
@@ -184,4 +184,4 @@
         });
     });
 </script>
-@endsection
+@endpush

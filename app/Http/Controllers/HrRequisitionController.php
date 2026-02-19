@@ -26,10 +26,10 @@ class HrRequisitionController extends Controller
     {
         $type = $request->get('type', 'all');
         $status = $request->get('status', '');
-            $employeeStatus = $request->get('employee_status', '');
+        $employeeStatus = $request->get('employee_status', '');
 
         $search = $request->get('search', '');
-        $query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy','candidate'])
+        $query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy', 'candidate'])
             ->orderBy('created_at', 'desc');
 
         if ($type !== 'all') {
@@ -40,12 +40,36 @@ class HrRequisitionController extends Controller
             $query->where('status', $status);
         }
 
+        // Enhanced search functionality
         if ($search) {
             $query->where(function ($q) use ($search) {
+                // Search in requisition table
                 $q->where('requisition_id', 'like', "%{$search}%")
                     ->orWhere('candidate_name', 'like', "%{$search}%")
                     ->orWhere('candidate_email', 'like', "%{$search}%")
-                    ->orWhere('submitted_by_name', 'like', "%{$search}%");
+                    ->orWhere('submitted_by_name', 'like', "%{$search}%")
+                    ->orWhere('submitted_by_employee_id', 'like', "%{$search}%")
+                    ->orWhere('mobile_no', 'like', "%{$search}%")
+                    ->orWhere('pan_no', 'like', "%{$search}%")
+                    ->orWhere('aadhaar_no', 'like', "%{$search}%")
+                    ->orWhere('bank_account_no', 'like', "%{$search}%");
+
+                // Search in related candidate master with correct column names from your model
+                $q->orWhereHas('candidate', function ($candidateQuery) use ($search) {
+                    $candidateQuery->where(function ($subQuery) use ($search) {
+                        $subQuery->where('candidate_code', 'like', "%{$search}%")
+                            ->orWhere('candidate_name', 'like', "%{$search}%")
+                            ->orWhere('candidate_email', 'like', "%{$search}%")
+                            ->orWhere('mobile_no', 'like', "%{$search}%")
+                            ->orWhere('alternate_email', 'like', "%{$search}%")
+                            ->orWhere('pan_no', 'like', "%{$search}%")
+                            ->orWhere('aadhaar_no', 'like', "%{$search}%")
+                            ->orWhere('bank_account_no', 'like', "%{$search}%")
+                            ->orWhere('father_name', 'like', "%{$search}%")
+                            ->orWhere('reporting_to', 'like', "%{$search}%")
+                            ->orWhere('reporting_manager_employee_id', 'like', "%{$search}%");
+                    });
+                });
             });
         }
 
@@ -67,7 +91,7 @@ class HrRequisitionController extends Controller
         $requisitions = $query->paginate(20)->appends($request->query());
 
 
-        return view('hr.requisitions.index', compact('requisitions', 'type', 'status','employeeStatus'));
+        return view('hr.requisitions.index', compact('requisitions', 'type', 'status', 'employeeStatus'));
     }
 
 

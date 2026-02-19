@@ -25,6 +25,7 @@ use App\Services\AgriSamvidaService;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\PartyEditHistory;
+use App\Services\S3Service;
 
 class HrAdminController extends Controller
 {
@@ -2261,18 +2262,37 @@ class HrAdminController extends Controller
 			]);
 		}
 		//dd($request->all());
-		// Documents Tab
+		// Documents Tab - ALL FIELDS OPTIONAL
 		if ($activeTab == 'documents' || $activeTab == 'all') {
 			$rules = array_merge($rules, [
-				'agreement_type' => 'nullable|in:unsigned,signed',
-				'new_agreement_number' => 'required_with:agreement_type|string|max:100',
-				'new_agreement_file' => 'required_with:agreement_type|file|mimes:pdf|max:10240',
-				'agreement_remarks' => 'nullable|string|max:500',
-				'other_doc_type' => 'nullable|string',
-				'other_doc_number' => 'required_with:other_doc_type|string|max:100',
-				'other_doc_file' => 'required_with:other_doc_type|file|mimes:pdf,jpg,jpeg,png|max:5120',
+				// Unsigned Agreement - both fields must be present together if uploading
+				'unsigned_agreement_number' => 'required_with:unsigned_agreement_file|string|max:100|nullable',
+				'unsigned_agreement_file' => 'required_with:unsigned_agreement_number|file|mimes:pdf|max:10240|nullable',
+
+				// Signed Agreement - both fields must be present together if uploading
+				'signed_agreement_number' => 'required_with:signed_agreement_file|string|max:100|nullable',
+				'signed_agreement_file' => 'required_with:signed_agreement_number|file|mimes:pdf|max:10240|nullable',
+
+				// PAN Document
+				'pan_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+				'pan_document_number' => 'nullable|string|max:100',
+
+				// Aadhaar Document
+				'aadhaar_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+				'aadhaar_document_number' => 'nullable|string|max:100',
+
+				// Bank Document
+				'bank_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+				'bank_document_number' => 'nullable|string|max:100',
+
+				// Other Document
+				'other_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+				'other_document_number' => 'nullable|string|max:100',
+				'other_document_type' => 'nullable|string|max:100',
 			]);
 		}
+
+
 
 		// Validate only the rules for the active tab
 		$validated = $request->validate($rules);
@@ -2414,27 +2434,36 @@ class HrAdminController extends Controller
 				$candidate->save();
 				$this->syncManpowerTable($candidate);
 			}
-			// Handle new agreement upload (manual upload, not API generation)
-			if ($request->filled('agreement_type') && $request->hasFile('new_agreement_file')) {
-				$file = $request->file('new_agreement_file');
-				$fileName = $request->agreement_type . '_' . $candidate->candidate_code . '_' . time() . '.pdf';
-				$filePath = 'agreements/' . $request->agreement_type . '/' . $fileName;
 
-				// Upload to S3
+			// ===============================
+// HANDLE DOCUMENT UPLOADS
+// ===============================
+
+			/** @var \App\Services\S3Service $s3Service */
+			$s3Service = app(S3Service::class);
+
+			// Handle UNSIGNED AGREEMENT - goes to agreement_documents
+			if ($request->hasFile('unsigned_agreement_file') && $request->filled('unsigned_agreement_number')) {
+				$file = $request->file('unsigned_agreement_file');
+
+				// Upload to S3 in agreements folder
+				$extension = $file->getClientOriginalExtension();
+				$timestamp = time();
+				$filename = 'unsigned_agreement_' . $candidate->candidate_code . '_' . $timestamp . '.' . $extension;
+				$filePath = 'agreements/unsigned/' . $filename;
+
 				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
 				$fileUrl = Storage::disk('s3')->url($filePath);
 
-				// If uploading new unsigned agreement, delete old one
-				if ($request->agreement_type == 'unsigned') {
-					$oldUnsigned = $candidate->agreementDocuments()
-						->where('document_type', 'agreement')
-						->where('sign_status', 'UNSIGNED')
-						->first();
+				// Delete old unsigned agreement if exists
+				$oldUnsigned = $candidate->agreementDocuments()
+					->where('document_type', 'agreement')
+					->where('sign_status', 'UNSIGNED')
+					->first();
 
-					if ($oldUnsigned) {
-						Storage::disk('s3')->delete($oldUnsigned->agreement_path);
-						$oldUnsigned->delete();
-					}
+				if ($oldUnsigned) {
+					Storage::disk('s3')->delete($oldUnsigned->agreement_path);
+					$oldUnsigned->delete();
 				}
 
 				// Create new agreement document
@@ -2442,44 +2471,173 @@ class HrAdminController extends Controller
 					'candidate_id' => $candidate->id,
 					'candidate_code' => $candidate->candidate_code,
 					'document_type' => 'agreement',
-					'sign_status' => $request->agreement_type == 'signed' ? 'SIGNED' : 'UNSIGNED',
 					'stamp_type' => 'NONE',
-					'agreement_number' => $request->new_agreement_number,
+					'sign_status' => 'UNSIGNED',
+					'agreement_number' => $request->unsigned_agreement_number,
 					'agreement_path' => $filePath,
 					'file_url' => $fileUrl,
 					'uploaded_by_user_id' => Auth::id(),
 					'uploaded_by_role' => 'hr_admin',
-					'remarks' => $request->agreement_remarks,
 				]);
 
-				$changes['agreement_uploaded'] = [
-					'old' => 'Previous agreement',
-					'new' => 'New ' . $request->agreement_type . ' agreement uploaded'
+				$changes['unsigned_agreement_uploaded'] = [
+					'old' => 'Previous/None',
+					'new' => 'New unsigned agreement uploaded'
 				];
 			}
 
-			// Handle other document upload
-			if ($request->filled('other_doc_type') && $request->hasFile('other_doc_file')) {
-				$file = $request->file('other_doc_file');
-				$fileName = $request->other_doc_type . '_' . $candidate->candidate_code . '_' . time() . '.' . $file->getClientOriginalExtension();
-				$filePath = 'documents/' . $request->other_doc_type . '/' . $fileName;
+			// Handle SIGNED AGREEMENT - goes to agreement_documents
+			if ($request->hasFile('signed_agreement_file') && $request->filled('signed_agreement_number')) {
+				$file = $request->file('signed_agreement_file');
+
+				// Upload to S3 in agreements folder
+				$extension = $file->getClientOriginalExtension();
+				$timestamp = time();
+				$filename = 'signed_agreement_' . $candidate->candidate_code . '_' . $timestamp . '.' . $extension;
+				$filePath = 'agreements/signed/' . $filename;
 
 				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
 				$fileUrl = Storage::disk('s3')->url($filePath);
 
+				// Delete old signed agreement if exists
+				$oldSigned = $candidate->agreementDocuments()
+					->where('document_type', 'agreement')
+					->where('sign_status', 'SIGNED')
+					->first();
+
+				if ($oldSigned) {
+					Storage::disk('s3')->delete($oldSigned->agreement_path);
+					$oldSigned->delete();
+				}
+
+				// Create new agreement document
 				AgreementDocument::create([
 					'candidate_id' => $candidate->id,
 					'candidate_code' => $candidate->candidate_code,
-					'document_type' => $request->other_doc_type,
-					'sign_status' => 'UPLOADED',
-					'agreement_number' => $request->other_doc_number,
+					'document_type' => 'agreement',
+					'stamp_type' => 'NONE',
+					'sign_status' => 'SIGNED',
+					'agreement_number' => $request->signed_agreement_number,
 					'agreement_path' => $filePath,
 					'file_url' => $fileUrl,
 					'uploaded_by_user_id' => Auth::id(),
 					'uploaded_by_role' => 'hr_admin',
 				]);
+
+				$changes['signed_agreement_uploaded'] = [
+					'old' => 'Previous/None',
+					'new' => 'New signed agreement uploaded'
+				];
 			}
 
+			// Handle PAN DOCUMENT - goes to requisition_documents
+			if ($request->hasFile('pan_document')) {
+				$file = $request->file('pan_document');
+				$documentNumber = $request->pan_document_number;
+
+				// Upload using S3Service
+				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'pan_card');
+
+				if ($upload['success']) {
+					// Store in requisition_documents
+					DB::table('requisition_documents')->insert([
+						'requisition_id' => $candidate->requisition_id,
+						'document_type' => 'pan_card',
+						'file_name' => $upload['filename'],
+						'file_path' => $upload['key'],
+						'uploaded_by_user_id' => Auth::id(),
+						'created_at' => now(),
+						'updated_at' => now(),
+					]);
+
+					$changes['pan_document_uploaded'] = [
+						'old' => 'Missing',
+						'new' => 'PAN document uploaded'
+					];
+				}
+			}
+
+			// Handle AADHAAR DOCUMENT - goes to requisition_documents
+			if ($request->hasFile('aadhaar_document')) {
+				$file = $request->file('aadhaar_document');
+				$documentNumber = $request->aadhaar_document_number;
+
+				// Upload using S3Service
+				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'aadhaar_card');
+
+				if ($upload['success']) {
+					// Store in requisition_documents
+					DB::table('requisition_documents')->insert([
+						'requisition_id' => $candidate->requisition_id,
+						'document_type' => 'aadhaar_card',
+						'file_name' => $upload['filename'],
+						'file_path' => $upload['key'],
+						'uploaded_by_user_id' => Auth::id(),
+						'created_at' => now(),
+						'updated_at' => now(),
+					]);
+
+					$changes['aadhaar_document_uploaded'] = [
+						'old' => 'Missing',
+						'new' => 'Aadhaar document uploaded'
+					];
+				}
+			}
+
+			// Handle BANK DOCUMENT - goes to requisition_documents
+			if ($request->hasFile('bank_document')) {
+				$file = $request->file('bank_document');
+				$documentNumber = $request->bank_document_number;
+
+				// Upload using S3Service
+				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'bank_document');
+
+				if ($upload['success']) {
+					// Store in requisition_documents
+					DB::table('requisition_documents')->insert([
+						'requisition_id' => $candidate->requisition_id,
+						'document_type' => 'bank_document',
+						'file_name' => $upload['filename'],
+						'file_path' => $upload['key'],
+						'uploaded_by_user_id' => Auth::id(),
+						'created_at' => now(),
+						'updated_at' => now(),
+					]);
+
+					$changes['bank_document_uploaded'] = [
+						'old' => 'Missing',
+						'new' => 'Bank document uploaded'
+					];
+				}
+			}
+
+			// Handle OTHER DOCUMENT - goes to requisition_documents
+			if ($request->hasFile('other_document') && $request->filled('other_document_type')) {
+				$file = $request->file('other_document');
+				$documentType = $request->other_document_type;
+				$documentNumber = $request->other_document_number;
+
+				// Upload using S3Service
+				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, $documentType);
+
+				if ($upload['success']) {
+					// Store in requisition_documents
+					DB::table('requisition_documents')->insert([
+						'requisition_id' => $candidate->requisition_id,
+						'document_type' => $documentType,
+						'file_name' => $upload['filename'],
+						'file_path' => $upload['key'],
+						'uploaded_by_user_id' => Auth::id(),
+						'created_at' => now(),
+						'updated_at' => now(),
+					]);
+
+					$changes['other_document_uploaded'] = [
+						'old' => 'Missing',
+						'new' => 'Other document uploaded'
+					];
+				}
+			}
 			// Log all changes to history
 			foreach ($changes as $field => $change) {
 				PartyEditHistory::create([
@@ -2598,14 +2756,25 @@ class HrAdminController extends Controller
 
 			DB::commit();
 
+
 			$message = 'Party details updated successfully.';
 			if ($reportingChanged) {
-				$message .= ' Reporting manager changed. New agreement has been generated.';
+				$message .= ' Reporting manager changed.';
 			}
-			return redirect()->back()->with('success', $message);
 
-			// return redirect()->route('hr-admin.master.view-employee', $candidate)
-			// 	->with('success', $message);
+			// Count how many documents were uploaded
+			$uploadedCount = 0;
+			foreach ($changes as $key => $change) {
+				if (str_contains($key, '_uploaded') || str_contains($key, '_updated')) {
+					$uploadedCount++;
+				}
+			}
+
+			if ($uploadedCount > 0) {
+				$message .= " {$uploadedCount} document(s) have been uploaded/updated.";
+			}
+
+			return redirect()->back()->with('success', $message);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error updating party: ' . $e->getMessage(), [
@@ -2617,6 +2786,13 @@ class HrAdminController extends Controller
 				->with('error', 'Failed to update party details: ' . $e->getMessage())
 				->withInput();
 		}
+	}
+
+
+	protected function uploadDocumentToS3($file, $requisitionType, $documentType)
+	{
+		$s3Service = app(S3Service::class);
+		return $s3Service->uploadRequisitionDocument($file, $requisitionType, $documentType);
 	}
 
 	/**
