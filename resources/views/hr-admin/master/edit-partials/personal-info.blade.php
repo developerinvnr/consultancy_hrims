@@ -5,8 +5,7 @@
             <input type="text"
                 name="candidate_name"
                 class="form-control @error('candidate_name') is-invalid @enderror"
-                value="{{ old('candidate_name', $candidate->candidate_name) }}"
-                required>
+                value="{{ old('candidate_name', $candidate->candidate_name) }}">
             @error('candidate_name')
             <span class="invalid-feedback">{{ $message }}</span>
             @enderror
@@ -142,7 +141,7 @@
     <div class="col-md-4">
         <div class="form-group">
             <label>State</label>
-            <select name="state_residence" class="form-select" required>
+            <select name="state_residence" class="form-select">
                 <option value="">-- Select State --</option>
                 @foreach($states as $state)
                 <option value="{{ $state->id }}"
