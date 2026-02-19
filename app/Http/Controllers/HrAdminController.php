@@ -1238,32 +1238,40 @@ class HrAdminController extends Controller
 	 */
 	private function generateCandidateCode($requisitionType)
 	{
-		// Map requisition type to prefix
-		$prefixMap = [
+		// Prefix mapping
+		$prefix = match ($requisitionType) {
 			'Contractual' => 'CRS',
-			'TFA' => 'TFA',
-			'CB' => 'CB'
-		];
+			'TFA'         => 'TFA',
+			'CB'          => 'CBS',
+			default       => 'CAN',
+		};
 
-		$prefix = $prefixMap[$requisitionType] ?? 'CAN';
+		return DB::transaction(function () use ($prefix, $requisitionType) {
 
-		// Get current year and month
-		$year = date('y');
+			// Lock rows to avoid duplicate code generation (IMPORTANT)
+			$lastCandidate = CandidateMaster::where('requisition_type', $requisitionType)
+				->whereNotNull('candidate_code')
+				->lockForUpdate()
+				->orderBy('candidate_code', 'desc')
+				->first();
 
-		// Get the last candidate code for this type and month
-		$lastCandidate = CandidateMaster::where('candidate_code', 'like', $prefix . '-' . $year . '-%')
-			->orderBy('candidate_code', 'desc')
-			->first();
+			if ($lastCandidate && $lastCandidate->candidate_code) {
 
-		if ($lastCandidate) {
-			$lastNumber = intval(substr($lastCandidate->candidate_code, -4));
-			$newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-		} else {
-			$newNumber = '0001';
-		}
+				// Extract numeric part from code (e.g. CRS0005 → 0005)
+				preg_match('/(\d+)$/', $lastCandidate->candidate_code, $matches);
 
-		return $prefix . '-' . $year . '-' . $newNumber;
+				$nextNumber = isset($matches[1])
+					? ((int)$matches[1] + 1)
+					: 1;
+			} else {
+				$nextNumber = 1;
+			}
+
+			// Format: CRS0001 / TFA0001 / CBS0001
+			return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+		});
 	}
+
 
 
 	/**
