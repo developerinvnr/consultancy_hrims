@@ -562,14 +562,26 @@ class SalaryController extends Controller
         $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
 
         // 🔥 NEW: Recursive reporting employee list
-        $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 
-        $employee_list = \DB::table('users')
-            ->whereIn('emp_id', $allowedEmpIds)
-            ->where('status', 'A')
-            ->orderBy('name')
-            ->pluck('name', 'emp_id')
-            ->toArray();
+            $employee_list = DB::table('core_employee')
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->prepend('All Employees', 'All')
+                ->toArray();
+        } else {
+
+            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+
+            $employee_list = DB::table('core_employee')
+                ->whereIn('employee_id', $allowedEmpIds)
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->toArray();
+        }
+
         //dd($employee);
 
         return view('hr.salary.management-report', compact(
@@ -615,29 +627,34 @@ class SalaryController extends Controller
 
         $user = Auth::user();
         $hierarchyService = app(\App\Services\HierarchyAccessService::class);
+        $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
 
-        // 🔥 Get allowed employee IDs (recursive hierarchy)
-        $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+        // ✅ Apply hierarchy ONLY for non-admin
+        if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 
-        // Build query
-        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->whereIn('reporting_manager_employee_id', $allowedEmpIds) // 🔥 hierarchy restriction
-            ->with([
-                'department',
-                'businessUnit',
-                'zoneRef',
-                'regionRef',
-                'territoryRef',
-                'salaryProcessings' => function ($q) use ($year) {
-                    $q->where('year', $year)
-                        ->select(
-                            'candidate_id',
-                            'month',
-                            'year',
-                            'net_pay'
-                        );
-                }
-            ]);
+            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+
+            $query->whereIn('reporting_manager_employee_id', $allowedEmpIds);
+        }
+
+        // ✅ Attach relations properly
+        $query->with([
+            'department',
+            'businessUnit',
+            'zoneRef',
+            'regionRef',
+            'territoryRef',
+            'salaryProcessings' => function ($q) use ($year) {
+                $q->where('year', $year)
+                    ->select(
+                        'candidate_id',
+                        'month',
+                        'year',
+                        'net_pay'
+                    );
+            }
+        ]);
+
 
         // Apply Filters
         foreach ($filters as $key => $value) {
@@ -659,8 +676,9 @@ class SalaryController extends Controller
                         $query->where('territory', $value);
                         break;
                     case 'employee':
-                        $query->where('employee_id', $value);
+                        $query->where('reporting_manager_employee_id', $value);
                         break;
+
                     case 'requisition_type':
                         $query->where('requisition_type', $value);
                         break;
@@ -754,5 +772,4 @@ class SalaryController extends Controller
             "{$filename}.xlsx"
         );
     }
-    
 }

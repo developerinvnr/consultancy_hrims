@@ -48,19 +48,14 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 
 		// 🔐 Apply Hierarchy Restriction
 		$user = Auth::user();
-		$employee = Employee::where('employee_id', $user->emp_id)->first();
-		$accessLevel = $this->hierarchyService->getAccessLevel($employee);
-		if ($accessLevel !== 'all') {
 
-			if ($employee->territory > 0) {
-				$query->where('territory', $employee->territory);
-			} elseif ($employee->region > 0) {
-				$query->where('region', $employee->region);
-			} elseif ($employee->zone > 0) {
-				$query->where('zone', $employee->zone);
-			} elseif ($employee->bu > 0) {
-				$query->where('business_unit', $employee->bu);
-			}
+		// ✅ Apply hierarchy ONLY for non-admin
+		if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+
+			$allowedEmpIds = $this->hierarchyService
+				->getReportingEmployeeIds($user->emp_id);
+
+			$query->whereIn('reporting_manager_employee_id', $allowedEmpIds);
 		}
 
 		// Apply UI filters
@@ -82,6 +77,9 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 					case 'territory':
 						$query->where('territory', $value);
 						break;
+					case 'employee':
+						$query->where('reporting_manager_employee_id', $value);
+						break;
 					case 'requisition_type':
 						$query->where('requisition_type', $value);
 						break;
@@ -89,7 +87,9 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 			}
 		}
 
-		$candidates = $query->orderBy('candidate_code')->get();
+
+		$candidates = $query->orderBy('candidate_code')->cursor();
+
 
 		$this->data = [];
 		$this->monthlyTotals = array_fill_keys(range(1, 12), 0);
