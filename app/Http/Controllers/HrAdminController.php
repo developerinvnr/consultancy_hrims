@@ -2094,26 +2094,14 @@ class HrAdminController extends Controller
 	 */
 	public function editParty(CandidateMaster $candidate)
 	{
-		\DB::listen(function ($query) {
-    \Log::info('SQL:', [
-        'sql' => $query->sql,
-        'bindings' => $query->bindings,
-        'time' => $query->time
-    ]);
-});
-		try {
 
-			\Log::info('EditParty started', [
-				'candidate_id' => $candidate->id,
-				'user_id' => auth()->id()
-			]);
+		try {
 
 			if (!auth()->user()->hasRole('hr_admin')) {
 				\Log::warning('Unauthorized access to editParty');
 				abort(403, 'Unauthorized');
 			}
 
-			\Log::info('Loading relationships...');
 			$candidate->load([
 				'agreementDocuments',
 				'requisition',
@@ -2122,28 +2110,21 @@ class HrAdminController extends Controller
 				'qualification'
 			]);
 
-			\Log::info('Loading functions...');
-$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
+			$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
 
-\Log::info('Loading departments...');
-$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
+			$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
 
-\Log::info('Loading verticals...');
-$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
+			$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
 
-\Log::info('Loading cities...');
-$selectedCity = \App\Models\CoreCityVillage::find($candidate->city);
+			$selectedCity = \App\Models\CoreCityVillage::find($candidate->city);
 
 
 
-\Log::info('Loading states...');
-$states = \App\Models\CoreState::orderBy('state_name')->get();
+			$states = \App\Models\CoreState::orderBy('state_name')->get();
 
-\Log::info('Loading qualifications...');
-$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
+			$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
 
 
-			\Log::info('Loading department employees...');
 			$departmentEmployees = DB::table('core_employee')
 				->where('department', $candidate->department_id)
 				->where('emp_status', 'A')
@@ -2152,26 +2133,23 @@ $qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
 				->orderBy('emp_name')
 				->get();
 
-			\Log::info('Loading edit history...');
 			$editHistory = PartyEditHistory::where('candidate_id', $candidate->id)
 				->with('user')
 				->orderBy('created_at', 'desc')
 				->get();
 
-			\Log::info('EditParty finished successfully');
 
-			return response()->view('hr-admin.master.edit-party', compact(
-    'candidate',
-    'functions',
-    'departments',
-    'verticals',
-    'editHistory',
-    'departmentEmployees',
-    'selectedCity',
-    'states',
-    'qualifications'
-));
-
+			return view('hr-admin.master.edit-party', compact(
+				'candidate',
+				'functions',
+				'departments',
+				'verticals',
+				'editHistory',
+				'departmentEmployees',
+				'selectedCity',
+				'states',
+				'qualifications'
+			));
 		} catch (\Throwable $e) {
 
 			\Log::error('EditParty Error', [

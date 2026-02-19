@@ -13,7 +13,7 @@
                         Edit Party: {{ $candidate->candidate_name }} ({{ $candidate->candidate_code }})
                     </h3>
                     <div class="card-tools">
-                        <a href="{{ route('hr-admin.master.index', ['type' => $candidate->requisition_type]) }}"
+                        <a  href="{{ url()->previous() }}"
                             class="btn btn-sm btn-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Master
                         </a>
