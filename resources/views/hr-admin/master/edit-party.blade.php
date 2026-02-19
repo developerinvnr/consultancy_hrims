@@ -133,6 +133,22 @@ $(document).ready(function () {
 
 });
 </script>
+
+@if ($errors->any())
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    var oldTab = "{{ old('active_tab') }}";
+
+    if(oldTab){
+        var triggerEl = document.querySelector('#editPartyTabs a[href="#'+oldTab+'"]');
+        if(triggerEl){
+            var tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        }
+    }
+});
+</script>
+@endif
 @endpush
 
 

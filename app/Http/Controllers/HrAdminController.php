@@ -2260,7 +2260,7 @@ class HrAdminController extends Controller
 				'reporting_change_remarks' => 'nullable|string|max:500',
 			]);
 		}
-		//dd($request->all);
+		//dd($request->all());
 		// Documents Tab
 		if ($activeTab == 'documents' || $activeTab == 'all') {
 			$rules = array_merge($rules, [
@@ -2493,108 +2493,108 @@ class HrAdminController extends Controller
 			}
 
 			// If reporting changed, generate new agreement via API
-			if ($reportingChanged) {
-				try {
-					// Get the requisition associated with this candidate
-					$requisition = $candidate->requisition;
+			// if ($reportingChanged) {
+			// 	try {
+			// 		// Get the requisition associated with this candidate
+			// 		$requisition = $candidate->requisition;
 
-					if (!$requisition) {
-						throw new \Exception('Associated requisition not found');
-					}
+			// 		if (!$requisition) {
+			// 			throw new \Exception('Associated requisition not found');
+			// 		}
 
-					// Generate new agreement via API
-					$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidate->candidate_code);
+			// 		// Generate new agreement via API
+			// 		$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidate->candidate_code);
 
-					\Log::info('Agreement API Response for reporting change:', $agreementResponse);
+			// 		\Log::info('Agreement API Response for reporting change:', $agreementResponse);
 
-					if (!$agreementResponse['success']) {
-						throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
-					}
+			// 		if (!$agreementResponse['success']) {
+			// 			throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
+			// 		}
 
-					$agreementId = $agreementResponse['agreement_id'] ?? null;
+			// 		$agreementId = $agreementResponse['agreement_id'] ?? null;
 
-					// Delete old unsigned agreements
-					$oldUnsignedAgreements = $candidate->agreementDocuments()
-						->where('document_type', 'agreement')
-						->where('sign_status', 'UNSIGNED')
-						->get();
+			// 		// Delete old unsigned agreements
+			// 		$oldUnsignedAgreements = $candidate->agreementDocuments()
+			// 			->where('document_type', 'agreement')
+			// 			->where('sign_status', 'UNSIGNED')
+			// 			->get();
 
-					foreach ($oldUnsignedAgreements as $oldDoc) {
-						Storage::disk('s3')->delete($oldDoc->agreement_path);
-						$oldDoc->delete();
-					}
+			// 		foreach ($oldUnsignedAgreements as $oldDoc) {
+			// 			Storage::disk('s3')->delete($oldDoc->agreement_path);
+			// 			$oldDoc->delete();
+			// 		}
 
-					// Save new agreements
-					$agreements = [
-						[
-							'stamp_type' => 'NONE',
-							'pdf_path'   => $agreementResponse['pdf_path_old_stamp'] ?? null,
-						],
-						[
-							'stamp_type' => 'E_STAMP',
-							'pdf_path'   => $agreementResponse['pdf_path_estamp'] ?? null,
-						],
-					];
+			// 		// Save new agreements
+			// 		$agreements = [
+			// 			[
+			// 				'stamp_type' => 'NONE',
+			// 				'pdf_path'   => $agreementResponse['pdf_path_old_stamp'] ?? null,
+			// 			],
+			// 			[
+			// 				'stamp_type' => 'E_STAMP',
+			// 				'pdf_path'   => $agreementResponse['pdf_path_estamp'] ?? null,
+			// 			],
+			// 		];
 
-					foreach ($agreements as $agreement) {
-						if (empty($agreement['pdf_path'])) {
-							continue;
-						}
+			// 		foreach ($agreements as $agreement) {
+			// 			if (empty($agreement['pdf_path'])) {
+			// 				continue;
+			// 			}
 
-						$pdfPath = $agreement['pdf_path'];
-						$fileUrl = 'https://s3.ap-south-1.amazonaws.com/vnragri.bkt/' . ltrim($pdfPath, '/');
+			// 			$pdfPath = $agreement['pdf_path'];
+			// 			$fileUrl = 'https://s3.ap-south-1.amazonaws.com/vnragri.bkt/' . ltrim($pdfPath, '/');
 
-						AgreementDocument::create([
-							'candidate_id'        => $candidate->id,
-							'candidate_code'      => $candidate->candidate_code,
-							'document_type'       => 'agreement',
-							'stamp_type'          => $agreement['stamp_type'],
-							'sign_status'         => 'UNSIGNED',
-							'agreement_number'    => $agreementId,
-							'agreement_path'      => $pdfPath,
-							'file_url'            => $fileUrl,
-							'uploaded_by_user_id' => Auth::id(),
-							'uploaded_by_role'    => 'hr_admin',
-							'remarks'              => 'Generated due to reporting manager change',
-						]);
-					}
+			// 			AgreementDocument::create([
+			// 				'candidate_id'        => $candidate->id,
+			// 				'candidate_code'      => $candidate->candidate_code,
+			// 				'document_type'       => 'agreement',
+			// 				'stamp_type'          => $agreement['stamp_type'],
+			// 				'sign_status'         => 'UNSIGNED',
+			// 				'agreement_number'    => $agreementId,
+			// 				'agreement_path'      => $pdfPath,
+			// 				'file_url'            => $fileUrl,
+			// 				'uploaded_by_user_id' => Auth::id(),
+			// 				'uploaded_by_role'    => 'hr_admin',
+			// 				'remarks'              => 'Generated due to reporting manager change',
+			// 			]);
+			// 		}
 
-					// Update candidate with new agreement number
-					$candidate->update([
-						'agreement_number' => $agreementId,
-						'candidate_status' => 'Unsigned Agreement Uploaded',
-					]);
+			// 		// Update candidate with new agreement number
+			// 		$candidate->update([
+			// 			'agreement_number' => $agreementId,
+			// 			'candidate_status' => 'Unsigned Agreement Uploaded',
+			// 		]);
 
-					// Log agreement generation in history
-					PartyEditHistory::create([
-						'candidate_id' => $candidate->id,
-						'field_name' => 'agreement_generated',
-						'old_value' => 'Old agreement',
-						'new_value' => 'New agreement generated (ID: ' . $agreementId . ')',
-						'changed_by_user_id' => Auth::id(),
-						'reason' => 'Reporting manager changed',
-					]);
+			// 		// Log agreement generation in history
+			// 		PartyEditHistory::create([
+			// 			'candidate_id' => $candidate->id,
+			// 			'field_name' => 'agreement_generated',
+			// 			'old_value' => 'Old agreement',
+			// 			'new_value' => 'New agreement generated (ID: ' . $agreementId . ')',
+			// 			'changed_by_user_id' => Auth::id(),
+			// 			'reason' => 'Reporting manager changed',
+			// 		]);
 
-					\Log::info('New agreement generated successfully for candidate: ' . $candidate->candidate_code . ' due to reporting change');
-				} catch (\Exception $e) {
-					\Log::error('Failed to generate agreement for reporting change: ' . $e->getMessage(), [
-						'candidate_id' => $candidate->id,
-						'reporting_from' => $oldReportingTo ?? 'unknown',
-						'reporting_to' => $request->new_reporting_to,
-					]);
+			// 		\Log::info('New agreement generated successfully for candidate: ' . $candidate->candidate_code . ' due to reporting change');
+			// 	} catch (\Exception $e) {
+			// 		\Log::error('Failed to generate agreement for reporting change: ' . $e->getMessage(), [
+			// 			'candidate_id' => $candidate->id,
+			// 			'reporting_from' => $oldReportingTo ?? 'unknown',
+			// 			'reporting_to' => $request->new_reporting_to,
+			// 		]);
 
-					// Don't rollback the entire transaction if agreement generation fails
-					// Just log it and continue - the reporting change is still saved
-					// PartyEditHistory::create([
-					// 	'candidate_id' => $candidate->id,
-					// 	'field_name' => 'agreement_generation_failed',
-					// 	'old_value' => '',
-					// 	'new_value' => 'Failed to generate agreement: ' . $e->getMessage(),
-					// 	'changed_by_user_id' => Auth::id(),
-					// 	'reason' => 'Reporting manager changed but agreement generation failed',
-					// ]);
-				}
-			}
+			// 		// Don't rollback the entire transaction if agreement generation fails
+			// 		// Just log it and continue - the reporting change is still saved
+			// 		// PartyEditHistory::create([
+			// 		// 	'candidate_id' => $candidate->id,
+			// 		// 	'field_name' => 'agreement_generation_failed',
+			// 		// 	'old_value' => '',
+			// 		// 	'new_value' => 'Failed to generate agreement: ' . $e->getMessage(),
+			// 		// 	'changed_by_user_id' => Auth::id(),
+			// 		// 	'reason' => 'Reporting manager changed but agreement generation failed',
+			// 		// ]);
+			// 	}
+			// }
 
 			DB::commit();
 

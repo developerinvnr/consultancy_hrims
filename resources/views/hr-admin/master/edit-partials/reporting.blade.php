@@ -35,6 +35,9 @@
                     </option>
                 @endforeach
             </select>
+         @error('new_reporting_manager_employee_id')
+            <div class="text-danger">{{ $message }}</div>
+            @enderror
         </div>
     </div>
 </div>
@@ -52,6 +55,10 @@
                 <option value="Promoted">Reporting Manager Promoted</option>
                 <option value="Other">Other</option>
             </select>
+            @error('reporting_change_reason')
+<div class="text-danger">{{ $message }}</div>
+@enderror
+
         </div>
     </div>
 </div>
