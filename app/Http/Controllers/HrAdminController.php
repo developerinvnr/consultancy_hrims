@@ -2094,72 +2094,98 @@ class HrAdminController extends Controller
 	 */
 	public function editParty(CandidateMaster $candidate)
 	{
-		if (!auth()->user()->hasRole('hr_admin')) {
-			abort(403, 'Unauthorized');
+		try {
+
+			\Log::info('EditParty started', [
+				'candidate_id' => $candidate->id,
+				'user_id' => auth()->id()
+			]);
+
+			if (!auth()->user()->hasRole('hr_admin')) {
+				\Log::warning('Unauthorized access to editParty');
+				abort(403, 'Unauthorized');
+			}
+
+			\Log::info('Loading relationships...');
+			$candidate->load([
+				'agreementDocuments',
+				'requisition',
+				'cityMaster',
+				'residenceState',
+				'qualification'
+			]);
+
+			\Log::info('Loading dropdown data...');
+			$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
+			$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
+			$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
+
+			$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
+			$states = \App\Models\CoreState::orderBy('state_name')->get();
+			$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
+
+			\Log::info('Loading department employees...');
+			$departmentEmployees = DB::table('core_employee')
+				->where('department', $candidate->department_id)
+				->where('emp_status', 'A')
+				->where('company_id', '1')
+				->select('employee_id', 'emp_name', 'emp_code', 'emp_designation')
+				->orderBy('emp_name')
+				->get();
+
+			\Log::info('Loading edit history...');
+			$editHistory = PartyEditHistory::where('candidate_id', $candidate->id)
+				->with('user')
+				->orderBy('created_at', 'desc')
+				->get();
+
+			\Log::info('EditParty finished successfully');
+
+			return view('hr-admin.master.edit-party', compact(
+				'candidate',
+				'functions',
+				'departments',
+				'verticals',
+				'editHistory',
+				'departmentEmployees',
+				'cities',
+				'states',
+				'qualifications'
+			));
+		} catch (\Throwable $e) {
+
+			\Log::error('EditParty Error', [
+				'message' => $e->getMessage(),
+				'file' => $e->getFile(),
+				'line' => $e->getLine(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+			abort(500, 'Something went wrong.');
 		}
-
-		// Load relationships
-		$candidate->load(['agreementDocuments','requisition','cityMaster',
-        'residenceState','qualification']);
-
-		// Load dropdown data
-		$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
-		$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
-		$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
-
-		$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
-		$states = \App\Models\CoreState::orderBy('state_name')->get();
-		$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
-
-       //dd($candidate);
-		// Get all employees from candidate's department for reporting manager dropdown
-		$departmentEmployees = DB::table('core_employee')
-			->where('department', $candidate->department_id)
-			->where('emp_status', 'A')
-			->where('company_id', '1')
-			->select('employee_id', 'emp_name', 'emp_code', 'emp_designation')
-			->orderBy('emp_name')
-			->get();
-
-		// Load edit history
-		$editHistory = PartyEditHistory::where('candidate_id', $candidate->id)
-			->with('user')
-			->orderBy('created_at', 'desc')
-			->get();
-
-		return view('hr-admin.master.edit-party', compact(
-		'candidate',
-        'functions',
-        'departments',
-        'verticals',
-        'editHistory',
-        'departmentEmployees',
-        'cities',
-        'states',
-        'qualifications'
-		));
 	}
 
+
 	private function syncManpowerTable(CandidateMaster $candidate)
-{
-    DB::table('manpower_requisitions')
-        ->where('id', $candidate->requisition_id)
-        ->update([
-            'candidate_name' => $candidate->candidate_name,
-            'father_name' => $candidate->father_name,
-            'mobile_no' => $candidate->mobile_no,
-            'address_line_1' => $candidate->address_line_1,
-            'city' => $candidate->city,
-            'state_residence' => $candidate->state_residence,
-            'pin_code' => $candidate->pin_code,
-            'reporting_to' => $candidate->reporting_to,
-            'reporting_manager_employee_id' => $candidate->reporting_manager_employee_id,
-            'contract_start_date' => $candidate->contract_start_date,
-            'contract_end_date' => $candidate->contract_end_date,
-            'remuneration_per_month' => $candidate->remuneration_per_month,
-            'updated_at' => now()
-        ]);
-}
+	{
+		DB::table('manpower_requisitions')
+			->where('id', $candidate->requisition_id)
+			->update([
+				'candidate_name' => $candidate->candidate_name,
+				'father_name' => $candidate->father_name,
+				'mobile_no' => $candidate->mobile_no,
+				'address_line_1' => $candidate->address_line_1,
+				'city' => $candidate->city,
+				'state_residence' => $candidate->state_residence,
+				'pin_code' => $candidate->pin_code,
+				'reporting_to' => $candidate->reporting_to,
+				'reporting_manager_employee_id' => $candidate->reporting_manager_employee_id,
+				'contract_start_date' => $candidate->contract_start_date,
+				'contract_end_date' => $candidate->contract_end_date,
+				'remuneration_per_month' => $candidate->remuneration_per_month,
+				'updated_at' => now()
+			]);
+	}
 
 
 	/**
@@ -2360,7 +2386,7 @@ class HrAdminController extends Controller
 		| Get only changed fields
 		|--------------------------------------------------------------------------
 		*/
-		\Log::info('Dirty fields:', $candidate->getDirty());
+			\Log::info('Dirty fields:', $candidate->getDirty());
 
 			$dirtyFields = $candidate->getDirty();
 
@@ -2389,7 +2415,6 @@ class HrAdminController extends Controller
 			if ($candidate->isDirty()) {
 				$candidate->save();
 				$this->syncManpowerTable($candidate);
-
 			}
 			// Handle new agreement upload (manual upload, not API generation)
 			if ($request->filled('agreement_type') && $request->hasFile('new_agreement_file')) {
