@@ -2167,7 +2167,7 @@ $qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
     'verticals',
     'editHistory',
     'departmentEmployees',
-    'cities',
+    'selectedCity',
     'states',
     'qualifications'
 ));
