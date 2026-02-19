@@ -128,7 +128,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     let currentMonth = null;
     let currentYear = null;
@@ -305,7 +306,7 @@
         loadReportPreview();
     });
 </script>
-@endsection
+@endpush
 
 @push('styles')
 <style>

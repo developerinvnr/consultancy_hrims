@@ -208,7 +208,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
 	let currentYear = null;
 	let currentFilters = {};
@@ -511,7 +512,7 @@ $(document).on("change", "#region", function () {
 		loadReportPreview();
 	});
 </script>
-@endsection
+@endpush
 
 <style>
 	.management-table-wrapper {

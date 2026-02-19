@@ -120,7 +120,8 @@
     </div>
 
 @endsection
-@section('script_section')
+@push('scripts')
+
     <script>
         $(document).on('click', '#syncAPI', function () {
             $.ajax({
@@ -196,4 +197,4 @@
 
             });
     </script>
-@endsection
+@endpush

@@ -507,7 +507,7 @@
 
 @endsection
 
-@section('script_section')
+@push('scripts')
 <script>
 	$(document).ready(function() {
 		// Quick Reject Modal
@@ -536,4 +536,4 @@
 		});
 	});
 </script>
-@endsection
+@endpush

@@ -223,7 +223,8 @@
 </style>
 
 
-@section('script_section')
+@push('scripts')
+
 <script>
     // Column visibility state
     const columnVisibility = {
@@ -397,4 +398,4 @@
         });
     });
 </script>
-@endsection
+@endpush

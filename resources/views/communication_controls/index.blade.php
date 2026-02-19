@@ -117,7 +117,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     $(document).ready(function() {
         // Reset modal form when closed
@@ -174,4 +175,4 @@
         });
     });
 </script>
-@endsection
+@endpush

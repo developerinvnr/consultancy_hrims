@@ -427,7 +427,8 @@
 </style>
 @endpush
 
-@section('script_section')
+@push('scripts')
+
 <script>
     $(document).ready(function() {
         // Constants
@@ -1612,4 +1613,4 @@
         }
     });
 </script>
-@endsection
+@endpush

@@ -479,7 +479,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
 $(document).ready(function() {
     // Upload Unsigned Agreement Modal
@@ -729,4 +730,4 @@ $(document).ready(function() {
     }
 });
 </script>
-@endsection
+@endpush

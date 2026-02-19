@@ -634,7 +634,7 @@
 	}
 </style>
 
-@section('script_section')
+@push('scripts')
 <script src="{{URL::to('/')}}/assets/js/contract-rules.js"></script>
 <script>
 	$(document).ready(function() {
@@ -1044,4 +1044,4 @@
 		});
 	});
 </script>
-@endsection
+@endpush

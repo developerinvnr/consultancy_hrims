@@ -162,7 +162,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // File upload validation
@@ -194,4 +195,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush

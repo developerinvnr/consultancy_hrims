@@ -26,7 +26,8 @@
     </div>
 
     @include('layouts.script')
-    @yield('script_section')
+    @stack('scripts')
+
 
 </body>
 </html>

@@ -287,7 +287,8 @@
     z-index: 1065 !important; /* Higher than Bootstrap modal */
 }
 	</style>
-@section('script_section')
+@push('scripts')
+
 <script>
 $(document).ready(function () {
 
@@ -439,4 +440,4 @@ $(document).ready(function () {
 
 });
 </script>
-@endsection
+@endpush

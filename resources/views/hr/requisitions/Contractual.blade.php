@@ -564,7 +564,8 @@
     }
 </style>
 
-@section('script_section')
+@push('scripts')
+
 <script>
     $(document).ready(function() {
         // Initialize Select2
@@ -1244,4 +1245,4 @@
         });
     });
 </script>
-@endsection
+@endpush

@@ -224,7 +224,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     $(document).ready(function() {
         $('[title]').tooltip();
@@ -259,4 +260,4 @@
         border-bottom: none !important;
     }
 </style>
-@endsection
+@endpush

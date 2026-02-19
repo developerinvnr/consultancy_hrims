@@ -212,7 +212,8 @@
 </style>
 @endpush
 
-@section('script_section')
+@push('scripts')
+
 <script>
     let currentMonth = null;
     let currentYear = null;
@@ -895,4 +896,4 @@ $(document).on('change', '.row-check', function () {
     $('#selectAll').prop('checked', total > 0 && total === checked);
 });
 </script>
-@endsection
+@endpush

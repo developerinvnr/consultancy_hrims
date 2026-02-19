@@ -2099,13 +2099,19 @@ class HrAdminController extends Controller
 		}
 
 		// Load relationships
-		$candidate->load(['agreementDocuments', 'requisition']);
+		$candidate->load(['agreementDocuments','requisition','cityMaster',
+        'residenceState','qualification']);
 
 		// Load dropdown data
 		$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
 		$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
 		$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
 
+		$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
+		$states = \App\Models\CoreState::orderBy('state_name')->get();
+		$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
+
+       //dd($candidate);
 		// Get all employees from candidate's department for reporting manager dropdown
 		$departmentEmployees = DB::table('core_employee')
 			->where('department', $candidate->department_id)
@@ -2122,14 +2128,39 @@ class HrAdminController extends Controller
 			->get();
 
 		return view('hr-admin.master.edit-party', compact(
-			'candidate',
-			'functions',
-			'departments',
-			'verticals',
-			'editHistory',
-			'departmentEmployees' // Pass to view
+		'candidate',
+        'functions',
+        'departments',
+        'verticals',
+        'editHistory',
+        'departmentEmployees',
+        'cities',
+        'states',
+        'qualifications'
 		));
 	}
+
+	private function syncManpowerTable(CandidateMaster $candidate)
+{
+    DB::table('manpower_requisitions')
+        ->where('id', $candidate->requisition_id)
+        ->update([
+            'candidate_name' => $candidate->candidate_name,
+            'father_name' => $candidate->father_name,
+            'mobile_no' => $candidate->mobile_no,
+            'address_line_1' => $candidate->address_line_1,
+            'city' => $candidate->city,
+            'state_residence' => $candidate->state_residence,
+            'pin_code' => $candidate->pin_code,
+            'reporting_to' => $candidate->reporting_to,
+            'reporting_manager_employee_id' => $candidate->reporting_manager_employee_id,
+            'contract_start_date' => $candidate->contract_start_date,
+            'contract_end_date' => $candidate->contract_end_date,
+            'remuneration_per_month' => $candidate->remuneration_per_month,
+            'updated_at' => now()
+        ]);
+}
+
 
 	/**
 	 * Update party details
@@ -2137,6 +2168,11 @@ class HrAdminController extends Controller
 	public function updateParty(Request $request, CandidateMaster $candidate)
 	{
 		//dd($request->all());
+		$request->merge([
+			'pin_code' => $request->pin_code ?: '000000'
+		]);
+
+
 
 		if (!auth()->user()->hasRole('hr_admin')) {
 			abort(403, 'Unauthorized');
@@ -2216,6 +2252,8 @@ class HrAdminController extends Controller
 
 		// Validate only the rules for the active tab
 		$validated = $request->validate($rules);
+		//dd('validation passed');
+
 		DB::beginTransaction();
 		try {
 
@@ -2237,9 +2275,20 @@ class HrAdminController extends Controller
 
 					$reportingChanged = true;
 
+					// Update candidate_master
 					$candidate->reporting_to = $request->new_reporting_to;
 					$candidate->reporting_manager_employee_id = $request->new_reporting_manager_employee_id;
 					$candidate->reporting_manager_address = $request->new_reporting_manager_address ?? '';
+
+					// Update manpower_requisitions
+					DB::table('manpower_requisitions')
+						->where('id', $candidate->requisition_id)
+						->update([
+							'reporting_to' => $request->new_reporting_to,
+							'reporting_manager_employee_id' => $request->new_reporting_manager_employee_id,
+							'reporting_manager_address' => $request->new_reporting_manager_address ?? '',
+							'updated_at' => now()
+						]);
 
 					$changes['reporting_manager'] = [
 						'old' => $oldReportingTo . ' (' . $oldReportingManagerId . ')',
@@ -2247,6 +2296,7 @@ class HrAdminController extends Controller
 					];
 				}
 			}
+
 
 
 
@@ -2310,6 +2360,8 @@ class HrAdminController extends Controller
 		| Get only changed fields
 		|--------------------------------------------------------------------------
 		*/
+		\Log::info('Dirty fields:', $candidate->getDirty());
+
 			$dirtyFields = $candidate->getDirty();
 
 			// if (!empty($dirtyFields)) {
@@ -2336,6 +2388,8 @@ class HrAdminController extends Controller
 
 			if ($candidate->isDirty()) {
 				$candidate->save();
+				$this->syncManpowerTable($candidate);
+
 			}
 			// Handle new agreement upload (manual upload, not API generation)
 			if ($request->filled('agreement_type') && $request->hasFile('new_agreement_file')) {

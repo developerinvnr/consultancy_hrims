@@ -121,7 +121,8 @@
 <!-- Remove the entire modal section since we're using separate page -->
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     // Global variables
     let currentCandidateId = null;
@@ -311,4 +312,4 @@
         }
     }
 </style>
-@endsection
+@endpush

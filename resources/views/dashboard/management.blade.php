@@ -260,7 +260,8 @@
 
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
 	// ApexCharts color scheme
 	const chartColors = {
@@ -1046,4 +1047,4 @@
 	// Auto-refresh every 5 minutes
 	setInterval(loadDashboardData, 300000);
 </script>
-@endsection
+@endpush

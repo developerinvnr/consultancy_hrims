@@ -639,7 +639,8 @@
 	}
 </style>
 
-@section('script_section')
+@push('scripts')
+
 <script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
 	$(document).ready(function() {
@@ -1050,4 +1051,4 @@
 		});
 	});
 </script>
-@endsection
+@endpush

@@ -1,5 +1,3 @@
-<input type="hidden" name="active_tab" value="reporting">
-
 <div class="row">
     <div class="col-md-6">
         <div class="form-group">
@@ -71,7 +69,7 @@
     <i class="fas fa-clock"></i> Reporting changes will be effective from next working day.
 </div>
 
-@section('script_section')
+@push('scripts')
 <script>
 $(document).ready(function() {
     // Initialize Select2
@@ -102,4 +100,4 @@ $(document).ready(function() {
     $('#employee_select').trigger('change');
 });
 </script>
-@endsection
+@endpush

@@ -591,7 +591,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 	$(document).ready(function() {
@@ -978,4 +979,4 @@
 		background-color: #e6f7f0 !important;
 	}
 </style>
-@endsection
+@endpush

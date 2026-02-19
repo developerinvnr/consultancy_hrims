@@ -235,7 +235,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     // Global variables
     let currentMonth, currentYear, currentEmployeeType, currentDaysInMonth;
@@ -1161,4 +1162,4 @@
         }
     }
 </style>
-@endsection
+@endpush

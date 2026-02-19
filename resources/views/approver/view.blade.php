@@ -217,7 +217,7 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Get the emp_id values for comparison
@@ -298,4 +298,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush

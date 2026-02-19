@@ -26,6 +26,8 @@
                         id="editPartyForm">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="active_tab" id="active_tab" value="">
+
 
                         <!-- Tabs Navigation -->
                         <ul class="nav nav-tabs" id="editPartyTabs" role="tablist">
@@ -108,44 +110,29 @@
     </div>
 </div>
 @endsection
-@section('script_section')
+@push('scripts')
 <script>
-    $(document).ready(function() {
-        // File input label update
-        $(document).on('change', '.custom-file-input', function() {
-            let fileName = $(this).val().split('\\').pop();
-            $(this).next('.custom-file-label').html(fileName);
-        });
-        // Form validation
-        $('#editPartyForm').validate({
-            rules: {
-                candidate_name: {
-                    required: true
-                },
-                candidate_email: {
-                    email: true // no required here
-                },
-                mobile_no: {
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 10
-                },
-                contract_start_date: {
-                    date: true
-                },
-                contract_end_date: {
-                    date: true
-                }
-            }
-        });
+$(document).ready(function () {
 
+    console.log("Script Loaded");
 
-        // Show confirmation before submitting
-        $('#submitBtn').click(function(e) {
-            if ($('#editPartyForm').valid()) {
-                return confirm('Are you sure you want to update this party\'s details? Changes will be logged.');
-            }
-        });
+    // Get active tab inside THIS form only
+    let activePane = $('#editPartyForm .tab-pane.active');
+
+    if (activePane.length) {
+        $('#active_tab').val(activePane.attr('id'));
+        console.log("Initial tab:", activePane.attr('id'));
+    }
+
+    // When tab changes (Bootstrap 5)
+    $('#editPartyTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        let tabId = $(e.target).attr('href').replace('#', '');
+        $('#active_tab').val(tabId);
+        console.log("Tab switched to:", tabId);
     });
+
+});
 </script>
-@endsection
+@endpush
+
+

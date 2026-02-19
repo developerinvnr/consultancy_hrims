@@ -554,7 +554,8 @@
 </div>
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
     $(document).ready(function() {
 
@@ -1245,4 +1246,4 @@
         });
     });
 </script>
-@endsection
+@endpush

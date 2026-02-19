@@ -660,7 +660,8 @@
 </style>
 @endpush
 
-@section('script_section')
+@push('scripts')
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Verify Application Button Click
@@ -830,4 +831,4 @@
         });
     });
 </script>
-@endsection
+@endpush

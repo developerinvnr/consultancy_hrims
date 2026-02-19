@@ -510,7 +510,8 @@
 
 @endsection
 
-@section('script_section')
+@push('scripts')
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Select2 for reporting manager dropdown
@@ -630,4 +631,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush

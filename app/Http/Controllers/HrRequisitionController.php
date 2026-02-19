@@ -64,7 +64,8 @@ class HrRequisitionController extends Controller
             }
         }
 
-        $requisitions = $query->paginate(20);
+        $requisitions = $query->paginate(20)->appends($request->query());
+
 
         return view('hr.requisitions.index', compact('requisitions', 'type', 'status','employeeStatus'));
     }
