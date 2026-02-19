@@ -2132,7 +2132,9 @@ $departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
 $verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
 
 \Log::info('Loading cities...');
-$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
+$selectedCity = \App\Models\CoreCityVillage::find($candidate->city);
+
+
 
 \Log::info('Loading states...');
 $states = \App\Models\CoreState::orderBy('state_name')->get();

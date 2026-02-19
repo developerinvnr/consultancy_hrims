@@ -130,12 +130,11 @@
             <label>City</label>
             <select name="city" class="form-select" required>
                 <option value="">-- Select City --</option>
-                @foreach($cities as $city)
-                <option value="{{ $city->id }}"
-                    {{ $candidate->city == $city->id ? 'selected' : '' }}>
-                    {{ $city->city_village_name }}
-                </option>
-                @endforeach
+                @if($selectedCity)
+                    <option value="{{ $selectedCity->id }}" selected>
+                        {{ $selectedCity->city_village_name }}
+                    </option>
+                @endif
             </select>
 
         </div>
