@@ -2115,14 +2115,24 @@ class HrAdminController extends Controller
 				'qualification'
 			]);
 
-			\Log::info('Loading dropdown data...');
-			$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
-			$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
-			$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
+			\Log::info('Loading functions...');
+$functions = \App\Models\CoreFunction::orderBy('function_name')->get();
 
-			$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
-			$states = \App\Models\CoreState::orderBy('state_name')->get();
-			$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
+\Log::info('Loading departments...');
+$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
+
+\Log::info('Loading verticals...');
+$verticals = \App\Models\CoreVertical::orderBy('vertical_name')->get();
+
+\Log::info('Loading cities...');
+$cities = \App\Models\CoreCityVillage::orderBy('city_village_name')->get();
+
+\Log::info('Loading states...');
+$states = \App\Models\CoreState::orderBy('state_name')->get();
+
+\Log::info('Loading qualifications...');
+$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
+
 
 			\Log::info('Loading department employees...');
 			$departmentEmployees = DB::table('core_employee')
