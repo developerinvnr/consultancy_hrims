@@ -23,7 +23,7 @@
                     <form action="{{ route('hr-admin.update-party', $candidate) }}"
                         method="POST"
                         enctype="multipart/form-data"
-                        id="editPartyForm">
+                        id="editPartyForm" novalidate>
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="active_tab" id="active_tab" value="">
