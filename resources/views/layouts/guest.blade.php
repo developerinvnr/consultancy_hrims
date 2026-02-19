@@ -25,6 +25,9 @@
         </div>
     </div>
 
+    @include('layouts.modals.help-manual')
+
+
     @include('layouts.script')
     @stack('scripts')
 

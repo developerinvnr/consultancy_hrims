@@ -28,6 +28,19 @@
                 </div>
             </div>
             <div class="d-flex align-items-center">
+
+            <div class="ms-2 header-item d-flex align-items-center">
+    <button type="button" 
+        class="btn btn-soft-info btn-sm d-flex align-items-center gap-1 px-2"
+        data-bs-toggle="modal" 
+        data-bs-target="#helpManualModal">
+
+        <i class='bx bx-book-open fs-18'></i>
+        <span class="d-none d-lg-inline">Manual</span>
+    </button>
+</div>
+
+
                 <!-- Fullscreen Toggle -->
                 <div class="ms-1 header-item d-none d-sm-flex">
                     <button type="button"
@@ -97,7 +110,7 @@
 							</div>
 						</div>
 					</div>
-               
+
                 <!-- User Profile -->
                 <div class="dropdown ms-sm-3 header-item topbar-user">
                     <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown"

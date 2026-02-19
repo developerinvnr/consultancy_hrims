@@ -34,6 +34,14 @@ Route::get('/consultancy_login', [\App\Http\Controllers\ExtLoginController::clas
 
 Route::middleware('auth')->group(function () {
 
+    // ✅ Help Manual Download (GLOBAL)
+    Route::get('/download-manual', function () {
+        return response()->download(
+            public_path('help-manuals/ConsultancyHRIMSUserManual.pdf')
+        );
+    })->name('download.manual');
+
+
     Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
     //Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
