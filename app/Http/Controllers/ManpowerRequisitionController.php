@@ -198,10 +198,17 @@ class ManpowerRequisitionController extends Controller
     }
 
 
+    function sanitizeExtracting($value)
+    {
+        if (in_array($value, ['Extracting...', 'Verifying...', ''])) {
+            return null;
+        }
+        return $value;
+    }
 
     public function store(Request $request)
     {
-        // dd($request->all());
+        //dd($request->all());
         try {
 
             $validatedData = $this->validateRequisition($request);
@@ -258,12 +265,29 @@ class ManpowerRequisitionController extends Controller
                 //'fuel_reimbursement_per_month' => $validatedData['fuel_reimbursement_per_month'] ?? null,
                 'reporting_manager_address' => $validatedData['reporting_manager_address'],
                 'bank_account_no' => $validatedData['bank_account_no'] ?? null,
-                'account_holder_name' => $validatedData['account_holder_name'] ?? null,
-                'bank_ifsc' => $validatedData['bank_ifsc'] ?? null,
-                'bank_name' => $validatedData['bank_name'] ?? null,
-                'pan_no' => $validatedData['pan_no'] ?? null,
+                'account_holder_name' => $this->sanitizeExtracting($validatedData['account_holder_name'] ?? null),
+
+
+                'bank_ifsc' => $this->sanitizeExtracting($validatedData['bank_ifsc'] ?? null),
+                'bank_name' =>  $this->sanitizeExtracting($validatedData['bank_name'] ?? null),
+                'pan_no' => $this->sanitizeExtracting($validatedData['pan_no'] ?? null),
                 'aadhaar_no' => $validatedData['aadhaar_no'] ?? null,
                 'status' => 'Pending HR Verification',
+                //Newly added fields
+                'bank_verification_status' => $this->sanitizeExtracting($validatedData['bank_verification_status'] ?? null),
+                'bank_branch_address' => $this->sanitizeExtracting($validatedData['bank_branch_address'] ?? null),
+
+                'pan_verification_status' => $this->sanitizeExtracting($validatedData['pan_verification_status'] ?? null),
+                'pan_aadhaar_link_status' => $this->sanitizeExtracting($validatedData['pan_aadhaar_link_status'] ?? null),
+                'pan_status_2' => $this->sanitizeExtracting($validatedData['pan_status_2'] ?? null),
+
+                'driving_licence_no' => $this->sanitizeExtracting($validatedData['driving_licence_no'] ?? null),
+                'dl_valid_from' => $this->sanitizeExtracting($validatedData['dl_valid_from'] ?? null),
+                'dl_valid_to' => $this->sanitizeExtracting($validatedData['dl_valid_to'] ?? null),
+                'dl_verification_status' => $this->sanitizeExtracting($validatedData['dl_verification_status'] ?? null),
+
+                'aadhaar_verification_status' => $this->sanitizeExtracting($validatedData['aadhaar_verification_status'] ?? null),
+
             ]);
 
             // Save uploaded documents to requisition_documents table
@@ -443,12 +467,12 @@ class ManpowerRequisitionController extends Controller
             'reporting_manager_address' => 'required|string|max:500',
 
             // Document number fields
-            'pan_no' => 'nullable|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/',
-            'aadhaar_no' => 'nullable|digits:12',
-            'bank_account_no' => 'nullable|string|max:50',
-            'account_holder_name' => 'nullable|string|max:255',
-            'bank_ifsc' => 'nullable|string|max:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
-            'bank_name' => 'nullable|string|max:255',
+            'pan_no' => 'required|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/',
+            'aadhaar_no' => 'required|digits:12',
+            'bank_account_no' => 'required|string|max:50',
+            'account_holder_name' => 'required|string|max:255',
+            'bank_ifsc' => 'required|string|max:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
+            'bank_name' => 'required|string|max:255',
 
             // File upload validations
             'resume' => 'required|file|mimes:pdf,doc,docx|max:5120',
@@ -457,6 +481,21 @@ class ManpowerRequisitionController extends Controller
             'driving_licence' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'bank_document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+
+            //newly added fields
+            'bank_verification_status' => 'nullable|string|max:50',
+            'bank_branch_address' => 'nullable|string',
+
+            'pan_verification_status' => 'nullable|string|max:50',
+            'pan_aadhaar_link_status' => 'nullable|string|max:50',
+            'pan_status_2' => 'nullable|string|max:50',
+
+            'driving_licence_no' => 'nullable|string|max:50',
+            'dl_valid_from' => 'nullable|date',
+            'dl_valid_to' => 'nullable|date',
+            'dl_verification_status' => 'nullable|string|max:50',
+
+            'aadhaar_verification_status' => 'nullable|string|max:50',
         ];
 
         // ✅ Only for Contractual

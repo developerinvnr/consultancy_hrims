@@ -85,8 +85,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/process-pan-card', [DocumentController::class, 'processPANCard'])->name('process.pan.card');
     Route::post('/process-bank-document', [DocumentController::class, 'processBankDocument'])->name('process.bank.document');
     Route::post('/process-aadhaar-card', [DocumentController::class, 'processAadhaarCard'])->name('process.aadhaar.card');
+    Route::post('/process-driving-license', [DocumentController::class, 'processDrivingLicense'])->name('process.driving.license');
 
     Route::delete('/delete-document', [DocumentController::class, 'deleteDocument'])->name('delete.document');
+
+    // Verification Routes
+    Route::post('/verify-ifsc', [DocumentController::class, 'verifyIFSC'])->name('verify.ifsc');
+    Route::post('/verify-pan-manual', [DocumentController::class, 'verifyPANManually'])->name('verify.pan.manual');
+    Route::post('/verify-bank-account', [DocumentController::class, 'verifyBankAccount'])->name('verify.bank.account');
+    Route::post('/verify-dl-manual', [DocumentController::class, 'verifyDLManually'])->name('verify.dl.manual');
+    Route::post('/check-pan-aadhaar-link', [DocumentController::class, 'checkPanAadhaarLink'])->name('check.pan.aadhaar.link');
+
 
 
 

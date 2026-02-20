@@ -6,11 +6,11 @@
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                <h4 class="mb-sm-0">Create CB Requisition</h4>
+                <h4 class="mb-sm-0">Create TFA Requisition</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('requisitions.index') }}">Requisitions</a></li>
-                        <li class="breadcrumb-item active">Create CB</li>
+                        <li class="breadcrumb-item active">Create TFA</li>
                     </ol>
                 </div>
             </div>
@@ -24,7 +24,7 @@
                 <div class="card-header">
                     <div class="row align-items-center">
                         <div class="col-md-6">
-                            <h5 class="card-title mb-0">Counter Boys (CB) Requisition Form</h5>
+                            <h5 class="card-title mb-0">Temporary Field Assistant (TFA) Requisition Form</h5>
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex justify-content-end">
@@ -39,7 +39,9 @@
                 <div class="card-body">
                     <form id="requisition-form" method="POST" action="{{ route('requisitions.store') }}" enctype="multipart/form-data">
                         @csrf
-                        <input type="hidden" name="requisition_type" value="CB">
+                        <input type="hidden" name="requisition_type" value="TFA">
+
+                        <!-- Hidden fields for file paths -->
                         <input type="hidden" name="pan_filename" id="pan_filename">
                         <input type="hidden" name="pan_filepath" id="pan_filepath">
                         <input type="hidden" name="bank_filename" id="bank_filename">
@@ -61,7 +63,53 @@
                                     <div class="card-body">
                                         <!-- First Row: Resume, Driving License, PAN Card, PAN Number -->
                                         <div class="row">
-											 <!-- Aadhaar Card -->
+                                            <!-- Resume -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                                                <small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+
+                                            <!-- Driving License -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
+                                                <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+
+                                            <!-- PAN Card -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
+                                                <small class="text-muted">Clear image/PDF for auto-extraction</small>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+
+                                            <!-- PAN Number -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control"
+                                                        id="pan_no" name="pan_no" maxlength="10"
+                                                        placeholder="Auto-fills from upload" required>
+                                                    <span class="input-group-text">
+                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
+                                                        <i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
+                                                <div class="invalid-feedback">Valid PAN required</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Second Row: Aadhaar Card, Aadhaar Number, Bank Document, Account Holder Name -->
+                                        <div class="row">
+                                            <!-- Aadhaar Card -->
                                             <div class="col-md-3 mb-3">
                                                 <label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
@@ -85,275 +133,199 @@
                                                 <small class="text-muted" id="aadhaar-status-text">Upload Aadhaar to auto-extract</small>
                                                 <div class="invalid-feedback">Valid Aadhaar required</div>
                                             </div>
-											<!-- Aadhaar Status (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Aadhaar Status</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="aadhaar_verification_status" name="aadhaar_verification_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-                                            <!-- Resume -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="resume" name="resume" accept=".pdf,.doc,.docx" required>
-                                                <small class="text-muted">PDF, DOC, DOCX (Max 2MB)</small>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-											 <!-- Other Document -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="other_document" class="form-label">Other Document</label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                                <small class="text-muted">Additional documents</small>
-                                            </div>
 
-										</div>
-                                        <div class="row">
-                                            <!-- PAN Card -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
-                                                <small class="text-muted">Clear image/PDF for auto-extraction</small>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-
-                                            <!-- PAN Number -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
-                                                <div class="input-group input-group-sm">
-                                                    <input type="text" class="form-control"
-                                                        id="pan_no" name="pan_no" maxlength="10"
-                                                        placeholder="Enter or auto-fill" required>
-                                                    <button class="btn btn-outline-primary btn-sm" type="button" id="verify-pan-btn" title="Verify PAN">
-                                                        <i class="ri-search-line"></i>
-                                                    </button>
-                                                    <span class="input-group-text">
-                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
-                                                        <i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
-                                                    </span>
-                                                </div>
-                                                <small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
-                                                <div class="invalid-feedback">Valid PAN required</div>
-                                            </div>
-
-											  <!-- PAN Validity (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN Validity</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_verification_status" name="pan_verification_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                            <!-- PAN Status (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN Status</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_status_2" name="pan_status_2"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                            <!-- PAN-Aadhaar Link (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN-Aadhaar Link</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_aadhaar_link_status" name="pan_aadhaar_link_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-											 <!-- Bank Document -->
-                                            <div class="col-md-2 mb-3">
+                                            <!-- Bank Document -->
+                                            <div class="col-md-3 mb-3">
                                                 <label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
                                                     id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" required>
                                                 <small class="text-muted">Passbook/Cancelled Cheque</small>
                                                 <div class="invalid-feedback"></div>
                                             </div>
-									    </div>
-
-									<!-- Second Row: Aadhaar Status, Bank Document, Account Holder Name, Account Number -->
-                                        <div class="row">
-
-											<!-- Account Number with Verify Button -->
-											<div class="col-md-2 mb-3">
-												<label for="bank_account_no" class="form-label">Account No.<span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control form-control-sm"
-														id="bank_account_no" name="bank_account_no" maxlength="50"
-														placeholder="Enter account no">
-												</div>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- IFSC Code with Verify Button -->
-											<div class="col-md-2 mb-3">
-												<label for="bank_ifsc" class="form-label">IFSC Code<span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control form-control-sm"
-														id="bank_ifsc" name="bank_ifsc" maxlength="11"
-														placeholder="Enter IFSC">
-													<button class="btn btn-outline-primary btn-sm" type="button" id="verify-account-btn" title="Verify Account">
-														<i class="ri-search-line"></i>
-													</button>
-													<div class="invalid-feedback"></div>
-												</div>
-											</div>
 
                                             <!-- Account Holder Name -->
-											<div class="col-md-3 mb-3">
-												<label for="account_holder_name" class="form-label">Holder Name<span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-control-sm"
-													id="account_holder_name" name="account_holder_name"
-													placeholder="Auto-fills after verification" required>
-												<div class="invalid-feedback">Account holder name required</div>
-											</div>
-
-											 <!-- Bank Name (Auto-filled from IFSC) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="bank_name" class="form-label">Bank Name<span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="bank_name" name="bank_name" readonly>
-                                            </div>
-
-                                            <!-- Branch Address (Auto-filled from IFSC) -->
                                             <div class="col-md-3 mb-3">
-                                                <label for="bank_branch_address" class="form-label">Branch Address</label>
-                                                <textarea class="form-control form-control-sm bg-light"
-                                                    id="bank_branch_address" name="bank_branch_address"
-                                                    rows="1" readonly></textarea>
+                                                <label for="account_holder_name" class="form-label">Account Holder Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    id="account_holder_name" name="account_holder_name"
+                                                    placeholder="Auto-fills from bank document" required>
+                                                <div class="invalid-feedback">Account holder name required</div>
                                             </div>
-
-                                           
                                         </div>
-                                       
 
-										<!-- Fourth Row: DL Number, Valid From, Valid To, DL Status, Other Document -->
+                                        <!-- Third Row: Account Number, IFSC Code, Bank Name, Other Document -->
                                         <div class="row">
-
-										    <!-- Bank Verification Status (Auto-filled) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Bank Status</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="bank_verification_status" name="bank_verification_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-											 <!-- Driving License -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
-                                                <small class="text-muted">PDF, JPG, PNG (Max 2MB)</small>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-                                            <!-- DL Number -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="driving_licence_no" class="form-label">DL Number</label>
+                                            <!-- Account Number -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="bank_account_no" class="form-label">Account Number <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-sm">
-                                                    <input type="text" class="form-control form-control-sm"
+                                                    <input type="text" class="form-control"
+                                                        id="bank_account_no" name="bank_account_no" maxlength="50"
+                                                        placeholder="Auto-fills from document" required>
+                                                    <span class="input-group-text">
+                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="account-verified-icon"></i>
+                                                        <i class="ri-alert-fill text-warning d-none" id="account-warning-icon"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="invalid-feedback">Valid account number required</div>
+                                            </div>
+
+                                            <!-- IFSC Code -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="bank_ifsc" class="form-label">IFSC Code <span class="text-danger">*</span></label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control"
+                                                        id="bank_ifsc" name="bank_ifsc" maxlength="11"
+                                                        placeholder="Auto-fills from document" required>
+                                                    <span class="input-group-text">
+                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="ifsc-verified-icon"></i>
+                                                        <i class="ri-alert-fill text-warning d-none" id="ifsc-warning-icon"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="invalid-feedback">Valid IFSC code required</div>
+                                            </div>
+
+                                            <!-- Bank Name -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="bank_name" class="form-label">Bank Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    id="bank_name" name="bank_name"
+                                                    placeholder="Auto-fills from document" required>
+                                                <div class="invalid-feedback">Bank name required</div>
+                                            </div>
+
+                                            <!-- Other Document -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="other_document" class="form-label">Other Document (Optional)</label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                                <small class="text-muted">Additional documents</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fourth Row: DL Number, Valid From, Valid To (from DL) -->
+                                        <div class="row">
+                                            <!-- DL Number -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="driving_licence_no" class="form-label">Driving Licence Number <span class="text-danger">*</span></label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control"
                                                         id="driving_licence_no" name="driving_licence_no"
-                                                        placeholder="Enter or auto-fill">
-                                                    <button class="btn btn-outline-primary btn-sm" type="button" id="verify-dl-btn" title="Verify DL">
-                                                        <i class="ri-search-line"></i>
-                                                    </button>
+                                                        placeholder="Auto-fills from DL upload" required>
+                                                    <span class="input-group-text">
+                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="dl-verified-icon"></i>
+                                                        <i class="ri-alert-fill text-warning d-none" id="dl-warning-icon"></i>
+                                                    </span>
                                                 </div>
                                                 <small class="text-muted" id="dl-status-text">Upload DL to auto-extract</small>
+                                                <div class="invalid-feedback">Valid DL number required</div>
                                             </div>
 
-                                            <!-- Valid From (Auto-filled) -->
-                                            <div class="col-md-2 mb-3">
+                                            <!-- Valid From -->
+                                            <div class="col-md-3 mb-3">
                                                 <label for="dl_valid_from" class="form-label">Valid From</label>
-                                                <input type="date" class="form-control form-control-sm bg-light"
+                                                <input type="date" class="form-control form-control-sm"
                                                     id="dl_valid_from" name="dl_valid_from" readonly>
+                                                <small class="text-muted">Auto-filled from DL</small>
                                             </div>
 
-                                            <!-- Valid To (Auto-filled) -->
-                                            <div class="col-md-2 mb-3">
+                                            <!-- Valid To -->
+                                            <div class="col-md-3 mb-3">
                                                 <label for="dl_valid_to" class="form-label">Valid To</label>
-                                                <input type="date" class="form-control form-control-sm bg-light"
+                                                <input type="date" class="form-control form-control-sm"
                                                     id="dl_valid_to" name="dl_valid_to" readonly>
+                                                <small class="text-muted">Auto-filled from DL</small>
                                             </div>
-
-                                            <!-- DL Status (Auto-filled) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">DL Status</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="dl_verification_status" name="dl_verification_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                           
                                         </div>
-                                           
-
-                                           
-
-                                           
-
-                                        
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ==================== SECTION 2: PERSONAL INFORMATION ==================== -->
+                        <!-- ==================== SECTION 2: PERSONAL DETAILS (from Aadhaar) ==================== -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="card border">
                                     <div class="card-header bg-light py-2">
-                                        <h6 class="mb-0">Section 2: Personal Information</h6>
+                                        <h6 class="mb-0">Section 2: Personal Details (Auto-filled from Documents)</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-3 mb-3">
-                                                <label for="candidate_name" class="form-label">Candidate's Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    id="candidate_name" name="candidate_name" required>
-                                                <div class="invalid-feedback"></div>
+                                                <label for="candidate_name_from_aadhaar" class="form-label">Candidate Name</label>
+                                                <input type="text" class="form-control form-control-sm bg-light"
+                                                    id="candidate_name_from_aadhaar" name="candidate_name" readonly>
+                                                <small class="text-muted">From Aadhaar</small>
                                             </div>
                                             <div class="col-md-3 mb-3">
-                                                <label for="father_name" class="form-label">Father's Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    id="father_name" name="father_name" required>
-                                                <div class="invalid-feedback"></div>
+                                                <label for="father_name" class="form-label">Father's Name</label>
+                                                <input type="text" class="form-control form-control-sm bg-light"
+                                                    id="father_name" name="father_name" readonly>
+                                                <small class="text-muted">From Aadhaar</small>
                                             </div>
-                                            <div class="col-md-3 mb-3">
-                                                <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                                <input type="date" class="form-control form-control-sm"
-                                                    id="date_of_birth" name="date_of_birth" required>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                                <input type="date" class="form-control form-control-sm bg-light"
+                                                    id="date_of_birth" name="date_of_birth" readonly>
+                                                <small class="text-muted">From Aadhaar</small>
                                                 <div class="invalid-feedback">Age must be 18 years or older</div>
                                             </div>
-                                            <div class="col-md-3 mb-3">
-                                                <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" id="gender" name="gender" required>
-                                                    <option value="">Select Gender</option>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="gender" class="form-label">Gender</label>
+                                                <select class="form-select form-select-sm bg-light" id="gender" name="gender" disabled>
+                                                    <option value="">Select</option>
                                                     <option value="Male">Male</option>
                                                     <option value="Female">Female</option>
                                                     <option value="Other">Other</option>
                                                 </select>
-                                                <div class="invalid-feedback"></div>
+                                                <small class="text-muted">From Aadhaar</small>
+                                            </div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="aadhaar_no_display" class="form-label">Aadhaar Number</label>
+                                                <input type="text" class="form-control form-control-sm bg-light"
+                                                    id="aadhaar_no_display" readonly>
+                                                <small class="text-muted">From upload</small>
                                             </div>
                                         </div>
 
                                         <div class="row">
-                                            <div class="col-md-3 mb-3">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="address_line_1" class="form-label">Address</label>
+                                                <textarea class="form-control form-control-sm bg-light" id="address_line_1" name="address_line_1" rows="2" readonly></textarea>
+                                                <small class="text-muted">From Aadhaar</small>
+                                            </div>
+                                            <div class="col-md-2 mb-3">
                                                 <label for="mobile_no" class="form-label">Mobile No. <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-control-sm"
                                                     id="mobile_no" name="mobile_no" maxlength="10" required>
                                                 <div class="invalid-feedback">10-digit number required</div>
                                             </div>
-                                            <div class="col-md-3 mb-3">
+                                            <div class="col-md-2 mb-3">
                                                 <label for="candidate_email" class="form-label">Email <span class="text-danger">*</span></label>
                                                 <input type="email" class="form-control form-control-sm"
                                                     id="candidate_email" name="candidate_email" required>
                                                 <div class="invalid-feedback"></div>
                                             </div>
-                                            <div class="col-md-3 mb-3">
+                                            <div class="col-md-2 mb-3">
                                                 <label for="alternate_email" class="form-label">Alternate Email</label>
                                                 <input type="email" class="form-control form-control-sm"
                                                     id="alternate_email" name="alternate_email">
-                                                <div class="invalid-feedback"></div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ==================== SECTION 3: EDUCATION DETAILS ==================== -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border">
+                                    <div class="card-header bg-light py-2">
+                                        <h6 class="mb-0">Section 3: Education Details</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
                                             <div class="col-md-3 mb-3">
                                                 <label for="highest_qualification" class="form-label">Highest Qualification <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm select2" id="highest_qualification" name="highest_qualification" required>
@@ -366,13 +338,16 @@
                                                 </select>
                                                 <div class="invalid-feedback"></div>
                                             </div>
-                                        </div>
-
-                                        <div class="row">
                                             <div class="col-md-3 mb-3">
                                                 <label for="college_name" class="form-label">College/University</label>
                                                 <input type="text" class="form-control form-control-sm"
                                                     id="college_name" name="college_name">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-md-2 mb-3">
+                                                <label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    id="pin_code" name="pin_code" maxlength="6" required>
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                             <div class="col-md-2 mb-3">
@@ -389,20 +364,7 @@
                                                 <label for="city" class="form-label">City <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm select2" id="city" name="city" required>
                                                     <option value="">Select City</option>
-                                                    <!-- Cities will be loaded dynamically -->
                                                 </select>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-                                            <div class="col-md-3 mb-3">
-                                                <label for="address_line_1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
-                                                <textarea class="form-control form-control-sm"
-                                                    id="address_line_1" name="address_line_1" rows="2" required></textarea>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-                                            <div class="col-md-2 mb-3">
-                                                <label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    id="pin_code" name="pin_code" maxlength="6" required>
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                         </div>
@@ -411,12 +373,12 @@
                             </div>
                         </div>
 
-                        <!-- ==================== SECTION 3: WORK INFORMATION ==================== -->
+                        <!-- ==================== SECTION 4: WORK INFORMATION ==================== -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="card border">
                                     <div class="card-header bg-light py-2">
-                                        <h6 class="mb-0">Section 3: Work Information</h6>
+                                        <h6 class="mb-0">Section 4: Work Information</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
@@ -555,12 +517,12 @@
                             </div>
                         </div>
 
-                        <!-- ==================== SECTION 4: EMPLOYMENT DETAILS ==================== -->
+                        <!-- ==================== SECTION 5: EMPLOYMENT DETAILS ==================== -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="card border">
                                     <div class="card-header bg-light py-2">
-                                        <h6 class="mb-0">Section 4: Employment Details</h6>
+                                        <h6 class="mb-0">Section 5: Employment Details</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
@@ -572,25 +534,27 @@
                                                 <input type="hidden" name="reporting_manager_employee_id" value="{{ $autoFillData['reporting_manager_employee_id'] ?? '' }}">
                                             </div>
                                             <div class="col-md-2 mb-3">
-                                                <label for="contract_start_date" class="form-label">Contract Start Date<span class="text-danger">*</span></label>
+                                                <label for="contract_start_date" class="form-label">Contract Start <span class="text-danger">*</span></label>
                                                 <input type="date" class="form-control form-control-sm"
                                                     id="contract_start_date" name="contract_start_date" required>
                                             </div>
                                             <div class="col-md-2 mb-3">
-                                                <label for="contract_duration" class="form-label">Contract Duration<span class="text-danger">*</span></label>
+                                                <label for="contract_duration" class="form-label">Duration <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm" id="contract_duration" name="contract_duration" required>
-                                                    <option value="">Select Duration</option>
+                                                    <option value="">Select</option>
                                                     <option value="15">15 Days</option>
                                                     <option value="30">1 Month</option>
                                                     <option value="45">45 Days</option>
+                                                    <option value="60">2 Months</option>
+                                                    <option value="90">3 Months</option>
+                                                    <option value="120">4 Months</option>
                                                 </select>
                                                 <div class="invalid-feedback">Please select contract duration</div>
                                             </div>
                                             <div class="col-md-2 mb-3">
-                                                <label for="contract_end_date" class="form-label">Contract End Date<span class="text-danger">*</span></label>
+                                                <label for="contract_end_date" class="form-label">Contract End <span class="text-danger">*</span></label>
                                                 <input type="date" class="form-control form-control-sm"
-                                                    id="contract_end_date" name="contract_end_date"
-                                                    readonly required>
+                                                    id="contract_end_date" name="contract_end_date" readonly required>
                                                 <div class="invalid-feedback">Contract end date will be calculated automatically</div>
                                             </div>
                                             <div class="col-md-3 mb-3">
@@ -760,50 +724,37 @@
                     if (response.status === 'SUCCESS' || response.status === 'PARTIAL_SUCCESS') {
                         const data = response.data;
                         
+                        // Fill Aadhaar number
                         if (data.aadhaarNumber) {
                             $('#aadhaar_no').val(data.aadhaarNumber);
+                            $('#aadhaar_no_display').val(data.aadhaarNumber);
                             updateAadhaarStatus('success', 'Aadhaar extracted successfully!', true);
+                        }
+
+                        // Fill personal details from Aadhaar
+                        if (data.extractedData) {
+                            $('#candidate_name_from_aadhaar').val(data.extractedData.name || '');
+                            $('#father_name').val(data.extractedData.fatherName || '');
+                            $('#date_of_birth').val(data.extractedData.dob || '');
+                            $('#address_line_1').val(data.extractedData.address || '');
                             
-                            // Auto-fill personal details from Aadhaar if available
-                            if (data.extractedData) {
-                                if (data.extractedData.name && !$('#candidate_name').val()) {
-                                    $('#candidate_name').val(data.extractedData.name);
-                                }
-                                if (data.extractedData.dob && !$('#date_of_birth').val()) {
-                                    $('#date_of_birth').val(data.extractedData.dob);
-                                }
-                                if (data.extractedData.gender && !$('#gender').val()) {
-                                    $('#gender').val(data.extractedData.gender);
-                                }
-                                if (data.extractedData.fatherName && !$('#father_name').val()) {
-                                    $('#father_name').val(data.extractedData.fatherName);
-                                }
-                                if (data.extractedData.address && !$('#address_line_1').val()) {
-                                    $('#address_line_1').val(data.extractedData.address);
-                                }
+                            if (data.extractedData.gender) {
+                                $('#gender').val(data.extractedData.gender);
                             }
                         }
 
+                        // Store file info
                         $('#aadhaar_filename').val(data.filename);
                         $('#aadhaar_filepath').val(data.filePath);
-                        
-                        // Set verification status
-                        if (data.isVerified) {
-                            $('#aadhaar_verification_status').val('Verified');
-                        } else {
-                            $('#aadhaar_verification_status').val('Pending');
-                        }
                         
                         showToast('Aadhaar extracted successfully!', 'success');
                     } else {
                         updateAadhaarStatus('error', 'Failed to extract. Enter manually.');
-                        $('#aadhaar_verification_status').val('Failed');
                         showToast('Failed to extract Aadhaar', 'error');
                     }
                 },
                 error: function() {
                     updateAadhaarStatus('error', 'Failed - enter manually');
-                    $('#aadhaar_verification_status').val('Failed');
                     showToast('Error extracting Aadhaar', 'error');
                 },
                 complete: function() {
@@ -838,19 +789,6 @@
             const file = this.files[0];
             if (!file) return;
 
-            extractPANFromFile(file);
-        });
-
-        $('#verify-pan-btn').on('click', function() {
-            const panNo = $('#pan_no').val();
-            if (!panNo || panNo.length !== 10) {
-                showToast('Please enter a valid 10-character PAN number', 'warning');
-                return;
-            }
-            verifyPANManually(panNo);
-        });
-
-        function extractPANFromFile(file) {
             $('#pan_no').prop('disabled', true).val('Extracting...');
             $('#pan-status-text').text('Extracting PAN...');
 
@@ -877,19 +815,10 @@
                         if (data.isVerified) {
                             $('#pan-verified-icon').removeClass('d-none');
                             $('#pan-warning-icon').addClass('d-none');
-                            $('#pan_verification_status').val('Valid');
                         } else {
                             $('#pan-verified-icon').addClass('d-none');
                             $('#pan-warning-icon').removeClass('d-none');
-                            $('#pan_verification_status').val('Pending');
                             $('#pan-status-text').text('PAN extracted but not verified');
-                        }
-
-                        // Fill verification data
-                        if (data.verificationData) {
-                            const vData = data.verificationData;
-                            $('#pan_status_2').val(vData.individual_tax_compliance_status || 'Unknown');
-                            $('#pan_aadhaar_link_status').val(vData.aadhaar_seeding_status || 'Unknown');
                         }
 
                         $('#pan_filename').val(data.filename);
@@ -900,282 +829,84 @@
                 },
                 error: function() {
                     $('#pan-status-text').text('Failed - enter manually');
-                    $('#pan_verification_status').val('Failed');
                     showToast('Failed to extract PAN', 'error');
                 },
                 complete: function() {
                     $('#pan_no').prop('disabled', false);
                 }
             });
-        }
+        });
 
-        function verifyPANManually(panNo) {
-            $('#verify-pan-btn').html('<i class="ri-loader-4-line ri-spin"></i>').prop('disabled', true);
-            $('#pan_verification_status').val('Verifying...');
+        // ==================== BANK DOCUMENT EXTRACTION ====================
+        $('#bank_document').on('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', true)
+                .val('Extracting...');
+
+            const formData = new FormData();
+            formData.append('bank_file', file);
+            formData.append('requisition_type', requisitionType);
 
             $.ajax({
-                url: '{{ route("verify.pan.manual") }}',
+                url: '{{ route("process.bank.document") }}',
                 type: 'POST',
-                data: {
-                    pan_number: panNo,
-                    _token: $('meta[name="csrf-token"]').attr('content')
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
                     if (response.status === 'SUCCESS') {
                         const data = response.data;
+                        const vData = data.verificationData || {};
 
-                        if (data.verificationData) {
-                            const vData = data.verificationData;
-                            $('#pan_verification_status').val(vData.is_valid === true ? 'Valid' : 'Invalid');
-                            $('#pan_status_2').val(vData.individual_tax_compliance_status || 'Unknown');
-                            $('#pan_aadhaar_link_status').val(vData.aadhaar_seeding_status || 'Unknown');
-                            
-                            if (vData.is_valid) {
-                                $('#pan-verified-icon').removeClass('d-none');
-                                $('#pan-warning-icon').addClass('d-none');
-                            } else {
-                                $('#pan-verified-icon').addClass('d-none');
-                                $('#pan-warning-icon').removeClass('d-none');
-                            }
+                        // Fill account details
+                        if (data.accountNumber) {
+                            $('#bank_account_no').val(data.accountNumber);
+                            $('#account-verified-icon').removeClass('d-none');
                         }
 
-                        showToast('PAN verified successfully!', 'success');
-                    } else {
-                        $('#pan_verification_status').val('Invalid');
-                        showToast('Invalid PAN number', 'error');
+                        if (data.ifscCode) {
+                            $('#bank_ifsc').val(data.ifscCode);
+                            $('#ifsc-verified-icon').removeClass('d-none');
+                        }
+
+                        if (vData.beneficiary_name) {
+                            $('#account_holder_name').val(vData.beneficiary_name);
+                        }
+
+                        if (vData.ifsc_details?.name) {
+                            $('#bank_name').val(vData.ifsc_details.name);
+                        }
+
+                        if (data.isVerified) {
+                            showToast('Bank details extracted & verified!', 'success');
+                        } else {
+                            $('#account-warning-icon, #ifsc-warning-icon').removeClass('d-none');
+                            showToast('Bank details extracted but not verified', 'warning');
+                        }
+
+                        $('#bank_filename').val(data.filename);
+                        $('#bank_filepath').val(data.filePath);
                     }
                 },
                 error: function() {
-                    $('#pan_verification_status').val('Failed');
-                    showToast('Verification failed', 'error');
+                    showToast('Failed to extract bank details', 'error');
                 },
                 complete: function() {
-                    $('#verify-pan-btn').html('<i class="ri-search-line"></i>').prop('disabled', false);
+                    $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
                 }
             });
-        }
-
-	     // ==================== BANK VERIFICATION ====================
-
-		// Auto-extract from uploaded bank document
-		$('#bank_document').on('change', function() {
-			const file = this.files[0];
-			if (!file) return;
-			extractBankFromFile(file);
-		});
-
-		// Verify account button - only enabled when both fields have values
-		function updateVerifyAccountButton() {
-			const accountNo = $('#bank_account_no').val();
-			const ifscCode = $('#bank_ifsc').val();
-
-			if (
-				accountNo &&
-				ifscCode &&
-				accountNo !== 'Extracting...' &&
-				ifscCode.length === 11
-			) {
-				$('#verify-account-btn').prop('disabled', false);
-			} else {
-				$('#verify-account-btn').prop('disabled', true);
-			}
-		}
-
-
-		// Monitor both fields for changes
-		$('#bank_account_no, #bank_ifsc').on('input change', function() {
-			updateVerifyAccountButton();
-		});
-
-		// Manual account verification
-		$('#verify-account-btn').on('click', function() {
-			const accountNo = $('#bank_account_no').val();
-			const ifscCode = $('#bank_ifsc').val();
-
-			if (!accountNo) {
-				showToast('Please enter account number', 'warning');
-				return;
-			}
-			if (!ifscCode || ifscCode.length < 11) {
-				showToast('Please enter a valid 11-digit IFSC code', 'warning');
-				return;
-			}
-			verifyBankAccount(accountNo, ifscCode);
-		});
-
-		function extractBankFromFile(file) {
-			// Disable fields during extraction
-			$('#bank_account_no, #bank_ifsc').prop('readonly', true).val('');
-			$('#bank_verification_status').val('Extracting...');
-
-			$('#verify-account-btn').prop('disabled', true);
-
-			const formData = new FormData();
-			formData.append('bank_file', file);
-			formData.append('requisition_type', requisitionType);
-
-			$.ajax({
-				url: '{{ route("process.bank.document") }}',
-				type: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				headers: {
-					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-				},
-				success: function(response) {
-					if (response.status === 'SUCCESS') {
-						const data = response.data;
-						const vData = data.verificationData || {};
-
-						if (data.isVerified) {
-							$('#verify-account-btn').prop('disabled', true);
-						}
-						// ✅ Account Number & IFSC
-						if (data.accountNumber) {
-							$('#bank_account_no').val(data.accountNumber);
-						}
-						if (data.ifscCode) {
-							$('#bank_ifsc').val(data.ifscCode);
-						}
-
-						// ✅ Holder Name (FIXED)
-						if (vData.beneficiary_name) {
-							$('#account_holder_name').val(vData.beneficiary_name);
-						}
-
-						// ✅ Bank Name (FIXED)
-						if (vData.ifsc_details?.name) {
-							$('#bank_name').val(vData.ifsc_details.name);
-						}
-
-						// ✅ Branch Address (FIXED)
-						if (vData.ifsc_details) {
-							const branch = vData.ifsc_details.branch || '';
-							const district = vData.ifsc_details.district || '';
-							const state = vData.ifsc_details.state || '';
-
-							$('#bank_branch_address').val(`${branch}, ${district}, ${state}`);
-						}
-
-						// ✅ Status
-						if (data.isVerified || vData.verification_status === 'VERIFIED') {
-							$('#bank_verification_status').val('Verified');
-							showToast('Bank details extracted & verified!', 'success');
-						} else {
-							$('#bank_verification_status').val('Partially Verified');
-						}
-
-						$('#bank_filename').val(data.filename);
-						$('#bank_filepath').val(data.filePath);
-					}
-				},
-				error: function(xhr) {
-					$('#bank_account_no, #bank_ifsc, #bank_name').val('');
-					$('#bank_verification_status').val('Failed');
-					showToast('Failed to extract bank details', 'error');
-				},
-				complete: function() {
-					// Re-enable fields
-					$('#bank_account_no').prop('readonly', false);
-					$('#bank_ifsc').prop('readonly', false);
-					// Update verify button state
-					updateVerifyAccountButton();
-				}
-			});
-		}
-
-		function verifyBankAccount(accountNo, ifscCode) {
-
-			$('#verify-account-btn')
-				.html('<i class="ri-loader-4-line ri-spin"></i>')
-				.prop('disabled', true);
-
-			$('#bank_verification_status').val('Verifying...');
-
-			$.ajax({
-				url: '{{ route("verify.bank.account") }}',
-				type: 'POST',
-				data: {
-					account_number: accountNo,
-					ifsc_code: ifscCode,
-					_token: $('meta[name="csrf-token"]').attr('content')
-				},
-				success: function(response) {
-
-					if (response.status === 'SUCCESS') {
-
-						const data = response.data;
-
-						// ✅ Fill account holder name
-						if (data.account_holder_name) {
-							$('#account_holder_name').val(data.account_holder_name);
-						}
-
-						// ✅ Fill bank name
-						if (data.bank_name) {
-							$('#bank_name').val(data.bank_name);
-						}
-
-						// ✅ Fill branch address (if available)
-						if (data.branch_address) {
-							$('#bank_branch_address').val(data.branch_address);
-						}
-
-						// ✅ Set status
-
-						if (data.branch_address) {
-							$('#bank_verification_status').val(data.verification_status);
-						}
-
-						showToast('Bank verified successfully!', 'success');
-
-					} else {
-						$('#bank_verification_status').val('Failed');
-						showToast('Verification failed. Check details.', 'error');
-					}
-				},
-				error: function(xhr) {
-					$('#bank_verification_status').val('Failed');
-					showToast('Verification error', 'error');
-				},
-				complete: function() {
-					$('#verify-account-btn')
-						.html('<i class="ri-search-line"></i>')
-						.prop('disabled', false);
-				}
-			});
-		}
-
-
-		// IFSC Verification (separate button for fetching bank details)
-		$('#verify-ifsc-btn').on('click', function() {
-			const ifscCode = $('#bank_ifsc').val();
-
-			if (!ifscCode || ifscCode.length < 11) {
-				showToast('Please enter a valid 11-digit IFSC code', 'warning');
-				return;
-			}
-		});
+        });
 
         // ==================== DRIVING LICENSE EXTRACTION ====================
         $('#driving_licence').on('change', function() {
             const file = this.files[0];
             if (!file) return;
 
-            extractDLFromFile(file);
-        });
-
-        $('#verify-dl-btn').on('click', function() {
-            const dlNo = $('#driving_licence_no').val();
-            if (!dlNo) {
-                showToast('Please enter DL number', 'warning');
-                return;
-            }
-            verifyDLManually(dlNo);
-        });
-
-        function extractDLFromFile(file) {
             $('#driving_licence_no').prop('disabled', true).val('Extracting...');
             $('#dl-status-text').text('Extracting DL...');
 
@@ -1200,16 +931,16 @@
                         $('#dl_valid_from').val(data.validFrom);
                         $('#dl_valid_to').val(data.validTo);
                         
+                        $('#dl-verified-icon').removeClass('d-none');
                         $('#dl-status-text').text('DL extracted successfully');
 
                         // Check validity
                         if (data.validTo) {
                             const today = new Date();
                             const validTo = new Date(data.validTo);
-                            if (validTo > today) {
-                                $('#dl_verification_status').val('Valid');
-                            } else {
-                                $('#dl_verification_status').val('Expired');
+                            if (validTo <= today) {
+                                $('#dl-warning-icon').removeClass('d-none');
+                                $('#dl-verified-icon').addClass('d-none');
                                 $('#dl-status-text').text('DL extracted but expired');
                                 showToast('Warning: Driving license is expired', 'warning');
                             }
@@ -1223,55 +954,13 @@
                 },
                 error: function() {
                     $('#dl-status-text').text('Failed - enter manually');
-                    $('#dl_verification_status').val('Failed');
                     showToast('Failed to extract DL', 'error');
                 },
                 complete: function() {
                     $('#driving_licence_no').prop('disabled', false);
                 }
             });
-        }
-
-        function verifyDLManually(dlNo) {
-            $('#verify-dl-btn').html('<i class="ri-loader-4-line ri-spin"></i>').prop('disabled', true);
-
-            $.ajax({
-                url: '{{ route("verify.dl.manual") }}',
-                type: 'POST',
-                data: {
-                    dl_number: dlNo,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        const data = response.data;
-
-                        data.valid_from && $('#dl_valid_from').val(data.valid_from);
-                        data.valid_to && $('#dl_valid_to').val(data.valid_to);
-
-                        if (data.valid_to) {
-                            const today = new Date();
-                            const validTo = new Date(data.valid_to);
-                            $('#dl_verification_status').val(validTo > today ? 'Valid' : 'Expired');
-                        } else {
-                            $('#dl_verification_status').val('Valid');
-                        }
-
-                        showToast('DL verified!', 'success');
-                    } else {
-                        $('#dl_verification_status').val('Invalid');
-                        showToast('Invalid DL number', 'error');
-                    }
-                },
-                error: function() {
-                    $('#dl_verification_status').val('Failed');
-                    showToast('Verification failed', 'error');
-                },
-                complete: function() {
-                    $('#verify-dl-btn').html('<i class="ri-search-line"></i>').prop('disabled', false);
-                }
-            });
-        }
+        });
 
         // ==================== CONTRACT DATE CALCULATION ====================
         function calculateSeparationDate() {
@@ -1339,33 +1028,6 @@
             }
         });
 
-        // IFSC validation
-        function validateIFSC(ifsc) {
-            const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-            return ifscRegex.test(ifsc);
-        }
-
-        $('#bank_ifsc').on('input', function() {
-            const ifsc = $(this).val().toUpperCase();
-            $(this).val(ifsc);
-            
-            if (ifsc.length === 11) {
-                if (validateIFSC(ifsc)) {
-                    $(this).removeClass('is-invalid');
-                    $('#ifsc-status-text').text('Valid IFSC format');
-                } else {
-                    $(this).addClass('is-invalid');
-                    $('#ifsc-status-text').text('Invalid IFSC format');
-                }
-            } else if (ifsc.length > 0) {
-                $(this).addClass('is-invalid');
-                $('#ifsc-status-text').text('IFSC must be 11 characters');
-            } else {
-                $(this).removeClass('is-invalid');
-                $('#ifsc-status-text').text('Enter IFSC to fetch bank details');
-            }
-        });
-
         // File size validation
         $('input[type="file"]').on('change', function() {
             const file = this.files[0];
@@ -1373,7 +1035,7 @@
 
             if (file && file.size > maxSize) {
                 $(this).addClass('is-invalid');
-                $(this).siblings('.invalid-feedback').text('File must be < 2MB').show();
+                $(this).siblings('.invalid-feedback').text('File must be < 5MB').show();
                 this.value = '';
             } else {
                 $(this).removeClass('is-invalid');

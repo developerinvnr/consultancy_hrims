@@ -15,6 +15,9 @@ class DocumentController extends Controller
 	 */
 	public function processPANCard(Request $request, S3Service $s3Service)
 	{
+		$filePath = null;
+		$fileUrl = null;
+		$filename = null;
 		Log::info('PAN card processing request received', [
 			'has_file' => $request->hasFile('pan_file'),
 			'requisition_type' => $request->input('requisition_type')
@@ -108,10 +111,10 @@ class DocumentController extends Controller
 			]);
 		} catch (\Exception $e) {
 			// Clean up S3 file if upload was successful but processing failed
-			if ($filePath && $s3Service->fileExists($filePath)) {
-				$s3Service->deleteFile($filePath);
-				Log::info('Cleaned up PAN file from S3 due to processing error', ['filePath' => $filePath]);
-			}
+			// if ($filePath && $s3Service->fileExists($filePath)) {
+			// 	$s3Service->deleteFile($filePath);
+			// 	Log::info('Cleaned up PAN file from S3 due to processing error', ['filePath' => $filePath]);
+			// }
 
 			Log::error('PAN processing error', [
 				'error' => $e->getMessage(),
@@ -119,10 +122,16 @@ class DocumentController extends Controller
 			]);
 
 			return response()->json([
-				'status' => 'FAILURE',
-				'message' => 'Unable to process PAN card: ' . $e->getMessage(),
-				'suggestion' => 'Please upload a clear image/PDF of your PAN card or enter the PAN number manually.',
-			], 500);
+				'status' => 'PARTIAL_SUCCESS',
+				'data' => [
+					'panNumber' => null,
+					'isVerified' => false,
+					'filename' => $filename,
+					'filePath' => $filePath,
+					'fileUrl' => $fileUrl,
+				],
+				'message' => 'PAN uploaded but extraction failed. Please enter manually.',
+			]);
 		}
 	}
 
@@ -131,6 +140,9 @@ class DocumentController extends Controller
 	 */
 	public function processBankDocument(Request $request, S3Service $s3Service)
 	{
+		$filePath = null;
+		$fileUrl = null;
+		$filename = null;
 		Log::info('Bank document processing request received', [
 			'has_file' => $request->hasFile('bank_file'),
 			'requisition_type' => $request->input('requisition_type')
@@ -240,10 +252,10 @@ class DocumentController extends Controller
 			]);
 		} catch (\Exception $e) {
 			// Clean up S3 file if upload was successful but processing failed
-			if ($filePath && $s3Service->fileExists($filePath)) {
-				$s3Service->deleteFile($filePath);
-				Log::info('Cleaned up bank file from S3 due to processing error', ['filePath' => $filePath]);
-			}
+			// if ($filePath && $s3Service->fileExists($filePath)) {
+			// 	$s3Service->deleteFile($filePath);
+			// 	Log::info('Cleaned up bank file from S3 due to processing error', ['filePath' => $filePath]);
+			// }
 
 			Log::error('Bank processing error', [
 				'error' => $e->getMessage(),
@@ -251,10 +263,18 @@ class DocumentController extends Controller
 			]);
 
 			return response()->json([
-				'status' => 'FAILURE',
-				'message' => 'Unable to process bank document: ' . $e->getMessage(),
-				'suggestion' => 'Please upload a clear image/PDF of your bank passbook or cancelled cheque, or enter the details manually.',
-			], 500);
+				'status' => 'PARTIAL_SUCCESS',
+				'data' => [
+					'accountNumber' => null,
+					'ifscCode' => null,
+					'bankName' => null,
+					'isVerified' => false,
+					'filename' => $filename ?? null,
+					'filePath' => $filePath ?? null,
+					'fileUrl' => $fileUrl ?? null,
+				],
+				'message' => 'Bank document uploaded but extraction failed. Please enter details manually.',
+			]);
 		}
 	}
 
@@ -263,6 +283,9 @@ class DocumentController extends Controller
 	 */
 	public function processAadhaarCard(Request $request, S3Service $s3Service)
 	{
+		$filePath = null;
+		$fileUrl = null;
+		$filename = null;
 		Log::info('Aadhaar card processing request received', [
 			'has_file' => $request->hasFile('aadhaar_file'),
 			'requisition_type' => $request->input('requisition_type')
@@ -282,8 +305,14 @@ class DocumentController extends Controller
 				throw new \Exception('Invalid file uploaded');
 			}
 
-			// Upload to S3
-			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar');
+			// Upload to S3 with unique filename
+			$originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+			$extension = $file->getClientOriginalExtension();
+			$timestamp = time();
+			$random = uniqid();
+			$uniqueFilename = "{$originalName}_{$timestamp}_{$random}.{$extension}";
+
+			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar', $uniqueFilename);
 
 			if (!$upload['success']) {
 				throw new \Exception('S3 Upload failed: ' . $upload['error']);
@@ -299,7 +328,7 @@ class DocumentController extends Controller
 				'filename' => $filename
 			]);
 
-			// Extract Aadhaar details
+			// Extract Aadhaar number
 			$client = new Client();
 			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-aadhaar-number', [
 				'headers' => ['Content-Type' => 'application/json'],
@@ -310,46 +339,88 @@ class DocumentController extends Controller
 			$extractData = json_decode($extractResponse->getBody(), true);
 			Log::info('Aadhaar extraction response', ['data' => $extractData]);
 
-			if (!$extractData['success'] || empty($extractData['data']['aadhaarNumber'])) {
-				// Clean up uploaded file on failure
-				$s3Service->deleteFile($filePath);
-				throw new \Exception('Aadhaar number extraction failed: ' . ($extractData['message'] ?? 'No Aadhaar number found'));
-			}
+			// if (!$extractData['success'] || empty($extractData['data']['aadhaarNumber'])) {
+			// 	// Clean up uploaded file on failure
+			// 	$s3Service->deleteFile($filePath);
+			// 	throw new \Exception('Aadhaar number extraction failed: ' . ($extractData['message'] ?? 'No Aadhaar number found'));
+			// }
 
 			$aadhaarNumber = $extractData['data']['aadhaarNumber'];
 
-			// Optional: Verify Aadhaar with external API if available
+			// Initialize personal details array
+			$personalDetails = [
+				'name' => null,
+				'fatherName' => null,
+				'dob' => null,
+				'gender' => null,
+				'address' => null,
+			];
+
+			// Verify Aadhaar with external API to get personal details
 			$isVerified = false;
 			$verificationData = null;
 
-			// Uncomment and implement when you have Aadhaar verification API
-			/*
-        try {
-            $verifyResponse = $client->post('https://api.rpacpc.com/services/aadhaar-verification', [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'token' => 'your-token-here',
-                    'secretkey' => 'your-secret-key-here',
-                ],
-                'json' => ['aadhaar_number' => $aadhaarNumber],
-                'timeout' => 30,
-            ]);
+			try {
+				Log::info('Calling Aadhaar verification API', ['aadhaar_number' => $aadhaarNumber]);
 
-            $verifyData = json_decode($verifyResponse->getBody(), true);
-            Log::info('Aadhaar verification response', ['data' => $verifyData]);
+				$verifyResponse = $client->post('https://api.rpacpc.com/services/aadhaar-verification', [
+					'headers' => [
+						'Content-Type' => 'application/json',
+						'token' => 'HZqJwTTU+6SnoILGiwfD2h6Lgpp977mCfFJ4+XrnVvUDKENPJ0WjgRGO0uv9NODrf7KjCl6d34LQJOvn8w/aih79BZHUU6zKzfcoQDLBHkC8SoCaffiBcFvjagMjwnDrQmL6qb6+dmWi8rqFBWV3Sy/utyhxsFxC6N8FdIkvnBjKKlugKVCSssdECP07PB3sCJfU+I6pCWm8uF+4cCROXSXZvNRqaOqap9B/bSIUzSQ89j+Z8CdAhjF6MoKleyj5EsgLvfkybuovyiUscldmbgL6xKDnOwGOB5a3cZgk+/An0SZ92UMRAubEidLDw9lqf+8mmjVdIsfVzu9M5rTYh6ztfDksYcvYQ3kMJpvpUwcinGFCyRg+nW/bJPSv8TGFVs9E+tEgIzr92xryXc2WeEHAinwzVol0gkwfYMvcVJah0qn6gfKXkW/53zCDx4Yd0UWIipAHPPWyKKX2O9RI9g==',
+						'secretkey' => 'f0e07252-46b4-4d31-9f76-54f92d3b7d60',
+					],
+					'json' => ['aadhaar_number' => $aadhaarNumber],
+					'timeout' => 30,
+				]);
 
-            $isVerified = ($verifyData['status'] === 'SUCCESS' && 
-                          !empty($verifyData['data']['is_valid']) && 
-                          $verifyData['data']['is_valid']);
-            $verificationData = $verifyData['data'] ?? null;
-            
-        } catch (\Exception $e) {
-            Log::warning('Aadhaar verification failed, but extraction succeeded', [
-                'error' => $e->getMessage(),
-                'aadhaar_number' => $aadhaarNumber
-            ]);
-        }
-        */
+				$verifyData = json_decode($verifyResponse->getBody(), true);
+				Log::info('Aadhaar verification response', ['data' => $verifyData]);
+
+				// Check if verification was successful
+				if ($verifyData['status'] === 'SUCCESS' && isset($verifyData['data'])) {
+					$isVerified = !empty($verifyData['data']['is_valid']) && $verifyData['data']['is_valid'];
+					$verificationData = $verifyData['data'] ?? null;
+
+					// Extract personal details from verification response
+					// Adjust these field names based on actual API response structure
+					if (isset($verifyData['data']['name'])) {
+						$personalDetails['name'] = $verifyData['data']['name'];
+					}
+					if (isset($verifyData['data']['father_name'])) {
+						$personalDetails['fatherName'] = $verifyData['data']['father_name'];
+					}
+					if (isset($verifyData['data']['fatherName'])) {
+						$personalDetails['fatherName'] = $verifyData['data']['fatherName'];
+					}
+					if (isset($verifyData['data']['dob'])) {
+						// Convert date format if needed (assuming format is dd/mm/yyyy)
+						$dob = $verifyData['data']['dob'];
+						if (strpos($dob, '/') !== false) {
+							$parts = explode('/', $dob);
+							if (count($parts) === 3) {
+								$personalDetails['dob'] = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+							}
+						} else {
+							$personalDetails['dob'] = $dob;
+						}
+					}
+					if (isset($verifyData['data']['gender'])) {
+						$personalDetails['gender'] = ucfirst(strtolower($verifyData['data']['gender']));
+					}
+					if (isset($verifyData['data']['address'])) {
+						$personalDetails['address'] = $verifyData['data']['address'];
+					}
+					if (isset($verifyData['data']['full_address'])) {
+						$personalDetails['address'] = $verifyData['data']['full_address'];
+					}
+				}
+			} catch (\Exception $e) {
+				Log::warning('Aadhaar verification failed, but extraction succeeded', [
+					'error' => $e->getMessage(),
+					'aadhaar_number' => $aadhaarNumber
+				]);
+				// Continue with extraction only - verification failed but we still have the number
+			}
 
 			$message = $isVerified
 				? 'Aadhaar extracted and verified successfully'
@@ -359,6 +430,7 @@ class DocumentController extends Controller
 				'status' => 'SUCCESS',
 				'data' => [
 					'aadhaarNumber' => $aadhaarNumber,
+					'personalDetails' => $personalDetails,
 					'isVerified' => $isVerified,
 					'verificationData' => $verificationData,
 					'filename' => $filename,
@@ -371,10 +443,10 @@ class DocumentController extends Controller
 			]);
 		} catch (\Exception $e) {
 			// Clean up S3 file if upload was successful but processing failed
-			if ($filePath && $s3Service->fileExists($filePath)) {
-				$s3Service->deleteFile($filePath);
-				Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
-			}
+			// if ($filePath && $s3Service->fileExists($filePath)) {
+			// 	$s3Service->deleteFile($filePath);
+			// 	Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
+			// }
 
 			Log::error('Aadhaar processing error', [
 				'error' => $e->getMessage(),
@@ -382,9 +454,383 @@ class DocumentController extends Controller
 			]);
 
 			return response()->json([
+				'status' => 'PARTIAL_SUCCESS',
+				'data' => [
+					'aadhaarNumber' => null,
+					'personalDetails' => [],
+					'isVerified' => false,
+					'filename' => $filename ?? null,
+					'filePath' => $filePath ?? null,
+					'fileUrl' => $fileUrl ?? null,
+				],
+				'message' => 'Aadhaar uploaded but extraction failed. Please enter details manually.',
+			]);
+		}
+	}
+
+	/**
+	 * Process Driving License document
+	 */
+	public function processDrivingLicense(Request $request, S3Service $s3Service)
+	{
+		$filePath = null;
+		$fileUrl = null;
+		$filename = null;
+
+		Log::info('Driving License processing request received', [
+			'has_file'         => $request->hasFile('dl_file'),
+			'requisition_type' => $request->input('requisition_type')
+		]);
+
+		$request->validate([
+			'dl_file'          => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+			'requisition_type' => 'required|in:Contractual,TFA,CB',
+		]);
+
+		$requisitionType = $request->input('requisition_type', 'Contractual');
+		$filePath = null;
+
+		try {
+			$file = $request->file('dl_file');
+			if (!$file->isValid()) {
+				throw new \Exception('Invalid file uploaded');
+			}
+
+			// Upload to S3
+			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'dl');
+
+			if (!$upload['success']) {
+				throw new \Exception('S3 Upload failed: ' . ($upload['error'] ?? 'Unknown error'));
+			}
+
+			$fileUrl  = $upload['url'];
+			$filePath = $upload['key'];
+			$filename = $upload['filename'];
+
+			Log::info('DL file uploaded to S3', [
+				'filePath' => $filePath,
+				'fileUrl'  => $fileUrl,
+				'filename' => $filename
+			]);
+
+			// Call extraction API
+			$client = new Client();
+			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-driving-license', [
+				'headers' => ['Content-Type' => 'application/json'],
+				'json'    => ['fileUrl' => $fileUrl],
+				'timeout' => 30,
+			]);
+
+			$extractData = json_decode($extractResponse->getBody(), true);
+
+			Log::info('DL extraction response', ['data' => $extractData]);
+
+			// ✅ FIXED PATHS
+			$apiSuccess = data_get($extractData, 'success', false);
+			$apiMessage = data_get($extractData, 'message', 'No message provided');
+			$innerData  = data_get($extractData, 'data', []);
+
+			// Debug
+			Log::debug('DL innerData keys', ['keys' => array_keys($innerData)]);
+
+			// Extract values
+			$dlNumberRaw = data_get($innerData, 'drivingLicenseNumber');
+			$dateOfIssue = data_get($innerData, 'dateOfIssue');
+			$validTill   = data_get($innerData, 'validTill');
+
+			// Convert dates
+			$validFrom = $dateOfIssue
+				? date('Y-m-d', strtotime(str_replace('/', '-', $dateOfIssue)))
+				: null;
+
+			$validTo = $validTill
+				? date('Y-m-d', strtotime(str_replace('/', '-', $validTill)))
+				: null;
+
+			// Validation
+			if (!$apiSuccess || empty($dlNumberRaw)) {
+				Log::warning('DL extraction validation failed', [
+					'apiSuccess' => $apiSuccess,
+					'dlNumberRaw' => $dlNumberRaw,
+					'innerData'   => $innerData
+				]);
+
+				throw new \Exception("DL extraction failed: {$apiMessage}");
+			}
+
+			// Success - file stays in S3
+			return response()->json([
+				'status' => 'SUCCESS',
+				'data'   => [
+					'dlNumber'     => trim($dlNumberRaw),
+					'validFrom'    => $validFrom,     // e.g. "2023-07-19"
+					'validTo'      => $validTo,       // e.g. "2044-03-14"
+					'filename'     => $filename,
+					'originalName' => $file->getClientOriginalName(),
+					'filePath'     => $filePath,
+					'fileUrl'      => $fileUrl,
+				],
+				'message' => 'Driving License extracted successfully',
+			]);
+		} catch (\Exception $e) {
+			// Cleanup only on real failure
+			// if ($filePath && $s3Service->fileExists($filePath)) {
+			// 	$s3Service->deleteFile($filePath);
+			// 	Log::info('Cleaned up DL file from S3 due to processing error', ['filePath' => $filePath]);
+			// }
+
+			Log::error('DL processing error', [
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+
+			return response()->json([
+				'status' => 'PARTIAL_SUCCESS',
+				'data' => [
+					'dlNumber' => null,
+					'status' => 'FAILURE',
+					'filename' => $filename,
+					'filePath' => $filePath,
+					'fileUrl' => $fileUrl,
+				],
+				'message' => 'Driving License uploaded but extraction failed. Please enter manually.',
+			]);
+		}
+	}
+
+	/**
+	 * Verify PAN manually (when user enters PAN number)
+	 */
+	public function verifyPANManually(Request $request)
+	{
+		Log::info('Manual PAN verification request', [
+			'pan_number' => $request->input('pan_number')
+		]);
+
+		$request->validate([
+			'pan_number' => 'required|string|size:10',
+		]);
+
+		try {
+			$panNumber = strtoupper($request->pan_number);
+
+			$client = new Client();
+			$verifyResponse = $client->post('https://api.rpacpc.com/services/get-pan-nsdl-details', [
+				'headers' => [
+					'Content-Type' => 'application/json',
+					'token' => 'HZqJwTTU+6SnoILGiwfD2h6Lgpp977mCfFJ4+XrnVvUDKENPJ0WjgRGO0uv9NODrf7KjCl6d34LQJOvn8w/aih79BZHUU6zKzfcoQDLBHkC8SoCaffiBcFvjagMjwnDrQmL6qb6+dmWi8rqFBWV3Sy/utyhxsFxC6N8FdIkvnBjKKlugKVCSssdECP07PB3sCJfU+I6pCWm8uF+4cCROXSXZvNRqaOqap9B/bSIUzSQ89j+Z8CdAhjF6MoKleyj5EsgLvfkybuovyiUscldmbgL6xKDnOwGOB5a3cZgk+/An0SZ92UMRAubEidLDw9lqf+8mmjVdIsfVzu9M5rTYh6ztfDksYcvYQ3kMJpvpUwcinGFCyRg+nW/bJPSv8TGFVs9E+tEgIzr92xryXc2WeEHAinwzVol0gkwfYMvcVJah0qn6gfKXkW/53zCDx4Yd0UWIipAHPPWyKKX2O9RI9g==',
+					'secretkey' => 'f0e07252-46b4-4d31-9f76-54f92d3b7d60',
+				],
+				'json' => ['pan_number' => $panNumber],
+				'timeout' => 30,
+			]);
+
+			$verifyData = json_decode($verifyResponse->getBody(), true);
+			Log::info('PAN verification response', ['data' => $verifyData]);
+
+			if ($verifyData['status'] === 'SUCCESS' && !empty($verifyData['data'])) {
+				$data = $verifyData['data'];
+
+				// Return the full verification data
+				return response()->json([
+					'status' => 'SUCCESS',
+					'data' => [
+						'pan_number' => $panNumber,
+						'is_valid' => $data['is_valid'] ?? false,
+						'owner_name' => $data['name'] ?? $data['owner_name'] ?? null,
+						'verificationData' => $data, // Include full verification data
+					],
+					'message' => 'PAN verified successfully',
+				]);
+			} else {
+				return response()->json([
+					'status' => 'FAILURE',
+					'message' => $verifyData['message'] ?? 'Invalid PAN number',
+				], 400);
+			}
+		} catch (\Exception $e) {
+			Log::error('PAN manual verification error', [
+				'error' => $e->getMessage(),
+				'pan_number' => $request->pan_number
+			]);
+
+			return response()->json([
 				'status' => 'FAILURE',
-				'message' => 'Unable to process Aadhaar card: ' . $e->getMessage(),
-				'suggestion' => 'Please upload a clear image/PDF of your Aadhaar card or enter the Aadhaar number manually.',
+				'message' => 'Unable to verify PAN: ' . $e->getMessage(),
+			], 500);
+		}
+	}
+
+	/**
+	 * Verify Bank Account manually
+	 */
+	public function verifyBankAccount(Request $request)
+	{
+		Log::info('Bank account verification request', [
+			'account_number' => $request->input('account_number'),
+			'ifsc_code'      => $request->input('ifsc_code')
+		]);
+
+		$request->validate([
+			'account_number' => 'required|string',
+			'ifsc_code'      => 'required|string|size:11',
+		]);
+
+		try {
+			$client = new Client();
+			$verifyResponse = $client->post('https://api.rpacpc.com/services/account-verification-pl', [
+				'headers' => [
+					'Content-Type' => 'application/json',
+					'token'        => 'HZqJwTTU+6SnoILGiwfD2h6Lgpp977mCfFJ4+XrnVvUDKENPJ0WjgRGO0uv9NODrf7KjCl6d34LQJOvn8w/aih79BZHUU6zKzfcoQDLBHkC8SoCaffiBcFvjagMjwnDrQmL6qb6+dmWi8rqFBWV3Sy/utyhxsFxC6N8FdIkvnBjKKlugKVCSssdECP07PB3sCJfU+I6pCWm8uF+4cCROXSXZvNRqaOqap9B/bSIUzSQ89j+Z8CdAhjF6MoKleyj5EsgLvfkybuovyiUscldmbgL6xKDnOwGOB5a3cZgk+/An0SZ92UMRAubEidLDw9lqf+8mmjVdIsfVzu9M5rTYh6ztfDksYcvYQ3kMJpvpUwcinGFCyRg+nW/bJPSv8TGFVs9E+tEgIzr92xryXc2WeEHAinwzVol0gkwfYMvcVJah0qn6gfKXkW/53zCDx4Yd0UWIipAHPPWyKKX2O9RI9g==',
+					'secretkey'    => 'f0e07252-46b4-4d31-9f76-54f92d3b7d60',
+				],
+				'json' => [
+					'acc_number'  => $request->account_number,
+					'ifsc_number' => strtoupper($request->ifsc_code),
+				],
+				'timeout' => 30,
+			]);
+
+			$verifyData = json_decode($verifyResponse->getBody(), true);
+			Log::info('Bank verification response', ['data' => $verifyData]);
+
+			// ────────────────────────────────────────────────
+			// FIXED PATHS
+			$status     = data_get($verifyData, 'status');           // ← top level
+			$bankData   = data_get($verifyData, 'data');             // ← the nested object we want
+
+			$verificationStatus = strtoupper(trim(data_get($bankData, 'verification_status', '')));
+
+			Log::info('DEBUG CHECK', [
+				'outerStatus'        => $status,
+				'verification_status' => $verificationStatus,
+				'bankData_keys'      => $bankData ? array_keys($bankData) : null
+			]);
+
+			if ($status === 'SUCCESS' && $verificationStatus === 'VERIFIED') {
+
+				$ifscDetails = data_get($bankData, 'ifsc_details', []);
+
+				$branchAddress = '';
+				if ($ifscDetails) {
+					$parts = array_filter([
+						data_get($ifscDetails, 'branch'),
+						data_get($ifscDetails, 'district'),
+						data_get($ifscDetails, 'state'),
+					]);
+					$branchAddress = implode(', ', $parts);
+				}
+
+				return response()->json([
+					'status' => 'SUCCESS',
+					'data'   => [
+						'account_holder_name' => data_get($bankData, 'beneficiary_name'),
+						'verification_status' => data_get($bankData, 'verification_status'),
+						'bank_name'           => data_get($ifscDetails, 'name'),
+						'branch_address'      => $branchAddress,
+						'ifsc'                => data_get($ifscDetails, 'ifsc'),
+					],
+					'message' => 'Bank account verified successfully',
+				]);
+			}
+
+			return response()->json([
+				'status'  => 'FAILURE',
+				'message' => 'Bank account verification failed. ' .
+					($status ? "API status: $status" : 'No status returned') . '. ' .
+					($verificationStatus ? "Verification: $verificationStatus" : 'Unknown verification status'),
+			], 400);
+		} catch (\Exception $e) {
+			Log::error('Bank account verification error', [
+				'error'         => $e->getMessage(),
+				'account_number' => $request->account_number ?? 'N/A'
+			]);
+
+			return response()->json([
+				'status'  => 'FAILURE',
+				'message' => 'Unable to verify bank account: ' . $e->getMessage(),
+			], 500);
+		}
+	}
+
+	/**
+	 * Verify Driving License manually
+	 */
+	public function verifyDLManually(Request $request)
+	{
+		Log::info('DL manual verification request', [
+			'dl_number' => $request->input('dl_number')
+		]);
+
+		$request->validate([
+			'dl_number' => 'required|string',
+		]);
+
+		try {
+			$client = new Client();
+			$verifyResponse = $client->post('https://api.rpacpc.com/services/vv005', [
+				'headers' => [
+					'Content-Type' => 'application/json',
+					'token' => 'HZqJwTTU+6SnoILGiwfD2h6Lgpp977mCfFJ4+XrnVvUDKENPJ0WjgRGO0uv9NODrf7KjCl6d34LQJOvn8w/aih79BZHUU6zKzfcoQDLBHkC8SoCaffiBcFvjagMjwnDrQmL6qb6+dmWi8rqFBWV3Sy/utyhxsFxC6N8FdIkvnBjKKlugKVCSssdECP07PB3sCJfU+I6pCWm8uF+4cCROXSXZvNRqaOqap9B/bSIUzSQ89j+Z8CdAhjF6MoKleyj5EsgLvfkybuovyiUscldmbgL6xKDnOwGOB5a3cZgk+/An0SZ92UMRAubEidLDw9lqf+8mmjVdIsfVzu9M5rTYh6ztfDksYcvYQ3kMJpvpUwcinGFCyRg+nW/bJPSv8TGFVs9E+tEgIzr92xryXc2WeEHAinwzVol0gkwfYMvcVJah0qn6gfKXkW/53zCDx4Yd0UWIipAHPPWyKKX2O9RI9g==',
+					'secretkey' => 'f0e07252-46b4-4d31-9f76-54f92d3b7d60',
+				],
+				'json' => [
+					'request_id' => uniqid(),
+					'consent' => 'Y',
+					'consent_text' => 'I hear by declare my consent agreement for fetching my information via RPACPC API',
+					'dl_number' => $request->dl_number,
+				],
+				'timeout' => 30,
+			]);
+
+			$verifyData = json_decode($verifyResponse->getBody(), true);
+			Log::info('DL verification response', ['data' => $verifyData]);
+
+			if ($verifyData['status'] === 'SUCCESS' && $verifyData['status_code'] === '200') {
+				$data = $verifyData['data'];
+
+				// Extract validity dates from transport or non-transport
+				$validFrom = null;
+				$validTo = null;
+
+				if (!empty($data['dl_validity']['transport']['from'])) {
+					$validFrom = $this->convertDateFormat($data['dl_validity']['transport']['from']);
+				}
+				if (!empty($data['dl_validity']['transport']['to'])) {
+					$validTo = $this->convertDateFormat($data['dl_validity']['transport']['to']);
+				}
+
+				return response()->json([
+					'status' => 'SUCCESS',
+					'data' => [
+						'owner_name' => $data['owner_name'] ?? null,
+						'date_of_birth' => $this->convertDateFormat($data['date_of_birth'] ?? null),
+						'dl_number' => $data['dl_number'] ?? null,
+						'dl_status' => $data['dl_status'] ?? null,
+						'issue_date' => $this->convertDateFormat($data['issue_date'] ?? null),
+						'valid_from' => $validFrom,
+						'valid_to' => $validTo,
+						'rto_authority' => $data['rto_authority'] ?? null,
+						'cov_details' => $data['cov_details'] ?? null,
+					],
+					'message' => 'DL verified successfully',
+				]);
+			} else {
+				return response()->json([
+					'status' => 'FAILURE',
+					'message' => 'Invalid DL number or verification failed',
+				], 400);
+			}
+		} catch (\Exception $e) {
+			Log::error('DL manual verification error', [
+				'error' => $e->getMessage(),
+				'dl_number' => $request->dl_number
+			]);
+
+			return response()->json([
+				'status' => 'FAILURE',
+				'message' => 'Unable to verify DL: ' . $e->getMessage(),
 			], 500);
 		}
 	}
