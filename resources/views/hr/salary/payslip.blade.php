@@ -2,74 +2,112 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>invoice - {{ $salary->candidate->candidate_name ?? 'Employee' }}</title>
+    <title>Invoice - {{ $salary->candidate->candidate_name ?? 'Employee' }}</title>
     <style>
-        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 13px; margin: 20px; line-height: 1.4; }
-        .header { text-align: center; margin-bottom: 25px; }
-        .info p { margin: 5px 0; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #555; padding: 8px; }
-        th { background: #f8f8f8; text-align: left; }
-        .total { font-weight: bold; background: #f0f0f0; }
-        .net { font-size: 1.4em; text-align: right; margin-top: 25px; padding-right: 20px; }
-        .footer { margin-top: 40px; font-size: 11px; color: #666; text-align: center; }
+        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 13px; margin: 25px; }
+        .header { text-align: center; }
+        .invoice-title { font-size: 26px; font-weight: bold; letter-spacing: 2px; }
+        .party-name { font-size: 20px; font-weight: bold; margin-top: 15px; }
+        .section { margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #000; padding: 8px; }
+        th { background: #f3f3f3; }
+        .right { text-align: right; }
+        .total-row { font-weight: bold; background: #f8f8f8; }
+        .terms { margin-top: 30px; font-size: 12px; }
+        .signature { margin-top: 60px; text-align: right; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h2>invoice</h2>
-    <p>{{ date('F Y', strtotime("{$salary->year}-{$salary->month}-01")) }}</p>
+    <div class="invoice-title">INVOICE</div>
+    <div>{{ date('F Y', strtotime("{$salary->year}-{$salary->month}-01")) }}</div>
 </div>
 
-<div class="info">
-    <p><strong>Party Code:</strong> {{ $salary->candidate->candidate_code ?? '—' }}</p>
-    <p><strong>Name:</strong> {{ $salary->candidate->candidate_name ?? '—' }}</p>
-    <p><strong>Designation/Type:</strong> {{ $salary->candidate->requisition_type ?? '—' }}</p>
+<div class="section">
+    <div class="party-name">
+        {{ strtoupper($salary->candidate->candidate_name ?? '') }}
+    </div>
+
+    <div>
+        {{ $salary->candidate->address_line_1 ?? '' }}<br>
+        {{ $salary->candidate->cityMaster->name ?? '' }},
+        {{ $salary->candidate->residenceState->state_name ?? '' }} -
+        {{ $salary->candidate->pin_code ?? '' }}<br>
+        PAN: {{ $salary->candidate->pan_no ?? 'N/A' }}<br>
+        Mobile: {{ $salary->candidate->mobile_no ?? '' }}
+    </div>
 </div>
+
+<div class="section">
+    <strong>Bill To:</strong><br>
+    VNR Seeds Pvt. Ltd.<br>
+</div>
+
+@php
+    $tdsRate = 0.10; // 10% example
+    $baseAmount = $salary->net_pay;
+    $sundayAmount = $salary->extra_amount ?? 0;
+    $arrearAmount = $salary->arrear_amount ?? 0;
+
+    $baseTds = $baseAmount * $tdsRate;
+    $sundayTds = $sundayAmount * $tdsRate;
+    $arrearTds = $arrearAmount * $tdsRate;
+
+    $grandTotal = ($baseAmount + $sundayAmount + $arrearAmount);
+@endphp
 
 <table>
     <thead>
-        <tr><th colspan="2">Earnings</th></tr>
+        <tr>
+            <th width="60%">Particulars</th>
+            <th width="20%" class="right">Amount (₹)</th>
+            <th width="20%" class="right">TDS (₹)</th>
+        </tr>
     </thead>
     <tbody>
         <tr>
-            <td>Monthly Remuneration (Reference)</td>
-            <td align="right">₹ {{ number_format($salary->monthly_salary, 2) }}</td>
+            <td>Contractual service charges for the services in the defined territory</td>
+            <td class="right">{{ number_format($baseAmount, 2) }}</td>
+            <td class="right">{{ number_format($baseTds, 2) }}</td>
         </tr>
 
         <tr>
-            <td>Paid Days</td>
-            <td align="right">{{ $salary->paid_days }}</td>
+            <td>Charges for the additional services (Sunday)</td>
+            <td class="right">{{ number_format($sundayAmount, 2) }}</td>
+            <td class="right">{{ number_format($sundayTds, 2) }}</td>
         </tr>
 
         <tr>
-            <td>Approved Sunday Work</td>
-            <td align="right">₹ {{ number_format($salary->extra_amount, 2) }}</td>
+            <td>Charges for the services not covered under above (Arrear)</td>
+            <td class="right">{{ number_format($arrearAmount, 2) }}</td>
+            <td class="right">{{ number_format($arrearTds, 2) }}</td>
         </tr>
 
-        <tr class="total">
-            <td>Total Payable Earnings</td>
-            <td align="right">₹ {{ number_format($salary->net_pay + $salary->deduction_amount, 2) }}</td>
+        <tr class="total-row">
+            <td>Total</td>
+            <td class="right">{{ number_format($grandTotal, 2) }}</td>
+            <td class="right">
+                {{ number_format($baseTds + $sundayTds + $arrearTds, 2) }}
+            </td>
         </tr>
     </tbody>
 </table>
 
+<div class="terms">
+    <strong>Terms & Conditions:</strong><br><br>
 
-<table>
-    <thead><tr><th colspan="2">Deductions</th></tr></thead>
-    <tbody>
-        <tr><td>Absent / Leave Without Pay</td><td align="right">₹ {{ number_format($salary->deduction_amount, 2) }}</td></tr>
-        <tr class="total"><td>Total Deductions</td><td align="right">₹ {{ number_format($salary->deduction_amount, 2) }}</td></tr>
-    </tbody>
-</table>
-
-<div class="net">
-    <strong>NET PAY: ₹ {{ number_format($salary->net_pay, 2) }}</strong>
+    1. The bill is inclusive of all applicable taxes.<br>
+    2. Services have been verified by the designated team of the service receiver.<br>
+    3. Payment is payable within 30 days of invoice date.<br>
+    4. Jurisdiction: Raipur Court only.
 </div>
 
-<div class="footer">
-    Generated on {{ now()->format('d M Y H:i') }} • Computer Generated Document • No Signature Required
+<div class="signature">
+    For {{ strtoupper($salary->candidate->candidate_name ?? '') }}<br><br><br>
+    ___________________________<br>
+    Authorized Signature
 </div>
 
 </body>
