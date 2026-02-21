@@ -304,10 +304,11 @@ class ManpowerRequisitionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating requisition: ' . $e->getMessage());
+             Log::error('Error creating requisition: ' . $e->getMessage());
+    
             return response()->json([
                 'success' => false,
-                'message' => 'Error submitting requisition.',
+                'message' => $e->getMessage(),   // SHOW REAL ERROR
             ], 500);
         }
     }
