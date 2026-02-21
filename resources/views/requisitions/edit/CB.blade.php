@@ -124,23 +124,23 @@
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
-    <label for="highest_qualification" class="form-label">
-        Highest Qualification <span class="text-danger">*</span>
-    </label>
-    <select class="form-select form-select-sm select2"
-            id="highest_qualification"
-            name="highest_qualification"
-            required>
-        <option value="">Select Qualification</option>
-        @foreach($educations as $education)
-            <option value="{{ $education->EducationId }}"
-                {{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
-                {{ $education->EducationName }} ({{ $education->EducationCode }})
-            </option>
-        @endforeach
-    </select>
-    <div class="invalid-feedback"></div>
-</div>
+												<label for="highest_qualification" class="form-label">
+													Highest Qualification <span class="text-danger">*</span>
+												</label>
+												<select class="form-select form-select-sm select2"
+													id="highest_qualification"
+													name="highest_qualification"
+													required>
+													<option value="">Select Qualification</option>
+													@foreach($educations as $education)
+													<option value="{{ $education->EducationId }}"
+														{{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
+														{{ $education->EducationName }} ({{ $education->EducationCode }})
+													</option>
+													@endforeach
+												</select>
+												<div class="invalid-feedback"></div>
+											</div>
 
 										</div>
 
@@ -184,7 +184,7 @@
 												{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
 												<div class="invalid-feedback"></div>
 											</div>
-										
+
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -261,18 +261,18 @@
 											</div>
 											<div class="col-md-2 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
-											<select class="form-select form-select-sm"
-        id="state_work_location"
-        name="state_work_location"
-        required>
-    <option value="">Select State</option>
-    @foreach($states as $state)
-        <option value="{{ $state->id }}"
-            {{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
-            {{ $state->state_name }}
-        </option>
-    @endforeach
-</select>
+												<select class="form-select form-select-sm"
+													id="state_work_location"
+													name="state_work_location"
+													required>
+													<option value="">Select State</option>
+													@foreach($states as $state)
+													<option value="{{ $state->id }}"
+														{{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
+														{{ $state->state_name }}
+													</option>
+													@endforeach
+												</select>
 
 												<div class="invalid-feedback"></div>
 											</div>
@@ -841,7 +841,7 @@
 	}
 </style>
 
-@section('script_section')
+@push('scripts')
 <script src="{{URL::to('/')}}/assets/js/contract-rules.js"></script>
 
 <script>
@@ -864,11 +864,17 @@
 
 					$.each(response, function(_, city) {
 						citySelect.append(
-							`<option value="${city.id}" ${city.id == existingCity ? 'selected' : ''}>
-                        ${city.name}
-                    </option>`
+							$('<option>', {
+								value: city.id,
+								text: city.name
+							})
 						);
 					});
+
+					// 🔥 IMPORTANT: Set selected AFTER appending
+					if (existingCity) {
+						citySelect.val(String(existingCity)).trigger('change');
+					}
 				}
 			});
 		}
@@ -912,7 +918,7 @@
 
 			// Show loading indicator
 			const panNoField = $('#pan_no');
-			panNoField.prop('disabled', true).val('Extracting...');
+			panNoField.prop('disabled', true).val('').attr('placeholder', 'Extracting...');
 
 			const formData = new FormData();
 			formData.append('pan_file', file);
@@ -928,20 +934,13 @@
 					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 				},
 				success: function(response) {
-					if (response.status === 'SUCCESS') {
-						panNoField.val(response.data.panNumber)
-							.removeClass('is-invalid')
-							.addClass(response.data.isVerified ? 'is-valid' : '');
+					if (response.status === 'SUCCESS' && response.data.panNumber) {
 
-						if (!response.data.isVerified) {
-							showToast('PAN extracted but not verified. Please verify manually.', 'warning');
-						} else {
-							showToast('PAN extracted and verified successfully!', 'success');
-						}
+						panNoField.val(response.data.panNumber).removeClass('is-invalid').addClass(response.data.isVerified ? 'is-valid' : '');
 
-						// Store filename for submission
-						$('#pan_filename').val(response.data.filename);
-						$('#pan_filepath').val(response.data.filePath);
+					} else {
+						panNoField.val('');
+						showToast(response.message || 'PAN extraction failed. Enter manually.', 'warning');
 					}
 				},
 				error: function(xhr) {
@@ -949,7 +948,7 @@
 					showToast('Failed to extract PAN. Please enter manually.', 'error');
 				},
 				complete: function() {
-					panNoField.prop('disabled', false);
+					panNoField.prop('disabled', false).attr('placeholder', '');
 				}
 			});
 		});
@@ -961,7 +960,7 @@
 
 			// Show loading indicators
 			$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', true)
-				.val('Extracting...');
+				.val('').attr('placeholder', 'Extracting...');
 
 			const formData = new FormData();
 			formData.append('bank_file', file);
@@ -1015,15 +1014,18 @@
 						// Store filename for submission
 						$('#bank_filename').val(data.filename);
 						$('#bank_filepath').val(data.filePath);
+					} else {
+						$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name')
+							.val('');
+						showToast(response.message || 'Bank extraction failed. Enter manually.', 'warning');
 					}
 				},
 				error: function(xhr) {
-					$('#bank_account_no, #bank_ifsc, #bank_name')
-						.val('').addClass('is-invalid');
+					$('#bank_account_no, #bank_ifsc, #bank_name').val('').addClass('is-invalid');
 					showToast('Failed to extract bank details. Please enter manually.', 'error');
 				},
 				complete: function() {
-					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false).attr('placeholder', '');
 				}
 			});
 		});
@@ -1035,7 +1037,7 @@
 
 			const aadhaarField = $('#aadhaar_no');
 			updateAadhaarStatus('loading', 'Extracting Aadhaar number...');
-			aadhaarField.prop('disabled', true).val('Extracting...');
+			aadhaarField.prop('disabled', true).val('').attr('placeholder', 'Extracting...');
 
 			const formData = new FormData();
 			formData.append('aadhaar_file', file);
@@ -1051,7 +1053,7 @@
 					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 				},
 				success: function(response) {
-					if (response.status === 'SUCCESS') {
+					if (response.status === 'SUCCESS' && response.data.aadhaarNumber) {
 						aadhaarField.val(response.data.aadhaarNumber);
 
 						if (response.data.isVerified) {
@@ -1065,6 +1067,9 @@
 						// Store filename for submission
 						$('#aadhaar_filename').val(response.data.filename);
 						$('#aadhaar_filepath').val(response.data.filePath);
+					} else {
+						aadhaarField.val('');
+						updateAadhaarStatus('error', 'Extraction failed. Enter manually.');
 					}
 				},
 				error: function(xhr) {
@@ -1073,7 +1078,7 @@
 					showToast('Failed to extract Aadhaar. Please enter manually.', 'error');
 				},
 				complete: function() {
-					aadhaarField.prop('disabled', false);
+					aadhaarField.prop('disabled', false).attr('placeholder', '');
 				}
 			});
 		});
@@ -1277,4 +1282,4 @@
 		});
 	});
 </script>
-@endsection
+@endpush

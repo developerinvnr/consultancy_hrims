@@ -129,23 +129,23 @@
 												<div class="invalid-feedback"></div>
 											</div>
 											<div class="col-md-3 mb-3">
-    <label for="highest_qualification" class="form-label">
-        Highest Qualification <span class="text-danger">*</span>
-    </label>
-    <select class="form-select form-select-sm select2"
-            id="highest_qualification"
-            name="highest_qualification"
-            required>
-        <option value="">Select Qualification</option>
-        @foreach($educations as $education)
-            <option value="{{ $education->EducationId }}"
-                {{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
-                {{ $education->EducationName }} ({{ $education->EducationCode }})
-            </option>
-        @endforeach
-    </select>
-    <div class="invalid-feedback"></div>
-</div>
+												<label for="highest_qualification" class="form-label">
+													Highest Qualification <span class="text-danger">*</span>
+												</label>
+												<select class="form-select form-select-sm select2"
+													id="highest_qualification"
+													name="highest_qualification"
+													required>
+													<option value="">Select Qualification</option>
+													@foreach($educations as $education)
+													<option value="{{ $education->EducationId }}"
+														{{ old('highest_qualification', $requisition->highest_qualification) == $education->EducationId ? 'selected' : '' }}>
+														{{ $education->EducationName }} ({{ $education->EducationCode }})
+													</option>
+													@endforeach
+												</select>
+												<div class="invalid-feedback"></div>
+											</div>
 
 										</div>
 
@@ -173,6 +173,7 @@
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
+
 											<div class="col-md-2 mb-3">
 												<label for="city" class="form-label">City <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm select2"
@@ -189,7 +190,7 @@
 												{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
 												<div class="invalid-feedback"></div>
 											</div>
-										
+
 											<div class="col-md-2 mb-3">
 												<label for="pin_code" class="form-label">PIN Code <span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-select-sm"
@@ -262,17 +263,17 @@
 											<div class="col-md-3 mb-3">
 												<label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm"
-        id="state_work_location"
-        name="state_work_location"
-        required>
-    <option value="">Select State</option>
-    @foreach($states as $state)
-        <option value="{{ $state->id }}"
-            {{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
-            {{ $state->state_name }}
-        </option>
-    @endforeach
-</select>
+													id="state_work_location"
+													name="state_work_location"
+													required>
+													<option value="">Select State</option>
+													@foreach($states as $state)
+													<option value="{{ $state->id }}"
+														{{ old('state_work_location', $requisition->state_work_location) == $state->id ? 'selected' : '' }}>
+														{{ $state->state_name }}
+													</option>
+													@endforeach
+												</select>
 
 												<div class="invalid-feedback"></div>
 											</div>
@@ -455,76 +456,93 @@
 								<div class="row">
 									<!-- Resume -->
 									<div class="col-md-3 mb-3">
-										<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+										<label for="resume" class="form-label">
+											Resume <span class="text-danger">*</span>
+										</label>
 
-										@if($resumeDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $resumeDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $resumeDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
+										<div class="d-flex align-items-center gap-2">
+											@if($resumeDoc)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> Uploaded
+											</span>
+
+											<a href="{{ route('document.download', $resumeDoc) }}"
+												class="btn btn-sm btn-outline-primary"
+												target="_blank">
+												<i class="ri-eye-line"></i>
+											</a>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="resume"
+												name="resume"
+												accept=".pdf,.doc,.docx"
+												{{ !$resumeDoc ? 'required' : '' }}>
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="resume" name="resume" accept=".pdf,.doc,.docx" {{ !$resumeDoc ? 'required' : '' }}>
+
 										<small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
-										<div class="invalid-feedback"></div>
 									</div>
 
 									<!-- Driving License -->
 									<div class="col-md-3 mb-3">
-										<label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
+										<label for="driving_licence" class="form-label">
+											Driving Licence <span class="text-danger">*</span>
+										</label>
 
-										@if($drivingDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $drivingDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $drivingDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
+										<div class="d-flex align-items-center gap-2">
+											@if($drivingDoc)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> Uploaded
+											</span>
+
+											<a href="{{ route('document.download', $drivingDoc) }}"
+												class="btn btn-sm btn-outline-primary"
+												target="_blank">
+												<i class="ri-eye-line"></i>
+											</a>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="driving_licence"
+												name="driving_licence"
+												accept=".pdf,.jpg,.jpeg,.png"
+												{{ !$drivingDoc ? 'required' : '' }}>
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" {{ !$drivingDoc ? 'required' : '' }}>
+
 										<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
 										<div class="invalid-feedback"></div>
 									</div>
 
 									<!-- PAN Card -->
 									<div class="col-md-3 mb-3">
-										<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-										@if($panDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $panDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $panDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
+										<label for="pan_card" class="form-label">
+											PAN Card <span class="text-danger">*</span>
+										</label>
+
+										<div class="d-flex align-items-center gap-2">
+											@if($panDoc)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> Uploaded
+											</span>
+
+											<a href="{{ route('document.download', $panDoc) }}"
+												class="btn btn-sm btn-outline-primary"
+												target="_blank">
+												<i class="ri-eye-line"></i>
+											</a>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="pan_card"
+												name="pan_card"
+												accept=".pdf,.jpg,.jpeg,.png"
+												{{ !$panDoc ? 'required' : '' }}>
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" {{ !$panDoc ? 'required' : '' }}>
+
 										<small class="text-muted">Clear image/PDF for auto-extraction</small>
-										<div class="invalid-feedback"></div>
 									</div>
 
 									<!-- PAN Number -->
@@ -554,27 +572,32 @@
 								<div class="row">
 									<!-- Aadhaar Card -->
 									<div class="col-md-3 mb-3">
-										<label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
+										<label for="aadhaar_card" class="form-label">
+											Aadhaar Card <span class="text-danger">*</span>
+										</label>
 
-										@if($aadhaarDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $aadhaarDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $aadhaarDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
+										<div class="d-flex align-items-center gap-2">
+											@if($aadhaarDoc)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> Uploaded
+											</span>
+
+											<a href="{{ route('document.download', $aadhaarDoc) }}"
+												class="btn btn-sm btn-outline-primary"
+												target="_blank">
+												<i class="ri-eye-line"></i>
+											</a>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="aadhaar_card"
+												name="aadhaar_card"
+												accept=".pdf,.jpg,.jpeg,.png"
+												{{ !$aadhaarDoc ? 'required' : '' }}>
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" {{ !$aadhaarDoc ? 'required' : '' }}>
+
 										<small class="text-muted">Clear image/PDF of Aadhaar</small>
-										<div class="invalid-feedback"></div>
 									</div>
 
 									<!-- Aadhaar Number -->
@@ -599,56 +622,57 @@
 										<div class="invalid-feedback">Valid Aadhaar required</div>
 									</div>
 
-									<!-- Bank Document -->
 									<div class="col-md-3 mb-3">
-										<label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
+										<label for="bank_document" class="form-label">
+											Bank Document <span class="text-danger">*</span>
+										</label>
 
-										@if($bankDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $bankDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $bankDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
+										<div class="d-flex align-items-center gap-2">
+
+											@if($bankDoc)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i> Uploaded
+											</span>
+
+											<a href="{{ route('document.download', $bankDoc) }}"
+												class="btn btn-sm btn-outline-primary"
+												target="_blank">
+												<i class="ri-eye-line"></i>
+											</a>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="bank_document"
+												name="bank_document"
+												accept=".pdf,.jpg,.jpeg,.png"
+												{{ !$bankDoc ? 'required' : '' }}>
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" {{ !$bankDoc ? 'required' : '' }}>
-										<small class="text-muted">Passbook/Cancelled Cheque</small>
-										<div class="invalid-feedback"></div>
+
+										<small class="text-muted">Passbook / Cancelled Cheque</small>
 									</div>
 
 									<!-- Other Document -->
 									<div class="col-md-3 mb-3">
-										<label for="other_document" class="form-label">Other Document (Optional)</label>
-										@php
-										$otherDocs = $documents->where('document_type', 'other');
-										@endphp
-										@if($otherDocs->count() > 0)
-										<div class="mb-2">
-											<small class="text-success">
-												<i class="ri-checkbox-circle-fill me-1"></i> {{ $otherDocs->count() }} file(s) uploaded
-											</small>
-											@foreach($otherDocs as $otherDoc)
-											<div class="d-flex justify-content-between align-items-center mt-1">
-												<small class="text-muted">{{ $otherDoc->file_name }}</small>
-												<a href="{{ route('document.download', $otherDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line"></i>
-												</a>
-											</div>
-											@endforeach
-											<small class="text-muted d-block mt-1">Upload new file to add more</small>
+										<label for="other_document" class="form-label">
+											Other Document (Optional)
+										</label>
+
+										<div class="d-flex align-items-center gap-2">
+											@if($otherDocs->count() > 0)
+											<span class="badge bg-success">
+												<i class="ri-checkbox-circle-fill me-1"></i>
+												{{ $otherDocs->count() }} Uploaded
+											</span>
+											@endif
+
+											<input type="file"
+												class="form-control form-control-sm"
+												id="other_document"
+												name="other_document"
+												accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
 										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+
 										<small class="text-muted">Additional documents</small>
 									</div>
 								</div>
@@ -807,7 +831,7 @@
 	}
 </style>
 
-@section('script_section')
+@push('scripts')
 <script src="{{ asset('assets/js/contract-rules.js') }}"></script>
 <script>
 	$(document).ready(function() {
@@ -829,11 +853,17 @@
 
 					$.each(response, function(_, city) {
 						citySelect.append(
-							`<option value="${city.id}" ${city.id == existingCity ? 'selected' : ''}>
-                        ${city.name}
-                    </option>`
+							$('<option>', {
+								value: city.id,
+								text: city.name
+							})
 						);
 					});
+
+					// 🔥 IMPORTANT: Set selected AFTER appending
+					if (existingCity) {
+						citySelect.val(String(existingCity)).trigger('change');
+					}
 				}
 			});
 		}
@@ -866,7 +896,7 @@
 				}
 			});
 		});
-		 initContractDateValidation("#contract_start_date");
+		initContractDateValidation("#contract_start_date");
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -877,7 +907,7 @@
 
 			// Show loading indicator
 			const panNoField = $('#pan_no');
-			panNoField.prop('disabled', true).val('Extracting...');
+			panNoField.prop('disabled', true).val('').attr('placeholder', 'Extracting...');
 
 			const formData = new FormData();
 			formData.append('pan_file', file);
@@ -893,28 +923,21 @@
 					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 				},
 				success: function(response) {
-					if (response.status === 'SUCCESS') {
+
+					if (response.status === 'SUCCESS' && response.data.panNumber) {
+
 						panNoField.val(response.data.panNumber)
 							.removeClass('is-invalid')
 							.addClass(response.data.isVerified ? 'is-valid' : '');
 
-						if (!response.data.isVerified) {
-							showToast('PAN extracted but not verified. Please verify manually.', 'warning');
-						} else {
-							showToast('PAN extracted and verified successfully!', 'success');
-						}
-
-						// Store filename for submission
-						$('#pan_filename').val(response.data.filename);
-						$('#pan_filepath').val(response.data.filePath);
+					} else {
+						panNoField.val('');
+						showToast(response.message || 'PAN extraction failed. Enter manually.', 'warning');
 					}
 				},
-				error: function(xhr) {
-					panNoField.val('').addClass('is-invalid');
-					showToast('Failed to extract PAN. Please enter manually.', 'error');
-				},
 				complete: function() {
-					panNoField.prop('disabled', false);
+					panNoField.prop('disabled', false)
+						.attr('placeholder', '');
 				}
 			});
 		});
@@ -926,7 +949,7 @@
 
 			// Show loading indicators
 			$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', true)
-				.val('Extracting...');
+				.prop('disabled', true).val('').attr('placeholder', 'Extracting...');
 
 			const formData = new FormData();
 			formData.append('bank_file', file);
@@ -942,53 +965,37 @@
 					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 				},
 				success: function(response) {
+
 					if (response.status === 'SUCCESS') {
+
 						const data = response.data;
 
-						// Update bank fields
 						if (data.accountNumber) {
-							$('#bank_account_no').val(data.accountNumber)
-								.removeClass('is-invalid')
-								.addClass(data.isVerified ? 'is-valid' : '');
+							$('#bank_account_no').val(data.accountNumber);
 						}
 
 						if (data.ifscCode) {
-							$('#bank_ifsc').val(data.ifscCode)
-								.removeClass('is-invalid')
-								.addClass(data.isVerified ? 'is-valid' : '');
+							$('#bank_ifsc').val(data.ifscCode);
 						}
 
 						if (data.verificationData?.ifsc_details?.name) {
-							$('#bank_name')
-								.val(data.verificationData.ifsc_details.name)
-								.removeClass('is-invalid')
-								.addClass(data.isVerified ? 'is-valid' : '');
+							$('#bank_name').val(data.verificationData.ifsc_details.name);
 						}
 
 						if (data.verificationData?.beneficiary_name) {
-							$('#account_holder_name')
-								.val(data.verificationData.beneficiary_name)
-								.removeClass('is-invalid')
-								.addClass(data.isVerified ? 'is-valid' : '');
-						}
-						if (!data.isVerified) {
-							showToast('Bank details extracted but not verified. Please verify manually.', 'warning');
-						} else {
-							showToast('Bank details extracted and verified successfully!', 'success');
+							$('#account_holder_name').val(data.verificationData.beneficiary_name);
 						}
 
-						// Store filename for submission
-						$('#bank_filename').val(data.filename);
-						$('#bank_filepath').val(data.filePath);
+					} else {
+						// 🔥 Important
+						$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').val('');
+						showToast(response.message || 'Bank extraction failed. Enter manually.', 'warning');
 					}
 				},
-				error: function(xhr) {
-					$('#bank_account_no, #bank_ifsc, #bank_name')
-						.val('').addClass('is-invalid');
-					showToast('Failed to extract bank details. Please enter manually.', 'error');
-				},
 				complete: function() {
-					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').prop('disabled', false);
+					$('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name')
+						.prop('disabled', false)
+						.attr('placeholder', '');
 				}
 			});
 		});
@@ -1016,7 +1023,9 @@
 					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 				},
 				success: function(response) {
-					if (response.status === 'SUCCESS') {
+
+					if (response.status === 'SUCCESS' && response.data.aadhaarNumber) {
+
 						aadhaarField.val(response.data.aadhaarNumber);
 
 						if (response.data.isVerified) {
@@ -1027,9 +1036,14 @@
 							showToast('Aadhaar extracted but not verified.', 'warning');
 						}
 
-						// Store filename for submission
 						$('#aadhaar_filename').val(response.data.filename);
 						$('#aadhaar_filepath').val(response.data.filePath);
+
+					} else {
+						// 🔥 HANDLE PARTIAL_SUCCESS OR FAILURE
+						aadhaarField.val('');
+						updateAadhaarStatus('error', 'Extraction failed. Please enter Aadhaar manually.');
+						showToast(response.message || 'Extraction failed. Enter manually.', 'warning');
 					}
 				},
 				error: function(xhr) {
@@ -1224,4 +1238,4 @@
 		});
 	});
 </script>
-@endsection
+@endpush
