@@ -281,11 +281,15 @@ class DocumentController extends Controller
 	/**
 	 * Process Aadhaar card document (optional)
 	 */
+	/**
+	 * Process Aadhaar card document (optional)
+	 */
 	public function processAadhaarCard(Request $request, S3Service $s3Service)
 	{
 		$filePath = null;
 		$fileUrl = null;
 		$filename = null;
+
 		Log::info('Aadhaar card processing request received', [
 			'has_file' => $request->hasFile('aadhaar_file'),
 			'requisition_type' => $request->input('requisition_type')
@@ -305,14 +309,9 @@ class DocumentController extends Controller
 				throw new \Exception('Invalid file uploaded');
 			}
 
-			// Upload to S3 with unique filename
-			$originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-			$extension = $file->getClientOriginalExtension();
-			$timestamp = time();
-			$random = uniqid();
-			$uniqueFilename = "{$originalName}_{$timestamp}_{$random}.{$extension}";
-
-			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar', $uniqueFilename);
+			// ✅ FIX: Use the same approach as PAN and Bank - don't pass custom filename
+			// Let the S3Service generate the filename
+			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar');
 
 			if (!$upload['success']) {
 				throw new \Exception('S3 Upload failed: ' . $upload['error']);
@@ -339,11 +338,11 @@ class DocumentController extends Controller
 			$extractData = json_decode($extractResponse->getBody(), true);
 			Log::info('Aadhaar extraction response', ['data' => $extractData]);
 
-			// if (!$extractData['success'] || empty($extractData['data']['aadhaarNumber'])) {
-			// 	// Clean up uploaded file on failure
-			// 	$s3Service->deleteFile($filePath);
-			// 	throw new \Exception('Aadhaar number extraction failed: ' . ($extractData['message'] ?? 'No Aadhaar number found'));
-			// }
+			if (!$extractData['success'] || empty($extractData['data']['aadhaarNumber'])) {
+				// Clean up uploaded file on failure
+				$s3Service->deleteFile($filePath);
+				throw new \Exception('Aadhaar number extraction failed: ' . ($extractData['message'] ?? 'No Aadhaar number found'));
+			}
 
 			$aadhaarNumber = $extractData['data']['aadhaarNumber'];
 
@@ -382,7 +381,6 @@ class DocumentController extends Controller
 					$verificationData = $verifyData['data'] ?? null;
 
 					// Extract personal details from verification response
-					// Adjust these field names based on actual API response structure
 					if (isset($verifyData['data']['name'])) {
 						$personalDetails['name'] = $verifyData['data']['name'];
 					}
@@ -443,10 +441,10 @@ class DocumentController extends Controller
 			]);
 		} catch (\Exception $e) {
 			// Clean up S3 file if upload was successful but processing failed
-			// if ($filePath && $s3Service->fileExists($filePath)) {
-			// 	$s3Service->deleteFile($filePath);
-			// 	Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
-			// }
+			if ($filePath && $s3Service->fileExists($filePath)) {
+				$s3Service->deleteFile($filePath);
+				Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
+			}
 
 			Log::error('Aadhaar processing error', [
 				'error' => $e->getMessage(),
