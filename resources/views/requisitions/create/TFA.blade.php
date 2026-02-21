@@ -66,7 +66,7 @@
 										<div class="row">
 
 											<!-- Aadhaar Upload -->
-											<div class="col-md-2  mb-3">
+											<div class="col-md-4  mb-3">
 												<label for="aadhaar_card" class="form-label">Upload Aadhaar<span class="text-danger">*</span></label>
 												<input type="file" class="form-control form-control-sm"
 													id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png">
@@ -74,7 +74,7 @@
 											</div>
 
 											<!-- Aadhaar Number without Verify Button -->
-											<div class="col-md-3  mb-3">
+											<div class="col-md-4  mb-3">
 												<label for="aadhaar_no" class="form-label">Aadhaar Number<span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-control-sm"
 													id="aadhaar_no" name="aadhaar_no" maxlength="12"
@@ -83,29 +83,12 @@
 											</div>
 
 											<!-- Aadhaar Status (Auto-filled from API) -->
-											<div class="col-md-2  mb-3">
+											<div class="col-md-4  mb-3">
 												<label class="form-label">Aadhaar Status</label>
 												<input type="text" class="form-control form-control-sm bg-light"
 													id="aadhaar_verification_status" name="aadhaar_verification_status"
 													placeholder="Auto-filled" readonly>
 											</div>
-
-											<!-- Resume Upload -->
-											<div class="col-md-3 mb-3">
-												<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-control-sm"
-													id="resume" name="resume" accept=".pdf,.doc,.docx">
-												<small class="text-muted d-block" style="font-size: 0.7rem;">PDF, DOC, DOCX</small>
-											</div>
-
-											<!-- Other Document -->
-											<div class="col-md-2 mb-3">
-												<label for="other_document" class="form-label">Other Document</label>
-												<input type="file" class="form-control form-control-sm"
-													id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-												<small class="text-muted d-block" style="font-size: 0.7rem;">Additional docs</small>
-											</div>
-
 
 										</div>
 
@@ -113,7 +96,7 @@
 										<div class="row">
 
 											<!-- PAN Upload -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="pan_card" class="form-label">Upload PAN<span class="text-danger">*</span></label>
 												<input type="file" class="form-control form-control-sm"
 													id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png">
@@ -121,7 +104,7 @@
 											</div>
 
 											<!-- PAN Number with Verify Button -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="pan_no" class="form-label">PAN Number<span class="text-danger">*</span></label>
 												<div class="input-group input-group-sm">
 													<input type="text" class="form-control form-control-sm"
@@ -158,22 +141,24 @@
 													placeholder="Auto-filled" readonly>
 											</div>
 
-											<!-- Bank Document Upload -->
-											<div class="col-md-2 mb-3">
-												<label for="bank_document" class="form-label">Upload Bank Doc<span class="text-danger">*</span></label>
-												<input type="file" class="form-control form-control-sm"
-													id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png">
-												<small class="text-muted d-block" style="font-size: 0.7rem;">Passbook/Cheque</small>
-											</div>
+											
 											
 										</div>
 
 										<!-- ==================== BANK SECTION ==================== -->
 										<div class="row">
+
+										   <!-- Bank Document Upload -->
+											<div class="col-md-3 mb-3">
+												<label for="bank_document" class="form-label">Upload Bank Doc<span class="text-danger">*</span></label>
+												<input type="file" class="form-control form-control-sm"
+													id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png">
+												<small class="text-muted d-block" style="font-size: 0.7rem;">Passbook/Cheque</small>
+											</div>
 							
 
 											<!-- Account Number with Verify Button -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="bank_account_no" class="form-label">Account No.<span class="text-danger">*</span></label>
 												<div class="input-group input-group-sm">
 													<input type="text" class="form-control form-control-sm"
@@ -184,7 +169,7 @@
 											</div>
 
 											<!-- IFSC Code with Verify Button -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="bank_ifsc" class="form-label">IFSC Code<span class="text-danger">*</span></label>
 												<div class="input-group input-group-sm">
 													<input type="text" class="form-control form-control-sm"
@@ -205,35 +190,39 @@
 													placeholder="As per bank records">
 											</div>
 
+											
+										</div>
+										<div class="row">
 											<!-- Bank Name (Auto-filled from IFSC) -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-4 mb-3">
 												<label for="bank_name" class="form-label">Bank Name<span class="text-danger">*</span></label>
 												<input type="text" class="form-control form-control-sm bg-light"
 													id="bank_name" name="bank_name" readonly>
 											</div>
 
 											<!-- Branch Address (Auto-filled from IFSC) -->
-											<div class="col-md-3 mb-3">
+											<div class="col-md-4 mb-3">
 												<label for="bank_branch_address" class="form-label">Branch Address</label>
 												<textarea class="form-control form-control-sm bg-light"
 													id="bank_branch_address" name="bank_branch_address"
 													rows="1" readonly></textarea>
 											</div>
-										</div>
-
-										<!-- ==================== DRIVING LICENSE SECTION ==================== -->
-										<div class="row">
-
-											<!-- Bank Verification Status (Auto-filled) -->
-											<div class="col-md-2 mb-3">
+												<!-- Bank Verification Status (Auto-filled) -->
+											<div class="col-md-4 mb-3">
 												<label class="form-label">Bank Status</label>
 												<input type="text" class="form-control form-control-sm bg-light"
 													id="bank_verification_status" name="bank_verification_status"
 													placeholder="Auto-filled" readonly>
 											</div>
 
+										</div>
+
+										<!-- ==================== DRIVING LICENSE SECTION ==================== -->
+										<div class="row">
+
+										
 											<!-- DL Upload -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="driving_licence" class="form-label">Upload DL<span class="text-danger">*</span></label>
 												<input type="file" class="form-control form-control-sm"
 													id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png">
@@ -241,7 +230,7 @@
 											</div>
 
 											<!-- DL Number with Verify Button -->
-											<div class="col-md-2 mb-3">
+											<div class="col-md-3 mb-3">
 												<label for="driving_licence_no" class="form-label">DL Number</label>
 												<div class="input-group input-group-sm">
 													<input type="text" class="form-control form-control-sm"
@@ -273,6 +262,23 @@
 												<input type="text" class="form-control form-control-sm bg-light"
 													id="dl_verification_status" name="dl_verification_status"
 													placeholder="Auto-filled" readonly>
+											</div>
+										</div>
+										<div class="row">
+											<!-- Resume Upload -->
+											<div class="col-md-6 mb-3">
+												<label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+												<input type="file" class="form-control form-control-sm"
+													id="resume" name="resume" accept=".pdf,.doc,.docx">
+												<small class="text-muted d-block" style="font-size: 0.7rem;">PDF, DOC, DOCX</small>
+											</div>
+
+											<!-- Other Document -->
+											<div class="col-md-6 mb-3">
+												<label for="other_document" class="form-label">Other Document</label>
+												<input type="file" class="form-control form-control-sm"
+													id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+												<small class="text-muted d-block" style="font-size: 0.7rem;">Additional docs</small>
 											</div>
 										</div>
 		

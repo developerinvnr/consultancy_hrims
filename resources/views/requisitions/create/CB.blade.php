@@ -61,8 +61,8 @@
                                     <div class="card-body">
                                         <!-- First Row: Resume, Driving License, PAN Card, PAN Number -->
                                         <div class="row">
-											 <!-- Aadhaar Card -->
-                                            <div class="col-md-3 mb-3">
+                                            <!-- Aadhaar Card -->
+                                            <div class="col-md-4 mb-3">
                                                 <label for="aadhaar_card" class="form-label">Aadhaar Card <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
                                                     id="aadhaar_card" name="aadhaar_card" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -71,7 +71,7 @@
                                             </div>
 
                                             <!-- Aadhaar Number -->
-                                            <div class="col-md-3 mb-3">
+                                            <div class="col-md-4 mb-3">
                                                 <label for="aadhaar_no" class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-sm">
                                                     <input type="text" class="form-control"
@@ -85,33 +85,19 @@
                                                 <small class="text-muted" id="aadhaar-status-text">Upload Aadhaar to auto-extract</small>
                                                 <div class="invalid-feedback">Valid Aadhaar required</div>
                                             </div>
-											<!-- Aadhaar Status (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
+                                            <!-- Aadhaar Status (Auto-filled from API) -->
+                                            <div class="col-md-4 mb-3">
                                                 <label class="form-label">Aadhaar Status</label>
                                                 <input type="text" class="form-control form-control-sm bg-light"
                                                     id="aadhaar_verification_status" name="aadhaar_verification_status"
                                                     placeholder="Auto-filled" readonly>
                                             </div>
-                                            <!-- Resume -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="resume" name="resume" accept=".pdf,.doc,.docx" required>
-                                                <small class="text-muted">PDF, DOC, DOCX (Max 2MB)</small>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-											 <!-- Other Document -->
-                                            <div class="col-md-2 mb-3">
-                                                <label for="other_document" class="form-label">Other Document</label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                                <small class="text-muted">Additional documents</small>
-                                            </div>
 
-										</div>
+
+                                        </div>
                                         <div class="row">
                                             <!-- PAN Card -->
-                                            <div class="col-md-2 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
                                                     id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -120,7 +106,7 @@
                                             </div>
 
                                             <!-- PAN Number -->
-                                            <div class="col-md-2 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-sm">
                                                     <input type="text" class="form-control"
@@ -138,7 +124,7 @@
                                                 <div class="invalid-feedback">Valid PAN required</div>
                                             </div>
 
-											  <!-- PAN Validity (Auto-filled from API) -->
+                                            <!-- PAN Validity (Auto-filled from API) -->
                                             <div class="col-md-2 mb-3">
                                                 <label class="form-label">PAN Validity</label>
                                                 <input type="text" class="form-control form-control-sm bg-light"
@@ -161,85 +147,93 @@
                                                     id="pan_aadhaar_link_status" name="pan_aadhaar_link_status"
                                                     placeholder="Auto-filled" readonly>
                                             </div>
-											 <!-- Bank Document -->
-                                            <div class="col-md-2 mb-3">
+
+                                        </div>
+
+                                        <!-- Second Row: Aadhaar Status, Bank Document, Account Holder Name, Account Number -->
+                                        <div class="row">
+
+                                            <!-- Bank Document -->
+                                            <div class="col-md-3 mb-3">
                                                 <label for="bank_document" class="form-label">Bank Document <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
                                                     id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png" required>
                                                 <small class="text-muted">Passbook/Cancelled Cheque</small>
                                                 <div class="invalid-feedback"></div>
                                             </div>
-									    </div>
 
-									<!-- Second Row: Aadhaar Status, Bank Document, Account Holder Name, Account Number -->
-                                        <div class="row">
+                                            <!-- Account Number with Verify Button -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="bank_account_no" class="form-label">Account No.<span class="text-danger">*</span></label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        id="bank_account_no" name="bank_account_no" maxlength="50"
+                                                        placeholder="Enter account no">
+                                                </div>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
 
-											<!-- Account Number with Verify Button -->
-											<div class="col-md-2 mb-3">
-												<label for="bank_account_no" class="form-label">Account No.<span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control form-control-sm"
-														id="bank_account_no" name="bank_account_no" maxlength="50"
-														placeholder="Enter account no">
-												</div>
-												<div class="invalid-feedback"></div>
-											</div>
-
-											<!-- IFSC Code with Verify Button -->
-											<div class="col-md-2 mb-3">
-												<label for="bank_ifsc" class="form-label">IFSC Code<span class="text-danger">*</span></label>
-												<div class="input-group input-group-sm">
-													<input type="text" class="form-control form-control-sm"
-														id="bank_ifsc" name="bank_ifsc" maxlength="11"
-														placeholder="Enter IFSC">
-													<button class="btn btn-outline-primary btn-sm" type="button" id="verify-account-btn" title="Verify Account">
-														<i class="ri-search-line"></i>
-													</button>
-													<div class="invalid-feedback"></div>
-												</div>
-											</div>
+                                            <!-- IFSC Code with Verify Button -->
+                                            <div class="col-md-3 mb-3">
+                                                <label for="bank_ifsc" class="form-label">IFSC Code<span class="text-danger">*</span></label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        id="bank_ifsc" name="bank_ifsc" maxlength="11"
+                                                        placeholder="Enter IFSC">
+                                                    <button class="btn btn-outline-primary btn-sm" type="button" id="verify-account-btn" title="Verify Account">
+                                                        <i class="ri-search-line"></i>
+                                                    </button>
+                                                    <div class="invalid-feedback"></div>
+                                                </div>
+                                            </div>
 
                                             <!-- Account Holder Name -->
-											<div class="col-md-3 mb-3">
-												<label for="account_holder_name" class="form-label">Holder Name<span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-control-sm"
-													id="account_holder_name" name="account_holder_name"
-													placeholder="Auto-fills after verification" required>
-												<div class="invalid-feedback">Account holder name required</div>
-											</div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="account_holder_name" class="form-label">Holder Name<span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    id="account_holder_name" name="account_holder_name"
+                                                    placeholder="Auto-fills after verification" required>
+                                                <div class="invalid-feedback">Account holder name required</div>
+                                            </div>
 
-											 <!-- Bank Name (Auto-filled from IFSC) -->
-                                            <div class="col-md-2 mb-3">
+
+                                        </div>
+
+                                        <div class="row">
+
+                                            <!-- Bank Name (Auto-filled from IFSC) -->
+                                            <div class="col-md-4 mb-3">
                                                 <label for="bank_name" class="form-label">Bank Name<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-control-sm bg-light"
                                                     id="bank_name" name="bank_name" readonly>
                                             </div>
 
                                             <!-- Branch Address (Auto-filled from IFSC) -->
-                                            <div class="col-md-3 mb-3">
+                                            <div class="col-md-4 mb-3">
                                                 <label for="bank_branch_address" class="form-label">Branch Address</label>
                                                 <textarea class="form-control form-control-sm bg-light"
                                                     id="bank_branch_address" name="bank_branch_address"
                                                     rows="1" readonly></textarea>
                                             </div>
 
-                                           
-                                        </div>
-                                       
-
-										<!-- Fourth Row: DL Number, Valid From, Valid To, DL Status, Other Document -->
-                                        <div class="row">
-
-										    <!-- Bank Verification Status (Auto-filled) -->
-                                            <div class="col-md-2 mb-3">
+                                            <!-- Bank Verification Status (Auto-filled) -->
+                                            <div class="col-md-4 mb-3">
                                                 <label class="form-label">Bank Status</label>
                                                 <input type="text" class="form-control form-control-sm bg-light"
                                                     id="bank_verification_status" name="bank_verification_status"
                                                     placeholder="Auto-filled" readonly>
                                             </div>
 
-											 <!-- Driving License -->
-                                            <div class="col-md-2 mb-3">
+                                        </div>
+
+
+                                        <!-- Fourth Row: DL Number, Valid From, Valid To, DL Status, Other Document -->
+                                        <div class="row">
+
+
+
+                                            <!-- Driving License -->
+                                            <div class="col-md-3 mb-3">
                                                 <label for="driving_licence" class="form-label">Driving Licence <span class="text-danger">*</span></label>
                                                 <input type="file" class="form-control form-control-sm"
                                                     id="driving_licence" name="driving_licence" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -247,7 +241,7 @@
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                             <!-- DL Number -->
-                                            <div class="col-md-2 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <label for="driving_licence_no" class="form-label">DL Number</label>
                                                 <div class="input-group input-group-sm">
                                                     <input type="text" class="form-control form-control-sm"
@@ -282,15 +276,33 @@
                                                     placeholder="Auto-filled" readonly>
                                             </div>
 
-                                           
+
                                         </div>
-                                           
 
-                                           
+                                        <div class="row">
+                                            <!-- Resume -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                                                <small class="text-muted">PDF, DOC, DOCX (Max 2MB)</small>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <!-- Other Document -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="other_document" class="form-label">Other Document</label>
+                                                <input type="file" class="form-control form-control-sm"
+                                                    id="other_document" name="other_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                                <small class="text-muted">Additional documents</small>
+                                            </div>
+                                        </div>
 
-                                           
 
-                                        
+
+
+
+
+
                                     </div>
                                 </div>
                             </div>
@@ -705,15 +717,17 @@
         $('#state_residence').on('change', function() {
             const stateId = $(this).val();
             const citySelect = $('#city');
-            
+
             if (stateId) {
                 citySelect.prop('disabled', true);
                 citySelect.html('<option value="">Loading cities...</option>');
-                
+
                 $.ajax({
                     url: '{{ route("hr.get.cities.by.state") }}',
                     type: 'GET',
-                    data: { state_id: stateId },
+                    data: {
+                        state_id: stateId
+                    },
                     success: function(response) {
                         citySelect.html('<option value="">Select City</option>');
                         $.each(response, function(index, city) {
@@ -732,7 +746,7 @@
         });
 
         initContractDateValidation("#contract_start_date");
-        
+
         const requisitionType = $('input[name="requisition_type"]').val();
 
         // ==================== AADHAAR EXTRACTION ====================
@@ -759,11 +773,11 @@
                 success: function(response) {
                     if (response.status === 'SUCCESS' || response.status === 'PARTIAL_SUCCESS') {
                         const data = response.data;
-                        
+
                         if (data.aadhaarNumber) {
                             $('#aadhaar_no').val(data.aadhaarNumber);
                             updateAadhaarStatus('success', 'Aadhaar extracted successfully!', true);
-                            
+
                             // Auto-fill personal details from Aadhaar if available
                             if (data.extractedData) {
                                 if (data.extractedData.name && !$('#candidate_name').val()) {
@@ -786,14 +800,14 @@
 
                         $('#aadhaar_filename').val(data.filename);
                         $('#aadhaar_filepath').val(data.filePath);
-                        
+
                         // Set verification status
                         if (data.isVerified) {
                             $('#aadhaar_verification_status').val('Verified');
                         } else {
                             $('#aadhaar_verification_status').val('Pending');
                         }
-                        
+
                         showToast('Aadhaar extracted successfully!', 'success');
                     } else {
                         updateAadhaarStatus('error', 'Failed to extract. Enter manually.');
@@ -870,10 +884,10 @@
                 success: function(response) {
                     if (response.status === 'SUCCESS') {
                         const data = response.data;
-                        
+
                         $('#pan_no').val(data.panNumber);
                         $('#pan-status-text').text('PAN extracted successfully');
-                        
+
                         if (data.isVerified) {
                             $('#pan-verified-icon').removeClass('d-none');
                             $('#pan-warning-icon').addClass('d-none');
@@ -894,7 +908,7 @@
 
                         $('#pan_filename').val(data.filename);
                         $('#pan_filepath').val(data.filePath);
-                        
+
                         showToast('PAN extracted successfully!', 'success');
                     }
                 },
@@ -929,7 +943,7 @@
                             $('#pan_verification_status').val(vData.is_valid === true ? 'Valid' : 'Invalid');
                             $('#pan_status_2').val(vData.individual_tax_compliance_status || 'Unknown');
                             $('#pan_aadhaar_link_status').val(vData.aadhaar_seeding_status || 'Unknown');
-                            
+
                             if (vData.is_valid) {
                                 $('#pan-verified-icon').removeClass('d-none');
                                 $('#pan-warning-icon').addClass('d-none');
@@ -955,208 +969,208 @@
             });
         }
 
-	     // ==================== BANK VERIFICATION ====================
+        // ==================== BANK VERIFICATION ====================
 
-		// Auto-extract from uploaded bank document
-		$('#bank_document').on('change', function() {
-			const file = this.files[0];
-			if (!file) return;
-			extractBankFromFile(file);
-		});
+        // Auto-extract from uploaded bank document
+        $('#bank_document').on('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            extractBankFromFile(file);
+        });
 
-		// Verify account button - only enabled when both fields have values
-		function updateVerifyAccountButton() {
-			const accountNo = $('#bank_account_no').val();
-			const ifscCode = $('#bank_ifsc').val();
+        // Verify account button - only enabled when both fields have values
+        function updateVerifyAccountButton() {
+            const accountNo = $('#bank_account_no').val();
+            const ifscCode = $('#bank_ifsc').val();
 
-			if (
-				accountNo &&
-				ifscCode &&
-				accountNo !== 'Extracting...' &&
-				ifscCode.length === 11
-			) {
-				$('#verify-account-btn').prop('disabled', false);
-			} else {
-				$('#verify-account-btn').prop('disabled', true);
-			}
-		}
-
-
-		// Monitor both fields for changes
-		$('#bank_account_no, #bank_ifsc').on('input change', function() {
-			updateVerifyAccountButton();
-		});
-
-		// Manual account verification
-		$('#verify-account-btn').on('click', function() {
-			const accountNo = $('#bank_account_no').val();
-			const ifscCode = $('#bank_ifsc').val();
-
-			if (!accountNo) {
-				showToast('Please enter account number', 'warning');
-				return;
-			}
-			if (!ifscCode || ifscCode.length < 11) {
-				showToast('Please enter a valid 11-digit IFSC code', 'warning');
-				return;
-			}
-			verifyBankAccount(accountNo, ifscCode);
-		});
-
-		function extractBankFromFile(file) {
-			// Disable fields during extraction
-			$('#bank_account_no, #bank_ifsc').prop('readonly', true).val('');
-			$('#bank_verification_status').val('Extracting...');
-
-			$('#verify-account-btn').prop('disabled', true);
-
-			const formData = new FormData();
-			formData.append('bank_file', file);
-			formData.append('requisition_type', requisitionType);
-
-			$.ajax({
-				url: '{{ route("process.bank.document") }}',
-				type: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				headers: {
-					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-				},
-				success: function(response) {
-					if (response.status === 'SUCCESS') {
-						const data = response.data;
-						const vData = data.verificationData || {};
-
-						if (data.isVerified) {
-							$('#verify-account-btn').prop('disabled', true);
-						}
-						// ✅ Account Number & IFSC
-						if (data.accountNumber) {
-							$('#bank_account_no').val(data.accountNumber);
-						}
-						if (data.ifscCode) {
-							$('#bank_ifsc').val(data.ifscCode);
-						}
-
-						// ✅ Holder Name (FIXED)
-						if (vData.beneficiary_name) {
-							$('#account_holder_name').val(vData.beneficiary_name);
-						}
-
-						// ✅ Bank Name (FIXED)
-						if (vData.ifsc_details?.name) {
-							$('#bank_name').val(vData.ifsc_details.name);
-						}
-
-						// ✅ Branch Address (FIXED)
-						if (vData.ifsc_details) {
-							const branch = vData.ifsc_details.branch || '';
-							const district = vData.ifsc_details.district || '';
-							const state = vData.ifsc_details.state || '';
-
-							$('#bank_branch_address').val(`${branch}, ${district}, ${state}`);
-						}
-
-						// ✅ Status
-						if (data.isVerified || vData.verification_status === 'VERIFIED') {
-							$('#bank_verification_status').val('Verified');
-							showToast('Bank details extracted & verified!', 'success');
-						} else {
-							$('#bank_verification_status').val('Partially Verified');
-						}
-
-						$('#bank_filename').val(data.filename);
-						$('#bank_filepath').val(data.filePath);
-					}
-				},
-				error: function(xhr) {
-					$('#bank_account_no, #bank_ifsc, #bank_name').val('');
-					$('#bank_verification_status').val('Failed');
-					showToast('Failed to extract bank details', 'error');
-				},
-				complete: function() {
-					// Re-enable fields
-					$('#bank_account_no').prop('readonly', false);
-					$('#bank_ifsc').prop('readonly', false);
-					// Update verify button state
-					updateVerifyAccountButton();
-				}
-			});
-		}
-
-		function verifyBankAccount(accountNo, ifscCode) {
-
-			$('#verify-account-btn')
-				.html('<i class="ri-loader-4-line ri-spin"></i>')
-				.prop('disabled', true);
-
-			$('#bank_verification_status').val('Verifying...');
-
-			$.ajax({
-				url: '{{ route("verify.bank.account") }}',
-				type: 'POST',
-				data: {
-					account_number: accountNo,
-					ifsc_code: ifscCode,
-					_token: $('meta[name="csrf-token"]').attr('content')
-				},
-				success: function(response) {
-
-					if (response.status === 'SUCCESS') {
-
-						const data = response.data;
-
-						// ✅ Fill account holder name
-						if (data.account_holder_name) {
-							$('#account_holder_name').val(data.account_holder_name);
-						}
-
-						// ✅ Fill bank name
-						if (data.bank_name) {
-							$('#bank_name').val(data.bank_name);
-						}
-
-						// ✅ Fill branch address (if available)
-						if (data.branch_address) {
-							$('#bank_branch_address').val(data.branch_address);
-						}
-
-						// ✅ Set status
-
-						if (data.branch_address) {
-							$('#bank_verification_status').val(data.verification_status);
-						}
-
-						showToast('Bank verified successfully!', 'success');
-
-					} else {
-						$('#bank_verification_status').val('Failed');
-						showToast('Verification failed. Check details.', 'error');
-					}
-				},
-				error: function(xhr) {
-					$('#bank_verification_status').val('Failed');
-					showToast('Verification error', 'error');
-				},
-				complete: function() {
-					$('#verify-account-btn')
-						.html('<i class="ri-search-line"></i>')
-						.prop('disabled', false);
-				}
-			});
-		}
+            if (
+                accountNo &&
+                ifscCode &&
+                accountNo !== 'Extracting...' &&
+                ifscCode.length === 11
+            ) {
+                $('#verify-account-btn').prop('disabled', false);
+            } else {
+                $('#verify-account-btn').prop('disabled', true);
+            }
+        }
 
 
-		// IFSC Verification (separate button for fetching bank details)
-		$('#verify-ifsc-btn').on('click', function() {
-			const ifscCode = $('#bank_ifsc').val();
+        // Monitor both fields for changes
+        $('#bank_account_no, #bank_ifsc').on('input change', function() {
+            updateVerifyAccountButton();
+        });
 
-			if (!ifscCode || ifscCode.length < 11) {
-				showToast('Please enter a valid 11-digit IFSC code', 'warning');
-				return;
-			}
-		});
+        // Manual account verification
+        $('#verify-account-btn').on('click', function() {
+            const accountNo = $('#bank_account_no').val();
+            const ifscCode = $('#bank_ifsc').val();
+
+            if (!accountNo) {
+                showToast('Please enter account number', 'warning');
+                return;
+            }
+            if (!ifscCode || ifscCode.length < 11) {
+                showToast('Please enter a valid 11-digit IFSC code', 'warning');
+                return;
+            }
+            verifyBankAccount(accountNo, ifscCode);
+        });
+
+        function extractBankFromFile(file) {
+            // Disable fields during extraction
+            $('#bank_account_no, #bank_ifsc').prop('readonly', true).val('');
+            $('#bank_verification_status').val('Extracting...');
+
+            $('#verify-account-btn').prop('disabled', true);
+
+            const formData = new FormData();
+            formData.append('bank_file', file);
+            formData.append('requisition_type', requisitionType);
+
+            $.ajax({
+                url: '{{ route("process.bank.document") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.status === 'SUCCESS') {
+                        const data = response.data;
+                        const vData = data.verificationData || {};
+
+                        if (data.isVerified) {
+                            $('#verify-account-btn').prop('disabled', true);
+                        }
+                        // ✅ Account Number & IFSC
+                        if (data.accountNumber) {
+                            $('#bank_account_no').val(data.accountNumber);
+                        }
+                        if (data.ifscCode) {
+                            $('#bank_ifsc').val(data.ifscCode);
+                        }
+
+                        // ✅ Holder Name (FIXED)
+                        if (vData.beneficiary_name) {
+                            $('#account_holder_name').val(vData.beneficiary_name);
+                        }
+
+                        // ✅ Bank Name (FIXED)
+                        if (vData.ifsc_details?.name) {
+                            $('#bank_name').val(vData.ifsc_details.name);
+                        }
+
+                        // ✅ Branch Address (FIXED)
+                        if (vData.ifsc_details) {
+                            const branch = vData.ifsc_details.branch || '';
+                            const district = vData.ifsc_details.district || '';
+                            const state = vData.ifsc_details.state || '';
+
+                            $('#bank_branch_address').val(`${branch}, ${district}, ${state}`);
+                        }
+
+                        // ✅ Status
+                        if (data.isVerified || vData.verification_status === 'VERIFIED') {
+                            $('#bank_verification_status').val('Verified');
+                            showToast('Bank details extracted & verified!', 'success');
+                        } else {
+                            $('#bank_verification_status').val('Partially Verified');
+                        }
+
+                        $('#bank_filename').val(data.filename);
+                        $('#bank_filepath').val(data.filePath);
+                    }
+                },
+                error: function(xhr) {
+                    $('#bank_account_no, #bank_ifsc, #bank_name').val('');
+                    $('#bank_verification_status').val('Failed');
+                    showToast('Failed to extract bank details', 'error');
+                },
+                complete: function() {
+                    // Re-enable fields
+                    $('#bank_account_no').prop('readonly', false);
+                    $('#bank_ifsc').prop('readonly', false);
+                    // Update verify button state
+                    updateVerifyAccountButton();
+                }
+            });
+        }
+
+        function verifyBankAccount(accountNo, ifscCode) {
+
+            $('#verify-account-btn')
+                .html('<i class="ri-loader-4-line ri-spin"></i>')
+                .prop('disabled', true);
+
+            $('#bank_verification_status').val('Verifying...');
+
+            $.ajax({
+                url: '{{ route("verify.bank.account") }}',
+                type: 'POST',
+                data: {
+                    account_number: accountNo,
+                    ifsc_code: ifscCode,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+
+                    if (response.status === 'SUCCESS') {
+
+                        const data = response.data;
+
+                        // ✅ Fill account holder name
+                        if (data.account_holder_name) {
+                            $('#account_holder_name').val(data.account_holder_name);
+                        }
+
+                        // ✅ Fill bank name
+                        if (data.bank_name) {
+                            $('#bank_name').val(data.bank_name);
+                        }
+
+                        // ✅ Fill branch address (if available)
+                        if (data.branch_address) {
+                            $('#bank_branch_address').val(data.branch_address);
+                        }
+
+                        // ✅ Set status
+
+                        if (data.branch_address) {
+                            $('#bank_verification_status').val(data.verification_status);
+                        }
+
+                        showToast('Bank verified successfully!', 'success');
+
+                    } else {
+                        $('#bank_verification_status').val('Failed');
+                        showToast('Verification failed. Check details.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $('#bank_verification_status').val('Failed');
+                    showToast('Verification error', 'error');
+                },
+                complete: function() {
+                    $('#verify-account-btn')
+                        .html('<i class="ri-search-line"></i>')
+                        .prop('disabled', false);
+                }
+            });
+        }
+
+
+        // IFSC Verification (separate button for fetching bank details)
+        $('#verify-ifsc-btn').on('click', function() {
+            const ifscCode = $('#bank_ifsc').val();
+
+            if (!ifscCode || ifscCode.length < 11) {
+                showToast('Please enter a valid 11-digit IFSC code', 'warning');
+                return;
+            }
+        });
 
         // ==================== DRIVING LICENSE EXTRACTION ====================
         $('#driving_licence').on('change', function() {
@@ -1199,7 +1213,7 @@
                         $('#driving_licence_no').val(data.dlNumber);
                         $('#dl_valid_from').val(data.validFrom);
                         $('#dl_valid_to').val(data.validTo);
-                        
+
                         $('#dl-status-text').text('DL extracted successfully');
 
                         // Check validity
@@ -1217,7 +1231,7 @@
 
                         $('#dl_filename').val(data.filename);
                         $('#dl_filepath').val(data.filePath);
-                        
+
                         showToast('Driving license extracted!', 'success');
                     }
                 },
@@ -1348,7 +1362,7 @@
         $('#bank_ifsc').on('input', function() {
             const ifsc = $(this).val().toUpperCase();
             $(this).val(ifsc);
-            
+
             if (ifsc.length === 11) {
                 if (validateIFSC(ifsc)) {
                     $(this).removeClass('is-invalid');
@@ -1442,23 +1456,23 @@
 
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON.errors || {};
-                        
+
                         $.each(errors, function(field, messages) {
                             const input = form.find(`[name="${field}"]`);
                             if (input.length) {
                                 input.addClass('is-invalid');
-                                
+
                                 let feedback = input.siblings('.invalid-feedback');
                                 if (!feedback.length) {
                                     feedback = input.closest('.col-md-*, .input-group').find('.invalid-feedback:first');
                                 }
-                                
+
                                 if (feedback.length) {
                                     feedback.text(messages[0]).show();
                                 }
                             }
                         });
-                        
+
                         showToast('Please correct the highlighted fields', 'error');
                     } else {
                         showToast('Something went wrong. Please try again.', 'error');
