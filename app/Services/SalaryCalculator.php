@@ -31,10 +31,35 @@ class SalaryCalculator
             }
         }
 
-        $workingDays = $totalDays - $sundays;
+        // Detect contract start & end month
+        $contractStart = $candidate->contract_start_date
+            ? date('Y-m', strtotime($candidate->contract_start_date))
+            : null;
+
+        $contractEnd = $candidate->contract_end_date
+            ? date('Y-m', strtotime($candidate->contract_end_date))
+            : null;
+
+        $currentMonth = date('Y-m', strtotime("$year-$month-01"));
+
+        // Default working days = 26
+        $workingDays = 26;
+
+        // If contract start OR end month → use actual working days
+        if ($currentMonth == $contractStart || $currentMonth == $contractEnd) {
+            $workingDays = $totalDays - $sundays;
+        }
+
+        // Safety: Never allow > 26
+        if ($workingDays > 26) {
+            $workingDays = 26;
+        }
+
         if ($workingDays <= 0) {
             throw new Exception("Invalid working days");
         }
+
+
 
         // 3️⃣ Salary base
         $monthlySalary = (float) $candidate->remuneration_per_month;
