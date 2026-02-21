@@ -4,7 +4,7 @@
 <div class="container-fluid">
 
     <!-- Page Header -->
-    <div class="row mb-3">
+    <div class="row mb-1">
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
                 <h4 class="mb-0"></h4>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Filter & Actions Card -->
-    <div class="card mb-4 shadow-sm">
+    <div class="card mb-2 shadow-sm">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-2 col-sm-6">
@@ -58,7 +58,7 @@
     <!-- Salary Table -->
     <div class="card shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                 <table class="table table-hover table-bordered mb-0" id="salaryTable">
                     <thead class="table-light">
                         <tr>
@@ -66,6 +66,7 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Requisition Type</th>
+                            <th>Paid Days</th>
                             <th>Monthly Base</th>
                             <th>Extra</th>
                             <th>Deduction</th>
@@ -107,7 +108,7 @@
                     <input type="hidden" id="month" name="month">
                     <input type="hidden" id="year" name="year">
 
-                    <div class="row mb-3">
+                    <div class="row mb-2">
                         <div class="col-md-6">
                             <label class="form-label">Party Code</label>
                             <input type="text" id="employee_code" class="form-control" readonly>
@@ -180,6 +181,12 @@
 
 @push('styles')
 <style>
+    #salaryTable thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 10;
+}
     .badge-pending {
         background-color: #ffc107;
         color: black;
@@ -331,6 +338,7 @@
                 <td>${r.candidate?.candidate_code ?? '-'}</td>
                 <td>${r.candidate?.candidate_name ?? '-'}</td>
                 <td><span class="badge bg-secondary">${requisitionType}</span></td>
+                <td>${Number(r.paid_days || 0)}</td>
                 <td>₹ ${monthlySalary.toLocaleString('en-IN')}</td>
                 <td class="text-success">+ ₹ ${Number(r.extra_amount || 0).toLocaleString('en-IN')}</td>
                 <td class="text-danger">- ₹ ${Number(r.deduction_amount || 0).toLocaleString('en-IN')}</td>

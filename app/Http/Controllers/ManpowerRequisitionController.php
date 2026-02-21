@@ -356,7 +356,7 @@ class ManpowerRequisitionController extends Controller
         $s3Service = app(S3Service::class);
 
         // Save PAN document (extracted via AJAX)
-        if ($request->filled('pan_filename') && $request->filled('pan_filepath')) {
+       if (in_array($request->requisition_type, ['Contractual', 'TFA']) && $request->filled('pan_filename') && $request->filled('pan_filepath')) {
             // Check if path already includes Consultancy folder
             $filePath = $request->pan_filepath;
             if (!str_contains($filePath, 'Consultancy/')) {
@@ -467,7 +467,6 @@ class ManpowerRequisitionController extends Controller
             'reporting_manager_address' => 'required|string|max:500',
 
             // Document number fields
-            'pan_no' => 'required|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/',
             'aadhaar_no' => 'required|digits:12',
             'bank_account_no' => 'required|string|max:50',
             'account_holder_name' => 'required|string|max:255',
@@ -476,7 +475,6 @@ class ManpowerRequisitionController extends Controller
 
             // File upload validations
             'resume' => 'required|file|mimes:pdf,doc,docx|max:5120',
-            'pan_card' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'aadhaar_card' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'driving_licence' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'bank_document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -506,6 +504,15 @@ class ManpowerRequisitionController extends Controller
             // ✅ CB / TFA → optional
             $rules['other_reimbursement_required'] = 'nullable|in:Y,N';
             $rules['out_of_pocket_required']       = 'nullable|in:Y,N';
+        }
+
+        if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
+            $rules['pan_no'] = 'required|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/';
+            $rules['pan_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+        } else {
+            // CB → optional
+            $rules['pan_no'] = 'nullable|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/';
+            $rules['pan_card'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120';
         }
         return $request->validate($rules);
     }
@@ -795,12 +802,14 @@ class ManpowerRequisitionController extends Controller
         // Document mapping: form field name => document_type
         $documentMap = [
             'resume' => 'resume',
-            'pan_card' => 'pan_card',
             'aadhaar_card' => 'aadhaar_card',
             'driving_licence' => 'driving_licence',
             'bank_document' => 'bank_document',
             'other_document' => 'other',
         ];
+        if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
+            $documentMap['pan_card'] = 'pan_card';
+        }
 
         foreach ($documentMap as $field => $type) {
             if ($request->hasFile($field)) {
@@ -835,10 +844,13 @@ class ManpowerRequisitionController extends Controller
     protected function updatePreExtractedDocuments(Request $request, $requisitionId, $userId)
     {
         $map = [
-            'pan_card'      => ['pan_filename', 'pan_filepath'],
-            'bank_document' => ['bank_filename', 'bank_filepath'],
-            'aadhaar_card'  => ['aadhaar_filename', 'aadhaar_filepath'],
-        ];
+                    'bank_document' => ['bank_filename', 'bank_filepath'],
+                    'aadhaar_card'  => ['aadhaar_filename', 'aadhaar_filepath'],
+               ];
+
+                if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
+                    $map['pan_card'] = ['pan_filename', 'pan_filepath'];
+            }
 
         foreach ($map as $type => [$filenameField, $pathField]) {
 

@@ -6,29 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class SalaryProcessing extends Model
 {
-    // Explicitly set the table name
     protected $table = 'salary_processings';
-    
+
     protected $fillable = [
         'candidate_id', 'month', 'year',
         'monthly_salary', 'per_day_salary','total_days',
         'paid_days', 'cl_days', 'absent_days',
         'approved_sundays',
         'deduction_amount', 'extra_amount', 'net_pay',
+        'arrear_amount', 'arrear_days', 'arrear_remarks',
         'status', 'processed_by', 'processed_at'
     ];
 
-    // Optional: If you want to customize the primary key
-    protected $primaryKey = 'id';
-
-    // Optional: If your primary key is not auto-incrementing
-    public $incrementing = true;
-
-    // Optional: If you don't have timestamps in your table
-    public $timestamps = true;
-
-    // Optional: Define date columns
-    protected $dates = ['processed_at'];
+    protected $casts = [
+        'processed_at' => 'datetime',
+        'month' => 'integer',
+        'year' => 'integer',
+        'monthly_salary' => 'float',
+        'per_day_salary' => 'float',
+        'paid_days' => 'float',
+        'deduction_amount' => 'float',
+        'extra_amount' => 'float',
+        'net_pay' => 'float',
+        'arrear_amount' => 'float',
+        'arrear_days' => 'float',
+    ];
 
     public function candidate()
     {

@@ -18,8 +18,18 @@ class SalaryCalculator
             ->first();
 
         if (!$attendance) {
-            throw new Exception("Attendance not found");
-        }
+    return [
+        'monthly_salary'      => (float) $candidate->remuneration_per_month,
+        'per_day_salary'      => 0,
+        'total_working_days'  => 0,
+        'paid_days'           => 0,
+        'absent_days'         => 0,
+        'approved_sundays'    => 0,
+        'deduction_amount'    => 0,
+        'extra_amount'        => 0,
+        'net_pay'             => 0,
+    ];
+}
 
         // 2️⃣ Month stats
         $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);

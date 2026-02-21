@@ -40,8 +40,6 @@
                     <form id="requisition-form" method="POST" action="{{ route('requisitions.store') }}" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="requisition_type" value="CB">
-                        <input type="hidden" name="pan_filename" id="pan_filename">
-                        <input type="hidden" name="pan_filepath" id="pan_filepath">
                         <input type="hidden" name="bank_filename" id="bank_filename">
                         <input type="hidden" name="bank_filepath" id="bank_filepath">
                         <input type="hidden" name="aadhaar_filename" id="aadhaar_filename">
@@ -59,7 +57,7 @@
                                         <h6 class="mb-0">Section 1: Document Uploads with Data Extraction</h6>
                                     </div>
                                     <div class="card-body">
-                                        <!-- First Row: Resume, Driving License, PAN Card, PAN Number -->
+                                        <!-- First Row: Resume, Driving License -->
                                         <div class="row">
                                             <!-- Aadhaar Card -->
                                             <div class="col-md-4 mb-3">
@@ -95,60 +93,7 @@
 
 
                                         </div>
-                                        <div class="row">
-                                            <!-- PAN Card -->
-                                            <div class="col-md-3 mb-3">
-                                                <label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-                                                <input type="file" class="form-control form-control-sm"
-                                                    id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
-                                                <small class="text-muted">Clear image/PDF for auto-extraction</small>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-
-                                            <!-- PAN Number -->
-                                            <div class="col-md-3 mb-3">
-                                                <label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
-                                                <div class="input-group input-group-sm">
-                                                    <input type="text" class="form-control"
-                                                        id="pan_no" name="pan_no" maxlength="10"
-                                                        placeholder="Enter or auto-fill" required>
-                                                    <button class="btn btn-outline-primary btn-sm" type="button" id="verify-pan-btn" title="Verify PAN">
-                                                        <i class="ri-search-line"></i>
-                                                    </button>
-                                                    <span class="input-group-text">
-                                                        <i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
-                                                        <i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
-                                                    </span>
-                                                </div>
-                                                <small class="text-muted" id="pan-status-text">Upload PAN to auto-extract</small>
-                                                <div class="invalid-feedback">Valid PAN required</div>
-                                            </div>
-
-                                            <!-- PAN Validity (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN Validity</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_verification_status" name="pan_verification_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                            <!-- PAN Status (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN Status</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_status_2" name="pan_status_2"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                            <!-- PAN-Aadhaar Link (Auto-filled from API) -->
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">PAN-Aadhaar Link</label>
-                                                <input type="text" class="form-control form-control-sm bg-light"
-                                                    id="pan_aadhaar_link_status" name="pan_aadhaar_link_status"
-                                                    placeholder="Auto-filled" readonly>
-                                            </div>
-
-                                        </div>
+                                        
 
                                         <!-- Second Row: Aadhaar Status, Bank Document, Account Holder Name, Account Number -->
                                         <div class="row">
@@ -841,129 +786,7 @@
 
             statusText.text(message);
         }
-
-        // ==================== PAN EXTRACTION ====================
-        $('#pan_card').on('change', function() {
-            const file = this.files[0];
-            if (!file) return;
-
-            extractPANFromFile(file);
-        });
-
-        $('#verify-pan-btn').on('click', function() {
-            const panNo = $('#pan_no').val();
-            if (!panNo || panNo.length !== 10) {
-                showToast('Please enter a valid 10-character PAN number', 'warning');
-                return;
-            }
-            verifyPANManually(panNo);
-        });
-
-        function extractPANFromFile(file) {
-            $('#pan_no').prop('disabled', true).val('Extracting...');
-            $('#pan-status-text').text('Extracting PAN...');
-
-            const formData = new FormData();
-            formData.append('pan_file', file);
-            formData.append('requisition_type', requisitionType);
-
-            $.ajax({
-                url: '{{ route("process.pan.card") }}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        const data = response.data;
-
-                        $('#pan_no').val(data.panNumber);
-                        $('#pan-status-text').text('PAN extracted successfully');
-
-                        if (data.isVerified) {
-                            $('#pan-verified-icon').removeClass('d-none');
-                            $('#pan-warning-icon').addClass('d-none');
-                            $('#pan_verification_status').val('Valid');
-                        } else {
-                            $('#pan-verified-icon').addClass('d-none');
-                            $('#pan-warning-icon').removeClass('d-none');
-                            $('#pan_verification_status').val('Pending');
-                            $('#pan-status-text').text('PAN extracted but not verified');
-                        }
-
-                        // Fill verification data
-                        if (data.verificationData) {
-                            const vData = data.verificationData;
-                            $('#pan_status_2').val(vData.individual_tax_compliance_status || 'Unknown');
-                            $('#pan_aadhaar_link_status').val(vData.aadhaar_seeding_status || 'Unknown');
-                        }
-
-                        $('#pan_filename').val(data.filename);
-                        $('#pan_filepath').val(data.filePath);
-
-                        showToast('PAN extracted successfully!', 'success');
-                    }
-                },
-                error: function() {
-                    $('#pan-status-text').text('Failed - enter manually');
-                    $('#pan_verification_status').val('Failed');
-                    showToast('Failed to extract PAN', 'error');
-                },
-                complete: function() {
-                    $('#pan_no').prop('disabled', false);
-                }
-            });
-        }
-
-        function verifyPANManually(panNo) {
-            $('#verify-pan-btn').html('<i class="ri-loader-4-line ri-spin"></i>').prop('disabled', true);
-            $('#pan_verification_status').val('Verifying...');
-
-            $.ajax({
-                url: '{{ route("verify.pan.manual") }}',
-                type: 'POST',
-                data: {
-                    pan_number: panNo,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === 'SUCCESS') {
-                        const data = response.data;
-
-                        if (data.verificationData) {
-                            const vData = data.verificationData;
-                            $('#pan_verification_status').val(vData.is_valid === true ? 'Valid' : 'Invalid');
-                            $('#pan_status_2').val(vData.individual_tax_compliance_status || 'Unknown');
-                            $('#pan_aadhaar_link_status').val(vData.aadhaar_seeding_status || 'Unknown');
-
-                            if (vData.is_valid) {
-                                $('#pan-verified-icon').removeClass('d-none');
-                                $('#pan-warning-icon').addClass('d-none');
-                            } else {
-                                $('#pan-verified-icon').addClass('d-none');
-                                $('#pan-warning-icon').removeClass('d-none');
-                            }
-                        }
-
-                        showToast('PAN verified successfully!', 'success');
-                    } else {
-                        $('#pan_verification_status').val('Invalid');
-                        showToast('Invalid PAN number', 'error');
-                    }
-                },
-                error: function() {
-                    $('#pan_verification_status').val('Failed');
-                    showToast('Verification failed', 'error');
-                },
-                complete: function() {
-                    $('#verify-pan-btn').html('<i class="ri-search-line"></i>').prop('disabled', false);
-                }
-            });
-        }
-
+        
         // ==================== BANK VERIFICATION ====================
 
         // Auto-extract from uploaded bank document

@@ -46,13 +46,10 @@
 						@php
 						$documents = $requisition->documents ?? collect();
 						$bankDoc = $documents->firstWhere('document_type', 'bank_document');
-						$panDoc = $documents->firstWhere('document_type', 'pan_card');
 						$aadhaarDoc = $documents->firstWhere('document_type', 'aadhaar_card');
 						@endphp
 
-						<input type="hidden" name="pan_filename" id="pan_filename" value="{{ $panDoc->file_name ?? '' }}">
-						<input type="hidden" name="pan_filepath" id="pan_filepath" value="{{ $panDoc->file_path ?? '' }}">
-						<input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
+					    <input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
 						<input type="hidden" name="bank_filepath" id="bank_filepath" value="{{ $bankDoc->file_path ?? '' }}">
 						<input type="hidden" name="aadhaar_filename" id="aadhaar_filename" value="{{ $aadhaarDoc->file_name ?? '' }}">
 						<input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">
@@ -530,55 +527,6 @@
 										<small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
 										<div class="invalid-feedback"></div>
 									</div>
-
-									<!-- PAN Card -->
-									<div class="col-md-3 mb-3">
-										<label for="pan_card" class="form-label">PAN Card <span class="text-danger">*</span></label>
-										@php
-										$panDoc = $documents->firstWhere('document_type', 'pan_card');
-										@endphp
-										@if($panDoc)
-										<div class="mb-2">
-											<div class="d-flex justify-content-between align-items-center">
-												<small class="text-success">
-													<i class="ri-checkbox-circle-fill me-1"></i> File uploaded
-												</small>
-												<a href="{{ route('document.download', $panDoc) }}"
-													class="btn btn-xs btn-outline-primary" target="_blank">
-													<i class="ri-eye-line me-1"></i> View
-												</a>
-											</div>
-											<small class="text-muted d-block mt-1">{{ $panDoc->file_name }}</small>
-											<small class="text-muted">Upload new file to replace</small>
-										</div>
-										@endif
-										<input type="file" class="form-control form-select-sm"
-											id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" {{ !$panDoc ? 'required' : '' }}>
-										<small class="text-muted">Clear image/PDF for auto-extraction</small>
-										<div class="invalid-feedback"></div>
-									</div>
-
-									<!-- PAN Number -->
-									<div class="col-md-3 mb-3">
-										<label for="pan_no" class="form-label">PAN Number <span class="text-danger">*</span></label>
-										<div class="input-group input-group-sm">
-											<input type="text" class="form-control"
-												id="pan_no" name="pan_no" maxlength="10"
-												value="{{ old('pan_no', $requisition->pan_no) }}" required>
-											<span class="input-group-text">
-												<i class="ri-checkbox-circle-fill text-success d-none" id="pan-verified-icon"></i>
-												<i class="ri-alert-fill text-warning d-none" id="pan-warning-icon"></i>
-											</span>
-										</div>
-										<small class="text-muted" id="pan-status-text">
-											@if($panDoc)
-											<i class="ri-checkbox-circle-fill text-success me-1"></i>Extracted from uploaded file
-											@else
-											Upload PAN to auto-extract
-											@endif
-										</small>
-										<div class="invalid-feedback">Valid PAN required</div>
-									</div>
 								</div>
 
 								<!-- Second Row: Aadhaar Card, Aadhaar Number, Bank Document -->
@@ -911,48 +859,7 @@
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
 
-		// Process PAN Card when file is selected
-		$('#pan_card').on('change', function() {
-			const file = this.files[0];
-			if (!file) return;
-
-			// Show loading indicator
-			const panNoField = $('#pan_no');
-			panNoField.prop('disabled', true).val('').attr('placeholder', 'Extracting...');
-
-			const formData = new FormData();
-			formData.append('pan_file', file);
-			formData.append('requisition_type', requisitionType);
-
-			$.ajax({
-				url: '{{ route("process.pan.card") }}',
-				type: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				headers: {
-					'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-				},
-				success: function(response) {
-					if (response.status === 'SUCCESS' && response.data.panNumber) {
-
-						panNoField.val(response.data.panNumber).removeClass('is-invalid').addClass(response.data.isVerified ? 'is-valid' : '');
-
-					} else {
-						panNoField.val('');
-						showToast(response.message || 'PAN extraction failed. Enter manually.', 'warning');
-					}
-				},
-				error: function(xhr) {
-					panNoField.val('').addClass('is-invalid');
-					showToast('Failed to extract PAN. Please enter manually.', 'error');
-				},
-				complete: function() {
-					panNoField.prop('disabled', false).attr('placeholder', '');
-				}
-			});
-		});
-
+	
 		// Process Bank Document when file is selected
 		$('#bank_document').on('change', function() {
 			const file = this.files[0];

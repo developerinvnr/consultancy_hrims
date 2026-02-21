@@ -80,6 +80,7 @@
 													id="aadhaar_no" name="aadhaar_no" maxlength="12"
 													placeholder="Auto-fills from upload">
 												<div class="invalid-feedback"></div>
+												<small id="aadhaar_status_text" class="text-muted"></small>
 											</div>
 
 											<!-- Aadhaar Status (Auto-filled from API) -->
@@ -336,13 +337,6 @@
 												</select>
 											</div>
 
-										</div>
-
-										<!-- Aadhaar Status -->
-										<div class="row mt-1">
-											<div class="col-12">
-												<small id="aadhaar_status_text" class="text-muted"></small>
-											</div>
 										</div>
 
 										<!-- ===== Row 2 ===== -->

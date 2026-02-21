@@ -61,7 +61,17 @@ class CandidateMaster extends Model
         'created_by_user_id',
         'updated_by_user_id',
         'other_reimbursement_required',
-        'out_of_pocket_required'
+        'out_of_pocket_required',
+        'bank_verification_status',
+        'bank_branch_address',
+        'pan_verification_status',
+        'pan_aadhaar_link_status',
+        'pan_status_2',
+        'driving_licence_no',
+        'dl_valid_from',
+        'dl_valid_to',
+        'dl_verification_status',
+        'aadhaar_verification_status',
     ];
 
     protected $casts = [
