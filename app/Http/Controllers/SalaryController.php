@@ -327,9 +327,9 @@ class SalaryController extends Controller
     {
         $salary = SalaryProcessing::with('candidate')->findOrFail($id);
 
-        if (!$salary->processed_at) {
-            abort(403, 'Salary not processed yet');
-        }
+        if ($salary->status !== 'Processed') {
+    abort(403, 'Payslip can only be downloaded after salary is processed.');
+}
 
         $pdf = Pdf::loadView('hr.salary.payslip', compact('salary'))
             ->setPaper('a4', 'portrait');
