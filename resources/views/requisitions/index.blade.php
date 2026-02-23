@@ -70,30 +70,30 @@
                                     </button>
                                     <ul class="dropdown-menu">
 
-    @if($isSalesDepartment)
-        <li>
-            <a class="dropdown-item" 
-               href="{{ route('requisitions.create', ['type' => 'TFA']) }}">
-                TFA
-            </a>
-        </li>
+                                        @if($isSalesDepartment)
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('requisitions.create', ['type' => 'TFA']) }}">
+                                                TFA
+                                            </a>
+                                        </li>
 
-        <li>
-            <a class="dropdown-item" 
-               href="{{ route('requisitions.create', ['type' => 'CB']) }}">
-                CB
-            </a>
-        </li>
-    @else
-        <li>
-            <a class="dropdown-item" 
-               href="{{ route('requisitions.create', ['type' => 'Contractual']) }}">
-                Contractual
-            </a>
-        </li>
-    @endif
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('requisitions.create', ['type' => 'CB']) }}">
+                                                CB
+                                            </a>
+                                        </li>
+                                        @else
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('requisitions.create', ['type' => 'Contractual']) }}">
+                                                Contractual
+                                            </a>
+                                        </li>
+                                        @endif
 
-</ul>
+                                    </ul>
 
                                 </div>
                             </div>
@@ -155,10 +155,14 @@
                                             @endif
 
                                             <!-- View/Download Unsigned Agreement -->
-                                            @if($requisition->status == 'Unsigned Agreement Uploaded')
+                                            @if(in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
                                             <a href="{{ route('submitter.agreement.view', $requisition) }}"
-                                                class="btn btn-sm btn-outline-primary" title="View Agreement">
+                                                class="btn btn-sm btn-{{ $requisition->status == 'Agreement Completed' ? 'success' : 'primary' }}"
+                                                title="{{ $requisition->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
                                                 <i class="ri-file-text-line"></i>
+                                                @if($requisition->status == 'Signed Agreement Uploaded')
+                                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem;">Courier</span>
+                                                @endif
                                             </a>
                                             @endif
 

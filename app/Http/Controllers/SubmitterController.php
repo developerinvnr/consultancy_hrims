@@ -25,7 +25,8 @@ class SubmitterController extends Controller
 			abort(403, 'Unauthorized access.');
 		}
 
-		if (!in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Agreement Completed'])) {
+
+		if (!in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed'])) {
 			return redirect()->route('dashboard')->with('error', 'No agreement available.');
 		}
 

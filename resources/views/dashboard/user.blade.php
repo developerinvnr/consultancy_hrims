@@ -341,32 +341,29 @@
 									</td>
 									<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
 									<td>{{ $req->created_at->format('d-M-Y') }}</td>
+									<!-- In the actions column, after the view button -->
 									<td>
 										<div class="btn-group" role="group">
-											<!-- User is submitter -->
-											@if(Auth::user()->id == $req->submitted_by_user_id)
+											<!-- Existing view button -->
 											<a href="{{ route('requisitions.show', $req) }}"
 												class="btn btn-sm btn-outline-secondary" title="View">
 												<i class="ri-eye-line"></i>
 											</a>
 
-											<!-- View/Download Unsigned Agreement -->
-											@if($req->status == 'Unsigned Agreement Uploaded')
+											<!-- ADD THIS - Agreement View Button for submitters -->
+											@if(Auth::user()->id == $req->submitted_by_user_id &&
+											in_array($req->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
 											<a href="{{ route('submitter.agreement.view', $req) }}"
-												class="btn btn-sm btn-outline-primary" title="View Agreement">
+												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
+												title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
 												<i class="ri-file-text-line"></i>
+												@if($req->status == 'Signed Agreement Uploaded')
+												<span class="badge bg-warning text-dark ms-1">Courier</span>
+												@endif
 											</a>
 											@endif
 
-											<!-- View Completed Agreement -->
-											@if($req->status == 'Agreement Completed')
-											<a href="{{ route('submitter.agreement.view', $req) }}"
-												class="btn btn-sm btn-outline-success" title="View Completed Agreement">
-												<i class="ri-check-double-line"></i>
-											</a>
-											@endif
-
-											<!-- Correction Required -->
+											<!-- Rest of your existing buttons -->
 											@if($req->status == 'Correction Required')
 											<a href="{{ route('requisitions.edit', $req) }}"
 												class="btn btn-sm btn-outline-warning" title="Correct Application">
@@ -374,18 +371,10 @@
 											</a>
 											@endif
 
-											<!-- User is approver -->
-											@elseif($req->approver_id == Auth::user()->emp_id && $req->status == 'Pending Approval')
+											@if($req->approver_id == Auth::user()->emp_id && $req->status == 'Pending Approval')
 											<a href="{{ route('approver.requisition.view', $req) }}"
 												class="btn btn-sm btn-outline-warning" title="Review">
 												<i class="ri-search-eye-line"></i>
-											</a>
-
-											<!-- Others -->
-											@else
-											<a href="{{ route('requisitions.show', $req) }}"
-												class="btn btn-sm btn-outline-secondary" title="View">
-												<i class="ri-eye-line"></i>
 											</a>
 											@endif
 
@@ -410,7 +399,6 @@
 												<i class="ri-user-unfollow-line"></i>
 											</button>
 											@endif
-
 										</div>
 									</td>
 								</tr>
@@ -418,9 +406,9 @@
 							</tbody>
 						</table>
 						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
-							<div class="d-flex justify-content-end mt-3">
-								{{ $recent_requisitions->links('pagination::bootstrap-5') }}
-							</div>
+						<div class="d-flex justify-content-end mt-3">
+							{{ $recent_requisitions->links('pagination::bootstrap-5') }}
+						</div>
 						@endif
 					</div>
 				</div>
