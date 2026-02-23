@@ -229,7 +229,7 @@ class SubmitterController extends Controller
 
 			$ch = curl_init();
 			curl_setopt_array($ch, [
-				CURLOPT_URL            => 'http://192.168.34.174/agrisamvida/generated_signed_agreement.php',
+				CURLOPT_URL            => 'https://vnragro.com/agrisamvida/generated_signed_agreement.php',
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_POST           => true,
 				CURLOPT_POSTFIELDS     => http_build_query($apiPayload),
