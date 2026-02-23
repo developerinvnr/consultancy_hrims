@@ -36,8 +36,10 @@ class SubmitterController extends Controller
 		$unsignedAgreements = AgreementDocument::where('candidate_id', $candidate->id)
 			->where('document_type', 'agreement')
 			->where('sign_status', 'UNSIGNED')
+			->where('stamp_type', 'E_STAMP')  // Filter to show only E-Stamp
 			->orderBy('created_at')
 			->get();
+
 
 		// ✅ SINGLE signed (latest)
 		$signedAgreement = AgreementDocument::where('candidate_id', $candidate->id)

@@ -14,6 +14,7 @@ use App\Models\CoreState;
 use App\Models\CoreCityVillage;
 use App\Models\MasterEducation;
 use App\Models\RequisitionDocument;
+use App\Models\AgreementDocument;
 use Illuminate\Support\Facades\Log;
 use App\Services\S3Service;
 
@@ -304,8 +305,8 @@ class ManpowerRequisitionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-             Log::error('Error creating requisition: ' . $e->getMessage());
-    
+            Log::error('Error creating requisition: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),   // SHOW REAL ERROR
@@ -357,7 +358,7 @@ class ManpowerRequisitionController extends Controller
         $s3Service = app(S3Service::class);
 
         // Save PAN document (extracted via AJAX)
-       if (in_array($request->requisition_type, ['Contractual', 'TFA']) && $request->filled('pan_filename') && $request->filled('pan_filepath')) {
+        if (in_array($request->requisition_type, ['Contractual', 'TFA']) && $request->filled('pan_filename') && $request->filled('pan_filepath')) {
             // Check if path already includes Consultancy folder
             $filePath = $request->pan_filepath;
             if (!str_contains($filePath, 'Consultancy/')) {
@@ -546,9 +547,30 @@ class ManpowerRequisitionController extends Controller
             'cityMaster',
             'residenceState',
             'workState',
+            'candidate.agreementDocuments', // Add this to load agreements through candidate
         ]);
 
-        return view('requisitions.show', compact('requisition'));
+        // Get agreement documents for this requisition
+        $candidate = $requisition->candidate;
+        $agreements = [];
+
+        if ($candidate) {
+            $agreements = [
+                'unsigned' => AgreementDocument::where('candidate_id', $candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED')
+                    ->where('stamp_type', 'E_STAMP') // Show only E-Stamp
+                    ->orderBy('created_at')
+                    ->get(),
+                'signed' => AgreementDocument::where('candidate_id', $candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->latest()
+                    ->first(),
+            ];
+        }
+
+        return view('requisitions.show', compact('requisition', 'agreements'));
     }
 
     public function edit(ManpowerRequisition $requisition)
@@ -845,13 +867,13 @@ class ManpowerRequisitionController extends Controller
     protected function updatePreExtractedDocuments(Request $request, $requisitionId, $userId)
     {
         $map = [
-                    'bank_document' => ['bank_filename', 'bank_filepath'],
-                    'aadhaar_card'  => ['aadhaar_filename', 'aadhaar_filepath'],
-               ];
+            'bank_document' => ['bank_filename', 'bank_filepath'],
+            'aadhaar_card'  => ['aadhaar_filename', 'aadhaar_filepath'],
+        ];
 
-                if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
-                    $map['pan_card'] = ['pan_filename', 'pan_filepath'];
-            }
+        if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
+            $map['pan_card'] = ['pan_filename', 'pan_filepath'];
+        }
 
         foreach ($map as $type => [$filenameField, $pathField]) {
 
