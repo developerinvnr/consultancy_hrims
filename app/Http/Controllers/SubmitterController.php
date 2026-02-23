@@ -33,17 +33,17 @@ class SubmitterController extends Controller
 
 		// ✅ MULTIPLE unsigned
 		$unsignedAgreements = AgreementDocument::where('candidate_id', $candidate->id)
-    ->where('document_type', 'agreement')
-    ->where('sign_status', 'UNSIGNED')
-    ->orderBy('created_at')
-    ->get();
+			->where('document_type', 'agreement')
+			->where('sign_status', 'UNSIGNED')
+			->orderBy('created_at')
+			->get();
 
 		// ✅ SINGLE signed (latest)
 		$signedAgreement = AgreementDocument::where('candidate_id', $candidate->id)
-    ->where('document_type', 'agreement')
-    ->where('sign_status', 'SIGNED')
-    ->latest()
-    ->first();
+			->where('document_type', 'agreement')
+			->where('sign_status', 'SIGNED')
+			->latest()
+			->first();
 
 		$isCompleted = $requisition->status === 'Agreement Completed';
 
@@ -194,12 +194,11 @@ class SubmitterController extends Controller
 
 			/* ---------------- UPDATE CANDIDATE & REQUISITION ---------------- */
 			$candidate->update([
-				'candidate_status' => 'Active',
-				'final_status'     => 'A',
+				'candidate_status' => 'Signed Agreement Uploaded',
 			]);
 
 			$requisition->update([
-				'status' => 'Agreement Completed',
+				'status' => 'Signed Agreement Uploaded',
 			]);
 
 			DB::commit();
@@ -263,5 +262,162 @@ class SubmitterController extends Controller
 			'message' => 'Signed agreement uploaded successfully. Agreement process completed.',
 			'status'  => $candidate->candidate_status,
 		]);
+	}
+
+	/**
+	 * Show courier details form for an unsigned agreement
+	 */
+	public function showCourierForm(ManpowerRequisition $requisition, AgreementDocument $agreement)
+	{
+		// Auth check
+		if ($requisition->submitted_by_user_id !== Auth::id()) {
+			abort(403, 'Unauthorized access.');
+		}
+
+		// Verify agreement belongs to this requisition
+		$candidate = CandidateMaster::where('requisition_id', $requisition->id)->first();
+		if (!$candidate || $agreement->candidate_id !== $candidate->id) {
+			abort(404, 'Agreement not found.');
+		}
+
+		// Only allow for unsigned agreements
+		if ($agreement->sign_status !== 'UNSIGNED') {
+			return redirect()->back()->with('error', 'Courier details can only be added for unsigned agreements.');
+		}
+
+		// Get existing courier details if any
+		$courierDetails = $agreement->courierDetails;
+
+		return view('submitter.agreement.courier-details', compact('requisition', 'agreement', 'candidate', 'courierDetails'));
+	}
+
+
+	/**
+	 * Save courier details for an agreement
+	 */
+	public function saveCourierDetails(Request $request, ManpowerRequisition $requisition, AgreementDocument $agreement)
+	{
+		// Auth check
+		if ($requisition->submitted_by_user_id !== Auth::id()) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Unauthorized access.'
+			], 403);
+		}
+
+		// Validate agreement
+		$candidate = CandidateMaster::where('requisition_id', $requisition->id)->first();
+		if (!$candidate || $agreement->candidate_id !== $candidate->id) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Agreement not found.'
+			], 404);
+		}
+
+		// Validate request
+		$request->validate([
+			'courier_name' => 'required|string|max:150',
+			'docket_number' => 'required|string|max:150',
+			'dispatch_date' => 'required|date|before_or_equal:today',
+		]);
+
+		DB::beginTransaction();
+
+		try {
+			// Update or create courier details
+			$courierDetails = $agreement->courierDetails()->updateOrCreate(
+				['agreement_document_id' => $agreement->id],
+				[
+					'courier_name' => $request->courier_name,
+					'docket_number' => $request->docket_number,
+					'dispatch_date' => $request->dispatch_date,
+					'sent_by_user_id' => Auth::id(),
+				]
+			);
+
+			// Log to Laravel log instead of activity()
+			Log::info('Courier details ' . ($courierDetails->wasRecentlyCreated ? 'added' : 'updated') . ' for agreement', [
+				'agreement_id' => $agreement->id,
+				'candidate_id' => $candidate->id,
+				'user_id' => Auth::id(),
+				'courier_name' => $request->courier_name,
+				'docket_number' => $request->docket_number,
+				'dispatch_date' => $request->dispatch_date
+			]);
+
+			DB::commit();
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Courier details saved successfully.',
+				'data' => $courierDetails
+			]);
+		} catch (\Exception $e) {
+			DB::rollBack();
+
+			Log::error('Failed to save courier details', [
+				'agreement_id' => $agreement->id,
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to save courier details. Please try again.'
+			], 500);
+		}
+	}
+
+	/**
+	 * Mark courier as received (for admin/recruiter use)
+	 */
+	public function markCourierReceived(Request $request, ManpowerRequisition $requisition, AgreementDocument $agreement)
+	{
+		//dd($request->all());
+		$user = Auth::user();
+
+		// FIXED: Check if user does NOT have required roles
+		if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Unauthorized access.'
+			], 403);
+		}
+
+		// Remove the after_or_equal validation since date is readonly
+		$request->validate([
+			'received_date' => 'required|date',
+		]);
+
+		try {
+			$courierDetails = $agreement->courierDetails;
+
+			if (!$courierDetails) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Courier details not found.'
+				], 404);
+			}
+
+			$courierDetails->update([
+				'received_date' => $request->received_date,
+				'received_by_user_id' => Auth::id(),
+			]);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Courier marked as received successfully.'
+			]);
+		} catch (\Exception $e) {
+			Log::error('Failed to mark courier as received', [
+				'agreement_id' => $agreement->id,
+				'error' => $e->getMessage()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to mark courier as received.'
+			], 500);
+		}
 	}
 }

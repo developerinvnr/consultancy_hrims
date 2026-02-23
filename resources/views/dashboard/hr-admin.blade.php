@@ -202,6 +202,7 @@
 	</div>
 
 	<!-- Recent Requisitions Table -->
+	<!-- Recent Requisitions Table -->
 	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
 	<div class="row">
 		<div class="col-12">
@@ -217,6 +218,7 @@
 									<th class="fs-11">Email</th>
 									<th class="fs-11">Type</th>
 									<th class="fs-11">Status</th>
+									<th class="fs-11">Courier Status</th>
 									<th class="fs-11">Date</th>
 									<th class="fs-11">Actions</th>
 								</tr>
@@ -224,9 +226,13 @@
 							<tbody>
 								@foreach($recent_requisitions as $req)
 								@php
-								$isProcessed = \App\Models\CandidateMaster::where('requisition_id', $req->id)->exists();
-								$candidate = \App\Models\CandidateMaster::where('requisition_id', $req->id)->first();
+								$isProcessed = $req->candidate ? true : false;
+								$candidate = $req->candidate;
 								$empStatus = $candidate->candidate_status ?? null;
+
+								// Use the data we attached in the controller
+								$signedAgreement = $req->signed_agreement ?? null;
+								$courierDetails = $req->courier_details ?? null;
 								@endphp
 								<tr>
 									<td class="fs-11">
@@ -244,52 +250,73 @@
 										</span>
 									</td>
 									<td class="fs-11">
-
 										@switch($req->status)
-
 										@case('Pending HR Verification')
 										<span class="badge bg-warning fs-10">Pending HR Verification</span>
 										@break
-
 										@case('Correction Required')
 										<span class="badge bg-danger fs-10">Correction Required</span>
 										@break
-
 										@case('Pending Approval')
 										<span class="badge bg-info fs-10">Pending Approval</span>
 										@break
-
 										@case('Approved')
 										<span class="badge bg-primary fs-10">Ready to Process</span>
 										@break
-
 										@case('Processed')
 										@php
 										$statusColors = [
 										'Agreement Pending' => 'warning',
 										'Unsigned Agreement Uploaded' => 'info',
+										'Signed Agreement Uploaded' => 'primary',
 										'Agreement Completed' => 'secondary',
 										'Active' => 'success'
 										];
 										@endphp
-
 										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
 											{{ $empStatus }}
 										</span>
-
 										@if($candidate?->candidate_code)
 										<br>
 										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
 										@endif
 										@break
-
 										@default
 										<span class="badge bg-secondary fs-10">{{ $req->status }}</span>
-
 										@endswitch
-
 									</td>
 
+									<!-- COURIER STATUS COLUMN -->
+									<td class="fs-11">
+										@if($courierDetails)
+										@if($courierDetails->received_date)
+										<span class="badge bg-success fs-10">
+											<i class="ri-checkbox-circle-line me-1"></i> Received
+										</span>
+										<small class="d-block text-muted fs-9">
+											{{ \Carbon\Carbon::parse($courierDetails->received_date)->format('d M Y') }}
+										</small>
+										@else
+										<span class="badge bg-warning fs-10">
+											<i class="ri-truck-line me-1"></i> Dispatched
+										</span>
+										<small class="d-block text-muted fs-9">
+											{{ $courierDetails->courier_name }}<br>
+											Docket: {{ $courierDetails->docket_number }}<br>
+											Dispatch: {{ \Carbon\Carbon::parse($courierDetails->dispatch_date)->format('d M Y') }}
+										</small>
+										@endif
+										@elseif($signedAgreement)
+										<span class="badge bg-secondary fs-10">
+											<i class="ri-time-line me-1"></i> Awaiting Dispatch
+										</span>
+										<small class="d-block text-muted fs-9">
+											Signed on: {{ \Carbon\Carbon::parse($signedAgreement->created_at)->format('d M Y') }}
+										</small>
+										@else
+										<span class="text-muted fs-9">N/A</span>
+										@endif
+									</td>
 
 									<td class="fs-11">{{ $req->created_at->format('d-M') }}</td>
 									<td>
@@ -308,48 +335,62 @@
 												data-current-reporting="{{ $req->reporting_to }}"
 												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
 												<i class="ri-play-line fs-10"></i>
-												@elseif($req->status === 'Pending Approval')
-												<span class="badge bg-info fs-9">Awaiting Approval</span>
-												@endif
+											</button>
+											@elseif($req->status === 'Pending Approval')
+											<span class="badge bg-info fs-9">Awaiting Approval</span>
+											@endif
 
+											<!-- COURIER RECEIVE BUTTON -->
+											@if($courierDetails && !$courierDetails->received_date)
+											<button type="button"
+												class="btn btn-outline-success receive-courier-btn"
+												data-bs-toggle="modal"
+												data-bs-target="#receiveCourierModal"
+												data-requisition-id="{{ $req->id }}"
+												data-agreement-id="{{ $signedAgreement->id ?? '' }}"
+												data-candidate-name="{{ $req->candidate_name }}"
+												data-courier-name="{{ $courierDetails->courier_name }}"
+												data-docket-number="{{ $courierDetails->docket_number }}"
+												data-dispatch-date="{{ \Carbon\Carbon::parse($courierDetails->dispatch_date)->format('d M Y') }}"
+												title="Mark as Received">
+												<i class="ri-check-double-line fs-10"></i>
+											</button>
+											@endif
 
-												@if($candidate)
-												@php
-												$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')
-												->where('sign_status', 'UNSIGNED')
-												->exists(); $hasSigned =\App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-												->where('document_type', 'agreement')
-												->where('sign_status', 'SIGNED')
-												->exists();
-												$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)->where('document_type', 'agreement')->where('sign_status', 'SIGNED')->where('uploaded_by_role', 'submitter')->exists();
-												$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-												->where('document_type', 'agreement')
-												->where('sign_status', 'UNSIGNED')
-												->value('agreement_number');
-												@endphp
+											@if($candidate)
+											@php
+											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'agreement')
+											->where('sign_status', 'UNSIGNED')
+											->exists();
+											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'agreement')
+											->where('sign_status', 'SIGNED')
+											->exists();
+											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'agreement')
+											->where('sign_status', 'SIGNED')
+											->where('uploaded_by_role', 'submitter')
+											->exists();
+											$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+											->where('document_type', 'agreement')
+											->where('sign_status', 'UNSIGNED')
+											->value('agreement_number');
+											@endphp
 
-												@if($empStatus == "Active")
-												<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
-
-												@elseif($hasUnsigned && !$hasSigned)
-												<button type="button"
-													class="btn btn-outline-primary upload-signed-btn"
-													data-candidate-id="{{ $candidate->id }}"
-													data-candidate-code="{{ $candidate->candidate_code }}"
-													data-candidate-name="{{ $candidate->candidate_name }}"
-													data-agreement-number="{{ $agreementNumber }}">
-													<i class="ri-upload-line fs-10"></i>
-												</button>
-												@elseif($hasSigned && $submitterSigned)
-												<button type="button"
-													class="btn btn-outline-info verify-signed-modal-btn"
-													data-candidate-id="{{ $candidate->id }}"
-													data-candidate-code="{{ $candidate->candidate_code }}"
-													data-candidate-name="{{ $candidate->candidate_name }}">
-													<i class="ri-check-line fs-10"></i>
-												</button>
-												@endif
-												@endif
+											@if($empStatus == "Active")
+											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
+											@elseif($hasUnsigned && !$hasSigned)
+											<button type="button"
+												class="btn btn-outline-primary upload-signed-btn"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-code="{{ $candidate->candidate_code }}"
+												data-candidate-name="{{ $candidate->candidate_name }}"
+												data-agreement-number="{{ $agreementNumber }}">
+												<i class="ri-upload-line fs-10"></i>
+											</button>
+											@endif
+											@endif {{-- THIS WAS MISSING --}}
 										</div>
 									</td>
 								</tr>
@@ -546,45 +587,68 @@
 	</div>
 </div>
 
-<!-- Verify Signed Agreement Modal -->
-<div class="modal fade" id="verifySignedModal" tabindex="-1">
-	<div class="modal-dialog modal-lg">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Verify Signed Agreement</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
-			<form id="verifySignedForm" action="" method="POST">
-				@csrf
-				<div class="modal-body">
-					<div class="mb-3">
-						<label class="form-label">Candidate</label>
-						<input type="text" class="form-control" id="verifyCandidateInfo" readonly>
-					</div>
 
-					<div class="mb-3">
-						<label class="form-label">Available Signed Agreements</label>
-						<div id="signedDocumentsList">
-							<div class="text-center">
-								<div class="spinner-border spinner-border-sm" role="status">
-									<span class="visually-hidden">Loading...</span>
-								</div>
-								Loading documents...
-							</div>
-						</div>
-					</div>
+<!-- Receive Courier Modal -->
+<div class="modal fade" id="receiveCourierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Courier as Received</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="receiveCourierForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        Confirm that the courier has been received by the candidate.
+                    </div>
 
-					<input type="hidden" name="candidate_id" id="verifyCandidateId">
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-					<button type="submit" class="btn btn-success" id="verifySubmitBtn" disabled>Verify & Activate Employee</button>
-				</div>
-			</form>
-		</div>
-	</div>
+                    <div class="mb-3">
+                        <label class="form-label">Candidate</label>
+                        <input type="text" class="form-control" id="receiveCandidateName" readonly>
+                    </div>
+
+                    <div class="mb-3 bg-light p-2 rounded">
+                        <label class="form-label">Courier Details</label>
+                        <div class="row small">
+                            <div class="col-6">
+                                <strong>Courier:</strong> <span id="receiveCourierName"></span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Docket:</strong> <span id="receiveDocketNumber"></span>
+                            </div>
+                            <div class="col-6 mt-1">
+                                <strong>Dispatch Date:</strong> <span id="receiveDispatchDate"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Received Date <span class="text-danger">*</span></label>
+                        <input type="date" 
+                               class="form-control" 
+                               name="received_date" 
+                               id="receivedDate"
+                               value="{{ date('Y-m-d') }}" 
+                               readonly 
+                               style="background-color: #e9ecef; cursor: not-allowed;">
+                        <small class="text-muted">Today's date (auto-filled, cannot be changed)</small>
+                    </div>
+
+                    <input type="hidden" name="requisition_id" id="receiveRequisitionId">
+                    <input type="hidden" name="agreement_id" id="receiveAgreementId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="receiveCourierBtn">
+                        <i class="ri-check-double-line me-1"></i> Confirm Received
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-
 <!-- Toast Container -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
 	<div class="toast-container"></div>
@@ -783,21 +847,6 @@
 		});
 
 
-		// Verify Signed Agreement Modal
-		$('.verify-signed-modal-btn').on('click', function() {
-			const candidateId = $(this).data('candidate-id');
-			const candidateCode = $(this).data('candidate-code');
-			const candidateName = $(this).data('candidate-name');
-
-			$('#verifyCandidateInfo').val(`${candidateCode} - ${candidateName}`);
-			$('#verifyCandidateId').val(candidateId);
-			$('#verifySubmitBtn').prop('disabled', true);
-
-			// Load signed documents
-			loadSignedDocuments(candidateId);
-
-			$('#verifySignedModal').modal('show');
-		});
 
 		function loadSignedDocuments(candidateId) {
 			$('#signedDocumentsList').html(`
@@ -807,7 +856,7 @@
             </div>
             Loading documents...
         </div>
-    `);
+ 	   `);
 
 			$.ajax({
 				url: `/hr-admin/candidate/${candidateId}/signed-documents`,
@@ -862,43 +911,6 @@
 				}
 			});
 		}
-
-		// Submit verify form
-		$('#verifySignedForm').on('submit', function(e) {
-			e.preventDefault();
-
-			if (!$('input[name="document_id"]:checked').val()) {
-				showToast('error', 'Please select a document to verify');
-				return;
-			}
-
-			const formData = $(this).serialize();
-			const candidateId = $('#verifyCandidateId').val();
-
-			Swal.fire({
-				title: 'Verify & Activate Employee?',
-				html: '<p>This will activate the employee and mark them as Active.</p>',
-				icon: 'question',
-				showCancelButton: true,
-				confirmButtonColor: '#198754',
-				confirmButtonText: 'Yes, verify & activate',
-				showLoaderOnConfirm: true,
-				preConfirm: () => {
-					return $.ajax({
-						url: `/hr-admin/candidate/${candidateId}/verify-signed-agreement`,
-						type: 'POST',
-						data: formData
-					});
-				}
-			}).then((result) => {
-				if (result.isConfirmed && result.value?.success) {
-					Swal.fire('Success', result.value.message, 'success')
-						.then(() => location.reload());
-				} else if (result.isConfirmed) {
-					Swal.fire('Error', result.value?.message || 'Something went wrong', 'error');
-				}
-			});
-		});
 
 		// Form submission handlers
 		$('#uploadUnsignedForm').on('submit', function(e) {
@@ -967,6 +979,82 @@
 				$('.toast').last().remove();
 			}, 5000);
 		}
+
+
+		// Receive Courier Modal - Populate data when opened
+		$('#receiveCourierModal').on('show.bs.modal', function(event) {
+			var button = $(event.relatedTarget); // Button that triggered the modal
+
+			// Extract data from button attributes
+			var requisitionId = button.data('requisition-id');
+			var agreementId = button.data('agreement-id');
+			var candidateName = button.data('candidate-name');
+			var courierName = button.data('courier-name');
+			var docketNumber = button.data('docket-number');
+			var dispatchDate = button.data('dispatch-date');
+
+			// Update the modal fields
+			var modal = $(this);
+			modal.find('#receiveRequisitionId').val(requisitionId);
+			modal.find('#receiveAgreementId').val(agreementId);
+			modal.find('#receiveCandidateName').val(candidateName);
+			modal.find('#receiveCourierName').text(courierName);
+			modal.find('#receiveDocketNumber').text(docketNumber);
+			modal.find('#receiveDispatchDate').text(dispatchDate);
+
+			// Set default received date to today
+			var today = new Date().toISOString().split('T')[0];
+			modal.find('input[name="received_date"]').val(today);
+		});
+
+		// Handle form submission
+		$('#receiveCourierForm').on('submit', function(e) {
+			e.preventDefault();
+
+			var form = $(this);
+			var formData = form.serialize();
+			var requisitionId = $('#receiveRequisitionId').val();
+			var agreementId = $('#receiveAgreementId').val();
+			var submitBtn = $('#receiveCourierBtn');
+
+			Swal.fire({
+				title: 'Confirm Receipt',
+				text: 'Are you sure you want to mark this courier as received?',
+				icon: 'question',
+				showCancelButton: true,
+				confirmButtonColor: '#28a745',
+				confirmButtonText: 'Yes, mark as received',
+				cancelButtonText: 'Cancel',
+				showLoaderOnConfirm: true,
+				preConfirm: () => {
+					submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i> Processing...');
+
+					return $.ajax({
+						url: '/hr-admin/agreement/' + requisitionId + '/courier-received/' + agreementId,
+						type: 'POST',
+						data: formData,
+						headers: {
+							'X-CSRF-TOKEN': csrfToken
+						}
+					});
+				}
+			}).then((result) => {
+				if (result.isConfirmed && result.value && result.value.success) {
+					Swal.fire('Success!', result.value.message, 'success');
+					setTimeout(() => {
+						window.location.reload();
+					}, 1500);
+				} else if (result.isConfirmed) {
+					Swal.fire('Error!', result.value?.message || 'Something went wrong', 'error');
+					submitBtn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Confirm Received');
+				}
+			}).catch((error) => {
+				Swal.fire('Error!', 'Failed to process request', 'error');
+				submitBtn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Confirm Received');
+			});
+		});
+
+
 	});
 </script>
 <style>

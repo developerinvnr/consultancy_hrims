@@ -121,7 +121,7 @@ Route::middleware('auth')->group(function () {
                 ->name('process-modal');
             Route::get('upload-agreement/{candidate}', [HrAdminController::class, 'showUploadAgreementByEmployee'])->name('upload-agreement');
             Route::post('upload-agreement/{candidate}', [HrAdminController::class, 'uploadAgreementStoreByEmployee'])->name('upload-agreement-store');
-            Route::get('verify-signed/{candidate}', [HrAdminController::class, 'showVerifySignedByEmployee'])->name('verify-signed');
+          
         });
 
         // Master Tab
@@ -132,7 +132,6 @@ Route::middleware('auth')->group(function () {
             // Fix parameter name from employee to candidate
             Route::post('/employee/{candidate}/upload-unsigned', [HrAdminController::class, 'uploadUnsignedAgreement'])->name('upload-unsigned');
             Route::post('/employee/{candidate}/upload-signed', [HrAdminController::class, 'uploadSignedAgreement'])->name('upload-signed');
-            Route::post('/employee/{candidate}/verify-signed', [HrAdminController::class, 'verifySignedAgreement'])->name('verify-signed');
             Route::get('/agreement/{agreement}/download', [HrAdminController::class, 'downloadAgreement'])->name('download-agreement');
         });
 
@@ -172,7 +171,18 @@ Route::middleware(['auth'])->group(function () {
 
         // Upload signed agreement
         Route::post('/agreement/{requisition}/upload-signed', [SubmitterController::class, 'uploadSignedAgreement'])->name('agreement.upload-signed');
-    });
+
+        // Courier details routes
+        Route::get('/agreement/{requisition}/courier-details/{agreement}', 
+            [SubmitterController::class, 'showCourierForm'])
+            ->name('agreement.courier-details');
+
+        Route::post('/agreement/{requisition}/courier-details/{agreement}', 
+            [SubmitterController::class, 'saveCourierDetails'])
+            ->name('agreement.save-courier-details');
+
+       
+    });     
 });
 
 // HR Admin Agreement Routes
@@ -200,6 +210,11 @@ Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['a
     Route::put('/{agreement}/update', [HrAdminController::class, 'updateAgreement'])
         ->name('hr-admin.agreement.update');
     Route::get('/{candidate}/get-unsigned', [HrAdminController::class, 'getUnsignedAgreement'])->name('get-unsigned');
+
+     // Mark courier as received (admin/recruiter only)
+        Route::post('/{requisition}/courier-received/{agreement}', 
+            [SubmitterController::class, 'markCourierReceived'])
+            ->name('courier-received');
 });
 
 // Attendance Routes

@@ -859,7 +859,10 @@ class HrAdminController extends Controller
 			// Calculate leave_credited for Contractual candidates
 			$leaveCredited = 0;
 			if ($requisition->requisition_type === 'Contractual') {
-				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration($requisition->contract_duration);
+				$leaveCredited = $this->calculateLeaveCreditedFromAgreementDuration(
+					$requisition->contract_start_date,
+					$requisition->contract_end_date
+				);
 			}
 
 			// Create candidate master record WITH ALL REQUIRED FIELDS
@@ -904,14 +907,14 @@ class HrAdminController extends Controller
 				'account_holder_name' => $requisition->account_holder_name,
 				'bank_account_no' => $requisition->bank_account_no,
 				'bank_verification_status' => $requisition->bank_verification_status,
-                'bank_branch_address' => $requisition->bank_branch_address,
+				'bank_branch_address' => $requisition->bank_branch_address,
 				'bank_ifsc' => $requisition->bank_ifsc,
 				'bank_name' => $requisition->bank_name,
 				'pan_no' => $requisition->pan_no,
 				'pan_verification_status' => $requisition->pan_verification_status,
 				'pan_aadhaar_link_status' => $requisition->pan_aadhaar_link_status,
 				'pan_status_2' => $requisition->pan_status_2,
-				  // Driving Licence
+				// Driving Licence
 				'driving_licence_no' => $requisition->driving_licence_no,
 				'dl_valid_from' => $requisition->dl_valid_from,
 				'dl_valid_to' => $requisition->dl_valid_to,
@@ -1010,7 +1013,8 @@ class HrAdminController extends Controller
 
 			// Update candidate (ONLY agreement_id)
 			$candidate->update([
-				'agreement_number' => $agreementId,
+				'candidate_status' => 'Unsigned Agreement Uploaded',
+				'final_status'     => 'A',
 			]);
 
 			// Update requisition
@@ -1224,26 +1228,19 @@ class HrAdminController extends Controller
 
 
 	// Helper method to calculate leave credited from agreement duration
-	private function calculateLeaveCreditedFromAgreementDuration($agreementDuration)
+	private function calculateLeaveCreditedFromAgreementDuration($startDate, $endDate)
 	{
-		// Convert contract_duration to months if it's in different format
-		// Assuming contract_duration is stored as number of months (e.g., "6" for 6 months)
-
-		if (is_numeric($agreementDuration)) {
-			$months = (int)$agreementDuration;
-			// 1 CL day per month, maximum 12 days
-			return min($months, 12);
+		if (!$startDate || !$endDate) {
+			return 0;
 		}
 
-		// If contract_duration is string like "6 months", extract the number
-		preg_match('/(\d+)/', $agreementDuration, $matches);
-		if (isset($matches[1])) {
-			$months = (int)$matches[1];
-			return min($months, 12);
-		}
+		$start = \Carbon\Carbon::parse($startDate);
+		$end   = \Carbon\Carbon::parse($endDate);
 
-		// Default to 0 if can't determine
-		return 0;
+		// Calculate full months difference
+		$months = $start->diffInMonths($end);
+
+		return $months;
 	}
 	/**
 	 * Generate candidate code

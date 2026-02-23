@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ManpowerRequisition;
 use App\Models\User;
 use App\Models\CandidateMaster;
+use App\Models\AgreementDocument;
+use App\Models\AgreementCourier;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +65,6 @@ class HomeController extends Controller
             'signed_agreement_uploaded' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
             'rejected_candidates' => CandidateMaster::where('candidate_status', 'Rejected')->count(),
 
-            // ADD THESE 2 LINES:
             'verification_count' => ManpowerRequisition::whereNotNull('hr_verification_date')
                 ->whereNotNull('submission_date')
                 ->count(),
@@ -102,7 +104,7 @@ class HomeController extends Controller
             ->limit(5)
             ->get();
 
-        // Average Processing Times - NEW FORMAT
+        // Average Processing Times
         $stats['avg_times'] = [
             'verification_time' => 0,
             'approval_time' => 0,
@@ -127,36 +129,48 @@ class HomeController extends Controller
         // Calculate approval time (HR verification to approval)
         $approvalData = ManpowerRequisition::whereNotNull('approval_date')
             ->whereNotNull('submission_date')
-            ->selectRaw('
-                TIMESTAMPDIFF(
-                    DAY,
-                    submission_date,
-                    approval_date
-                ) as days_diff
-            ')
+            ->selectRaw('TIMESTAMPDIFF(DAY, submission_date, approval_date) as days_diff')
             ->get();
-
-
 
         if ($approvalData->isNotEmpty()) {
             $avgApprovalDays = $approvalData->avg('days_diff');
-
             if ($avgApprovalDays !== null && $avgApprovalDays >= 0) {
                 $stats['avg_times']['approval_time'] = $avgApprovalDays;
-                $stats['avg_times']['approval_display'] =
-                    number_format($avgApprovalDays, 1) . 'd';
+                $stats['avg_times']['approval_display'] = number_format($avgApprovalDays, 1) . 'd';
             }
         } else {
             $stats['avg_times']['approval_display'] = 'N/A';
         }
 
-
-
         // Recent requisitions
-        $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate', 'candidate'])
+        $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
+        // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
+        foreach ($recent_requisitions as $requisition) {
+            if ($requisition->candidate) {
+                // Get signed agreement
+                $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->latest()
+                    ->first();
+
+                if ($signedAgreement) {
+                    // Get courier details for this agreement
+                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
+                        ->first();
+
+                    // Attach to requisition object for use in view
+                    $requisition->signed_agreement = $signedAgreement;
+                    $requisition->courier_details = $courierDetails;
+                } else {
+                    $requisition->signed_agreement = null;
+                    $requisition->courier_details = null;
+                }
+            }
+        }
 
         // Status Distribution for Chart
         $stats['status_distribution'] = ManpowerRequisition::select('status', DB::raw('count(*) as count'))

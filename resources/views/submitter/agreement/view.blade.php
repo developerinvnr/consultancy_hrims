@@ -4,343 +4,319 @@
 
 @section('content')
 <div class="container-fluid">
-	<div class="row">
-		<div class="col-12">
-			<div class="page-title-box py-2 d-sm-flex align-items-center justify-content-between">
-				<h5 class="mb-0">
-					@if($isCompleted)
-					Completed Agreement
-					@else
-					Unsigned Agreement
-					@endif
-					</h4>
-					<div class="page-title-right">
-						<ol class="breadcrumb m-0">
-							<li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-							<li class="breadcrumb-item active">
-								@if($isCompleted)
-								Completed Agreement
-								@else
-								Unsigned Agreement
-								@endif
-							</li>
-						</ol>
-					</div>
-			</div>
-		</div>
-	</div>
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box py-2 d-sm-flex align-items-center justify-content-between">
+                <h5 class="mb-0">{{ $isCompleted ? 'Completed' : 'Unsigned' }} Agreement</h5>
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">{{ $isCompleted ? 'Completed' : 'Unsigned' }} Agreement</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	<div class="row">
-		<div class="col-12">
-			<div class="card">
-				<div class="card-header d-flex justify-content-between align-items-center">
-					<h5 class="card-title mb-0">
-						@if($isCompleted)
-						Completed Agreement Details
-						@else
-						Agreement Details
-						@endif
-					</h5>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Agreement Details</h5>
+                </div>
 
-					{{--<a href="{{ url()->previous() ?? route('dashboard') }}" class="btn btn-sm btn-light">
-					<i class="ri-arrow-left-line me-1"></i> Back
-					</a>--}}
-				</div>
+                <div class="card-body">
+                    <!-- Status Alert -->
+                    <div class="alert alert-{{ $isCompleted ? 'success' : ($signedAgreement ? 'warning' : 'info') }} py-2">
+                        <i class="ri-{{ $isCompleted ? 'check-double' : ($signedAgreement ? 'truck' : 'information') }}-line me-2"></i>
+                        @if($isCompleted)
+                            <strong>Completed!</strong> Signed agreement uploaded and processed.
+                        @elseif($signedAgreement && !$signedAgreement->courierDetails)
+                            <strong>Action Required:</strong> Add courier details after dispatching.
+                        @elseif($signedAgreement && $signedAgreement->courierDetails && !$signedAgreement->courierDetails->isReceived())
+                            <strong>In Transit:</strong> Agreement dispatched via {{ $signedAgreement->courierDetails->courier_name }} ({{ $signedAgreement->courierDetails->docket_number }})
+                        @elseif($signedAgreement)
+                            <strong>Signed:</strong> Agreement uploaded successfully.
+                        @else
+                            <strong>Action Required:</strong> Upload signed agreement.
+                        @endif
+                    </div>
 
-				<div class="card-body">
-					<!-- Status Alert -->
-					@if($isCompleted)
-					<div class="alert alert-success py-2 small">
-						<i class="ri-check-double-line me-2"></i>
-						<strong>Agreement Process Completed!</strong> The signed agreement has been uploaded and processed.
-					</div>
-					@else
-					<div class="alert alert-info py-2 small">
-						<i class="ri-information-line me-2"></i>
-						<strong>Action Required:</strong> Please download the unsigned agreement, get it signed by the candidate, and upload the signed version.
-					</div>
-					@endif
+                    <!-- Candidate Info -->
+                    <div class="border rounded p-2 mb-3 bg-light">
+                        <div class="row small">
+                            <div class="col-md-3"><strong>Req ID:</strong> {{ $requisition->requisition_id }}</div>
+                            <div class="col-md-3"><strong>Code:</strong> {{ $candidate->candidate_code }}</div>
+                            <div class="col-md-3"><strong>Name:</strong> {{ $candidate->candidate_name }}</div>
+                            <div class="col-md-3"><strong>Status:</strong> 
+                                <span class="badge bg-{{ $isCompleted ? 'success' : ($signedAgreement ? 'warning' : 'info') }}">
+                                    {{ $candidate->candidate_status ?? $requisition->status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-					<div class="row g-2 mb-3 small">
+                    <!-- Unsigned Agreements -->
+                    @if($unsignedAgreements->count())
+                    <div class="mb-4">
+                        <h6 class="mb-2">Unsigned Agreements</h6>
+                        @foreach($unsignedAgreements as $unsigned)
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ $unsigned->agreement_number }}</strong>
+                                    <span class="badge bg-{{ $unsigned->stamp_type === 'E_STAMP' ? 'warning' : 'secondary' }} ms-1">
+                                        {{ $unsigned->stamp_type === 'E_STAMP' ? 'E-Stamp' : 'No Stamp' }}
+                                    </span>
+                                    <div class="small text-muted">Uploaded: {{ $unsigned->created_at->format('d M Y') }}</div>
+                                </div>
+                                <div>
+                                    <a href="{{ $unsigned->file_url }}" target="_blank" class="btn btn-sm btn-outline-info" title="View">
+                                        <i class="ri-eye-line"></i>
+                                    </a>
+                                    <a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $unsigned->id]) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Download">
+                                        <i class="ri-download-line"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
 
-						<div class="col-md-6">
-							<div class="border rounded p-2 h-100">
-								<strong class="d-block mb-1 text-muted">Candidate</strong>
-								<div>Req ID: <strong>{{ $requisition->requisition_id }}</strong></div>
-								<div>Code: {{ $candidate->candidate_code }}</div>
-								<div>Name: {{ $candidate->candidate_name }}</div>
-								<div>Email: {{ $candidate->candidate_email }}</div>
-								<div>Status:
-									<span class="badge bg-{{ $isCompleted ? 'success' : 'info' }}">
-										{{ $requisition->status }}
-									</span>
-								</div>
-							</div>
-						</div>
+                    <!-- Signed Agreement -->
+                    @if($signedAgreement)
+                    <div class="mb-4">
+                        <h6 class="mb-2">Signed Agreement</h6>
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <strong>{{ $signedAgreement->agreement_number }}</strong>
+                                    <span class="badge bg-success ms-1">Final</span>
+                                    @if($signedAgreement->courierDetails)
+                                        @if($signedAgreement->courierDetails->isReceived())
+                                            <span class="badge bg-success ms-1">✓ Received</span>
+                                        @else
+                                            <span class="badge bg-warning ms-1">📦 Dispatched</span>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div>
+                                    <a href="{{ $signedAgreement->file_url }}" target="_blank" class="btn btn-sm btn-outline-success" title="View">
+                                        <i class="ri-eye-line"></i>
+                                    </a>
+                                    <a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $signedAgreement->id]) }}" 
+                                       class="btn btn-sm btn-outline-success" title="Download">
+                                        <i class="ri-download-line"></i>
+                                    </a>
+                                </div>
+                            </div>
 
-					
-					</div>
+                            <!-- Courier Details Section -->
+                            @if($signedAgreement->courierDetails)
+                                @php $c = $signedAgreement->courierDetails; @endphp
+                                <div class="bg-light p-3 rounded">
+                                    <h6 class="mb-2"><i class="ri-truck-line me-1"></i> Courier Tracking Information</h6>
+                                    <div class="row small">
+                                        <div class="col-md-3"><strong>Courier:</strong> {{ $c->courier_name }}</div>
+                                        <div class="col-md-3"><strong>Docket No:</strong> {{ $c->docket_number }}
+                                            @if($c->docket_number)
+                                                <a href="#" onclick="window.open('https://www.google.com/search?q={{ urlencode($c->courier_name . ' ' . $c->docket_number . ' tracking') }}', '_blank')" 
+                                                   class="ms-1 text-primary" title="Track">
+                                                    <i class="ri-external-link-line"></i>
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-3"><strong>Dispatch:</strong> {{ $c->formatted_dispatch_date }}</div>
+                                        @if($c->isReceived())
+                                            <div class="col-md-3"><strong>Received:</strong> {{ $c->formatted_received_date }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="small text-muted mt-2">
+                                        <i class="ri-time-line me-1"></i> Added by {{ $c->sentBy->name ?? 'Unknown' }} on {{ $c->created_at->format('d M Y, h:i A') }}
+                                        @if($c->isReceived() && $c->receivedBy)
+                                            <br><i class="ri-checkbox-circle-line me-1 text-success"></i> Received by {{ $c->receivedBy->name ?? 'Candidate' }}
+                                        @endif
+                                    </div>
+                                </div>
+                            @elseif(!$isCompleted)
+                                <div class="bg-light p-3 rounded text-center">
+                                    <i class="ri-truck-line fs-2 text-muted mb-2"></i>
+                                    <p class="small text-muted mb-2">No courier details added yet. Please add after dispatching.</p>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#courierModal">
+                                        <i class="ri-truck-line me-1"></i> Add Courier Details
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
 
+                    <!-- Upload Button -->
+                    @if(!$signedAgreement && !$isCompleted && $unsignedAgreements->count())
+                    <div class="text-center p-4 bg-light rounded">
+                        <i class="ri-file-copy-line fs-2 text-muted mb-2"></i>
+                        <p class="mb-2">Upload the signed agreement to proceed</p>
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="ri-upload-2-line me-1"></i> Upload Signed Agreement
+                        </button>
+                    </div>
+                    @endif
 
-					<!-- Agreement Actions -->
-					<div class="row">
-						<div class="col-12">
-							<h6>Agreement Actions</h6>
-							<div class="d-flex gap-2 flex-wrap">
-								@if($unsignedAgreements->count())
-								@foreach($unsignedAgreements as $index => $unsigned)
-								<div class="border rounded p-2 mb-2">
-									<div class="fw-semibold">
-										Unsigned Agreement {{ $index + 1 }}
-										@if($unsigned->stamp_type === 'E_STAMP')
-											<span class="badge bg-warning ms-1">E-Stamp</span>
-										@else
-											<span class="badge bg-secondary ms-1">No Stamp</span>
-										@endif
-									</div>
-
-									<div class="small text-muted">
-										Agreement No: {{ $unsigned->agreement_number }} <br>
-										Uploaded: {{ $unsigned->created_at->format('d M Y, h:i A') }}
-									</div>
-
-									<div class="mt-2 d-flex gap-2">
-										{{-- VIEW --}}
-										<a href="{{ $unsigned->file_url }}" target="_blank"
-											class="btn btn-sm btn-outline-info">
-											<i class="ri-eye-line"></i> View
-										</a>
-
-										{{-- DOWNLOAD --}}
-										<a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $unsigned->id]) }}"
-											class="btn btn-sm btn-outline-primary">
-											<i class="ri-download-line"></i> Download
-										</a>
-									</div>
-								</div>
-								@endforeach
-								@endif
-
-
-								@if($isCompleted && $signedAgreement)
-								<div class="border rounded p-2 mb-2">
-									<div class="fw-semibold">
-										Signed Agreement
-										<span class="badge bg-success ms-1">Final</span>
-									</div>
-
-									<div class="small text-muted">
-										Agreement No: {{ $signedAgreement->agreement_number }} <br>
-										Signed On: {{ $signedAgreement->created_at->format('d M Y, h:i A') }}
-									</div>
-
-									<div class="mt-2 d-flex gap-2">
-										<a href="{{ route('submitter.agreement.download', [$requisition, 'doc' => $signedAgreement->id]) }}"
-											class="btn btn-sm btn-outline-success">
-											<i class="ri-download-line"></i> Download
-										</a>
-									</div>
-								</div>
-								@endif
-
-
-								@if(!$isCompleted)
-								<div class="small">
-									<button type="button"
-										class="btn btn-sm btn-warning"
-										data-bs-toggle="modal"
-										data-bs-target="#uploadSignedModal">
-										<i class="ri-upload-2-line"></i> Upload Signed
-									</button>
-								</div>
-								@endif
-
-							</div>
-
-						</div>
-					</div>
-
-					<!-- Compact Timeline -->
-					<div class="row mt-2">
-						<div class="col-12">
-							<h6 class="mb-2">Agreement Timeline</h6>
-
-							<ul class="list-group list-group-flush small">
-								<li class="list-group-item px-0 py-1 d-flex justify-content-between">
-									<span>
-										<i class="ri-checkbox-circle-fill text-success me-1"></i>
-										Unsigned Agreements Uploaded ({{ $unsignedAgreements->count() }})
-									</span>
-									<span class="text-muted">
-										{{ $unsignedAgreements->last()?->created_at?->format('d M Y, h:i A') ?? 'Pending' }}
-									</span>
-								</li>
-
-
-								<li class="list-group-item px-0 py-1 d-flex justify-content-between">
-									<span>
-										<i class="ri-time-line text-warning me-1"></i>
-										Signed Agreement Uploaded
-									</span>
-									<span class="text-muted">
-										{{ $signedAgreement?->created_at?->format('d M Y, h:i A') ?? 'Pending' }}
-									</span>
-								</li>
-
-								<li class="list-group-item px-0 py-1 d-flex justify-content-between">
-									<span>
-										<i class="ri-check-double-line text-success me-1"></i>
-										Process Completed
-									</span>
-									<span class="text-muted">
-										{{ $isCompleted ? $requisition->updated_at->format('d M Y, h:i A') : 'Not yet completed' }}
-									</span>
-								</li>
-
-							</ul>
-						</div>
-					</div>
-
-				</div>
-			</div>
-		</div>
-	</div>
-
+                    <!-- Edit Courier Link -->
+                    @if($signedAgreement && $signedAgreement->courierDetails && !$signedAgreement->courierDetails->isReceived() && !$isCompleted)
+                    <div class="mt-2 text-end">
+                        <a href="{{ route('submitter.agreement.courier-details', [$requisition, $signedAgreement]) }}" class="small">
+                            <i class="ri-edit-line me-1"></i> Edit Courier Details
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Upload Signed Agreement Modal (only show if not completed) -->
-@if(!$isCompleted)
-<div class="modal fade" id="uploadSignedModal" tabindex="-1">
-	<div class="modal-dialog modal-lg">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Upload Signed Agreement</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
-			<form id="uploadSignedForm" enctype="multipart/form-data">
-				@csrf
-				<div class="modal-body">
-					<div class="alert alert-info">
-						<i class="ri-information-line me-2"></i>
-						Please upload the signed agreement PDF after getting it signed from the candidate.
-					</div>
+<!-- Upload Modal -->
+@if(!$signedAgreement && !$isCompleted && $unsignedAgreements->count())
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="uploadForm" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Signed Agreement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Agreement Number *</label>
+                        <input type="text" class="form-control" name="agreement_number" required 
+                               value="{{ $unsignedAgreements->last()?->agreement_number }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Signed Agreement (PDF) *</label>
+                        <input type="file" class="form-control" name="agreement_file" accept=".pdf" required>
+                        <small class="text-muted">Max: 10MB</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="uploadBtn">
+                        <i class="ri-file-upload-line me-1"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 
-					<div class="mb-3">
-						<label class="form-label">Candidate</label>
-						<input type="text" class="form-control"
-							value="{{ $candidate->candidate_code }} - {{ $candidate->candidate_name }}"
-							readonly>
-					</div>
-
-					<div class="mb-3">
-						<label class="form-label">Agreement Number *</label>
-						<input type="text" class="form-control" name="agreement_number" required
-							placeholder="Enter agreement number" maxlength="100"
-							value="{{ $unsignedAgreements->last()?->agreement_number }}">
-						<small class="text-muted">Same agreement number as provided by HR</small>
-					</div>
-
-					<div class="mb-3">
-						<label class="form-label">Signed Agreement File (PDF) *</label>
-						<input type="file" class="form-control" name="agreement_file"
-							accept=".pdf" required>
-						<small class="text-muted">Maximum file size: 10MB. Only PDF files accepted.</small>
-						<div class="form-text">
-							<i class="ri-information-line me-1"></i>
-							Ensure the agreement is signed by both candidate and company representative.
-						</div>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-					<button type="submit" class="btn btn-success">
-						<i class="ri-file-upload-line me-1"></i> Upload Signed Agreement
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
+<!-- Courier Modal -->
+@if($signedAgreement && !$signedAgreement->courierDetails && !$isCompleted)
+<div class="modal fade" id="courierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="courierForm">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Courier Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Courier Name *</label>
+                        <input type="text" class="form-control" name="courier_name" required 
+                               placeholder="e.g., Blue Dart, DTDC, FedEx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Docket / Tracking Number *</label>
+                        <input type="text" class="form-control" name="docket_number" required 
+                               placeholder="Enter tracking number">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dispatch Date *</label>
+                        <input type="date" class="form-control" name="dispatch_date" required 
+                               value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="courierBtn">
+                        <i class="ri-save-line me-1"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endif
 @endsection
 
-
-
-@section('script_section')
+@push('scripts')
 <script>
-	$(document).ready(function() {
-		const csrfToken = $('meta[name="csrf-token"]').attr('content');
+$(document).ready(function() {
+    const token = $('meta[name="csrf-token"]').attr('content');
 
-		// Only initialize upload form if modal exists
-		@if(!$isCompleted)
-		$('#uploadSignedForm').on('submit', function(e) {
-			e.preventDefault();
-			const form = $(this);
-			const formData = new FormData(form[0]);
-			const url = "{{ route('submitter.agreement.upload-signed', $requisition) }}";
+    // Upload Form
+    @if(!$signedAgreement && !$isCompleted && $unsignedAgreements->count())
+    $('#uploadForm').submit(function(e) {
+        e.preventDefault();
+        let form = $(this);
+        let data = new FormData(form[0]);
+        let btn = $('#uploadBtn');
+        
+        $.ajax({
+            url: "{{ route('submitter.agreement.upload-signed', $requisition) }}",
+            type: 'POST',
+            data: data,
+            processData: false,
+            contentType: false,
+            headers: {'X-CSRF-TOKEN': token},
+            beforeSend: () => btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i> Uploading...'),
+            success: (res) => {
+                if(res.success) {
+                    alert('Signed agreement uploaded successfully!');
+                    window.location.reload();
+                }
+            },
+            error: (xhr) => {
+                let msg = xhr.responseJSON?.message || 'Upload failed';
+                alert(msg);
+                btn.prop('disabled', false).html('<i class="ri-file-upload-line me-1"></i> Upload');
+            }
+        });
+    });
+    @endif
 
-			$.ajax({
-				url: url,
-				type: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				headers: {
-					'X-CSRF-TOKEN': csrfToken
-				},
-				beforeSend: function() {
-					form.find('button[type="submit"]').prop('disabled', true).html(
-						'<i class="ri-loader-4-line ri-spin me-1"></i> Uploading...'
-					);
-				},
-				success: function(response) {
-					if (response.success) {
-						showToast('success', response.message);
-						setTimeout(() => {
-							window.location.reload();
-						}, 2000);
-					} else {
-						showToast('error', response.message || 'An error occurred');
-						form.find('button[type="submit"]').prop('disabled', false).html(
-							'<i class="ri-file-upload-line me-1"></i> Upload Signed Agreement'
-						);
-					}
-				},
-				error: function(xhr) {
-					let errorMessage = 'Failed to upload. Please try again.';
-					if (xhr.responseJSON && xhr.responseJSON.message) {
-						errorMessage = xhr.responseJSON.message;
-					} else if (xhr.responseJSON && xhr.responseJSON.errors) {
-						errorMessage = Object.values(xhr.responseJSON.errors).flat().join('<br>');
-					}
-					showToast('error', errorMessage);
-					form.find('button[type="submit"]').prop('disabled', false).html(
-						'<i class="ri-file-upload-line me-1"></i> Upload Signed Agreement'
-					);
-				}
-			});
-		});
-		@endif
-
-		function showToast(type, message) {
-			const toast = `<div class="toast align-items-center text-bg-${type} border-0" role="alert">
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>`;
-
-			if ($('.toast-container').length === 0) {
-				$('body').append('<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"><div class="toast-container"></div></div>');
-			}
-
-			$('.toast-container').append(toast);
-			$('.toast').last().toast('show');
-
-			setTimeout(() => {
-				$('.toast').last().remove();
-			}, 5000);
-		}
-	});
+    // Courier Form
+    @if($signedAgreement && !$signedAgreement->courierDetails && !$isCompleted)
+    $('#courierForm').submit(function(e) {
+        e.preventDefault();
+        let data = $(this).serialize();
+        let btn = $('#courierBtn');
+        
+        $.ajax({
+            url: "{{ route('submitter.agreement.save-courier-details', [$requisition, $signedAgreement]) }}",
+            type: 'POST',
+            data: data,
+            headers: {'X-CSRF-TOKEN': token},
+            beforeSend: () => btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i> Saving...'),
+            success: (res) => {
+                if(res.success) {
+                    alert('Courier details saved successfully!');
+                    window.location.reload();
+                }
+            },
+            error: (xhr) => {
+                let msg = xhr.responseJSON?.message || 'Save failed';
+                alert(msg);
+                btn.prop('disabled', false).html('<i class="ri-save-line me-1"></i> Save');
+            }
+        });
+    });
+    @endif
+});
 </script>
-@endsection
+@endpush
