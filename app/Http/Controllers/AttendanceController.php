@@ -148,7 +148,7 @@ class AttendanceController extends Controller
                             case 'CH':
                                 $totalCL += 0.5;
                                 break;
-                         }
+                        }
                     }
                 }
 
@@ -258,29 +258,74 @@ class AttendanceController extends Controller
 
             /* ---------------- ROLE DATE VALIDATION ---------------- */
 
-            if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
+            // if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
 
-                $allowedDays = [];
-                $cursor = $today->copy();
+            //     $allowedDays = [];
+            //     $cursor = $today->copy();
 
-                while (count($allowedDays) < 7) {
-                    if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
-                        $allowedDays[] = $cursor->day;
-                    }
-                    $cursor->subDay();
-                }
+            //     while (count($allowedDays) < 7) {
+            //         if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
+            //             $allowedDays[] = $cursor->day;
+            //         }
+            //         $cursor->subDay();
+            //     }
 
-                foreach ($attendanceData as $day => $status) {
-                    if ($status === null || $status === '') continue;
+            //     foreach ($attendanceData as $day => $status) {
+            //         if ($status === null || $status === '') continue;
 
-                    if (!in_array((int)$day, $allowedDays)) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Reporting Managers can update only last 7 working days'
-                        ]);
-                    }
-                }
+            //         if (!in_array((int)$day, $allowedDays)) {
+            //             return response()->json([
+            //                 'success' => false,
+            //                 'message' => 'Reporting Managers can update only last 7 working days'
+            //             ]);
+            //         }
+            //     }
+            // }
+
+          if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
+
+    $todayDay = $today->day;
+
+    // 🔥 RELAXATION FOR FEB 2026 (but no future dates)
+    if ($month == 2 && $year == 2026) {
+
+        foreach ($attendanceData as $day => $status) {
+
+            if ($status === null || $status === '') continue;
+
+            if ((int)$day > $todayDay) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot update future dates'
+                ]);
             }
+        }
+
+    } else {
+
+        $allowedDays = [];
+        $cursor = $today->copy();
+
+        while (count($allowedDays) < 7) {
+            if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
+                $allowedDays[] = $cursor->day;
+            }
+            $cursor->subDay();
+        }
+
+        foreach ($attendanceData as $day => $status) {
+
+            if ($status === null || $status === '') continue;
+
+            if (!in_array((int)$day, $allowedDays)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reporting Managers can update only last 7 working days'
+                ]);
+            }
+        }
+    }
+}
 
             /* ---------------- ATTENDANCE RECORD ---------------- */
 
@@ -865,13 +910,13 @@ class AttendanceController extends Controller
                     continue;
                 }
 
-               // CL full day
-if ($oldStatus === 'CL') $clUnitChanges -= 1;
-if ($newStatus === 'CL') $clUnitChanges += 1;
+                // CL full day
+                if ($oldStatus === 'CL') $clUnitChanges -= 1;
+                if ($newStatus === 'CL') $clUnitChanges += 1;
 
-// CH half day
-if ($oldStatus === 'CH') $clUnitChanges -= 0.5;
-if ($newStatus === 'CH') $clUnitChanges += 0.5;
+                // CH half day
+                if ($oldStatus === 'CH') $clUnitChanges -= 0.5;
+                if ($newStatus === 'CH') $clUnitChanges += 0.5;
 
                 // Handle LWP changes
                 if ($oldStatus === 'LWP' && $newStatus !== 'LWP') {
@@ -889,7 +934,7 @@ if ($newStatus === 'CH') $clUnitChanges += 0.5;
             $warning = null;
 
             // Convert CH changes to CL units (0.5 each)
-           $totalCLUnitsNeeded = $clUnitChanges;
+            $totalCLUnitsNeeded = $clUnitChanges;
 
 
             // Process CL and CH changes

@@ -311,7 +311,7 @@ class DocumentController extends Controller
 
 			// ✅ FIX: Use the same approach as PAN and Bank - don't pass custom filename
 			// Let the S3Service generate the filename
-			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar');
+			$upload = $s3Service->uploadRequisitionDocument($file, $requisitionType, 'aadhaar_card');
 
 			if (!$upload['success']) {
 				throw new \Exception('S3 Upload failed: ' . $upload['error']);

@@ -477,8 +477,8 @@
                     break;
 
                 case 'CH':
-                    cl += 0.5;   // Half day CL deduction
-                    present += 0.5;  // Optional depending on rule
+                    cl += 0.5; // Half day CL deduction
+                    present += 0.5; // Optional depending on rule
                     break;
                 case 'OD':
                     od++;
@@ -780,22 +780,25 @@
         const isEditMode = btn.find('i').hasClass('ri-edit-line');
 
         if (isEditMode) {
-                    console.log(window.currentIsHrAdmin);
-            const isHrAdmin = window.currentIsHrAdmin;
 
+            const isHrAdmin = window.currentIsHrAdmin;
             const today = new Date();
-            const selectedMonth = currentMonth; // already set
+            today.setHours(0, 0, 0, 0);
+
+            const selectedMonth = currentMonth;
             const selectedYear = currentYear;
 
             const isCurrentMonth =
                 (today.getMonth() + 1 === selectedMonth) &&
                 (today.getFullYear() === selectedYear);
 
+            const todayDate = today.getDate();
+
             let allowedDays = [];
 
+            // Calculate last 7 working days
             if (!isHrAdmin && isCurrentMonth) {
 
-                today.setHours(0, 0, 0, 0);
                 let cursor = new Date(today);
 
                 while (allowedDays.length < 7) {
@@ -807,32 +810,62 @@
             }
 
             weekdaySelects.each(function() {
+
                 const day = parseInt($(this).data('day'));
                 const cell = row.find(`td[data-day="${day}"]`);
                 const canEditBase = String(cell.data('can-edit')) === 'true';
 
+                let allowEdit = false;
+
                 if (isHrAdmin && canEditBase) {
-                    $(this).prop('disabled', false);
-                    cell.removeClass('readonly-cell');
-                } else if (!isHrAdmin && isCurrentMonth && canEditBase && allowedDays.includes(day)) {
-                    $(this).prop('disabled', false);
-                    cell.removeClass('readonly-cell');
-                } else if (!isHrAdmin && !isCurrentMonth && canEditBase) {
-                    // Past month: allow full edit
+                    allowEdit = true;
+                }
+
+                // 🔥 FEB 2026 RELAXATION (BUT NO FUTURE DATES)
+                else if (
+                    !isHrAdmin &&
+                    isCurrentMonth &&
+                    selectedMonth === 2 &&
+                    selectedYear === 2026 &&
+                    canEditBase &&
+                    day <= todayDate
+                ) {
+                    allowEdit = true;
+                }
+
+                // 🔥 NORMAL 7 DAY RULE
+                else if (
+                    !isHrAdmin &&
+                    isCurrentMonth &&
+                    canEditBase &&
+                    allowedDays.includes(day)
+                ) {
+                    allowEdit = true;
+                }
+
+                // 🔥 PAST MONTH → full edit allowed
+                else if (!isHrAdmin && !isCurrentMonth && canEditBase) {
+                    allowEdit = true;
+                }
+
+                if (allowEdit) {
                     $(this).prop('disabled', false);
                     cell.removeClass('readonly-cell');
                 } else {
                     $(this).prop('disabled', true);
                     cell.addClass('readonly-cell');
                 }
+
             });
 
             row.addClass('editing-row');
+
             btn.html('<i class="ri-save-line"></i>')
                 .removeClass('btn-outline-primary')
                 .addClass('btn-success');
 
             cancelBtn.show();
+
         } else {
             saveAttendance(candidateId);
         }
