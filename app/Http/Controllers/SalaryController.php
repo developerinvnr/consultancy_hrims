@@ -397,7 +397,7 @@ class SalaryController extends Controller
             ->whereHas('salaryProcessings', function ($q) use ($month, $year) {
                 $q->where('month', $month)
                     ->where('year', $year)
-                    ->whereNotNull('processed_at');
+                    ->where('status', 'Processed');
             })
             ->with([
                 'function',
