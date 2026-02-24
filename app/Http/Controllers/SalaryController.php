@@ -335,7 +335,7 @@ class SalaryController extends Controller
             ->setPaper('a4', 'portrait');
 
         return $pdf->download(
-            "Payslip_{$salary->candidate->candidate_code}_{$salary->month}_{$salary->year}.pdf"
+            "Invoice_{$salary->candidate->candidate_code}_{$salary->month}_{$salary->year}.pdf"
         );
     }
 
