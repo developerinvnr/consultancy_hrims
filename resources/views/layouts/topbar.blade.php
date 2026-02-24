@@ -9,7 +9,7 @@
                             <img src="{{ asset('assets/images/mini-logo.png') }}" alt="Mini Logo" height="50">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ asset('assets/images/login-logo.png') }}" alt="Main Logo" height="60">
+                            <img src="{{ asset('assets/images/login_logo.png') }}" alt="Main Logo" height="60">
                         </span>
                     </a>
 
@@ -18,13 +18,13 @@
                             <img src="{{ asset('assets/images/mini-logo.png') }}" alt="Mini Logo" height="50">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ asset('assets/images/login-logo.png') }}" alt="Main Logo" height="60">
+                            <img src="{{ asset('assets/images/login_logo.png') }}" alt="Main Logo" height="60">
                         </span>
                     </a>
                 </div>
                 <div class="ms-1 header-item d-none d-sm-flex align-items-center gap-1">
                     <i class="bi bi-building text-muted"></i>
-                    <span class="fw-semibold">Consultancy HRIMS</span>
+                    <span class="fw-semibold">Peepal Bonsai</span>
                 </div>
             </div>
             <div class="d-flex align-items-center">

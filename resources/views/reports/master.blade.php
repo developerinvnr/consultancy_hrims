@@ -3,33 +3,80 @@
 @section('content')
 <div class="container-fluid">
     <!-- Page Header -->
-    <div class="row mb-3">
+    <div class="row mb-1">
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Party Master Report</h4>
+                <h4 class="mb-0">Master Report (Finance Related Data)</h4>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-success" onclick="exportReport()">
                         <i class="ri-file-excel-2-line"></i> Export Excel
                     </button>
-                    {{--<button class="btn btn-sm btn-outline-secondary" onclick="toggleColumnVisibility()">
-                        <i class="ri-eye-line"></i> Show/Hide Columns
-                    </button>--}}
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Filter Card -->
-    <div class="card mb-4 shadow-sm">
+    <div class="card mb-2 shadow-sm">
         <div class="card-body">
-            <form id="filterForm" method="GET" action="{{ route('master') }}" class="row g-3 align-items-end">
+            <form id="filterForm" method="GET" action="{{ route('reports.master') }}" class="row g-3 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label form-label-sm">Select Month-Year</label>
-                    <input type="month" name="month_year" id="monthYear" class="form-control form-control-sm" 
-                           value="{{ sprintf('%04d-%02d', $year, $month) }}" required>
+                    <label class="form-label form-label-sm">Financial Year</label>
+                    <select name="financial_year" id="financialYear" class="form-select form-select-sm" required>
+                        @php
+                        $currentMonth = date('n');
+                        $currentYear = date('Y');
+
+                        if ($currentMonth >= 4) {
+                        $fyStart = $currentYear;
+                        } else {
+                        $fyStart = $currentYear - 1;
+                        }
+
+                        $startYear = $fyStart - 2; // Show last 2 FY
+                        $endYear = $fyStart; // Show current FY only
+                        @endphp
+
+                        @for($y = $startYear; $y <= $endYear; $y++)
+                            @php $fy=$y . '-' . ($y + 1); @endphp
+                            <option value="{{ $fy }}"
+                            {{ ($financialYear ?? '') == $fy ? 'selected' : '' }}>
+                            {{ $fy }}
+                            </option>
+                            @endfor
+                    </select>
                 </div>
 
                 <div class="col-md-2">
+                    <label class="form-label form-label-sm">Month</label>
+                    <select name="month" id="month" class="form-select form-select-sm" required>
+                        @php
+                        $months = [
+                        4 => 'April',
+                        5 => 'May',
+                        6 => 'June',
+                        7 => 'July',
+                        8 => 'August',
+                        9 => 'September',
+                        10 => 'October',
+                        11 => 'November',
+                        12 => 'December',
+                        1 => 'January',
+                        2 => 'February',
+                        3 => 'March'
+                        ];
+                        @endphp
+
+                        @foreach($months as $num => $name)
+                        <option value="{{ $num }}"
+                            {{ $month == $num ? 'selected' : '' }}>
+                            {{ $name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-md-1">
                     <label class="form-label form-label-sm">Requisition Type</label>
                     <select name="requisition_type" class="form-select form-select-sm">
                         <option value="All" {{ $requisitionType == 'All' ? 'selected' : '' }}>All Types</option>
@@ -44,9 +91,9 @@
                     <select name="work_location" class="form-select form-select-sm">
                         <option value="">All Locations</option>
                         @foreach($workLocations as $location)
-                            <option value="{{ $location }}" {{ request('work_location') == $location ? 'selected' : '' }}>
-                                {{ $location }}
-                            </option>
+                        <option value="{{ $location }}" {{ request('work_location') == $location ? 'selected' : '' }}>
+                            {{ $location }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -56,18 +103,18 @@
                     <select name="department_id" class="form-select form-select-sm">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                            <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
-                                {{ $dept->department_name }}
-                            </option>
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->department_name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Quick Search</label>
-                    <input type="text" name="search" class="form-control form-control-sm" 
-                           placeholder="Search by name, code, PAN, Aadhaar..." 
-                           value="{{ request('search') }}">
+                    <input type="text" name="search" class="form-control form-control-sm"
+                        placeholder="Search by name, code, PAN, Aadhaar..."
+                        value="{{ request('search') }}">
                 </div>
 
                 <div class="col-md-1">
@@ -79,94 +126,200 @@
         </div>
     </div>
 
-  
+    <!-- Statistics Cards -->
+    @if(isset($stats))
+    <div class="row mb-2 g-2">
+        <div class="col-md-3 col-6">
+            <div class="card shadow-sm border">
+                <div class="card-body py-2 px-3 text-center">
+                    <div class="small text-muted">Total Employees</div>
+                    <div class="fw-bold fs-6">{{ $stats['total_employees'] }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card shadow-sm border">
+                <div class="card-body py-2 px-3 text-center">
+                    <div class="small text-muted">Salary Processed</div>
+                    <div class="fw-bold fs-6">{{ $stats['salary_processed_count'] }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card shadow-sm border">
+                <div class="card-body py-2 px-3 text-center">
+                    <div class="small text-muted">Total Salary</div>
+                    <div class="fw-bold fs-6">₹ {{ number_format($stats['total_salary_amount'], 2) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card shadow-sm border">
+                <div class="card-body py-2 px-3 text-center">
+                    <div class="small text-muted">Average Salary</div>
+                    <div class="fw-bold fs-6">₹ {{ number_format($stats['average_salary'], 2) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Report Table -->
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-bordered mb-0" id="masterReportTable">
-                    <thead class="table-light">
+                <table class="table table-sm table-bordered table-striped table-hover mb-0" id="masterReportTable">
+                    <thead class="">
                         <tr>
-                            <th>#</th>
-                            <th>Party Code</th>
+                            <th>S.No</th>
                             <th>Name</th>
-                            <th>Type</th>
+                            <th>Agreement ID</th>
+                            <th>Code</th>
+                            <th>Function</th>
                             <th>Department</th>
-                            <th>Designation</th>
-                            <th>Work Location</th>
-                            <th>Contract Start</th>
-                            <th>Contract End</th>
-                            <th>Monthly Salary</th>
-                            {{--<th>Total Days</th>
-                            <th>Paid Days</th>
-                            <th>Absent Days</th>
-                            <th>Extra Amount</th>
-                            <th>Deduction Amount</th>
-                            <th>Net Pay</th>--}}
-                            <th>Bank Details</th>
-                            <th>Status</th>
+                            <th>Sub-Dept</th>
+                            <th>Crop Vertical</th>
+                            <th>Region</th>
+                            <th>Business Unit</th>
+                            <th>Location/HQ</th>
+                            <th>City</th>
+                            <th>State Name</th>
+                            <th>Address</th>
+                            <th>Pin</th>
+                            <th>E Mail</th>
+                            <th>Tel No</th>
+                            <th>Bank Account Name</th>
+                            <th>Bank Account Number</th>
+                            <th>IFSC Code</th>
+                            <th>Pan No</th>
+                            <th>Emp Designation</th>
+                            <th>Emp Grade</th>
+                            <th>Emp Reporting To</th>
+                            <th>RM Email</th>
+                            <th>Aadhaar No</th>
+                            <th>DOJ</th>
+                            <th>DOS</th>
+                            <th>Active/Deactive</th>
+                            <th>Remuneration</th>
+                            <th>Remarks</th>
+                            <th>Contract generate date</th>
+                            <th>Contract dispatch date</th>
+                            <th>Signed Contract Upload date</th>
+                            <th>Signed Contract dispatch date</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($candidates as $index => $candidate)
-                            @php
-                                $salary = $candidate->salaryProcessings->first();
-                            @endphp
-                            <tr>
-                                <td>{{ $candidates->firstItem() + $index }}</td>
-                                <td>
-                                    <span class="fw-semibold">{{ $candidate->candidate_code }}</span>
-                                </td>
-                                <td>
-                                    <div>{{ $candidate->candidate_name }}</div>
-                                    <small class="text-muted">{{ $candidate->mobile_no }}</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ $candidate->requisition_type }}</span>
-                                </td>
-                                <td>{{ $candidate->department->department_name ?? 'N/A' }}</td>
-                                <td>{{ $candidate->requisition_type ?? 'N/A' }}</td>
-                                <td>
-                                    {{ $candidate->work_location_hq }}
-                                </td>
-                               
-                                <td>{{ $candidate->contract_start_date ? date('d-m-Y', strtotime($candidate->contract_start_date)) : 'N/A' }}</td>
-                                <td>{{ $candidate->contract_end_date ? date('d-m-Y', strtotime($candidate->contract_end_date)) : 'N/A' }}</td>
-                                <td class="text-end">₹ {{ number_format($candidate->remuneration_per_month, 2) }}</td>
-                                <!-- <td class="text-center">{{ $salary ? $salary->total_days : 0 }}</td>
-                                <td class="text-center">{{ $salary ? $salary->paid_days : 0 }}</td>
-                                <td class="text-center">{{ $salary ? $salary->absent_days : 0 }}</td>
-                                <td class="text-end text-success">+ ₹ {{ number_format($salary ? $salary->extra_amount : 0, 2) }}</td>
-                                <td class="text-end text-danger">- ₹ {{ number_format($salary ? $salary->deduction_amount : 0, 2) }}</td>
-                                <td class="text-end fw-bold">₹ {{ number_format($salary ? $salary->net_pay : 0, 2) }}</td> -->
-                                <td>
-                                    <small>
-                                        <div>{{ $candidate->bank_name }}</div>
-                                        <div>Acc: {{ substr($candidate->bank_account_no, -4) }}****</div>
-                                        <div>IFSC: {{ $candidate->bank_ifsc }}</div>
-                                    </small>
-                                </td>
-                                <td>
-                                    @if($salary)
-                                        <span class="badge bg-success">Processed</span>
-                                        <div class="text-muted small">
-                                                    {{ optional(\Carbon\Carbon::parse($salary->processed_at))->format('d-m-Y') }}
-                                        </div>
-                                    @else
-                                        <span class="badge bg-warning">Pending</span>
-                                    @endif
-                                </td>
-                            </tr>
+                        @php
+                        $salary = $candidate->salaryProcessings->first();
+                        $function = $candidate->function;
+                        $department = $candidate->department;
+                        $vertical = $candidate->vertical;
+                        $region = $candidate->regionRef;
+                        $businessUnit = $candidate->businessUnit;
+                        $zone = $candidate->zoneRef;
+                        $territory = $candidate->territoryRef;
+
+                        // Get agreement documents
+                        $unsignedAgreement = $candidate->unsignedAgreements->first();
+                        $signedAgreement = $candidate->signedAgreements->first();
+                        @endphp
+                        <tr>
+                            <td>{{ $candidates->firstItem() + $index }}</td>
+                            <td>{{ $candidate->candidate_name }}</td>
+                            <td>
+                                @if($signedAgreement && $signedAgreement->agreement_number)
+                                {{ $signedAgreement->agreement_number }}
+                                @elseif($unsignedAgreement && $unsignedAgreement->agreement_number)
+                                {{ $unsignedAgreement->agreement_number }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>{{ $candidate->candidate_code }}</td>
+                            <td>{{ $function->function_name ?? ($function->function_name ?? '-') }}</td>
+                            <td>{{ $department->department_name ?? '-' }}</td>
+                            <td>{{ $candidate->subDepartmentRef?->sub_department_name ?? '-' }}</td>
+                            <td>{{ $candidate->vertical?->vertical_name ?? '-' }}</td>
+                            <td>{{ $candidate->regionRef?->region_name ?? '-' }}</td>
+                            <td>{{ $candidate->businessUnit?->business_unit_name ?? '-' }}</td>
+                            <td>{{ $candidate->work_location_hq ?? '-' }}</td>
+                            <td>{{ $candidate->cityMaster?->city_village_name ?? '-' }}</td>
+                            <td>{{ $candidate->workState?->state_name ?? '-' }}</td>
+                            <td>{{ $candidate->address_line_1 ?? '-' }}</td>
+                            <td>{{ $candidate->pin_code ?? '-' }}</td>
+                            <td>{{ $candidate->candidate_email ?? $candidate->alternate_email ?? '-' }}</td>
+                            <td>{{ $candidate->mobile_no ?? '-' }}</td>
+                            <td>{{ $candidate->account_holder_name ?? $candidate->candidate_name }}</td>
+                            <td>{{ $candidate->bank_account_no ?? '-' }}</td>
+                            <td>{{ $candidate->bank_ifsc ?? '-' }}</td>
+                            <td>{{ $candidate->pan_no ?? '-' }}</td>
+                            <td>{{ $candidate->requisition_type ?? '-' }}</td>
+                            <td>{{ $candidate->requisition_type ?? '-' }}</td>
+                            <td>{{ $candidate->reporting_to ?? '-' }}</td>
+                            <td>
+                                @if($candidate->reportingManager)
+                                {{ $candidate->reportingManager->emp_email ?? '-' }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>{{ $candidate->aadhaar_no ?? '-' }}</td>
+                            <td>{{ $candidate->contract_start_date ? \Carbon\Carbon::parse($candidate->contract_start_date)->format('d-M-Y') : '-' }}</td>
+                            <td>{{ $candidate->contract_end_date ? \Carbon\Carbon::parse($candidate->contract_end_date)->format('d-M-Y') : '-' }}</td>
+                            <td>
+                                @if($candidate->final_status == 'A')
+                                <span class="badge bg-success">Active</span>
+                                @elseif($candidate->final_status == 'D')
+                                <span class="badge bg-danger">Deactive</span>
+                                @else
+                                <span class="badge bg-secondary">{{ $candidate->final_status }}</span>
+                                @endif
+                            </td>
+                            <td class="text-end">₹ {{ number_format($candidate->remuneration_per_month ?? 0, 2) }}</td>
+                            <td>{{ $candidate->remarks ?? '-' }}</td>
+                            <td>
+                                @if($unsignedAgreement && $unsignedAgreement->created_at)
+                                {{ \Carbon\Carbon::parse($unsignedAgreement->created_at)->format('d-M-Y') }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
+                                @if($unsignedAgreement && $unsignedAgreement->courierDetails && $unsignedAgreement->courierDetails->dispatch_date)
+                                {{ \Carbon\Carbon::parse($unsignedAgreement->courierDetails->dispatch_date)->format('d-M-Y') }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
+                                @if($signedAgreement && $signedAgreement->created_at)
+                                {{ \Carbon\Carbon::parse($signedAgreement->created_at)->format('d-M-Y') }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
+                                @if($signedAgreement && $signedAgreement->courierDetails && $signedAgreement->courierDetails->dispatch_date)
+                                {{ \Carbon\Carbon::parse($signedAgreement->courierDetails->dispatch_date)->format('d-M-Y') }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="20" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="ri-inbox-line display-4"></i>
-                                        <h5 class="mt-2">No Party found</h5>
-                                        <p>Try adjusting your filters</p>
-                                    </div>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="35" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="ri-inbox-line display-4"></i>
+                                    <h5 class="mt-2">No records found</h5>
+                                    <p>Try adjusting your filters</p>
+                                </div>
+                            </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -184,157 +337,82 @@
         </div>
     </div>
 </div>
-
-<!-- Column Visibility Modal -->
-<div class="modal fade" id="columnVisibilityModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Show/Hide Columns</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row" id="columnVisibilityList">
-                    <!-- Columns will be populated by JavaScript -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="applyColumnVisibility()">Apply</button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 <style>
-   
     .table-responsive {
-    max-height: 65vh; /* adjust height as needed */
-    overflow-y: auto;
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+    
+    #masterReportTable {
+    font-size: 11px;
 }
 
 #masterReportTable thead th {
     position: sticky;
     top: 0;
-    z-index: 2;
-    background-color: #f8f9fa; /* same as table-light */
+    z-index: 10;
+    background-color: #e9ecef;
+    font-weight: 600;
+    padding: 6px 8px;
+    white-space: nowrap;
 }
-</style>
 
+#masterReportTable tbody td {
+    padding: 5px 8px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+    .report-table thead th {
+        background-color: #212529;
+        color: #fff;
+    }
+
+    .card.bg-primary {
+        background-color: #0d6efd !important;
+    }
+
+    .card.bg-success {
+        background-color: #198754 !important;
+    }
+
+    .card.bg-info {
+        background-color: #0dcaf0 !important;
+    }
+
+    .card.bg-warning {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+</style>e
 
 @push('scripts')
-
 <script>
-    // Column visibility state
-    const columnVisibility = {
-        0: true,  // #
-        1: true,  // Employee Code
-        2: true,  // Name
-        3: true,  // Type
-        4: true,  // Department
-        5: true,  // Designation
-        6: true,  // Work Location
-        7: true,  // Zone/Region
-        8: true,  // Contract Start
-        9: true,  // Contract End
-        10: true, // Monthly Salary
-        11: true, // Total Days
-        12: true, // Paid Days
-        13: true, // Absent Days
-        14: true, // Extra Amount
-        15: true, // Deduction Amount
-        16: true, // Net Pay
-        17: true, // Bank Details
-        18: true  // Status
-    };
-    
-    // Toggle column visibility modal
-    function toggleColumnVisibility() {
-        populateColumnVisibilityList();
-        new bootstrap.Modal(document.getElementById('columnVisibilityModal')).show();
-    }
-    
-    // Populate column visibility list
-    function populateColumnVisibilityList() {
-        const container = document.getElementById('columnVisibilityList');
-        const columns = [
-            'Serial Number', 'Party Code', 'Name', 'Type', 'Department', 
-            'Designation', 'Work Location','Contract Start', 
-            'Contract End', 'Monthly Salary', 'Total Days', 'Paid Days', 
-            'Absent Days', 'Extra Amount', 'Deduction Amount', 'Net Pay', 
-            'Bank Details', 'Status'
-        ];
-        
-        let html = '';
-        columns.forEach((col, index) => {
-            html += `
-                <div class="col-md-6 col-lg-4 column-checkbox">
-                    <div class="form-check">
-                        <input class="form-check-input column-visibility-checkbox" 
-                               type="checkbox" 
-                               id="col${index}" 
-                               data-index="${index}"
-                               ${columnVisibility[index] ? 'checked' : ''}>
-                        <label class="form-check-label" for="col${index}">
-                            ${col}
-                        </label>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    // Apply column visibility changes
-    function applyColumnVisibility() {
-        const checkboxes = document.querySelectorAll('.column-visibility-checkbox');
-        checkboxes.forEach(cb => {
-            const index = parseInt(cb.dataset.index);
-            columnVisibility[index] = cb.checked;
-        });
-        
-        // Hide/show columns
-        const table = document.getElementById('masterReportTable');
-        const headers = table.querySelectorAll('thead th');
-        const rows = table.querySelectorAll('tbody tr');
-        
-        headers.forEach((header, index) => {
-            header.style.display = columnVisibility[index] ? '' : 'none';
-        });
-        
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            cells.forEach((cell, index) => {
-                cell.style.display = columnVisibility[index] ? '' : 'none';
-            });
-        });
-        
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('columnVisibilityModal')).hide();
-    }
-    
     // Export function
     function exportReport() {
-        const monthYear = document.getElementById('monthYear').value;
+        const financialYear = document.getElementById('financialYear').value;
+        const month = document.getElementById('month').value;
+
         const requisitionType = document.querySelector('[name="requisition_type"]').value;
         const workLocation = document.querySelector('[name="work_location"]').value;
         const departmentId = document.querySelector('[name="department_id"]').value;
         const search = document.querySelector('[name="search"]').value;
-        
-        if (!monthYear) {
-            toastr.error("Please select month-year first");
+
+        if (!financialYear || !month) {
+            toastr.error("Please select financial year and month");
             return;
         }
-        
-        // Extract month and year from month-year input
-        const [year, month] = monthYear.split('-');
-        
-        // Build export URL
-        let url = `{{ route('master.export') }}?month=${month}&year=${year}`;
 
-        
+
+        // Extract month and year from month-year input
+        const [startYear, endYear] = financialYear.split('-');
+        let year = (month >= 4) ? startYear : endYear;
+
+        // Build export URL
+        let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}&month=${month}&year=${year}`;
+
         // Add filters
         if (requisitionType && requisitionType !== 'All') {
             url += `&requisition_type=${requisitionType}`;
@@ -348,8 +426,7 @@
         if (search) {
             url += `&search=${encodeURIComponent(search)}`;
         }
-        
-        
+
         // Show loading
         Swal.fire({
             title: 'Exporting Master Report',
@@ -359,26 +436,34 @@
                 Swal.showLoading();
             }
         });
-        
+
         // Trigger download
         window.location.href = url;
-        
+
         // Close loading after delay
         setTimeout(() => {
             Swal.close();
             toastr.success('Master report export started. Check your downloads.');
-        }, 1000);
+        }, 2000);
     }
-    
+
     // Auto-submit form when main filters change
-    document.getElementById('monthYear').addEventListener('change', function() {
+    document.getElementById('month').addEventListener('change', function() {
         document.getElementById('filterForm').submit();
     });
-    
+
     document.querySelector('[name="requisition_type"]').addEventListener('change', function() {
         document.getElementById('filterForm').submit();
     });
-    
+
+    document.querySelector('[name="work_location"]').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+
+    document.querySelector('[name="department_id"]').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+
     // Debounced search
     let searchTimeout;
     document.querySelector('[name="search"]').addEventListener('keyup', function(e) {
@@ -388,14 +473,6 @@
                 document.getElementById('filterForm').submit();
             }
         }, 500);
-    });
-    
-    // Initialize tooltips
-    document.addEventListener('DOMContentLoaded', function() {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
     });
 </script>
 @endpush

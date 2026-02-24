@@ -259,7 +259,9 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
 
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
     Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
-
+    
+    Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
+    ->name('salary.toggle.payment');
     
 
 });
@@ -275,11 +277,11 @@ Route::post('/hierarchy/region-by-zone', [HierarchyController::class, 'getRegion
 Route::post('/hierarchy/territory-by-region', [HierarchyController::class, 'getTerritoryByRegion'])->name('hierarchy.territory.by.region');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/master', [ReportController::class, 'master'])->name('master');
-    Route::get('/master-report/export', [ReportController::class, 'masterExport'])->name('master.export');
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/master', [ReportController::class, 'master'])->name('master');
+//     Route::get('/master-report/export', [ReportController::class, 'masterExport'])->name('master.export');
 
-});
+// });
 
 Route::middleware(['auth'])->group(function () {
     // Direct creation routes
@@ -318,6 +320,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/import/documents/{documentId}/download', [ImportController::class, 'downloadDocument'])->name('import.documents.download');
     Route::post('/import/candidates/update-candidate-data', [ImportController::class, 'updateCandidateData'])->name('import.update.candidate.data');
 });
+
+Route::middleware(['auth'])
+    ->prefix('reports')
+    ->name('reports.')
+    ->group(function () {
+
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+
+        Route::get('/master', [ReportController::class, 'master'])->name('master');
+        Route::get('/remuneration', [ReportController::class, 'remuneration'])->name('remuneration');
+        Route::get('/vendor-details', [ReportController::class, 'vendorDetails'])->name('vendor-details');
+
+        Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
+        Route::get('/remuneration/export', [ReportController::class, 'remunerationExport'])->name('remuneration.export');
+        Route::get('/vendor-details/export', [ReportController::class, 'vendorDetailsExport'])->name('vendor-details.export');
+    });
+
 
 // Route::post('/test/agreement-api', function(Request $request) {
 //     \Log::info('Agreement API Test Payload Received:', $request->all());

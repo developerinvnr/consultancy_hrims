@@ -95,10 +95,16 @@
     $arrearNet = $salary->arrear_amount ?? 0;
 
     // Reverse calculate each separately
-    $baseGross = $baseNet > 0 ? round($baseNet / (1 - $tdsRate), 2) : 0;
-    $sundayGross = $sundayNet > 0 ? round($sundayNet / (1 - $tdsRate), 2) : 0;
-    $arrearGross = $arrearNet > 0 ? round($arrearNet / (1 - $tdsRate), 2) : 0;
+    $baseGrossRaw = $baseNet > 0 ? ($baseNet / (1 - $tdsRate)) : 0;
+    $sundayGrossRaw = $sundayNet > 0 ? ($sundayNet / (1 - $tdsRate)) : 0;
+    $arrearGrossRaw = $arrearNet > 0 ? ($arrearNet / (1 - $tdsRate)) : 0;
 
+    // Round each to nearest rupee
+    $baseGross = round($baseGrossRaw);
+    $sundayGross = round($sundayGrossRaw);
+    $arrearGross = round($arrearGrossRaw);
+
+    // Recalculate total from rounded values
     $grossTotal = $baseGross + $sundayGross + $arrearGross;
 
     function numberToWords($number)
@@ -132,37 +138,37 @@
 
         <!-- SERVICE PROVIDER DETAILS CENTER -->
         <div class="provider-details">
-    <strong>{{ strtoupper($salary->candidate->candidate_name ?? '') }}</strong><br>
+            <strong>{{ strtoupper($salary->candidate->candidate_name ?? '') }}</strong><br>
 
-    @if(!empty($salary->candidate->address_line_1))
-        {{ $salary->candidate->address_line_1 }}<br>
-    @endif
+            @if(!empty($salary->candidate->address_line_1))
+            {{ $salary->candidate->address_line_1 }}<br>
+            @endif
 
-    @php
-        $city  = $salary->candidate->cityMaster->name ?? null;
-        $state = $salary->candidate->residenceState->state_name ?? null;
-        $pin   = $salary->candidate->pin_code ?? null;
+            @php
+            $city = $salary->candidate->cityMaster->name ?? null;
+            $state = $salary->candidate->residenceState->state_name ?? null;
+            $pin = $salary->candidate->pin_code ?? null;
 
-        $locationParts = array_filter([$city, $state]);
-        $locationLine = implode(', ', $locationParts);
+            $locationParts = array_filter([$city, $state]);
+            $locationLine = implode(', ', $locationParts);
 
-        if($pin){
+            if($pin){
             $locationLine .= ' - ' . $pin;
-        }
-    @endphp
+            }
+            @endphp
 
-    @if(!empty($locationLine))
-        {{ $locationLine }}<br>
-    @endif
+            @if(!empty($locationLine))
+            {{ $locationLine }}<br>
+            @endif
 
-    @if(!empty($salary->candidate->pan_no))
-        PAN: {{ $salary->candidate->pan_no }}<br>
-    @endif
+            @if(!empty($salary->candidate->pan_no))
+            PAN: {{ $salary->candidate->pan_no }}<br>
+            @endif
 
-    @if(!empty($salary->candidate->mobile_no))
-        Mobile: {{ $salary->candidate->mobile_no }}
-    @endif
-</div>
+            @if(!empty($salary->candidate->mobile_no))
+            Mobile: {{ $salary->candidate->mobile_no }}
+            @endif
+        </div>
 
         <!-- BILL TO -->
         <div class="section">
@@ -187,20 +193,20 @@
                         {{ date('F Y', strtotime("{$salary->year}-{$salary->month}-01")) }}
                         as per agreement.
                     </td>
-                    <td class="right">{{ number_format($baseGross, 2) }}</td>
+                    <td class="right">{{ number_format($baseGross) }}</td>
                 </tr>
 
                 @if($sundayNet > 0)
                 <tr>
                     <td>Charges for additional services (Sunday)</td>
-                    <td class="right">{{ number_format($sundayGross, 2) }}</td>
+                    <td class="right">{{ number_format($sundayGross) }}</td>
                 </tr>
                 @endif
 
                 @if($arrearNet > 0)
                 <tr>
                     <td>Charges for services not covered above (Arrear)</td>
-                    <td class="right">{{ number_format($arrearGross, 2) }}</td>
+                    <td class="right">{{ number_format($arrearGross) }}</td>
                 </tr>
                 @endif
 

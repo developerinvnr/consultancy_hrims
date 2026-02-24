@@ -177,16 +177,41 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="holdReleaseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Payment Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hold_salary_id">
+                <input type="hidden" id="hold_action">
+
+                <div class="mb-3">
+                    <label class="form-label">Remark (Required)</label>
+                    <textarea id="hold_remark" class="form-control" rows="3" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" onclick="saveHoldRelease()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
 <style>
     #salaryTable thead th {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    z-index: 10;
-}
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 10;
+    }
+
     .badge-pending {
         background-color: #ffc107;
         color: black;
@@ -228,15 +253,15 @@
     let dailyRate = 0;
     let localArrearData = {}; // Store arrear data locally before processing
 
-   flatpickr("#monthYear", {
-    plugins: [
-        new monthSelectPlugin({
-            shorthand: true,        // Jan, Feb, Mar
-            dateFormat: "Y-m",      // 2026-02
-            altFormat: "F Y"        // February 2026
-        })
-    ]
-});
+    flatpickr("#monthYear", {
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true, // Jan, Feb, Mar
+                dateFormat: "Y-m", // 2026-02
+                altFormat: "F Y" // February 2026
+            })
+        ]
+    });
 
 
     // Load list when month or requisition type changes
@@ -282,8 +307,18 @@
 
         let html = '';
         records.forEach(r => {
-            const statusClass = r.processed ? 'success' : 'warning';
-            const statusText = r.processed ? 'Processed' : 'Pending';
+            let statusClass = 'warning';
+            let statusText = 'Pending';
+
+            if (r.processed) {
+                if (r.payment_instruction === 'hold') {
+                    statusClass = 'danger';
+                    statusText = 'Held';
+                } else {
+                    statusClass = 'success';
+                    statusText = 'Released';
+                }
+            }
             const requisitionType = r.candidate?.requisition_type || r.requisition_type || '-';
             const monthlySalary = Number(r.monthly_salary || 0);
             const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));
@@ -352,12 +387,27 @@
                 </td>
                 <td>
                     ${r.processed ? `
-                        <a href="/hr/salary/payslip/${r.id}" class="btn btn-sm btn-outline-primary" target="_blank">
-                            <i class="ri-download-line"></i> Payslip
-                        </a>
-                    ` : `
-                        <span class="text-muted small">Not processed</span>
-                    `}
+    <div class="d-flex gap-1 flex-wrap">
+        <a href="/hr/salary/payslip/${r.id}" 
+           class="btn btn-sm btn-outline-primary" target="_blank">
+            <i class="ri-download-line"></i>
+        </a>
+
+        ${r.payment_instruction === 'hold' ? `
+            <button class="btn btn-sm btn-success"
+                onclick="openHoldReleaseModal(${r.id}, 'release')">
+                Release
+            </button>
+        ` : `
+            <button class="btn btn-sm btn-danger"
+                onclick="openHoldReleaseModal(${r.id}, 'hold')">
+                Hold
+            </button>
+        `}
+    </div>
+` : `
+    <span class="text-muted small">Not processed</span>
+`}
                 </td>
             </tr>`;
         });
@@ -413,6 +463,41 @@
 
         // Show modal
         $('#arrearModal').modal('show');
+    }
+
+    function openHoldReleaseModal(salaryId, action) {
+        $('#hold_salary_id').val(salaryId);
+        $('#hold_action').val(action);
+        $('#hold_remark').val('');
+        $('#holdReleaseModal').modal('show');
+    }
+
+    function saveHoldRelease() {
+        const salaryId = $('#hold_salary_id').val();
+        const action = $('#hold_action').val();
+        const remark = $('#hold_remark').val();
+
+        if (!remark.trim()) {
+            toastr.error("Remark is required");
+            return;
+        }
+
+        $.post("{{ route('salary.toggle.payment') }}", {
+            _token: '{{ csrf_token() }}',
+            salary_id: salaryId,
+            action: action,
+            remark: remark
+        }, function(response) {
+            if (response.success) {
+                toastr.success(response.message);
+                $('#holdReleaseModal').modal('hide');
+                loadSalaryList();
+            } else {
+                toastr.error(response.message);
+            }
+        }).fail(function(xhr) {
+            toastr.error(xhr.responseJSON?.message || "Error occurred");
+        });
     }
 
     // Calculate arrear on days change
@@ -891,17 +976,17 @@
     }
 
     // Select / Unselect all rows
-$(document).on('change', '#selectAll', function () {
-    const isChecked = $(this).is(':checked');
-    $('.row-check').prop('checked', isChecked);
-});
+    $(document).on('change', '#selectAll', function() {
+        const isChecked = $(this).is(':checked');
+        $('.row-check').prop('checked', isChecked);
+    });
 
-// Auto update "Select All" when individual checkbox changes
-$(document).on('change', '.row-check', function () {
-    const total = $('.row-check').length;
-    const checked = $('.row-check:checked').length;
+    // Auto update "Select All" when individual checkbox changes
+    $(document).on('change', '.row-check', function() {
+        const total = $('.row-check').length;
+        const checked = $('.row-check:checked').length;
 
-    $('#selectAll').prop('checked', total > 0 && total === checked);
-});
+        $('#selectAll').prop('checked', total > 0 && total === checked);
+    });
 </script>
 @endpush

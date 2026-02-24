@@ -32,7 +32,7 @@ class SalaryCalculator
 }
 
         // 2️⃣ Month stats
-        $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $totalDays = \Carbon\Carbon::create($year, $month)->daysInMonth;
 
         $sundays = 0;
         for ($d = 1; $d <= $totalDays; $d++) {

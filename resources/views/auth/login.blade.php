@@ -10,7 +10,7 @@
             <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12" style="position: relative;">
                 <h1 class="text-white welcome-text"><b>Welcome</b></h1>
                 <div class="ad-auth-img">
-                    <img src="{{ asset('images/login-logo.png') }}" alt="VNR Seeds Logo">
+                    <img src="{{ asset('images/login_logo.png') }}" alt="VNR Seeds Logo">
                 </div>
                 
                 @if(session('status'))

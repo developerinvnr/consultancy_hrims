@@ -191,7 +191,7 @@ class SalaryController extends Controller
             $salary = SalaryProcessing::findOrFail($request->salary_id);
 
             // Only update if salary is already processed
-            if (!$salary->processed_at) {
+            if ($salary->status !== 'processed') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Salary is not processed yet. Please process salary first or use local calculation.'
@@ -328,8 +328,8 @@ class SalaryController extends Controller
         $salary = SalaryProcessing::with('candidate')->findOrFail($id);
 
         if ($salary->status !== 'processed') {
-          abort(403, 'Payslip can only be downloaded after salary is processed.');
-         }
+            abort(403, 'Payslip can only be downloaded after salary is processed.');
+        }
 
         $pdf = Pdf::loadView('hr.salary.payslip', compact('salary'))
             ->setPaper('a4', 'portrait');
@@ -771,5 +771,40 @@ class SalaryController extends Controller
             new ManagementSalaryReportExport($year, $filters),
             "{$filename}.xlsx"
         );
+    }
+
+    public function togglePayment(Request $request)
+    {
+        $request->validate([
+            'salary_id' => 'required|exists:salary_processing,id',
+            'action'    => 'required|in:hold,release',
+            'remark'    => 'required|string|max:500'
+        ]);
+
+        $salary = SalaryProcessing::findOrFail($request->salary_id);
+
+        if ($salary->status !== 'processed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Salary must be processed first.'
+            ], 400);
+        }
+
+        if ($request->action === 'hold') {
+            $salary->payment_instruction = 'hold';
+            $salary->hr_hold_remark = $request->remark;
+            $salary->held_at = now();
+        } else {
+            $salary->payment_instruction = 'release';
+            $salary->hr_release_remark = $request->remark;
+            $salary->released_at = now();
+        }
+
+        $salary->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment status updated successfully.'
+        ]);
     }
 }

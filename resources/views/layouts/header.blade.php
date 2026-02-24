@@ -1,6 +1,6 @@
 <head>
     <meta charset="utf-8" />
-    <title>Consultancy | Home | Consultancy Self Service  Portal</title>
+    <title>Peepal Bonsai | Home | Peepal Self Service  Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- App favicon -->

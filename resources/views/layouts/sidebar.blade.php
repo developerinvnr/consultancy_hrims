@@ -12,7 +12,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 <img src="{{ asset('assets/images/mini-logo.png') }}" height="50" alt="Mini Logo">
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('assets/images/login-logo.png') }}" height="60" alt="Main Logo">
+                <img src="{{ asset('assets/images/login_logo.png') }}" height="80" alt="Main Logo">
             </span>
         </a>
         <a href="#" class="logo logo-light">
@@ -20,7 +20,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 <img src="{{ asset('assets/images/mini-logo.png') }}" height="50" alt="Mini Logo">
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('assets/images/login-logo.png') }}" height="60" alt="Main Logo">
+                <img src="{{ asset('assets/images/login_logo.png') }}" height="60" alt="Main Logo">
             </span>
         </a>
         <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
@@ -141,12 +141,12 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
-                <li class="nav-item">
+                {{--<li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
                         <i class="ri-database-2-line"></i>
                         <span>Master Report</span>
                     </a>
-                </li>
+                </li>--}}
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.detailed.report.*')"
@@ -154,7 +154,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                         <i class="ri-money-rupee-circle-line"></i>
                         <span>Remuneration Report</span>
                     </a>
-                </li>                
+                </li>
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('communication.*')" href="{{ route('communication.index') }}">
@@ -164,12 +164,17 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </li>
                 @endif
 
-                <li class="nav-item">
+                {{--<li class="nav-item">
                     <a href="{{ route('salary.management.report') }}" class="nav-link">
-                        <i class="ri-bar-chart-line"></i>
-                        <span>Reports</span>
-                    </a>
-                </li>
+                <i class="ri-bar-chart-line"></i>
+                <span>Reports</span>
+                </a>
+                </li>--}}
+
+                <a href="{{ route('reports.index') }}" class="nav-link">
+                    <i class="ri-bar-chart-line"></i>
+                    <span>Reports</span>
+                </a>
 
 
             </ul>
