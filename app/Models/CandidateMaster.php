@@ -46,6 +46,7 @@ class CandidateMaster extends Model
         'contract_duration',
         'contract_end_date',
         'remuneration_per_month',
+        'contract_amount',
         'account_holder_name',
         'bank_account_no',
         'bank_ifsc',

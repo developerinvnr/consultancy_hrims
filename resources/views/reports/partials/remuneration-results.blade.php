@@ -21,7 +21,7 @@
 				<th>Previous month</th>
 				<th>Arrear</th>
 				<th>Deduction</th>
-				<th>Based on paid days</th>
+				<th>Final Payable</th>
 				<th>Payment Instruction</th>
 				<th>HR Remarks</th>
 				<th>TDS 2%</th>
