@@ -865,6 +865,15 @@ class HrAdminController extends Controller
 				);
 			}
 
+			$baseAmount = (float) $requisition->remuneration_per_month;
+
+			if (in_array($requisition->requisition_type, ['Contractual', 'TFA'])) {
+				$tdsAmount      = round($baseAmount * 0.02, 2);
+				$contractAmount = round($baseAmount + $tdsAmount, 2);
+			} else {
+				$contractAmount = $baseAmount;
+			}
+
 			// Create candidate master record WITH ALL REQUIRED FIELDS
 			$candidate = CandidateMaster::create([
 				'candidate_code' => $candidateCode,
@@ -902,6 +911,7 @@ class HrAdminController extends Controller
 				'leave_credited' => $leaveCredited,
 				'contract_end_date' => $requisition->contract_end_date,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
+				'contract_amount'        => $contractAmount,
 				'other_reimbursement_required' => $requisition->other_reimbursement_required,
 				'out_of_pocket_required' => $requisition->out_of_pocket_required,
 				'account_holder_name' => $requisition->account_holder_name,
