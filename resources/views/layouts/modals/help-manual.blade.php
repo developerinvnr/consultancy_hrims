@@ -11,7 +11,7 @@
 
             <div class="modal-body p-0">
                 <iframe 
-                    src="{{ asset('help-manuals/Consultancy_HRIMS_User_Manual.pdf') }}#toolbar=1"
+                    src="{{ asset('help-manuals/Peepal_Bonsai_User_Manual.pdf') }}#toolbar=1"
                     style="width:100%; height:75vh; border:none;">
                 </iframe>
             </div>

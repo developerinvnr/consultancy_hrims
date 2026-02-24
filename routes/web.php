@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function () {
     // ✅ Help Manual Download (GLOBAL)
     Route::get('/download-manual', function () {
         return response()->download(
-            public_path('help-manuals/Consultancy_HRIMS_User_Manual.pdf')
+            public_path('help-manuals/Peepal_Bonsai_User_Manual.pdf')
         );
     })->name('download.manual');
 
