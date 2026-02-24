@@ -40,7 +40,7 @@
                         @for($y = $startYear; $y <= $endYear; $y++)
                             @php $fy=$y . '-' . ($y + 1); @endphp
                             <option value="{{ $fy }}"
-                            {{ ($financialYear ?? '') == $fy ? 'selected' : '' }}>
+                            {{ request('financial_year') == $fy ? 'selected' : '' }}>
                             {{ $fy }}
                             </option>
                             @endfor
@@ -372,65 +372,45 @@
 <script>
     // Export function
     function exportReport() {
-        const financialYear = document.getElementById('financialYear').value;
-        const month = document.getElementById('month').value;
+    const financialYear = document.getElementById('financialYear').value;
+    const status = document.querySelector('[name="status"]').value;
+    const requisitionType = document.querySelector('[name="requisition_type"]').value;
+    const workLocation = document.querySelector('[name="work_location"]').value;
+    const departmentId = document.querySelector('[name="department_id"]').value;
+    const search = document.querySelector('[name="search"]').value;
 
-        const requisitionType = document.querySelector('[name="requisition_type"]').value;
-        const workLocation = document.querySelector('[name="work_location"]').value;
-        const departmentId = document.querySelector('[name="department_id"]').value;
-        const search = document.querySelector('[name="search"]').value;
-
-        if (!financialYear || !month) {
-            toastr.error("Please select financial year and month");
-            return;
-        }
-
-
-        // Extract month and year from month-year input
-        const [startYear, endYear] = financialYear.split('-');
-        let year = (month >= 4) ? startYear : endYear;
-
-        // Build export URL
-        let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}&month=${month}&year=${year}`;
-
-        // Add filters
-        if (requisitionType && requisitionType !== 'All') {
-            url += `&requisition_type=${requisitionType}`;
-        }
-        if (workLocation) {
-            url += `&work_location=${encodeURIComponent(workLocation)}`;
-        }
-        if (departmentId) {
-            url += `&department_id=${departmentId}`;
-        }
-        if (search) {
-            url += `&search=${encodeURIComponent(search)}`;
-        }
-
-        // Show loading
-        Swal.fire({
-            title: 'Exporting Master Report',
-            html: 'Please wait while we generate the Excel file...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        // Trigger download
-        window.location.href = url;
-
-        // Close loading after delay
-        setTimeout(() => {
-            Swal.close();
-            toastr.success('Master report export started. Check your downloads.');
-        }, 2000);
+    if (!financialYear) {
+        toastr.error("Please select financial year");
+        return;
     }
 
+    let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}`;
+
+    if (status && status !== 'All') {
+        url += `&status=${status}`;
+    }
+
+    if (requisitionType && requisitionType !== 'All') {
+        url += `&requisition_type=${requisitionType}`;
+    }
+
+    if (workLocation) {
+        url += `&work_location=${encodeURIComponent(workLocation)}`;
+    }
+
+    if (departmentId) {
+        url += `&department_id=${departmentId}`;
+    }
+
+    if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+    }
+
+    window.location.href = url;
+}
+
     // Auto-submit form when main filters change
-    document.getElementById('month').addEventListener('change', function() {
-        document.getElementById('filterForm').submit();
-    });
+   
 
     document.querySelector('[name="requisition_type"]').addEventListener('change', function() {
         document.getElementById('filterForm').submit();

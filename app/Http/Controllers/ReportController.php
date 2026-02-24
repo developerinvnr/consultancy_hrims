@@ -41,133 +41,135 @@ class ReportController extends Controller
      * Display master report
      */
     public function master(Request $request)
-{
-    $status = $request->get('status', 'All');
-    $requisitionType = $request->get('requisition_type', 'All');
-    $workLocation = $request->get('work_location', '');
-    $departmentId = $request->get('department_id', '');
-    $search = $request->get('search', '');
+    {
+        $financialYear = $request->get('financial_year');
+        $status = $request->get('status', 'All');
+        $requisitionType = $request->get('requisition_type', 'All');
+        $workLocation = $request->get('work_location', '');
+        $departmentId = $request->get('department_id', '');
+        $search = $request->get('search', '');
 
-    // Build base query
-    $query = CandidateMaster::query();
+        // Build base query
+        $query = CandidateMaster::query();
 
-    // Apply Status filter
-    if ($status !== 'All') {
-        $query->where('final_status', $status);
-    } else {
-        $query->whereIn('final_status', ['A', 'D']);
+        // Apply Status filter
+        if ($status !== 'All') {
+            $query->where('final_status', $status);
+        } else {
+            $query->whereIn('final_status', ['A', 'D']);
+        }
+
+        // Apply requisition type filter
+        if ($requisitionType !== 'All') {
+            $query->where('requisition_type', $requisitionType);
+        }
+
+        // Apply work location filter
+        if (!empty($workLocation)) {
+            $query->where('work_location_hq', $workLocation);
+        }
+
+        // Apply department filter
+        if (!empty($departmentId)) {
+            $query->where('department_id', $departmentId);
+        }
+
+        // Apply search filter
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('candidate_code', 'like', "%{$search}%")
+                    ->orWhere('candidate_name', 'like', "%{$search}%")
+                    ->orWhere('mobile_no', 'like', "%{$search}%")
+                    ->orWhere('pan_no', 'like', "%{$search}%")
+                    ->orWhere('aadhaar_no', 'like', "%{$search}%")
+                    ->orWhere('bank_account_no', 'like', "%{$search}%")
+                    ->orWhere('father_name', 'like', "%{$search}%");
+            });
+        }
+
+        $candidates = $query
+            ->with('department')
+            ->orderBy('candidate_code')
+            ->paginate(20)
+            ->withQueryString();
+
+        $stats = $this->getMasterReportStats(
+            $status,
+            $requisitionType,
+            $workLocation,
+            $departmentId
+        );
+
+        $workLocations = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereNotNull('work_location_hq')
+            ->where('work_location_hq', '!=', '')
+            ->distinct()
+            ->orderBy('work_location_hq')
+            ->pluck('work_location_hq');
+
+        $departments = CoreDepartment::orderBy('department_name')->get();
+
+        return view('reports.master', compact(
+            'candidates',
+            'financialYear',
+            'status',
+            'requisitionType',
+            'workLocation',
+            'departmentId',
+            'search',
+            'workLocations',
+            'departments',
+            'stats'
+        ));
     }
-
-    // Apply requisition type filter
-    if ($requisitionType !== 'All') {
-        $query->where('requisition_type', $requisitionType);
-    }
-
-    // Apply work location filter
-    if (!empty($workLocation)) {
-        $query->where('work_location_hq', $workLocation);
-    }
-
-    // Apply department filter
-    if (!empty($departmentId)) {
-        $query->where('department_id', $departmentId);
-    }
-
-    // Apply search filter
-    if (!empty($search)) {
-        $query->where(function ($q) use ($search) {
-            $q->where('candidate_code', 'like', "%{$search}%")
-                ->orWhere('candidate_name', 'like', "%{$search}%")
-                ->orWhere('mobile_no', 'like', "%{$search}%")
-                ->orWhere('pan_no', 'like', "%{$search}%")
-                ->orWhere('aadhaar_no', 'like', "%{$search}%")
-                ->orWhere('bank_account_no', 'like', "%{$search}%")
-                ->orWhere('father_name', 'like', "%{$search}%");
-        });
-    }
-
-    $candidates = $query
-        ->with('department')
-        ->orderBy('candidate_code')
-        ->paginate(20)
-        ->withQueryString();
-
-    $stats = $this->getMasterReportStats(
-        $status,
-        $requisitionType,
-        $workLocation,
-        $departmentId
-    );
-
-    $workLocations = CandidateMaster::whereIn('final_status', ['A', 'D'])
-        ->whereNotNull('work_location_hq')
-        ->where('work_location_hq', '!=', '')
-        ->distinct()
-        ->orderBy('work_location_hq')
-        ->pluck('work_location_hq');
-
-    $departments = CoreDepartment::orderBy('department_name')->get();
-
-    return view('reports.master', compact(
-        'candidates',
-        'status',
-        'requisitionType',
-        'workLocation',
-        'departmentId',
-        'search',
-        'workLocations',
-        'departments',
-        'stats'
-    ));
-}
     /**
      * Get statistics for master report
      */
-private function getMasterReportStats($status, $requisitionType, $workLocation, $departmentId)
-{
-    $candidateQuery = CandidateMaster::query();
+    private function getMasterReportStats($status, $requisitionType, $workLocation, $departmentId)
+    {
+        $candidateQuery = CandidateMaster::query();
 
-    if ($status !== 'All') {
-        $candidateQuery->where('final_status', $status);
-    } else {
-        $candidateQuery->whereIn('final_status', ['A', 'D']);
-    }
+        if ($status !== 'All') {
+            $candidateQuery->where('final_status', $status);
+        } else {
+            $candidateQuery->whereIn('final_status', ['A', 'D']);
+        }
 
-    if ($requisitionType !== 'All') {
-        $candidateQuery->where('requisition_type', $requisitionType);
-    }
+        if ($requisitionType !== 'All') {
+            $candidateQuery->where('requisition_type', $requisitionType);
+        }
 
-    if (!empty($workLocation)) {
-        $candidateQuery->where('work_location_hq', $workLocation);
-    }
+        if (!empty($workLocation)) {
+            $candidateQuery->where('work_location_hq', $workLocation);
+        }
 
-    if (!empty($departmentId)) {
-        $candidateQuery->where('department_id', $departmentId);
-    }
+        if (!empty($departmentId)) {
+            $candidateQuery->where('department_id', $departmentId);
+        }
 
-    $salaryStats = SalaryProcessing::join(
+        $salaryStats = SalaryProcessing::join(
             'candidate_master',
             'salary_processings.candidate_id',
             '=',
             'candidate_master.id'
         )
-        ->when($status !== 'All', function ($q) use ($status) {
-            $q->where('candidate_master.final_status', $status);
-        })
-        ->select(
-            DB::raw('COUNT(DISTINCT candidate_id) as processed_count'),
-            DB::raw('SUM(net_pay) as total_salary'),
-            DB::raw('AVG(net_pay) as avg_salary')
-        )
-        ->first();
+            ->when($status !== 'All', function ($q) use ($status) {
+                $q->where('candidate_master.final_status', $status);
+            })
+            ->select(
+                DB::raw('COUNT(DISTINCT candidate_id) as processed_count'),
+                DB::raw('SUM(net_pay) as total_salary'),
+                DB::raw('AVG(net_pay) as avg_salary')
+            )
+            ->first();
 
-    return [
-        'total_employees' => $candidateQuery->count(),
-        'salary_processed_count' => $salaryStats->processed_count ?? 0,
-        'total_salary_amount' => $salaryStats->total_salary ?? 0,
-        'average_salary' => $salaryStats->avg_salary ?? 0,
-    ];
-}
+        return [
+            'total_employees' => $candidateQuery->count(),
+            'salary_processed_count' => $salaryStats->processed_count ?? 0,
+            'total_salary_amount' => $salaryStats->total_salary ?? 0,
+            'average_salary' => $salaryStats->avg_salary ?? 0,
+        ];
+    }
     /**
      * Display remuneration report
      */
@@ -310,26 +312,26 @@ private function getMasterReportStats($status, $requisitionType, $workLocation, 
     {
         $request->validate([
             'financial_year' => 'required|string',
-            'month' => 'required|numeric|between:1,12',
+            'status' => 'nullable|string|in:A,D,All',
             'requisition_type' => 'nullable|string|in:Contractual,TFA,CB,All',
             'work_location' => 'nullable|string|max:255',
             'department_id' => 'nullable|integer|exists:core_departments,id',
             'search' => 'nullable|string|max:255',
+
         ]);
 
-        $month = (int) $request->month;
-        $year = (int) $request->year;
+
 
         return Excel::download(
             new MasterReportExport(
-                $month,
-                $year,
+                $request->financial_year,
+                $request->status ?? 'All',
                 $request->requisition_type ?? 'All',
                 $request->work_location ?? '',
                 $request->department_id ?? '',
                 $request->search ?? ''
             ),
-            "Master_Report_{$month}_{$year}.xlsx"
+            "Master_Report_{$request->financial_year}.xlsx"
         );
     }
 

@@ -172,7 +172,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </li>--}}
 
                 <a href="{{ route('reports.index') }}" class="nav-link">
-                    <i class="ri-bar-chart-line"></i>
+                    <i class="ri-file-chart-line"></i>
                     <span>Reports</span>
                 </a>
 

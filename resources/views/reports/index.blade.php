@@ -6,13 +6,15 @@
     <div class="row mb-4">
         <div class="col-12">
             <h4 class="mb-0">Reports Dashboard</h4>
-            <small class="text-muted">Generate and export HR reports</small>
+            <small class="text-muted">Generate and export reports</small>
         </div>
     </div>
 
     <div class="row g-3">
 
         <!-- Master Report -->
+         @if(auth()->user()->hasAnyRole(['hr_admin']))
+
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -41,6 +43,8 @@
                 </div>
             </div>
         </div>
+
+        @endif
 
          <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
