@@ -864,8 +864,7 @@ class HrAdminController extends Controller
 					$requisition->contract_end_date
 				);
 			}
-			$remuneration = $requisition->remuneration_per_month;
-            $contractAmount = round(($remuneration / 98) * 2, 2);
+
 			// Create candidate master record WITH ALL REQUIRED FIELDS
 			$candidate = CandidateMaster::create([
 				'candidate_code' => $candidateCode,
@@ -903,7 +902,6 @@ class HrAdminController extends Controller
 				'leave_credited' => $leaveCredited,
 				'contract_end_date' => $requisition->contract_end_date,
 				'remuneration_per_month' => $requisition->remuneration_per_month,
-				'contract_amount'        => $contractAmount,
 				'other_reimbursement_required' => $requisition->other_reimbursement_required,
 				'out_of_pocket_required' => $requisition->out_of_pocket_required,
 				'account_holder_name' => $requisition->account_holder_name,
@@ -1126,11 +1124,10 @@ class HrAdminController extends Controller
 
 			// Apply 2% TDS ADDITION only for Contractual & TFA
 			if (in_array($requisition->requisition_type, ['Contractual', 'TFA'])) {
-
-				$tdsAmount   = round(($baseAmount / 98) * 2, 2);
+				$tdsAmount   = round($baseAmount * 0.02, 2);
 				$finalAmount = round($baseAmount + $tdsAmount, 2);
-
 			} else {
+				// For CB (Counter Boy) send original amount
 				$tdsAmount   = 0;
 				$finalAmount = $baseAmount;
 			}
