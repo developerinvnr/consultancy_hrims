@@ -20,7 +20,7 @@
                 <div class="card-body">
                     <h6 class="fw-bold">Master Report</h6>
                     <p class="text-muted small">
-                        Complete employee master data with contract & salary info.
+                        Complete employee master data with contract info.
                     </p>
                     <a href="{{ route('reports.master') }}" class="btn btn-sm btn-primary">
                         Open Report
@@ -33,9 +33,9 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Remuneration Report</h6>
+                    <h6 class="fw-bold">Payout Report</h6>
                     <p class="text-muted small">
-                        Salary processing details by month & department.
+                        Payout processing details by month & department.
                     </p>
                     <a href="{{ route('reports.remuneration') }}" class="btn btn-sm btn-primary">
                         Open Report
