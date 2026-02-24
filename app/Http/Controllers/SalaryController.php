@@ -603,7 +603,7 @@ class SalaryController extends Controller
     public function getManagementReportData(Request $request)
     {
         $request->validate([
-            'year' => 'required|integer|min:2020|max:' . (date('Y') + 1),
+            'financial_year' => 'required|string',
             'department' => 'nullable|integer',
             'bu' => 'nullable|integer',
             'zone' => 'nullable|integer',
@@ -613,7 +613,8 @@ class SalaryController extends Controller
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
-        $year = (int) $request->year;
+        $financialYear = $request->financial_year;
+        [$startYear, $endYear] = explode('-', $financialYear);
 
         $filters = $request->only([
             'department',
@@ -639,23 +640,20 @@ class SalaryController extends Controller
 
         // ✅ Attach relations properly
         $query->with([
-            'department',
-            'businessUnit',
-            'zoneRef',
-            'regionRef',
-            'territoryRef',
-            'salaryProcessings' => function ($q) use ($year) {
-                $q->where('year', $year)
-                    ->select(
-                        'candidate_id',
-                        'month',
-                        'year',
-                        'net_pay'
-                    );
+            'salaryProcessings' => function ($q) use ($startYear, $endYear) {
+                $q->where(function ($query) use ($startYear, $endYear) {
+                    $query->where(function ($q1) use ($startYear) {
+                        $q1->where('year', $startYear)
+                            ->whereBetween('month', [4, 12]);
+                    })
+                        ->orWhere(function ($q2) use ($endYear) {
+                            $q2->where('year', $endYear)
+                                ->whereBetween('month', [1, 3]);
+                        });
+                })
+                    ->select('candidate_id', 'month', 'year', 'net_pay');
             }
         ]);
-
-
         // Apply Filters
         foreach ($filters as $key => $value) {
             if ($value && $value !== 'All') {
@@ -689,9 +687,6 @@ class SalaryController extends Controller
         $candidates = $query->orderBy('candidate_code')->get();
 
         $months = [
-            'january',
-            'february',
-            'march',
             'april',
             'may',
             'june',
@@ -700,8 +695,12 @@ class SalaryController extends Controller
             'september',
             'october',
             'november',
-            'december'
+            'december',
+            'january',
+            'february',
+            'march'
         ];
+
 
         $reportData = [];
         $monthlyTotals = array_fill_keys($months, 0);
@@ -741,7 +740,7 @@ class SalaryController extends Controller
             'data' => $reportData,
             'monthly_totals' => $monthlyTotals,
             'count' => count($reportData),
-            'year' => $year,
+            'financial_year' => $financialYear,
             'filters' => $filters
         ]);
     }
@@ -753,7 +752,7 @@ class SalaryController extends Controller
     public function exportManagementReport(Request $request)
     {
         $request->validate([
-            'year' => 'required|integer|min:2020',
+            'financial_year' => 'required|string',
             'department' => 'nullable|integer',
             'bu' => 'nullable|integer',
             'zone' => 'nullable|integer',
@@ -762,13 +761,13 @@ class SalaryController extends Controller
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
-        $year = $request->year;
+        $financialYear  = $request->financial_year;
         $filters = $request->only(['department', 'bu', 'zone', 'region', 'territory', 'requisition_type']);
 
-        $filename = "Management_Salary_Report_{$year}";
+        $filename = "Management_Salary_Report_{$financialYear }";
 
         return Excel::download(
-            new ManagementSalaryReportExport($year, $filters),
+            new ManagementSalaryReportExport($financialYear , $filters),
             "{$filename}.xlsx"
         );
     }

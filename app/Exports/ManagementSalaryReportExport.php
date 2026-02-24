@@ -20,17 +20,21 @@ use App\Models\Employee;
 
 class ManagementSalaryReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents
 {
-	protected $year;
+	protected $financialYear;
+	protected $startYear;
+	protected $endYear;
 	protected $filters;
 	protected $data;
 	protected $monthlyTotals;
 	protected $hierarchyService;
 
-	public function __construct($year, $filters = [])
+	public function __construct($financialYear, $filters = [])
 	{
-		$this->year = $year;
+		$this->financialYear = $financialYear;
 		$this->filters = $filters;
 		$this->hierarchyService = app(HierarchyAccessService::class);
+
+		[$this->startYear, $this->endYear] = explode('-', $financialYear);
 
 		$this->prepareData();
 	}
@@ -41,7 +45,16 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 		$query = CandidateMaster::whereIn('final_status', ['A', 'D'])
 			->with([
 				'salaryProcessings' => function ($q) {
-					$q->where('year', $this->year)
+					$q->where(function ($query) {
+						$query->where(function ($q1) {
+							$q1->where('year', $this->startYear)
+								->whereBetween('month', [4, 12]);
+						})
+							->orWhere(function ($q2) {
+								$q2->where('year', $this->endYear)
+									->whereBetween('month', [1, 3]);
+							});
+					})
 						->select('candidate_id', 'month', 'year', 'net_pay');
 				}
 			]);
@@ -92,7 +105,12 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 
 
 		$this->data = [];
-		$this->monthlyTotals = array_fill_keys(range(1, 12), 0);
+		$this->monthlyTotals = [
+			4 => 0, 5 => 0, 6 => 0, 7 => 0, 8 => 0, 9 => 0,
+			10 => 0, 11 => 0, 12 => 0,
+			1 => 0, 2 => 0, 3 => 0,
+		];		
+
 		$this->monthlyTotals['grand_total'] = 0;
 
 		foreach ($candidates as $candidate) {
@@ -129,18 +147,18 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 	public function headings(): array
 	{
 		$months = [
-			'January',
-			'February',
-			'March',
-			'April',
-			'May',
-			'June',
-			'July',
-			'August',
-			'September',
-			'October',
-			'November',
-			'December'
+			 'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+    'January',
+    'February',
+    'March'
 		];
 
 		return array_merge(
@@ -162,10 +180,11 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 		];
 
 		// Add monthly amounts
-		for ($month = 1; $month <= 12; $month++) {
-			$row[] = $employee['monthly_salary'][$month];
-		}
+		$fyMonths = [4,5,6,7,8,9,10,11,12,1,2,3];
 
+foreach ($fyMonths as $month) {
+    $row[] = $employee['monthly_salary'][$month] ?? 0;
+}
 		// Add grand total
 		$row[] = $employee['grand_total'];
 
@@ -239,11 +258,12 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 				$sheet->mergeCells('A' . $totalsRow . ':C' . $totalsRow);
 
 				// Add monthly totals
-				for ($month = 1; $month <= 12; $month++) {
-					$col = chr(67 + $month); // D=68, E=69, etc.
-					$sheet->setCellValue($col . $totalsRow, $this->monthlyTotals[$month]);
-				}
+				$fyMonths = [4,5,6,7,8,9,10,11,12,1,2,3];
 
+foreach ($fyMonths as $index => $month) {
+    $col = chr(68 + $index); // D onwards
+    $sheet->setCellValue($col . $totalsRow, $this->monthlyTotals[$month]);
+}
 				// Add grand total
 				$sheet->setCellValue('P' . $totalsRow, $this->monthlyTotals['grand_total']);
 
@@ -262,7 +282,7 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 				$sheet->insertNewRowBefore(1, 2);
 				$sheet->mergeCells('A1:P1');
 
-				$title = "Management Remuneration Report - {$this->year}";
+				$title = "Management Remuneration Report - {$this->financialYear}";
 				$filterText = '';
 
 				// Build filter description

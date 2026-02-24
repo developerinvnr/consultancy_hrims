@@ -24,19 +24,25 @@
 
 				<!-- Year -->
 				<div class="col-md-3 col-lg-2">
-					<label class="form-label form-label-sm mb-1">Year</label>
-					<select id="year" class="form-select form-select-sm">
+					<label>Financial Year</label>
+					<select id="financial_year" class="form-select form-select-sm">
 						@php
-						$startYear = 2025;
 						$currentYear = date('Y');
+						$currentMonth = date('n');
+
+						if ($currentMonth >= 4) {
+						$defaultStart = $currentYear;
+						} else {
+						$defaultStart = $currentYear - 1;
+						}
+
+						for ($i = $defaultStart; $i >= 2025; $i--) {
+						$fy = $i . '-' . ($i + 1);
 						@endphp
-
-						@for($i = $currentYear; $i >= $startYear; $i--)
-						<option value="{{ $i }}" {{ $i == $currentYear ? 'selected' : '' }}>
-							{{ $i }}
+						<option value="{{ $fy }}" {{ $i == $defaultStart ? 'selected' : '' }}>
+							{{ $fy }}
 						</option>
-						@endfor
-
+						@php } @endphp
 					</select>
 				</div>
 
@@ -165,9 +171,6 @@
 							<th rowspan="2" class="align-middle">Grand Total</th>
 						</tr>
 						<tr>
-							<th class="text-center">January</th>
-							<th class="text-center">February</th>
-							<th class="text-center">March</th>
 							<th class="text-center">April</th>
 							<th class="text-center">May</th>
 							<th class="text-center">June</th>
@@ -177,6 +180,9 @@
 							<th class="text-center">October</th>
 							<th class="text-center">November</th>
 							<th class="text-center">December</th>
+							<th class="text-center">January</th>
+							<th class="text-center">February</th>
+							<th class="text-center">March</th>
 						</tr>
 					</thead>
 					<tbody id="reportData">
@@ -221,7 +227,7 @@
 	function loadReportPreview() {
 		// Collect all filter values
 		currentFilters = {
-			year: $('#year').val(),
+			financial_year: $('#financial_year').val(),
 			requisition_type: $('#requisition_type').val()
 		};
 
@@ -251,8 +257,8 @@
 			if (territory && territory !== 'All') currentFilters.territory = territory;
 		}
 
-		if (!currentFilters.year) {
-			toastr.error('Please select year');
+		if (!currentFilters.financial_year) {
+			toastr.error('Please select financial year');
 			return;
 		}
 
@@ -287,8 +293,8 @@
 					}
 
 					const summary = filterSummary.length > 0 ?
-						`Showing ${response.count} employees for ${currentFilters.year} (${filterSummary.join(', ')})` :
-						`Showing ${response.count} employees for ${currentFilters.year}`;
+						`Showing ${response.count} parties for FY ${currentFilters.financial_year} (${filterSummary.join(', ')})` :
+						`Showing ${response.count} parties for FY ${currentFilters.financial_year}`;
 
 					$('#reportSummary').text(summary);
 
@@ -341,18 +347,18 @@
                     <td class="text-center">${index + 1}</td>
                     <td>${employee.code}</td>
                     <td>${employee.name}</td>
-                    <td class="text-end">${formatCurrency(employee.january)}</td>
-                    <td class="text-end">${formatCurrency(employee.february)}</td>
-                    <td class="text-end">${formatCurrency(employee.march)}</td>
-                    <td class="text-end">${formatCurrency(employee.april)}</td>
-                    <td class="text-end">${formatCurrency(employee.may)}</td>
-                    <td class="text-end">${formatCurrency(employee.june)}</td>
-                    <td class="text-end">${formatCurrency(employee.july)}</td>
-                    <td class="text-end">${formatCurrency(employee.august)}</td>
-                    <td class="text-end">${formatCurrency(employee.september)}</td>
-                    <td class="text-end">${formatCurrency(employee.october)}</td>
-                    <td class="text-end">${formatCurrency(employee.november)}</td>
-                    <td class="text-end">${formatCurrency(employee.december)}</td>
+                    <td>${formatCurrency(employee.april)}</td>
+<td>${formatCurrency(employee.may)}</td>
+<td>${formatCurrency(employee.june)}</td>
+<td>${formatCurrency(employee.july)}</td>
+<td>${formatCurrency(employee.august)}</td>
+<td>${formatCurrency(employee.september)}</td>
+<td>${formatCurrency(employee.october)}</td>
+<td>${formatCurrency(employee.november)}</td>
+<td>${formatCurrency(employee.december)}</td>
+<td>${formatCurrency(employee.january)}</td>
+<td>${formatCurrency(employee.february)}</td>
+<td>${formatCurrency(employee.march)}</td>
                     <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
                 </tr>
             `;
@@ -395,7 +401,7 @@
 	}
 
 	function exportReport() {
-		if (!currentFilters.year) {
+		if (!currentFilters.financial_year) {
 			toastr.error('Please generate report first');
 			return;
 		}
@@ -426,84 +432,84 @@
 		});
 	}
 
-	$(document).on("change", "#bu", function () {
+	$(document).on("change", "#bu", function() {
 
-    let bu = $(this).val();
+		let bu = $(this).val();
 
-    $.ajax({
-        url: "{{ route('hierarchy.zone.by.bu') }}",
-        type: "POST",
-        data: {
-            _token: "{{ csrf_token() }}",
-            bu: bu
-        },
-        success: function (response) {
+		$.ajax({
+			url: "{{ route('hierarchy.zone.by.bu') }}",
+			type: "POST",
+			data: {
+				_token: "{{ csrf_token() }}",
+				bu: bu
+			},
+			success: function(response) {
 
-            let zoneSelect = $('#zone');
-            zoneSelect.empty();
-            zoneSelect.append('<option value="All">All Zone</option>');
+				let zoneSelect = $('#zone');
+				zoneSelect.empty();
+				zoneSelect.append('<option value="All">All Zone</option>');
 
-            $.each(response.zoneList, function (index, zone) {
-                zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
-            });
+				$.each(response.zoneList, function(index, zone) {
+					zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
+				});
 
-            $('#region').empty().append('<option value="All">All Region</option>');
-            $('#territory').empty().append('<option value="All">All Territory</option>');
-        }
-    });
-});
-
-
-$(document).on("change", "#zone", function () {
-
-    let zone = $(this).val();
-
-    $.ajax({
-        url: "{{ route('hierarchy.region.by.zone') }}",
-        type: "POST",
-        data: {
-            _token: "{{ csrf_token() }}",
-            zone: zone
-        },
-        success: function (response) {
-
-            let regionSelect = $('#region');
-            regionSelect.empty();
-            regionSelect.append('<option value="All">All Region</option>');
-
-            $.each(response.regionList, function (index, region) {
-                regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
-            });
-
-            $('#territory').empty().append('<option value="All">All Territory</option>');
-        }
-    });
-});
+				$('#region').empty().append('<option value="All">All Region</option>');
+				$('#territory').empty().append('<option value="All">All Territory</option>');
+			}
+		});
+	});
 
 
-$(document).on("change", "#region", function () {
+	$(document).on("change", "#zone", function() {
 
-    let region = $(this).val();
+		let zone = $(this).val();
 
-    $.ajax({
-        url: "{{ route('hierarchy.territory.by.region') }}",
-        type: "POST",
-        data: {
-            _token: "{{ csrf_token() }}",
-            region: region
-        },
-        success: function (response) {
+		$.ajax({
+			url: "{{ route('hierarchy.region.by.zone') }}",
+			type: "POST",
+			data: {
+				_token: "{{ csrf_token() }}",
+				zone: zone
+			},
+			success: function(response) {
 
-            let territorySelect = $('#territory');
-            territorySelect.empty();
-            territorySelect.append('<option value="All">All Territory</option>');
+				let regionSelect = $('#region');
+				regionSelect.empty();
+				regionSelect.append('<option value="All">All Region</option>');
 
-            $.each(response.territoryList, function (index, territory) {
-                territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
-            });
-        }
-    });
-});
+				$.each(response.regionList, function(index, region) {
+					regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
+				});
+
+				$('#territory').empty().append('<option value="All">All Territory</option>');
+			}
+		});
+	});
+
+
+	$(document).on("change", "#region", function() {
+
+		let region = $(this).val();
+
+		$.ajax({
+			url: "{{ route('hierarchy.territory.by.region') }}",
+			type: "POST",
+			data: {
+				_token: "{{ csrf_token() }}",
+				region: region
+			},
+			success: function(response) {
+
+				let territorySelect = $('#territory');
+				territorySelect.empty();
+				territorySelect.append('<option value="All">All Territory</option>');
+
+				$.each(response.territoryList, function(index, territory) {
+					territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
+				});
+			}
+		});
+	});
 
 
 

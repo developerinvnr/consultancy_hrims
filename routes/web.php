@@ -319,12 +319,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/import/documents/{documentId}', [ImportController::class, 'deleteDocument'])->name('import.documents.delete');
     Route::get('/import/documents/{documentId}/download', [ImportController::class, 'downloadDocument'])->name('import.documents.download');
     Route::post('/import/candidates/update-candidate-data', [ImportController::class, 'updateCandidateData'])->name('import.update.candidate.data');
-});
+    });
 
-Route::middleware(['auth'])
-    ->prefix('reports')
-    ->name('reports.')
-    ->group(function () {
+    Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
 
         Route::get('/', [ReportController::class, 'index'])->name('index');
 

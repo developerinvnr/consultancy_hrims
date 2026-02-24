@@ -47,36 +47,16 @@
                     </select>
                 </div>
 
-                <div class="col-md-2">
-                    <label class="form-label form-label-sm">Month</label>
-                    <select name="month" id="month" class="form-select form-select-sm" required>
-                        @php
-                        $months = [
-                        4 => 'April',
-                        5 => 'May',
-                        6 => 'June',
-                        7 => 'July',
-                        8 => 'August',
-                        9 => 'September',
-                        10 => 'October',
-                        11 => 'November',
-                        12 => 'December',
-                        1 => 'January',
-                        2 => 'February',
-                        3 => 'March'
-                        ];
-                        @endphp
-
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}"
-                            {{ $month == $num ? 'selected' : '' }}>
-                            {{ $name }}
-                        </option>
-                        @endforeach
+                <div class="col-md-1">
+                    <label class="form-label form-label-sm">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="All" {{ request('status', 'All') == 'All' ? 'selected' : '' }}>All</option>
+                        <option value="A" {{ request('status') == 'A' ? 'selected' : '' }}>Active</option>
+                        <option value="D" {{ request('status') == 'D' ? 'selected' : '' }}>Deactive</option>
                     </select>
                 </div>
 
-                <div class="col-md-1">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Requisition Type</label>
                     <select name="requisition_type" class="form-select form-select-sm">
                         <option value="All" {{ $requisitionType == 'All' ? 'selected' : '' }}>All Types</option>

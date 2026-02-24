@@ -17,9 +17,9 @@
 				<th>Working Days</th>
 				<th>Sunday working</th>
 				<th>Total Paid Days</th>
-				<th>Current month</th>
+				<th>Remuneration As Per Contract</th>
 				<th>Previous month</th>
-				<th>Arear</th>
+				<th>Arrear</th>
 				<th>Deduction</th>
 				<th>Based on paid days</th>
 				<th>Payment Instruction</th>
@@ -46,7 +46,7 @@
 				<td>{{ $record->total_days ?? 0 }}</td>
 				<td>{{ $record->approved_sundays  ?? 0 }}</td>
 				<td>{{ ($record->paid_days ?? 0) + ($record->approved_sundays ?? 0) }}</td>
-				<td>{{ number_format(round($record->net_pay ?? 0)) }}</td>
+				<td>{{ number_format(round($record->monthly_salary ?? 0)) }}</td>
 				<td>{{ number_format(round($record->previous_month_pay ?? 0)) }}</td>
 				<td>{{ number_format(round($record->extra_amount ?? 0)) }}</td>
 				<td>{{ number_format(round($record->deduction_amount ?? 0)) }}</td>
