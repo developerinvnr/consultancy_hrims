@@ -16,9 +16,9 @@
                 <th>Working Days</th>
                 <th>Sunday Working</th>
                 <th>Total Paid Days</th>
-                
+
                 <th>As Per Approval</th>
-				<th>As Per Contract</th>
+                <th>As Per Contract</th>
                 <th>Arrear</th>
                 <th>Deduction</th>
                 <th>Final Payable</th>
@@ -30,30 +30,30 @@
         </thead>
 
         <tbody>
-        @php
+            @php
             $totalBased = 0;
-        @endphp
+            @endphp
 
-        @forelse($salaryRecords as $index => $record)
+            @forelse($salaryRecords as $index => $record)
 
             @php
-                $rpm = $record->candidate->remuneration_per_month ?? 0;
-                $contractAmount = $record->candidate->contract_amount ?? 0;
+            $rpm = $record->candidate->remuneration_per_month ?? 0;
+            $contractAmount = $record->candidate->contract_amount ?? 0;
 
-                $paidDays = $record->paid_days ?? 0;
-                $extra = $record->extra_amount ?? 0;
-                $deduction = $record->deduction_amount ?? 0;
+            $paidDays = $record->paid_days ?? 0;
+            $extra = $record->extra_amount ?? 0;
+            $deduction = $record->deduction_amount ?? 0;
 
-                // Final Payable Calculation
-                $basedOnPaidDays = (($rpm / 26) * $paidDays) + $extra - $deduction;
+            // Final Payable Calculation
+            $basedOnPaidDays = (($rpm / 26) * $paidDays) + $extra - $deduction;
 
-                // TDS 2%
-                $tds = ($basedOnPaidDays / 98) * 2;
+            // TDS 2%
+            $tds = ($basedOnPaidDays / 98) * 2;
 
-                // Gross Up
-                $grossUp = $basedOnPaidDays + $tds;
+            // Gross Up
+            $grossUp = $basedOnPaidDays + $tds;
 
-                $totalBased += $basedOnPaidDays;
+            $totalBased += $basedOnPaidDays;
             @endphp
 
             <tr>
@@ -73,23 +73,23 @@
                 <td>{{ $record->total_days ?? 0 }}</td>
                 <td>{{ $record->approved_sundays ?? 0 }}</td>
                 <td>{{ $paidDays + ($record->approved_sundays ?? 0) }}</td>
-                 <td>{{ number_format(round($rpm)) }}</td>
-                <td>{{ number_format(round($contractAmount)) }}</td>                
+                <td>{{ number_format(round($rpm)) }}</td>
+                <td>{{ number_format(round($contractAmount)) }}</td>
                 <td>{{ number_format(round($extra)) }}</td>
                 <td>{{ number_format(round($deduction)) }}</td>
                 <td>{{ number_format(round($basedOnPaidDays)) }}</td>
 
                 <td>
                     @php
-                        $instruction = strtolower($record->payment_instruction ?? '');
+                    $instruction = strtolower($record->payment_instruction ?? '');
                     @endphp
 
                     @if($instruction === 'hold')
-                        <span class="badge bg-warning text-dark">Hold</span>
+                    <span class="badge bg-warning text-dark">Hold</span>
                     @elseif($instruction === 'release')
-                        <span class="badge bg-success">Release</span>
+                    <span class="badge bg-success">Release</span>
                     @else
-                        <span class="badge bg-secondary">Pending</span>
+                    <span class="badge bg-secondary">Pending</span>
                     @endif
                 </td>
 
@@ -99,25 +99,36 @@
                 <td>{{ number_format(round($grossUp)) }}</td>
             </tr>
 
-        @empty
+            @empty
             <tr>
                 <td colspan="24" class="text-center">No records found</td>
             </tr>
-        @endforelse
+            @endforelse
         </tbody>
 
         @if($salaryRecords->count() > 0)
         @php
-            $totalTds = ($totalBased / 98) * 2;
-            $totalGross = $totalBased + $totalTds;
+        $totalTds = ($totalBased / 98) * 2;
+        $totalGross = $totalBased + $totalTds;
         @endphp
 
         <tfoot class="bg-light fw-bold">
             <tr>
-                <td colspan="19" class="text-end">Totals:</td>
+                <td colspan="18" class="text-end">Totals:</td>
+
+                {{-- Final Payable --}}
                 <td>{{ number_format(round($totalBased), 2) }}</td>
-                <td colspan="2"></td>
+
+                {{-- Payment Instruction --}}
+                <td></td>
+
+                {{-- HR Remarks --}}
+                <td></td>
+
+                {{-- TDS --}}
                 <td>{{ number_format(round($totalTds), 2) }}</td>
+
+                {{-- Gross --}}
                 <td>{{ number_format(round($totalGross), 2) }}</td>
             </tr>
         </tfoot>
