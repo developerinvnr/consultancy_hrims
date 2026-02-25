@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CoreAPIController;
@@ -121,7 +122,6 @@ Route::middleware('auth')->group(function () {
                 ->name('process-modal');
             Route::get('upload-agreement/{candidate}', [HrAdminController::class, 'showUploadAgreementByEmployee'])->name('upload-agreement');
             Route::post('upload-agreement/{candidate}', [HrAdminController::class, 'uploadAgreementStoreByEmployee'])->name('upload-agreement-store');
-          
         });
 
         // Master Tab
@@ -145,7 +145,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/party/{candidate}/edit', [HrAdminController::class, 'editParty'])->name('edit-party');
         Route::put('/party/{candidate}/update', [HrAdminController::class, 'updateParty'])->name('update-party');
         Route::post('/party/{candidate}/add-document', [HrAdminController::class, 'addPartyDocument'])->name('add-document');
-
     });
 
     Route::prefix('approver')->name('approver.')->group(function () {
@@ -173,22 +172,24 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/agreement/{requisition}/upload-signed', [SubmitterController::class, 'uploadSignedAgreement'])->name('agreement.upload-signed');
 
         // Courier details routes
-        Route::get('/agreement/{requisition}/courier-details/{agreement}', 
-            [SubmitterController::class, 'showCourierForm'])
+        Route::get(
+            '/agreement/{requisition}/courier-details/{agreement}',
+            [SubmitterController::class, 'showCourierForm']
+        )
             ->name('agreement.courier-details');
 
-        Route::post('/agreement/{requisition}/courier-details/{agreement}', 
-            [SubmitterController::class, 'saveCourierDetails'])
+        Route::post(
+            '/agreement/{requisition}/courier-details/{agreement}',
+            [SubmitterController::class, 'saveCourierDetails']
+        )
             ->name('agreement.save-courier-details');
-
-       
-    });     
+    });
 });
 
 // HR Admin Agreement Routes
 Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['auth'])->group(function () {
     Route::get('/list', [HrAdminController::class, 'agreementPendingList'])->name('list');
-     Route::get('/{candidate}/management', [HrAdminController::class, 'agreementManagement'])->name('management');
+    Route::get('/{candidate}/management', [HrAdminController::class, 'agreementManagement'])->name('management');
     // Upload unsigned agreement (HR action)
     Route::post('/{candidate}/upload-unsigned', [HrAdminController::class, 'uploadUnsignedAgreement'])->name('upload-unsigned.store');
 
@@ -211,10 +212,12 @@ Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['a
         ->name('hr-admin.agreement.update');
     Route::get('/{candidate}/get-unsigned', [HrAdminController::class, 'getUnsignedAgreement'])->name('get-unsigned');
 
-     // Mark courier as received (admin/recruiter only)
-        Route::post('/{requisition}/courier-received/{agreement}', 
-            [SubmitterController::class, 'markCourierReceived'])
-            ->name('courier-received');
+    // Mark courier as received (admin/recruiter only)
+    Route::post(
+        '/{requisition}/courier-received/{agreement}',
+        [SubmitterController::class, 'markCourierReceived']
+    )
+        ->name('courier-received');
 });
 
 // Attendance Routes
@@ -259,22 +262,22 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
 
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
     Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
-    
-    Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
-    ->name('salary.toggle.payment');
-    
 
+    Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
+        ->name('salary.toggle.payment');
 });
 
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/candidate/{candidate}/deactivate',[CandidateController::class, 'deactivate']
+    Route::post(
+        '/candidate/{candidate}/deactivate',
+        [CandidateController::class, 'deactivate']
     )->name('candidate.deactivate');
 
     Route::post('/hierarchy/zone-by-bu', [HierarchyController::class, 'getZoneByBU'])->name('hierarchy.zone.by.bu');
-Route::post('/hierarchy/region-by-zone', [HierarchyController::class, 'getRegionByZone'])->name('hierarchy.region.by.zone');
-Route::post('/hierarchy/territory-by-region', [HierarchyController::class, 'getTerritoryByRegion'])->name('hierarchy.territory.by.region');
+    Route::post('/hierarchy/region-by-zone', [HierarchyController::class, 'getRegionByZone'])->name('hierarchy.region.by.zone');
+    Route::post('/hierarchy/territory-by-region', [HierarchyController::class, 'getTerritoryByRegion'])->name('hierarchy.territory.by.region');
 });
 
 // Route::middleware(['auth'])->group(function () {
@@ -312,27 +315,40 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/import/candidates/import', [ImportController::class, 'importData'])->name('import.data');
     Route::get('/import/candidates/list', [ImportController::class, 'getImportedCandidates'])->name('import.candidates.list');
     // Route::get('/import/candidates/template', [ImportController::class, 'downloadTemplate'])->name('import.template.download');
-    
+
     // Document routes
     Route::get('/import/candidates/{requisitionId}/documents', [ImportController::class, 'getCandidateDocuments'])->name('import.candidates.documents');
     Route::post('/import/documents/upload', [ImportController::class, 'uploadDocument'])->name('import.documents.upload');
     Route::delete('/import/documents/{documentId}', [ImportController::class, 'deleteDocument'])->name('import.documents.delete');
     Route::get('/import/documents/{documentId}/download', [ImportController::class, 'downloadDocument'])->name('import.documents.download');
     Route::post('/import/candidates/update-candidate-data', [ImportController::class, 'updateCandidateData'])->name('import.update.candidate.data');
-    });
+});
 
-    Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
+Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
 
-        Route::get('/', [ReportController::class, 'index'])->name('index');
+    Route::get('/', [ReportController::class, 'index'])->name('index');
 
-        Route::get('/master', [ReportController::class, 'master'])->name('master');
-        Route::get('/remuneration', [ReportController::class, 'remuneration'])->name('remuneration');
-        Route::get('/vendor-details', [ReportController::class, 'vendorDetails'])->name('vendor-details');
+    Route::get('/master', [ReportController::class, 'master'])->name('master');
+    Route::get('/remuneration', [ReportController::class, 'remuneration'])->name('remuneration');
+    Route::get('/vendor-master', [ReportController::class, 'vendorMaster'])->name('vendor-master');
+    Route::get('/contractual-jv', [ReportController::class, 'contractualJVReport'])
+        ->name('contractual-jv');
+    Route::get(
+        '/contractual-tds-jv',
+        [ReportController::class, 'contractualTDSJVReport']
+    )->name('contractual-tds-jv');
+    Route::get('/contractual-payment-jv', [ReportController::class, 'contractualPaymentJVReport'])->name('contractual-payment-jv');
 
-        Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
-        Route::get('/remuneration/export', [ReportController::class, 'remunerationExport'])->name('remuneration.export');
-        Route::get('/vendor-details/export', [ReportController::class, 'vendorDetailsExport'])->name('vendor-details.export');
-    });
+    Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
+    Route::get('/remuneration/export', [ReportController::class, 'remunerationExport'])->name('remuneration.export');
+    Route::get('/vendor-master/export', [ReportController::class, 'vendorMasterExport'])->name('vendor-master.export');
+    // Contractual JV Report (Export)
+    Route::get('/contractual-jv/export', [ReportController::class, 'contractualJVExport'])
+        ->name('contractual-jv.export');
+    Route::get('/contractual-tds-jv/export', [ReportController::class, 'contractualTDSJVExport'])->name('contractual-tds-jv.export');
+
+    Route::get('/contractual-payment-jv/export', [ReportController::class, 'contractualPaymentJVExport'])->name('contractual-payment-jv.export');
+});
 
 
 // Route::post('/test/agreement-api', function(Request $request) {

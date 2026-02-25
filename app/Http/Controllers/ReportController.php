@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\CandidateMaster;
 use App\Models\SalaryProcessing;
 use App\Models\CoreDepartment;
-use App\Models\Attendance;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MasterReportExport;
 use App\Exports\RemunerationReportExport;
-use App\Exports\VendorDetailsReportExport;
-use App\Exports\AttendanceReportExport;
-use App\Exports\BankStatementReportExport;
-use App\Exports\ContractStatusReportExport;
+use App\Exports\VendorMasterExport;
+use App\Exports\ContractualJVExport;
+use App\Exports\ContractualTDSJVExport;
+use App\Exports\ContractualPaymentJVExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -51,6 +50,16 @@ class ReportController extends Controller
 
         // Build base query
         $query = CandidateMaster::query();
+
+        // Apply Financial Year filter
+        if (!empty($financialYear)) {
+            [$startYear, $endYear] = explode('-', $financialYear);
+
+            $startDate = $startYear . '-04-01';
+            $endDate   = $endYear . '-03-31';
+
+            $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+        }
 
         // Apply Status filter
         if ($status !== 'All') {
@@ -94,6 +103,7 @@ class ReportController extends Controller
             ->withQueryString();
 
         $stats = $this->getMasterReportStats(
+            $financialYear,
             $status,
             $requisitionType,
             $workLocation,
@@ -125,9 +135,18 @@ class ReportController extends Controller
     /**
      * Get statistics for master report
      */
-    private function getMasterReportStats($status, $requisitionType, $workLocation, $departmentId)
+    private function getMasterReportStats($financialYear, $status, $requisitionType, $workLocation, $departmentId)
     {
         $candidateQuery = CandidateMaster::query();
+
+        if (!empty($financialYear)) {
+            [$startYear, $endYear] = explode('-', $financialYear);
+
+            $startDate = $startYear . '-04-01';
+            $endDate   = $endYear . '-03-31';
+
+            $candidateQuery->whereBetween('contract_start_date', [$startDate, $endDate]);
+        }
 
         if ($status !== 'All') {
             $candidateQuery->where('final_status', $status);
@@ -153,6 +172,14 @@ class ReportController extends Controller
             '=',
             'candidate_master.id'
         )
+            ->when(!empty($financialYear), function ($q) use ($financialYear) {
+                [$startYear, $endYear] = explode('-', $financialYear);
+
+                $startDate = $startYear . '-04-01';
+                $endDate   = $endYear . '-03-31';
+
+                $q->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate]);
+            })
             ->when($status !== 'All', function ($q) use ($status) {
                 $q->where('candidate_master.final_status', $status);
             })
@@ -252,60 +279,6 @@ class ReportController extends Controller
     }
 
     /**
-     * Display vendor details report
-     */
-    public function vendorDetails(Request $request)
-    {
-        // Validate request
-        $request->validate([
-            'requisition_type' => 'nullable|string|in:Contractual,TFA,CB,All',
-            'department_id' => 'nullable|integer|exists:core_departments,id',
-            'work_location' => 'nullable|string|max:255',
-        ]);
-
-        $requisitionType = $request->get('requisition_type', 'All');
-        $departmentId = $request->get('department_id', '');
-        $workLocation = $request->get('work_location', '');
-
-        // Build query for vendor details
-        $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->with('department');
-
-        if ($requisitionType !== 'All') {
-            $query->where('requisition_type', $requisitionType);
-        }
-
-        if (!empty($departmentId)) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if (!empty($workLocation)) {
-            $query->where('work_location_hq', $workLocation);
-        }
-
-        $candidates = $query->orderBy('candidate_code')
-            ->paginate(20)
-            ->withQueryString();
-
-        // Get filter data
-        $workLocations = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->whereNotNull('work_location_hq')
-            ->distinct()
-            ->pluck('work_location_hq');
-
-        $departments = CoreDepartment::orderBy('department_name')->get();
-
-        return view('reports.vendor-details', compact(
-            'candidates',
-            'requisitionType',
-            'departmentId',
-            'workLocation',
-            'workLocations',
-            'departments'
-        ));
-    }
-
-    /**
      * Export master report
      */
     public function masterExport(Request $request)
@@ -342,12 +315,14 @@ class ReportController extends Controller
     {
         $request->validate([
             'month' => 'required|numeric|between:1,12',
-            'year' => 'required|numeric|min:2020',
+            'financial_year' => 'required|string',
             'department_id' => 'nullable|integer|exists:core_departments,id',
         ]);
 
         $month = (int) $request->month;
-        $year = (int) $request->year;
+        [$startYear, $endYear] = explode('-', $request->financial_year);
+
+        $year = ($month >= 4) ? $startYear : $endYear;
 
         return Excel::download(
             new RemunerationReportExport(
@@ -355,28 +330,269 @@ class ReportController extends Controller
                 $year,
                 $request->department_id ?? ''
             ),
-            "Remuneration_Report_{$month}_{$year}.xlsx"
+            "Payout_Report_{$month}_{$year}.xlsx"
         );
     }
 
+    public function vendorMaster(Request $request)
+    {
+        $departmentId = $request->get('department_id');
+        $search = $request->get('search');
+
+        $query = CandidateMaster::with([
+            'department',
+            'subDepartmentRef',
+            'vertical',
+            'businessUnit',
+            'zoneRef',
+            'regionRef'
+        ])
+            ->whereIn('final_status', ['A', 'D']);
+
+        if (!empty($departmentId)) {
+            $query->where('department_id', $departmentId);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('candidate_name', 'like', "%$search%")
+                    ->orWhere('candidate_code', 'like', "%$search%")
+                    ->orWhere('pan_no', 'like', "%$search%");
+            });
+        }
+
+        $records = $query
+            ->orderBy('candidate_code')
+            ->paginate(20)
+            ->withQueryString();
+
+        $departments = CoreDepartment::orderBy('department_name')->get();
+
+        return view('reports.vendor-master', compact(
+            'records',
+            'departments'
+        ));
+    }
     /**
      * Export vendor details report
      */
-    public function vendorDetailsExport(Request $request)
+    public function vendorMasterExport(Request $request)
     {
-        $request->validate([
-            'requisition_type' => 'nullable|string|in:Contractual,TFA,CB,All',
-            'department_id' => 'nullable|integer|exists:core_departments,id',
-            'work_location' => 'nullable|string|max:255',
-        ]);
-
         return Excel::download(
-            new VendorDetailsReportExport(
-                $request->requisition_type ?? 'All',
-                $request->department_id ?? '',
-                $request->work_location ?? ''
+            new VendorMasterExport(
+                $request->department_id,
+                $request->search
             ),
-            "Vendor_Details_Report_" . date('Y-m-d') . ".xlsx"
+            'Vendor_Master_Report.xlsx'
+        );
+    }
+
+
+    public function contractualJVReport(Request $request)
+    {
+        // -------------------------------
+        // 1️⃣ Get Filters
+        // -------------------------------
+        $financialYear = $request->get('financial_year');
+        $status        = $request->get('status', 'All');
+
+        $currentMonth = date('n');
+        $currentYear  = date('Y');
+
+        // -------------------------------
+        // 2️⃣ Default Financial Year
+        // -------------------------------
+        if (!$financialYear) {
+            if ($currentMonth >= 4) {
+                $financialYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                $financialYear = ($currentYear - 1) . '-' . $currentYear;
+            }
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        // -------------------------------
+        // 3️⃣ Month (FY Based)
+        // -------------------------------
+        $month = (int) $request->get('month', $currentMonth);
+
+        // Map FY month to actual calendar year
+        $year = ($month >= 4) ? $startYear : $endYear;
+
+        // -------------------------------
+        // 4️⃣ Build Query
+        // -------------------------------
+        $query = SalaryProcessing::with([
+            'candidate.department',
+            'candidate.businessUnit',
+            'candidate.vertical',
+            'candidate.subDepartmentRef',
+            'candidate.zoneRef',
+            'candidate.regionRef',
+            'candidate.function',
+            'candidate.workState'
+        ])
+            ->where('month', $month)
+            ->where('year', $year)
+            ->whereHas('candidate', function ($q) use ($status) {
+
+                if ($status !== 'All') {
+                    $q->where('final_status', $status);
+                } else {
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+            });
+
+        // -------------------------------
+        // 5️⃣ Pagination
+        // -------------------------------
+        $records = $query
+            ->orderBy('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        // -------------------------------
+        // 6️⃣ Return View (PASS $year)
+        // -------------------------------
+        return view('reports.contractual-jv', [
+            'records'       => $records,
+            'financialYear' => $financialYear,
+            'month'         => $month,
+            'year'          => $year,     // 👈 FIXED
+            'status'        => $status,
+        ]);
+    }
+    public function contractualJVExport(Request $request)
+    {
+        return Excel::download(
+            new ContractualJVExport(
+                $request->financial_year,
+                $request->month,
+                $request->status
+            ),
+            'Contractual_JV_Report.xlsx'
+        );
+    }
+
+    public function contractualTDSJVReport(Request $request)
+    {
+        $financialYear = $request->get('financial_year');
+        $status        = $request->get('status', 'All');
+
+        $currentMonth = date('n');
+        $currentYear  = date('Y');
+
+        // Default FY
+        if (!$financialYear) {
+            if ($currentMonth >= 4) {
+                $financialYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                $financialYear = ($currentYear - 1) . '-' . $currentYear;
+            }
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        $month = (int) $request->get('month', $currentMonth);
+        $year  = ($month >= 4) ? $startYear : $endYear;
+
+        $query = SalaryProcessing::with('candidate')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->whereHas('candidate', function ($q) use ($status) {
+                if ($status !== 'All') {
+                    $q->where('final_status', $status);
+                } else {
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+            });
+
+        $records = $query->paginate(20)->withQueryString();
+
+        return view('reports.contractual-tds-jv', compact(
+            'records',
+            'financialYear',
+            'month',
+            'year',
+            'status'
+        ));
+    }
+
+    public function contractualTDSJVExport(Request $request)
+    {
+        return Excel::download(
+            new ContractualTDSJVExport(
+                $request->financial_year,
+                $request->month,
+                $request->status
+            ),
+            'Contractual_TDS_JV_Report.xlsx'
+        );
+    }
+
+    public function contractualPaymentJVReport(Request $request)
+    {
+        $financialYear = $request->get('financial_year');
+        $status        = $request->get('status', 'All');
+
+        $currentMonth = date('n');
+        $currentYear  = date('Y');
+
+        // Default FY
+        if (!$financialYear) {
+            if ($currentMonth >= 4) {
+                $financialYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                $financialYear = ($currentYear - 1) . '-' . $currentYear;
+            }
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        $month = (int) $request->get('month', $currentMonth);
+        $year  = ($month >= 4) ? $startYear : $endYear;
+
+        $records = SalaryProcessing::with([
+            'candidate.department',
+            'candidate.businessUnit',
+            'candidate.vertical',
+            'candidate.subDepartmentRef',
+            'candidate.zoneRef',
+            'candidate.regionRef',
+            'candidate.function',
+            'candidate.workState'
+        ])
+            ->where('month', $month)
+            ->where('year', $year)
+            ->whereHas('candidate', function ($q) use ($status) {
+                if ($status !== 'All') {
+                    $q->where('final_status', $status);
+                } else {
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+            })
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('reports.contractual-payment-jv', compact(
+            'records',
+            'financialYear',
+            'month',
+            'year',
+            'status'
+        ));
+    }
+
+    public function contractualPaymentJVExport(Request $request)
+    {
+        return Excel::download(
+            new ContractualPaymentJVExport(
+                $request->financial_year,
+                $request->month,
+                $request->status
+            ),
+            'Contractual_Payment_JV_Report.xlsx'
         );
     }
 }

@@ -13,7 +13,7 @@
     <div class="row g-3">
 
         <!-- Master Report -->
-         @if(auth()->user()->hasAnyRole(['hr_admin']))
+        @if(auth()->user()->hasAnyRole(['hr_admin']))
 
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
@@ -44,9 +44,69 @@
             </div>
         </div>
 
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">Vendor Master Report</h6>
+                    <p class="text-muted small">
+                        Vendor compliance, bank & reporting details.
+                    </p>
+                    <a href="{{ route('reports.vendor-master') }}"
+                        class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">Contractual JV Report</h6>
+                    <p class="text-muted small">
+                        Journal entry export for contractual expenses.
+                    </p>
+                    <a href="{{ route('reports.contractual-jv') }}"
+                        class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">Contractual TDS JV Report</h6>
+                    <p class="text-muted small">
+                        TDS deduction journal entry for contractual expenses.
+                    </p>
+                    <a href="{{ route('reports.contractual-tds-jv') }}"
+                        class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">Contractual Payment JV</h6>
+                    <p class="text-muted small">
+                        Bank payment entry for contractual expenses.
+                    </p>
+                    <a href="{{ route('reports.contractual-payment-jv') }}"
+                        class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
         @endif
 
-         <div class="col-md-4">
+        <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
                     <h6 class="fw-bold">Management Report</h6>
@@ -60,7 +120,7 @@
             </div>
         </div>
 
-        
+
 
 
 
@@ -73,23 +133,24 @@
                         Bank & compliance details of contractual employees.
                     </p>
                     <a href="{{ route('reports.vendor-details') }}" class="btn btn-sm btn-primary">
-                        Open Report
-                    </a>
-                </div>
-            </div>
-        </div>--}}
-
+        Open Report
+        </a>
     </div>
+</div>
+</div>--}}
+
+</div>
 
 </div>
 @endsection
 
 <style>
-.report-card {
-    transition: all 0.2s ease-in-out;
-}
-.report-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
+    .report-card {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .report-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
 </style>

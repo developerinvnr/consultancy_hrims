@@ -43,6 +43,16 @@ class MasterReportExport implements
     {
         $query = CandidateMaster::query();
 
+        // Financial Year Filter
+        if (!empty($this->financialYear)) {
+            [$startYear, $endYear] = explode('-', $this->financialYear);
+
+            $startDate = $startYear . '-04-01';
+            $endDate   = $endYear . '-03-31';
+
+            $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+        }
+
         // Status filter
         if ($this->status !== 'All') {
             $query->where('final_status', $this->status);
@@ -76,7 +86,17 @@ class MasterReportExport implements
             });
         }
 
-        return $query->with('department')
+        return $query->with([
+            'department',
+            'function',
+            'subDepartmentRef',
+            'vertical',
+            'regionRef',
+            'businessUnit',
+            'cityMaster',
+            'workState',
+            'reportingManager'
+        ])
             ->orderBy('candidate_code')
             ->get();
     }

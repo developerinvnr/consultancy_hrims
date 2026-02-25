@@ -204,4 +204,41 @@ class CandidateMaster extends Model
     {
         return $this->belongsTo(Employee::class, 'reporting_manager_employee_id', 'employee_id');
     }
+
+    public function getFormattedAddressAttribute()
+    {
+        $parts = [];
+
+        // Father Name
+        if (!empty($this->father_name)) {
+            $parts[] = 'S/O-' . $this->father_name;
+        }
+
+        // Address Line
+        if (!empty($this->address_line_1)) {
+            $parts[] = $this->address_line_1;
+        }
+
+        // City
+        if ($this->cityMaster && $this->cityMaster->city_village_name) {
+            $parts[] = $this->cityMaster->city_village_name;
+        }
+
+        // District
+        if (!empty($this->district)) {
+            $parts[] = $this->district;
+        }
+
+        // State
+        if ($this->workState && $this->workState->state_name) {
+            $parts[] = $this->workState->state_name;
+        }
+
+        // Pin Code
+        if (!empty($this->pin_code)) {
+            $parts[] = 'Pin Code -' . $this->pin_code;
+        }
+
+        return implode(', ', $parts);
+    }
 }
