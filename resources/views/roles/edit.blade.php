@@ -163,7 +163,7 @@
 </style>
 @endpush
 
-@section('script_section')
+@push('scripts')
 <script>
     $(document).ready(function() {
         // Initialize group checkboxes based on permissions
@@ -201,13 +201,15 @@
 
         // Select all button
         $('#select-all').click(function() {
-            $('input[type="checkbox"]').prop('checked', true);
+             $('.permission-checkbox').prop('checked', true);
+            $('.group-checkbox').prop('checked', true);
             validatePermissions();
         });
 
         // Deselect all button
         $('#deselect-all').click(function() {
-            $('input[type="checkbox"]').prop('checked', false);
+                       $('.permission-checkbox').prop('checked', false);
+            $('.group-checkbox').prop('checked', false);
             validatePermissions();
         });
 
@@ -222,48 +224,6 @@
                 return true;
             }
         }
-
-        // Form submission handler
-        $('#role-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            const form = $(this);
-            const url = form.attr('action');
-            
-            // Validate permissions
-            if (!validatePermissions()) {
-                return;
-            }
-            
-            form.find('.is-invalid').removeClass('is-invalid');
-            form.find('.invalid-feedback').text('').hide();
-            
-            // Submit form via AJAX
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: form.serialize(),
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.message);
-                        window.location.href = response.redirect;
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Submit AJAX error:', xhr.responseJSON);
-                    if (xhr.status === 422) {
-                        const errors = xhr.responseJSON.errors;
-                        $.each(errors, function(field, messages) {
-                            const input = form.find(`[name="${field}"]`);
-                            input.addClass('is-invalid');
-                            input.siblings('.invalid-feedback').text(messages[0]).show();
-                        });
-                    } else {
-                        alert('An error occurred. Please try again.');
-                    }
-                }
-            });
-        });
     });
 </script>
-@endsection
+@endpush

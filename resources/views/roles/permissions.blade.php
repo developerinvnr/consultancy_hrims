@@ -18,6 +18,20 @@
     </div>
     <!-- End page title -->
 
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -132,7 +146,7 @@
 </style>
 @endpush
 
-@section('script_section')
+@push('scripts')
 <script>
     $(document).ready(function() {
         // Group checkbox functionality
@@ -154,13 +168,15 @@
 
         // Select all button
         $('#select-all').click(function() {
-            $('input[type="checkbox"]').prop('checked', true);
+             $('.permission-checkbox').prop('checked', true);
+            $('.group-checkbox').prop('checked', true);
         });
 
         // Deselect all button
         $('#deselect-all').click(function() {
-            $('input[type="checkbox"]').prop('checked', false);
+            $('.permission-checkbox').prop('checked', false);
+    $('.group-checkbox').prop('checked', false);
         });
     });
 </script>
-@endsection
+@endpush

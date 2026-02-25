@@ -18,6 +18,13 @@
     </div>
     <!-- End page title -->
 
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -30,8 +37,8 @@
                             <div class="d-flex justify-content-end gap-2">
                                 <!-- Search Form -->
                                 <form method="GET" action="{{ route('roles.index') }}" class="d-flex me-2">
-                                    <input type="text" name="search" class="form-control form-control-sm me-2" 
-                                           placeholder="Search..." value="{{ request('search') }}">
+                                    <input type="text" name="search" class="form-control form-control-sm me-2"
+                                        placeholder="Search..." value="{{ request('search') }}">
                                     <button type="submit" class="btn btn-primary btn-sm me-2">
                                         <i class="ri-search-line"></i>
                                     </button>
@@ -39,7 +46,7 @@
                                         <i class="ri-refresh-line"></i>
                                     </a>
                                 </form>
-                                
+
                                 <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
                                     <i class="ri-add-line me-1"></i> Add Role
                                 </a>
@@ -78,21 +85,27 @@
 
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('roles.edit', $role->id) }}" 
-                                               class="btn btn-xs btn-info" title="Edit">
+                                            <a href="{{ route('roles.edit', $role->id) }}"
+                                                class="btn btn-xs btn-info" title="Edit">
                                                 <i class="bx bx-pencil"></i>
                                             </a>
-                                            <a href="{{ route('roles.permissions', $role->id) }}" 
-                                               class="btn btn-xs btn-warning d-inline-flex align-items-center justify-content-center" 
-                                               title="Manage Permissions">
+                                            <a href="{{ route('roles.permissions', $role->id) }}"
+                                                class="btn btn-xs btn-warning d-inline-flex align-items-center justify-content-center"
+                                                title="Manage Permissions">
                                                 <i class="ri-shield-keyhole-line"></i>
                                             </a>
-                                            <button class="btn btn-xs btn-danger delete-role" 
-                                                    data-id="{{ $role->id }}" 
-                                                    data-name="{{ $role->name }}"
-                                                    title="Delete">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
+                                            <form action="{{ route('roles.destroy', $role->id) }}"
+                                                method="POST"
+                                                style="display:inline;">
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button type="submit"
+                                                    class="btn btn-xs btn-danger"
+                                                    onclick="return confirm('Are you sure you want to delete this role?')">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -104,7 +117,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Pagination -->
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div>
@@ -144,44 +157,7 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
 
-        // Delete role button click handler
-        let deleteRoleId;
-        $(document).on('click', '.delete-role', function() {
-            deleteRoleId = $(this).data('id');
-            const roleName = $(this).data('name');
-            $('#role-name').text(roleName);
-            $('#delete-message').text('');
-            $('#deleteModal').modal('show');
-        });
-
-        // Confirm delete button click handler
-        $('#confirm-delete').click(function() {
-            $.ajax({
-                url: "{{ url('roles') }}/" + deleteRoleId,
-                type: 'DELETE',
-                success: function(response) {
-                    if (response.success) {
-                        $('#deleteModal').modal('hide');
-                        // Reload the page to show updated data
-                        window.location.reload();
-                        alert(response.message);
-                    } else {
-                        $('#delete-message').text(response.message);
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Delete AJAX error:', xhr.responseText);
-                    alert('Error deleting role');
-                }
-            });
-        });
     });
 </script>
 @endpush
