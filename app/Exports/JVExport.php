@@ -15,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Carbon\Carbon;
 
-class ContractualJVExport implements
+class JVExport implements
     FromCollection,
     WithHeadings,
     ShouldAutoSize,

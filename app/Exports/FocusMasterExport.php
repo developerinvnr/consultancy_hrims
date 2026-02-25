@@ -14,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use Maatwebsite\Excel\Events\AfterSheet;
 
-class VendorMasterExport implements
+class FocusMasterExport implements
     FromCollection,
     WithHeadings,
     ShouldAutoSize,

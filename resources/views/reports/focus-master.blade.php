@@ -6,7 +6,7 @@
     <div class="row mb-2">
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Vendor Master Report</h4>
+                <h4 class="mb-0">Focus Master Report</h4>
             </div>
         </div>
     </div>
@@ -15,7 +15,7 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <form method="GET"
-                  action="{{ route('reports.vendor-master') }}"
+                  action="{{ route('reports.focus-master') }}"
                   id="vendorMasterForm"
                   class="row g-3 align-items-end">
 
@@ -177,7 +177,7 @@
 function exportVendorMaster() {
     let form = $('#vendorMasterForm');
     let params = form.serialize();
-    window.location.href = "{{ route('reports.vendor-master.export') }}?" + params;
+    window.location.href = "{{ route('reports.focus-master.export') }}?" + params;
 }
 </script>
 

@@ -5,7 +5,7 @@
 
     <div class="row mb-2">
         <div class="col-12">
-            <h4>Contractual TDS JV Report</h4>
+            <h4>Payment JV Report</h4>
         </div>
     </div>
 
@@ -13,21 +13,15 @@
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
             <form method="GET"
-                  action="{{ route('reports.contractual-tds-jv') }}"
-                  id="tdsForm"
+                  action="{{ route('reports.payment-jv') }}"
+                  id="paymentForm"
                   class="row g-3 align-items-end">
 
                 {{-- Financial Year --}}
                 <div class="col-md-3">
                     <label class="form-label form-label-sm">Financial Year</label>
                     <select name="financial_year" class="form-select form-select-sm">
-                        @php
-                            $currentYear = date('Y');
-                            $startYear = $currentYear - 2;
-                            $endYear = $currentYear;
-                        @endphp
-
-                        @for($y=$startYear;$y<=$endYear;$y++)
+                        @for($y=date('Y')-2;$y<=date('Y');$y++)
                             @php $fy=$y.'-'.($y+1); @endphp
                             <option value="{{ $fy }}"
                                 {{ $financialYear==$fy?'selected':'' }}>
@@ -66,10 +60,9 @@
                     <button type="submit" class="btn btn-sm btn-primary w-50">
                         Generate
                     </button>
-
                     <button type="button"
                             class="btn btn-sm btn-success w-50"
-                            onclick="exportTDS()">
+                            onclick="exportPayment()">
                         Export
                     </button>
                 </div>
@@ -83,15 +76,13 @@
         <table class="table table-sm table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>DocNo</th>
                     <th>Date</th>
-                    <th>Business Entity</th>
+                    <th>CashBankAC</th>
                     <th>sNarration</th>
-                    <th>TDSVoucherNo</th>
-                    <th>DrAccount</th>
-                    <th>CrAccount</th>
+                    <th>Department</th>
+                    <th>Account</th>
                     <th>Amount</th>
-                    <th>Reference</th>
+                    <th>TDS</th>
                 </tr>
             </thead>
 
@@ -100,29 +91,25 @@
 
                 @php
                     $tds = round($rec->net_pay * 0.02,0);
-
-                    $narration = "TDS deducted on Rs. "
-                        . round($rec->net_pay,0)
-                        . " @2%, Being Contractual Expenses for the Month of "
-                        . \Carbon\Carbon::create()->month($month)->format('F')
-                        . " $year";
+                    $paymentAmount = round($rec->net_pay - $tds,0);
                 @endphp
 
                 <tr>
-                    <td></td>
                     <td>{{ now()->format('d-m-Y') }}</td>
-                    <td>120</td>
-                    <td>{{ $narration }}</td>
-                    <td></td>
+                    <td>BANK-26</td>
+                    <td>
+                        Payment against expenses for
+                        {{ \Carbon\Carbon::create()->month($month)->format('M-y') }}
+                    </td>
+                    <td>{{ $rec->candidate->department->department_name ?? '' }}</td>
                     <td>{{ $rec->candidate->candidate_code }}</td>
-                    <td>STAT-DUES-TDS-15</td>
+                    <td>{{ $paymentAmount }}</td>
                     <td>{{ $tds }}</td>
-                    <td></td>
                 </tr>
 
             @empty
                 <tr>
-                    <td colspan="9" class="text-center">No records found</td>
+                    <td colspan="7" class="text-center">No records found</td>
                 </tr>
             @endforelse
             </tbody>
@@ -137,10 +124,10 @@
 @endsection
 
 <script>
-function exportTDS(){
-    let form = $('#tdsForm');
+function exportPayment(){
+    let form = $('#paymentForm');
     let params = form.serialize();
     window.location.href =
-        "{{ route('reports.contractual-tds-jv.export') }}?" + params;
+        "{{ route('reports.payment-jv.export') }}?" + params;
 }
 </script>

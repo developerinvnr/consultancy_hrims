@@ -47,11 +47,11 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Vendor Master Report</h6>
+                    <h6 class="fw-bold">Focus Master Report</h6>
                     <p class="text-muted small">
-                        Vendor compliance, bank & reporting details.
+                        Focus master compliance, bank & reporting details.
                     </p>
-                    <a href="{{ route('reports.vendor-master') }}"
+                    <a href="{{ route('reports.focus-master') }}"
                         class="btn btn-sm btn-primary">
                         Open Report
                     </a>
@@ -62,11 +62,11 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Contractual JV Report</h6>
+                    <h6 class="fw-bold">JV Report</h6>
                     <p class="text-muted small">
-                        Journal entry export for contractual expenses.
+                        Journal entry export for expenses.
                     </p>
-                    <a href="{{ route('reports.contractual-jv') }}"
+                    <a href="{{ route('reports.jv') }}"
                         class="btn btn-sm btn-primary">
                         Open Report
                     </a>
@@ -77,11 +77,11 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Contractual TDS JV Report</h6>
+                    <h6 class="fw-bold">TDS JV Report</h6>
                     <p class="text-muted small">
-                        TDS deduction journal entry for contractual expenses.
+                        TDS deduction journal entry for expenses.
                     </p>
-                    <a href="{{ route('reports.contractual-tds-jv') }}"
+                    <a href="{{ route('reports.tds-jv') }}"
                         class="btn btn-sm btn-primary">
                         Open Report
                     </a>
@@ -93,11 +93,11 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Contractual Payment JV</h6>
+                    <h6 class="fw-bold">Payment JV</h6>
                     <p class="text-muted small">
-                        Bank payment entry for contractual expenses.
+                        Bank payment entry for expenses.
                     </p>
-                    <a href="{{ route('reports.contractual-payment-jv') }}"
+                    <a href="{{ route('reports.payment-jv') }}"
                         class="btn btn-sm btn-primary">
                         Open Report
                     </a>

@@ -5,7 +5,7 @@
 
 	<div class="row mb-2">
 		<div class="col-12">
-			<h4>Contractual JV Report</h4>
+			<h4>JV Report</h4>
 		</div>
 	</div>
 
@@ -13,7 +13,7 @@
 	<div class="card mb-3 shadow-sm">
 		<div class="card-body">
 			<form method="GET"
-				action="{{ route('reports.contractual-jv') }}"
+				action="{{ route('reports.jv') }}"
 				id="jvForm"
 				class="row g-3 align-items-end">
 
@@ -180,7 +180,7 @@
 		let form = $('#jvForm');
 		let params = form.serialize();
 		window.location.href =
-			"{{ route('reports.contractual-jv.export') }}?" + params;
+			"{{ route('reports.jv.export') }}?" + params;
 	}
 </script>
 

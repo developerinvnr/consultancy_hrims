@@ -17,7 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use Carbon\Carbon;
 
-class ContractualPaymentJVExport implements
+class PaymentJVExport implements
     FromCollection,
     WithHeadings,
     ShouldAutoSize,

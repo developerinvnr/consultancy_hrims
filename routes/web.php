@@ -330,24 +330,21 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 
     Route::get('/master', [ReportController::class, 'master'])->name('master');
     Route::get('/remuneration', [ReportController::class, 'remuneration'])->name('remuneration');
-    Route::get('/vendor-master', [ReportController::class, 'vendorMaster'])->name('vendor-master');
-    Route::get('/contractual-jv', [ReportController::class, 'contractualJVReport'])
-        ->name('contractual-jv');
-    Route::get(
-        '/contractual-tds-jv',
-        [ReportController::class, 'contractualTDSJVReport']
-    )->name('contractual-tds-jv');
-    Route::get('/contractual-payment-jv', [ReportController::class, 'contractualPaymentJVReport'])->name('contractual-payment-jv');
+    Route::get('/focus-master', [ReportController::class, 'focusMaster'])->name('focus-master');
+    Route::get('/jv', [ReportController::class, 'JVReport'])->name('jv');
+    Route::get('/tds-jv',[ReportController::class, 'TDSJVReport']
+    )->name('tds-jv');
+    Route::get('/payment-jv', [ReportController::class, 'PaymentJVReport'])->name('payment-jv');
 
     Route::get('/master/export', [ReportController::class, 'masterExport'])->name('master.export');
     Route::get('/remuneration/export', [ReportController::class, 'remunerationExport'])->name('remuneration.export');
-    Route::get('/vendor-master/export', [ReportController::class, 'vendorMasterExport'])->name('vendor-master.export');
+    Route::get('/focus-master/export', [ReportController::class, 'focusMasterExport'])->name('focus-master.export');
     // Contractual JV Report (Export)
-    Route::get('/contractual-jv/export', [ReportController::class, 'contractualJVExport'])
-        ->name('contractual-jv.export');
-    Route::get('/contractual-tds-jv/export', [ReportController::class, 'contractualTDSJVExport'])->name('contractual-tds-jv.export');
+    Route::get('/jv/export', [ReportController::class, 'JVExport'])
+        ->name('jv.export');
+    Route::get('/tds-jv/export', [ReportController::class, 'TDSJVExport'])->name('tds-jv.export');
 
-    Route::get('/contractual-payment-jv/export', [ReportController::class, 'contractualPaymentJVExport'])->name('contractual-payment-jv.export');
+    Route::get('/payment-jv/export', [ReportController::class, 'PaymentJVExport'])->name('payment-jv.export');
 });
 
 

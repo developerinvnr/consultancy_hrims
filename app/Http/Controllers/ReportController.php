@@ -8,10 +8,10 @@ use App\Models\CoreDepartment;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MasterReportExport;
 use App\Exports\RemunerationReportExport;
-use App\Exports\VendorMasterExport;
-use App\Exports\ContractualJVExport;
-use App\Exports\ContractualTDSJVExport;
-use App\Exports\ContractualPaymentJVExport;
+use App\Exports\FocusMasterExport;
+use App\Exports\JVExport;
+use App\Exports\TDSJVExport;
+use App\Exports\PaymentJVExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -334,7 +334,7 @@ class ReportController extends Controller
         );
     }
 
-    public function vendorMaster(Request $request)
+    public function focusMaster(Request $request)
     {
         $departmentId = $request->get('department_id');
         $search = $request->get('search');
@@ -368,7 +368,7 @@ class ReportController extends Controller
 
         $departments = CoreDepartment::orderBy('department_name')->get();
 
-        return view('reports.vendor-master', compact(
+        return view('reports.focus-master', compact(
             'records',
             'departments'
         ));
@@ -376,19 +376,19 @@ class ReportController extends Controller
     /**
      * Export vendor details report
      */
-    public function vendorMasterExport(Request $request)
+    public function focusMasterExport(Request $request)
     {
         return Excel::download(
-            new VendorMasterExport(
+            new FocusMasterExport(
                 $request->department_id,
                 $request->search
             ),
-            'Vendor_Master_Report.xlsx'
+            'Focus_Master_Report.xlsx'
         );
     }
 
 
-    public function contractualJVReport(Request $request)
+    public function JVReport(Request $request)
     {
         // -------------------------------
         // 1️⃣ Get Filters
@@ -455,7 +455,7 @@ class ReportController extends Controller
         // -------------------------------
         // 6️⃣ Return View (PASS $year)
         // -------------------------------
-        return view('reports.contractual-jv', [
+        return view('reports.jv', [
             'records'       => $records,
             'financialYear' => $financialYear,
             'month'         => $month,
@@ -463,19 +463,19 @@ class ReportController extends Controller
             'status'        => $status,
         ]);
     }
-    public function contractualJVExport(Request $request)
+    public function JVExport(Request $request)
     {
         return Excel::download(
-            new ContractualJVExport(
+            new JVExport(
                 $request->financial_year,
                 $request->month,
                 $request->status
             ),
-            'Contractual_JV_Report.xlsx'
+            'JV_Report.xlsx'
         );
     }
 
-    public function contractualTDSJVReport(Request $request)
+    public function TDSJVReport(Request $request)
     {
         $financialYear = $request->get('financial_year');
         $status        = $request->get('status', 'All');
@@ -510,7 +510,7 @@ class ReportController extends Controller
 
         $records = $query->paginate(20)->withQueryString();
 
-        return view('reports.contractual-tds-jv', compact(
+        return view('reports.tds-jv', compact(
             'records',
             'financialYear',
             'month',
@@ -519,19 +519,19 @@ class ReportController extends Controller
         ));
     }
 
-    public function contractualTDSJVExport(Request $request)
+    public function TDSJVExport(Request $request)
     {
         return Excel::download(
-            new ContractualTDSJVExport(
+            new TDSJVExport(
                 $request->financial_year,
                 $request->month,
                 $request->status
             ),
-            'Contractual_TDS_JV_Report.xlsx'
+            'TDS_JV_Report.xlsx'
         );
     }
 
-    public function contractualPaymentJVReport(Request $request)
+    public function PaymentJVReport(Request $request)
     {
         $financialYear = $request->get('financial_year');
         $status        = $request->get('status', 'All');
@@ -575,7 +575,7 @@ class ReportController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('reports.contractual-payment-jv', compact(
+        return view('reports.payment-jv', compact(
             'records',
             'financialYear',
             'month',
@@ -584,15 +584,15 @@ class ReportController extends Controller
         ));
     }
 
-    public function contractualPaymentJVExport(Request $request)
+    public function PaymentJVExport(Request $request)
     {
         return Excel::download(
-            new ContractualPaymentJVExport(
+            new PaymentJVExport(
                 $request->financial_year,
                 $request->month,
                 $request->status
             ),
-            'Contractual_Payment_JV_Report.xlsx'
+            'Payment_JV_Report.xlsx'
         );
     }
 }
