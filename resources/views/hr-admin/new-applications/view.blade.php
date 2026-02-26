@@ -268,48 +268,72 @@
                         <h6 class="text-muted small mb-2">Application Documents</h6>
                         <div class="row g-1">
                             @foreach($latestDocuments as $document)
+
+                            @php
+                            $status = null;
+                            $statusClass = 'secondary';
+
+                            switch($document->document_type) {
+
+                            case 'pan_card':
+                            $status = $candidate->pan_status_2 ?? 'Pending';
+                            break;
+
+                            case 'bank_document':
+                            $status = $candidate->bank_verification_status ?? 'Pending';
+                            break;
+
+                            case 'driving_licence':
+                            $status = $candidate->dl_verification_status ?? 'Pending';
+                            break;
+                            }
+
+                            // badge color
+                            $statusClass = match(strtolower($status)) {
+                            'verified', 'valid', 'successful' => 'success',
+                            'pending' => 'warning',
+                            'failed', 'invalid', 'rejected' => 'danger',
+                            default => 'secondary'
+                            };
+                            @endphp
                             <div class="col-12">
                                 <div class="d-flex justify-content-between align-items-center p-1 border rounded mb-1">
+
                                     <div class="d-flex align-items-center">
                                         <i class="ri-file-text-line me-1 text-primary fs-6"></i>
+
                                         <div>
                                             <small class="d-block text-muted">
-                                                @switch($document->document_type)
-                                                @case('pan_card') PAN
-                                                @if($document->created_at->diffInHours(now()) < 24)
-                                                    <span class="badge bg-success ms-1">New</span>
-                                                    @endif
-                                                    @break
-                                                    @case('aadhaar_card') Aadhaar
-                                                    @if($document->created_at->diffInHours(now()) < 24)
-                                                        <span class="badge bg-success ms-1">New</span>
-                                                        @endif
-                                                        @break
-                                                        @case('bank_document') Bank
-                                                        @if($document->created_at->diffInHours(now()) < 24)
-                                                            <span class="badge bg-success ms-1">New</span>
-                                                            @endif
-                                                            @break
-                                                            @case('resume') Resume @break
-                                                            @case('driving_licence') DL @break
-                                                            @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
-                                                            @endswitch
-                                                            <span class="text-muted ms-1">({{ $document->created_at->format('d-m-Y') }})</span>
+                                                {{ ucfirst(str_replace('_',' ',$document->document_type)) }}
+                                                <span class="text-muted ms-1">
+                                                    ({{ $document->created_at->format('d-m-Y') }})
+                                                </span>
+
+                                                {{-- ✅ Verification Status Badge --}}
+                                                @if($status)
+                                                <span class="badge bg-{{ $statusClass }} ms-2">
+                                                    {{ ucfirst($status) }}
+                                                </span>
+                                                @endif
+
                                             </small>
                                         </div>
                                     </div>
+
                                     <div class="btn-group btn-group-xs">
                                         <button class="btn btn-outline-primary btn-xs view-document-btn"
                                             data-document-url="{{ Storage::disk('s3')->url($document->file_path) }}"
                                             data-document-name="{{ $document->file_name }}">
                                             <i class="ri-eye-line fs-6"></i>
                                         </button>
+
                                         <a href="{{ Storage::disk('s3')->url($document->file_path) }}"
                                             download="{{ $document->file_name }}"
                                             class="btn btn-outline-secondary btn-xs">
                                             <i class="ri-download-line fs-6"></i>
                                         </a>
                                     </div>
+
                                 </div>
                             </div>
                             @endforeach

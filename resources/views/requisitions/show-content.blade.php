@@ -353,7 +353,7 @@
     </div>
 
     <!-- Agreements Section -->
-    @if(isset($agreements) && ($agreements['unsigned']->count() > 0 || $agreements['signed']))
+   @if(($agreements['unsigned'] ?? collect())->count() > 0 || ($agreements['signed'] ?? null))
     <div class="col-md-12 mt-3">
         <div class="card border">
             <div class="card-header bg-light py-1 px-2">
@@ -361,9 +361,9 @@
                     <h6 class="mb-0 fs-6">
                         <i class="ri-file-copy-line me-1"></i>Agreements
                     </h6>
-                    @if($agreements['signed'])
+                    @if($agreements['signed'] ?? null)
                     <span class="badge bg-success">Signed</span>
-                    @elseif($agreements['unsigned']->count() > 0)
+                    @elseif(($agreements['unsigned'] ?? collect())->count() > 0)
                     <span class="badge bg-warning">Pending Signature</span>
                     @endif
                 </div>
@@ -422,7 +422,7 @@
                 @endif
 
                 <!-- Unsigned Agreements -->
-                @if($agreements['unsigned']->count() > 0)
+                @if(($agreements['unsigned'] ?? collect())->count() > 0)
                 <div>
                     <h6 class="text-warning mb-2">
                         <i class="ri-time-line me-1"></i>Unsigned Agreements

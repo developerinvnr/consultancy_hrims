@@ -169,6 +169,7 @@ class HrAdminController extends Controller
 				})
 				->values(); // Reset keys to maintain proper indexing
 		}
+		
 
 		return view('hr-admin.new-applications.view', compact(
 			'requisition',

@@ -40,7 +40,7 @@
                         @for($y = $startYear; $y <= $endYear; $y++)
                             @php $fy=$y . '-' . ($y + 1); @endphp
                             <option value="{{ $fy }}"
-                            {{ request('financial_year') == $fy ? 'selected' : '' }}>
+                            {{ ($financialYear == $fy) ? 'selected' : '' }}>
                             {{ $fy }}
                             </option>
                             @endfor
@@ -325,26 +325,27 @@
         overflow-y: auto;
         overflow-x: auto;
     }
-    
+
     #masterReportTable {
-    font-size: 11px;
-}
+        font-size: 11px;
+    }
 
-#masterReportTable thead th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: #e9ecef;
-    font-weight: 600;
-    padding: 6px 8px;
-    white-space: nowrap;
-}
+    #masterReportTable thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #e9ecef;
+        font-weight: 600;
+        padding: 6px 8px;
+        white-space: nowrap;
+    }
 
-#masterReportTable tbody td {
-    padding: 5px 8px;
-    white-space: nowrap;
-    vertical-align: middle;
-}
+    #masterReportTable tbody td {
+        padding: 5px 8px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
     .report-table thead th {
         background-color: #212529;
         color: #fff;
@@ -372,45 +373,45 @@
 <script>
     // Export function
     function exportReport() {
-    const financialYear = document.getElementById('financialYear').value;
-    const status = document.querySelector('[name="status"]').value;
-    const requisitionType = document.querySelector('[name="requisition_type"]').value;
-    const workLocation = document.querySelector('[name="work_location"]').value;
-    const departmentId = document.querySelector('[name="department_id"]').value;
-    const search = document.querySelector('[name="search"]').value;
+        const financialYear = document.getElementById('financialYear').value;
+        const status = document.querySelector('[name="status"]').value;
+        const requisitionType = document.querySelector('[name="requisition_type"]').value;
+        const workLocation = document.querySelector('[name="work_location"]').value;
+        const departmentId = document.querySelector('[name="department_id"]').value;
+        const search = document.querySelector('[name="search"]').value;
 
-    if (!financialYear) {
-        toastr.error("Please select financial year");
-        return;
+        if (!financialYear) {
+            toastr.error("Please select financial year");
+            return;
+        }
+
+        let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}`;
+
+        if (status && status !== 'All') {
+            url += `&status=${status}`;
+        }
+
+        if (requisitionType && requisitionType !== 'All') {
+            url += `&requisition_type=${requisitionType}`;
+        }
+
+        if (workLocation) {
+            url += `&work_location=${encodeURIComponent(workLocation)}`;
+        }
+
+        if (departmentId) {
+            url += `&department_id=${departmentId}`;
+        }
+
+        if (search) {
+            url += `&search=${encodeURIComponent(search)}`;
+        }
+
+        window.location.href = url;
     }
-
-    let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}`;
-
-    if (status && status !== 'All') {
-        url += `&status=${status}`;
-    }
-
-    if (requisitionType && requisitionType !== 'All') {
-        url += `&requisition_type=${requisitionType}`;
-    }
-
-    if (workLocation) {
-        url += `&work_location=${encodeURIComponent(workLocation)}`;
-    }
-
-    if (departmentId) {
-        url += `&department_id=${departmentId}`;
-    }
-
-    if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-    }
-
-    window.location.href = url;
-}
 
     // Auto-submit form when main filters change
-   
+
 
     document.querySelector('[name="requisition_type"]').addEventListener('change', function() {
         document.getElementById('filterForm').submit();

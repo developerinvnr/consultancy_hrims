@@ -28,12 +28,14 @@ class ManpowerRequisitionController extends Controller
         $search = $request->get('search', '');
 
         // Get user's department details
-        $employeeDetails = DB::table('core_employee')
-            ->where('employee_id', $user->emp_id)
-            ->orWhere('emp_code', $user->emp_code)
-            ->first();
+        // $employeeDetails = DB::table('core_employee')
+        //     ->where('employee_id', $user->emp_id)
+        //     ->orWhere('emp_code', $user->emp_code)
+        //     ->first();
 
-        $isSalesDepartment = $employeeDetails && $employeeDetails->department == '15';
+        // $isSalesDepartment = $employeeDetails && $employeeDetails->department == '15';
+
+        $isSalesDepartment = $user->hasRole('sales');
 
         //dd($isSalesDepartment);
         $query = ManpowerRequisition::with(['function', 'department', 'vertical'])
@@ -74,8 +76,9 @@ class ManpowerRequisitionController extends Controller
             ->orWhere('emp_code', $user->emp_code)
             ->first();
 
-        $departmentId = $employeeDetails->department;
-        $isSalesDepartment = $departmentId == '15';
+        // $departmentId = $employeeDetails->department;
+        // $isSalesDepartment = $departmentId == '15';
+        $isSalesDepartment = $user->hasRole('sales');
 
         // 🔐 Department-based access control
         if ($isSalesDepartment) {
@@ -536,6 +539,7 @@ class ManpowerRequisitionController extends Controller
         if (! $isSubmitter && ! $isApprover && ! $isHr) {
             abort(403, 'You are not authorized to view this requisition.');
         }
+       // dd($requisition);
 
         $requisition->load([
             'function',
@@ -552,22 +556,25 @@ class ManpowerRequisitionController extends Controller
 
         // Get agreement documents for this requisition
         $candidate = $requisition->candidate;
-        $agreements = [];
+        $agreements = [
+            'unsigned' => collect(),
+            'signed' => null,
+        ];
+
 
         if ($candidate) {
-            $agreements = [
-                'unsigned' => AgreementDocument::where('candidate_id', $candidate->id)
-                    ->where('document_type', 'agreement')
-                    ->where('sign_status', 'UNSIGNED')
-                    ->where('stamp_type', 'E_STAMP') // Show only E-Stamp
-                    ->orderBy('created_at')
-                    ->get(),
-                'signed' => AgreementDocument::where('candidate_id', $candidate->id)
-                    ->where('document_type', 'agreement')
-                    ->where('sign_status', 'SIGNED')
-                    ->latest()
-                    ->first(),
-            ];
+            $agreements['unsigned'] = AgreementDocument::where('candidate_id', $candidate->id)
+                ->where('document_type', 'agreement')
+                ->where('sign_status', 'UNSIGNED')
+                ->where('stamp_type', 'E_STAMP')
+                ->orderBy('created_at')
+                ->get();
+
+            $agreements['signed'] = AgreementDocument::where('candidate_id', $candidate->id)
+                ->where('document_type', 'agreement')
+                ->where('sign_status', 'SIGNED')
+                ->latest()
+                ->first();
         }
 
         return view('requisitions.show', compact('requisition', 'agreements'));

@@ -42,6 +42,17 @@ class ReportController extends Controller
     public function master(Request $request)
     {
         $financialYear = $request->get('financial_year');
+        // ✅ ADD THIS BLOCK
+        if (!$financialYear) {
+            $currentMonth = date('n');
+            $currentYear  = date('Y');
+
+            if ($currentMonth >= 4) {
+                $financialYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                $financialYear = ($currentYear - 1) . '-' . $currentYear;
+            }
+        }
         $status = $request->get('status', 'All');
         $requisitionType = $request->get('requisition_type', 'All');
         $workLocation = $request->get('work_location', '');
@@ -206,7 +217,7 @@ class ReportController extends Controller
         $request->validate([
             'month' => 'nullable|integer|between:1,12',
             'year' => 'nullable|integer|min:2020',
-            'department_id' => 'nullable|integer|exists:core_departments,id',
+            'department_id' => 'nullable|integer|exists:core_department,id',
         ]);
 
         $financialYear = $request->get('financial_year');
@@ -250,9 +261,9 @@ class ReportController extends Controller
                 }
             });
 
-        if (!empty($departmentId)) {
-            $query->where('candidate_master.department_id', $departmentId);
-        }
+        // if (!empty($departmentId)) {
+        //     $query->where('candidate_master.department_id', $departmentId);
+        // }
 
         $salaryRecords = $query->orderBy(CandidateMaster::select('candidate_code')->whereColumn('candidate_master.id', 'salary_processings.candidate_id'))->paginate(20)->withQueryString();
 
