@@ -21,23 +21,40 @@
 <hr>
 
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-6">
         <div class="form-group">
-            <label>Select New Reporting Manager <span class="text-danger">*</span></label>
-            <select name="new_reporting_manager_employee_id" id="employee_select" class="form-control select2">
+            <label>Select Department <span class="text-danger">*</span></label>
 
-                <option value="">Select Reporting Manager</option>
-                @foreach($departmentEmployees as $emp)
-                    <option value="{{ $emp->employee_id }}" 
-                        data-name="{{ $emp->emp_name }}"
-                        {{ $emp->employee_id == $candidate->reporting_manager_employee_id ? 'selected' : '' }}>
-                        {{ $emp->emp_name }} ({{ $emp->emp_code ?? '' }}) - {{ $emp->emp_designation ?? '' }}
+            <select name="reporting_department_id" 
+                    id="reporting_department_id" 
+                    class="form-control select2">
+
+                <option value="">Select Department</option>
+
+                @foreach($departments as $dept)
+                    <option value="{{ $dept->id }}"
+                        {{ $dept->id == $candidate->department_id ? 'selected' : '' }}>
+                        {{ $dept->department_name }}
                     </option>
                 @endforeach
+
             </select>
-         @error('new_reporting_manager_employee_id')
-            <div class="text-danger">{{ $message }}</div>
-            @enderror
+
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="form-group">
+            <label>Select New Reporting Manager <span class="text-danger">*</span></label>
+
+            <select name="new_reporting_manager_employee_id" 
+                    id="employee_select" 
+                    class="form-control select2">
+
+                <option value="">Select Reporting Manager</option>
+
+            </select>
+
         </div>
     </div>
 </div>
@@ -79,32 +96,90 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+
     // Initialize Select2
     $('.select2').select2({
-        theme: 'bootstrap-5'
+        theme: 'bootstrap-5',
+        width: '100%'
     });
 
-    // Store current reporting manager ID for comparison
+    // Current reporting manager ID (for auto select)
     var currentReportingManagerId = '{{ $candidate->reporting_manager_employee_id }}';
-    
+
+    // Disable employee select initially
+    $('#employee_select').prop('disabled', true);
+
+    // Load employees when department changes
+    $('#reporting_department_id').on('change', function() {
+
+        var departmentId = $(this).val();
+
+        $('#employee_select').html('<option value="">Loading...</option>');
+        $('#employee_select').prop('disabled', true);
+
+        if (!departmentId) {
+            $('#employee_select').html('<option value="">Select Reporting Manager</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ route('hr.get.employees.by.department') }}",
+            type: "GET",
+            data: {
+                department_id: departmentId
+            },
+            success: function(response) {
+
+                var options = '<option value="">Select Reporting Manager</option>';
+
+                $.each(response, function(index, emp) {
+
+                    var selected = (emp.employee_id == currentReportingManagerId) ? 'selected' : '';
+
+                    options += `<option value="${emp.employee_id}" 
+                                data-name="${emp.emp_name}"
+                                ${selected}>
+                                ${emp.emp_name} (${emp.emp_code ?? ''})
+                                </option>`;
+                });
+
+                $('#employee_select')
+                    .html(options)
+                    .prop('disabled', false)
+                    .trigger('change');
+
+            },
+            error: function() {
+
+                $('#employee_select')
+                    .html('<option value="">Error loading employees</option>')
+                    .prop('disabled', false);
+
+            }
+        });
+
+    });
+
     // When employee selected, add hidden field for name
     $('#employee_select').on('change', function() {
-        var selectedOption = $(this).find(':selected');
-        var empName = selectedOption.data('name');
-        
-        // Remove existing hidden inputs if any
+
+        var empName = $(this).find(':selected').data('name') || '';
+
         $('#editPartyForm').find('input[name="new_reporting_to"]').remove();
-        
-        // Add hidden input for reporting manager name
-        $('<input>').attr({
-            type: 'hidden',
-            name: 'new_reporting_to',
-            value: empName
-        }).appendTo('#editPartyForm');
+
+        if(empName){
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'new_reporting_to',
+                value: empName
+            }).appendTo('#editPartyForm');
+        }
+
     });
-    
-    // Trigger change on page load to set initial hidden field
-    $('#employee_select').trigger('change');
+
+    // Trigger department change on page load
+    $('#reporting_department_id').trigger('change');
+
 });
 </script>
 @endpush

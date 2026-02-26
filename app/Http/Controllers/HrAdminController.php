@@ -169,7 +169,7 @@ class HrAdminController extends Controller
 				})
 				->values(); // Reset keys to maintain proper indexing
 		}
-		
+
 
 		return view('hr-admin.new-applications.view', compact(
 			'requisition',
@@ -2283,6 +2283,7 @@ class HrAdminController extends Controller
 		// Reporting Changes Tab
 		if ($activeTab == 'reporting' || $activeTab == 'all') {
 			$rules = array_merge($rules, [
+				'reporting_department_id' => 'required|exists:core_department,id',
 				'new_reporting_manager_employee_id' => 'required|string|max:50',
 				'new_reporting_to' => 'required|string|max:255', // From hidden field
 				'reporting_change_reason' => 'required|string|max:100',
@@ -2339,26 +2340,27 @@ class HrAdminController extends Controller
 
 				$oldReportingTo = $candidate->getOriginal('reporting_to');
 				$oldReportingManagerId = $candidate->getOriginal('reporting_manager_employee_id');
-
+				$oldDepartmentId = $candidate->getOriginal('department_id');
 				if (
 					$request->new_reporting_to != $oldReportingTo ||
-					$request->new_reporting_manager_employee_id != $oldReportingManagerId
+					$request->new_reporting_manager_employee_id != $oldReportingManagerId ||
+					$request->reporting_department_id != $oldDepartmentId
 				) {
 
 					$reportingChanged = true;
 
-					// Update candidate_master
+					// Update candidate master
 					$candidate->reporting_to = $request->new_reporting_to;
 					$candidate->reporting_manager_employee_id = $request->new_reporting_manager_employee_id;
-					$candidate->reporting_manager_address = $request->new_reporting_manager_address ?? '';
+					$candidate->department_id = $request->reporting_department_id; // IMPORTANT
 
-					// Update manpower_requisitions
+					// Update manpower requisition also
 					DB::table('manpower_requisitions')
 						->where('id', $candidate->requisition_id)
 						->update([
 							'reporting_to' => $request->new_reporting_to,
 							'reporting_manager_employee_id' => $request->new_reporting_manager_employee_id,
-							'reporting_manager_address' => $request->new_reporting_manager_address ?? '',
+							'department_id' => $request->reporting_department_id, // IMPORTANT
 							'updated_at' => now()
 						]);
 
@@ -2366,6 +2368,14 @@ class HrAdminController extends Controller
 						'old' => $oldReportingTo . ' (' . $oldReportingManagerId . ')',
 						'new' => $request->new_reporting_to . ' (' . $request->new_reporting_manager_employee_id . ')'
 					];
+
+					if ($oldDepartmentId != $request->reporting_department_id) {
+
+						$changes['department'] = [
+							'old' => $oldDepartmentId,
+							'new' => $request->reporting_department_id
+						];
+					}
 				}
 			}
 
