@@ -153,28 +153,30 @@ class CoreAPIController extends Controller
                     }
 
                     // Process all employees from API (both active and inactive)
-                    foreach ($data['list'] as $employee) {
-                        try {
-                            $userData = [
-                                'name' => $employee['emp_name'] ?? '',
-                                'emp_id' => $employee['employee_id'],
-                                'emp_code' => $employee['emp_code'],
-                                'status' => 'A',
-                                'reporting_id' => $employee['emp_reporting'],                               
-                                'email' => $employee['emp_email'] ?? null,
-                                'password' => Hash::make($employee['emp_contact'] ?? 'default123'),
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
+                    $bulkData = [];
 
-                            // Only set created_at for new records
-                            DB::table('users')->updateOrInsert(
-                                ['emp_id' => $employee['employee_id']],
-                                $userData
-                            );
-                        } catch (\Throwable $e) {
-                            Log::error("Failed processing employee {$employee['employee_id']}: {$e->getMessage()}");
-                        }
+                    foreach ($data['list'] as $employee) {
+
+                        $bulkData[] = [
+                            'name' => $employee['emp_name'] ?? '',
+                            'emp_id' => $employee['employee_id'],
+                            'emp_code' => $employee['emp_code'],
+                            'status' => 'A',
+                            'reporting_id' => $employee['emp_reporting'],
+                            'email' => $employee['emp_email'] ?? null,
+                            'password' => Hash::make($employee['emp_contact'] ?? 'default123'),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+
+                    foreach (array_chunk($bulkData, 500) as $chunk) {
+
+                        DB::table('users')->upsert(
+                            $chunk,
+                            ['emp_id'], // unique key
+                            ['name', 'emp_code', 'status', 'reporting_id', 'email', 'password', 'updated_at']
+                        );
                     }
 
                     continue;

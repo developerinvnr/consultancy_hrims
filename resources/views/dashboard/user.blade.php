@@ -83,7 +83,7 @@
 		@endif
 
 		<!-- Submitter Statistics (if user has submissions) -->
-		@if($user_stats['total_submissions'] > 0)
+		{{-- @if($user_stats['total_submissions'] > 0) --}}
 
 		<div class="col-md-3 col-6">
 			<div class="card border-0 shadow-sm">
@@ -181,7 +181,7 @@
 			</div>
 		</div>
 
-		@endif
+		{{-- @endif --}}
 
 	</div>
 
@@ -277,7 +277,7 @@
 
 
 	<!-- Recent Requisitions -->
-	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
+	@if(isset($recent_requisitions))
 	<div class="row">
 		<div class="col-12">
 			<div class="card">
@@ -306,6 +306,7 @@
 								</tr>
 							</thead>
 							<tbody>
+								@if($recent_requisitions->count() > 0)
 								@foreach($recent_requisitions as $req)
 								<tr>
 									<td>
@@ -403,6 +404,24 @@
 									</td>
 								</tr>
 								@endforeach
+
+								@else
+                                <tr>
+									<td colspan="8" class="text-center py-5">
+										<i class="ri-inbox-line fs-1 text-muted"></i>
+										<h6 class="mt-2">No requisitions yet</h6>
+										<p class="text-muted">
+											You haven't created any requisitions yet.
+										</p>
+										<a href="{{ route('requisitions.index') }}" 
+										class="btn btn-primary btn-sm">
+										Create Your First Requisition
+										</a>
+								    </td>
+								</tr>
+
+								@endif
+
 							</tbody>
 						</table>
 						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
