@@ -19,12 +19,12 @@ class HomeController extends Controller
         $this->middleware('auth');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
         if ($user->hasRole('hr_admin')) {
-            return $this->hrAdminDashboard(request());
+            return $this->hrAdminDashboard($request);
         }
 
 
@@ -32,33 +32,72 @@ class HomeController extends Controller
             return redirect()->route('dashboard.management');
         }
 
-        return $this->userDashboard($user);
+        return $this->userDashboard($user, $request);
     }
 
     private function hrAdminDashboard(Request $request)
     {
-
-        $tab = $request->get('tab', 'active');
+        $tab = $request->get('tab', 'status');
 
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate']);
 
-        if ($tab == 'active') {
-            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Active'));
-        } elseif ($tab == 'inactive') {
-            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Inactive'));
-        } elseif ($tab == 'status') {
-            $query->whereHas(
-                'candidate',
-                fn($q) =>
-                $q->whereNotIn('candidate_status', ['Active', 'Inactive'])
-            );
+        switch ($tab) {
+
+            case 'active':
+
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('candidate_status', 'Active');
+                });
+
+                break;
+
+
+            case 'inactive':
+
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('candidate_status', 'Inactive');
+                });
+
+                break;
+
+
+            case 'rejected':
+
+                // show rejected requisitions
+                $query->where('status', 'Rejected')
+                    ->orWhereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Rejected');
+                    });
+
+                break;
+
+
+            case 'status':
+            default:
+
+                // show workflow items only
+                $query->where(function ($q) {
+
+                    // requisitions without candidate (Pending HR, Approval, etc)
+                    $q->whereDoesntHave('candidate')
+
+                        // OR candidate exists but not Active/Inactive/Rejected
+                        ->orWhereHas('candidate', function ($sub) {
+                            $sub->whereNotIn('candidate_status', [
+                                'Active',
+                                'Inactive',
+                                'Rejected'
+                            ]);
+                        });
+                });
+
+                break;
         }
 
         $recent_requisitions = $query
             ->latest()
             ->paginate(10)
             ->appends(['tab' => $tab]);
-
         // KPI Stats with more detailed breakdowns
         $stats = [
             // Requisition Pipeline Stats
@@ -115,15 +154,15 @@ class HomeController extends Controller
             ->where('submission_date', '>=', now()->subDays(30))
             ->groupBy('submitted_by_name')
             ->orderBy('count', 'desc')
-            ->limit(5)
+            ->limit(6)
             ->get();
 
         // Department-wise breakdown
-        $stats['by_department'] = ManpowerRequisition::select('department_id', DB::raw('count(*) as count'))
+        $stats['by_department'] = CandidateMaster::select('department_id', DB::raw('count(*) as count'))->where('candidate_status', 'Active')
             ->with('department:id,department_name')
             ->groupBy('department_id')
             ->orderBy('count', 'desc')
-            ->limit(5)
+            ->limit(6)
             ->get();
 
         // Average Processing Times
@@ -221,7 +260,7 @@ class HomeController extends Controller
         }
     }
 
-    private function userDashboard($user)
+    private function userDashboard($user, Request $request)
     {
         $data = [];
 
@@ -267,16 +306,93 @@ class HomeController extends Controller
             }
         }
 
-        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
-            ->where(function ($query) use ($user, $isApprover) {
-                $query->where('submitted_by_user_id', $user->id);
+        $tab = $request->get('tab', 'status');
+
+        $query = ManpowerRequisition::with(['submittedBy', 'candidate'])
+            ->where(function ($q) use ($user, $isApprover) {
+
+                $q->where('submitted_by_user_id', $user->id);
 
                 if ($isApprover) {
-                    $query->orWhere('approver_id', $user->emp_id);
+                    $q->orWhere('approver_id', $user->emp_id);
                 }
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            });
+
+
+        switch ($tab) {
+
+            case 'active':
+
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('candidate_status', 'Active');
+                });
+
+                break;
+
+
+            case 'inactive':
+
+                $query->whereHas('candidate', function ($q) {
+                    $q->where('candidate_status', 'Inactive');
+                });
+
+                break;
+
+
+            case 'rejected':
+
+                $query->where(function ($q) {
+
+                    $q->where('status', 'Rejected')
+                        ->orWhereHas('candidate', function ($sub) {
+                            $sub->where('candidate_status', 'Rejected');
+                        });
+                });
+
+                break;
+
+
+            case 'status':
+            default:
+
+                $query->where(function ($q) {
+
+                    // no candidate yet (Pending HR, Approval, etc)
+                    $q->whereDoesntHave('candidate')
+
+                        // candidate exists but not active/inactive/rejected
+                        ->orWhereHas('candidate', function ($sub) {
+
+                            $sub->whereNotIn('candidate_status', [
+                                'Active',
+                                'Inactive',
+                                'Rejected'
+                            ]);
+                        });
+                });
+
+                break;
+        }
+
+
+        $data['recent_requisitions'] = $query
+            ->latest()
+            ->paginate(10)
+            ->appends(['tab' => $tab]);
+
+        $data['tab'] = $tab;
+
+
+        // $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
+        //     ->where(function ($query) use ($user, $isApprover) {
+        //         $query->where('submitted_by_user_id', $user->id);
+
+        //         if ($isApprover) {
+        //             $query->orWhere('approver_id', $user->emp_id);
+        //         }
+        //     })
+        //     ->orderBy('created_at', 'desc')
+        //     ->paginate(10);
 
 
         // dd($data);

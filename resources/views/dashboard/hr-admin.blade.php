@@ -210,7 +210,7 @@
 				<div class="card-body p-2">
 					<h6 class="mb-2 fs-6">Recent Requisitions</h6>
 					<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-						<ul class="nav nav-tabs mb-3">
+						<ul class="nav nav-tabs mb-3 sticky-tabs">
 
 							<li class="nav-item">
 								<a class="nav-link {{ $tab=='status'?'active':'' }}"
@@ -232,6 +232,11 @@
 									Inactive
 								</a>
 							</li>
+							<li class="nav-item">
+								<a class="nav-link {{ $tab=='rejected'?'active':'' }}"
+									href="?tab=rejected">Rejected</a>
+							</li>
+
 
 
 
@@ -1091,6 +1096,21 @@
 
 	.bg-soft-success {
 		background-color: #e6f7f0 !important;
+	}
+
+	.sticky-tabs {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: #fff;
+		border-bottom: 1px solid #dee2e6;
+	}
+
+	.table-responsive thead.sticky-top {
+		top: 42px;
+		/* height of tabs */
+		z-index: 9;
+		background: #fff;
 	}
 </style>
 @endpush

@@ -292,6 +292,38 @@
 				</div>
 				<div class="card-body">
 					<div class="table-responsive">
+						<ul class="nav nav-tabs mb-3">
+
+							<li class="nav-item">
+								<a class="nav-link {{ $tab=='status'?'active':'' }}"
+									href="{{ url()->current() }}?tab=status">
+									Status Wise
+								</a>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link {{ $tab=='active'?'active':'' }}"
+									href="{{ url()->current() }}?tab=active">
+									Active
+								</a>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link {{ $tab=='inactive'?'active':'' }}"
+									href="{{ url()->current() }}?tab=inactive">
+									Inactive
+								</a>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link {{ $tab=='rejected'?'active':'' }}"
+									href="?tab=rejected">Rejected</a>
+							</li>
+
+
+
+
+						</ul>
 						<table class="table table-hover">
 							<thead>
 								<tr>
@@ -406,18 +438,18 @@
 								@endforeach
 
 								@else
-                                <tr>
+								<tr>
 									<td colspan="8" class="text-center py-5">
 										<i class="ri-inbox-line fs-1 text-muted"></i>
 										<h6 class="mt-2">No requisitions yet</h6>
 										<p class="text-muted">
 											You haven't created any requisitions yet.
 										</p>
-										<a href="{{ route('requisitions.index') }}" 
-										class="btn btn-primary btn-sm">
-										Create Your First Requisition
+										<a href="{{ route('requisitions.index') }}"
+											class="btn btn-primary btn-sm">
+											Create Your First Requisition
 										</a>
-								    </td>
+									</td>
 								</tr>
 
 								@endif
