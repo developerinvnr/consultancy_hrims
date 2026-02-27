@@ -50,8 +50,13 @@
 				<td>{{ $req->created_at->format('d-M-Y') }}</td>
 
 				<td>
-					<a href="{{ route('requisitions.show',$req) }}"
-						class="btn btn-sm btn-outline-primary">
+					@php
+					$viewRoute = auth()->user()->hasRole('hr_admin')
+					? route('hr-admin.applications.show', $req->id)
+					: route('requisitions.show', $req->id);
+					@endphp
+
+					<a href="{{ $viewRoute }}" class="btn btn-sm btn-outline-primary">
 						View
 					</a>
 				</td>
@@ -72,10 +77,10 @@
 
 	</table>
 
-@php
-$pageName = $requisitions->getPageName();
-@endphp
+	@php
+	$pageName = $requisitions->getPageName();
+	@endphp
 
-{{ $requisitions->appends([$pageName => request($pageName)])->links('pagination::bootstrap-5') }}
+	{{ $requisitions->appends([$pageName => request($pageName)])->links('pagination::bootstrap-5') }}
 
 </div>

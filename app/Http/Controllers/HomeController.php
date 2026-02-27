@@ -24,7 +24,7 @@ class HomeController extends Controller
         $user = Auth::user();
 
         if ($user->hasRole('hr_admin')) {
-            return $this->hrAdminDashboard();
+            return $this->hrAdminDashboard(request());
         }
 
 
@@ -35,8 +35,30 @@ class HomeController extends Controller
         return $this->userDashboard($user);
     }
 
-    private function hrAdminDashboard()
+    private function hrAdminDashboard(Request $request)
     {
+
+        $tab = $request->get('tab', 'active');
+
+        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate']);
+
+        if ($tab == 'active') {
+            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Active'));
+        } elseif ($tab == 'inactive') {
+            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Inactive'));
+        } elseif ($tab == 'status') {
+            $query->whereHas(
+                'candidate',
+                fn($q) =>
+                $q->whereNotIn('candidate_status', ['Active', 'Inactive'])
+            );
+        }
+
+        $recent_requisitions = $query
+            ->latest()
+            ->paginate(10)
+            ->appends(['tab' => $tab]);
+
         // KPI Stats with more detailed breakdowns
         $stats = [
             // Requisition Pipeline Stats
@@ -143,33 +165,34 @@ class HomeController extends Controller
         }
 
         // Recent requisitions
-        // ACTIVE REQUISITIONS (candidate_status = Active)
-        $active_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'candidate'])
-            ->whereHas('candidate', function ($q) {
-                $q->where('candidate_status', 'Active');
-            })
-            ->latest()
-            ->paginate(10, ['*'], 'active_page');
-
-
-        // INACTIVE REQUISITIONS
-        $inactive_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'candidate'])
-            ->whereHas('candidate', function ($q) {
-                $q->where('candidate_status', '!=', 'Active');
-            })
-            ->latest()
-            ->paginate(10, ['*'], 'inactive_page');
-
-
-        // STATUS-WISE (all)
-        $status_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'candidate'])
-            ->latest()
-            ->paginate(10, ['*'], 'status_page');
+        // $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate'])
+        //     ->orderBy('created_at', 'desc')
+        //     ->paginate(10);
 
         // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
-        $active_requisitions = $this->attachAgreementData($active_requisitions);
-        $inactive_requisitions = $this->attachAgreementData($inactive_requisitions);
-        $status_requisitions = $this->attachAgreementData($status_requisitions);
+        foreach ($recent_requisitions as $requisition) {
+            if ($requisition->candidate) {
+                // Get signed agreement
+                $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->latest()
+                    ->first();
+
+                if ($signedAgreement) {
+                    // Get courier details for this agreement
+                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
+                        ->first();
+
+                    // Attach to requisition object for use in view
+                    $requisition->signed_agreement = $signedAgreement;
+                    $requisition->courier_details = $courierDetails;
+                } else {
+                    $requisition->signed_agreement = null;
+                    $requisition->courier_details = null;
+                }
+            }
+        }
 
         // Status Distribution for Chart
         $stats['status_distribution'] = ManpowerRequisition::select('status', DB::raw('count(*) as count'))
@@ -177,7 +200,7 @@ class HomeController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        return view('dashboard.hr-admin', compact('stats', 'active_requisitions','inactive_requisitions','status_requisitions'));
+        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'tab'));
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
@@ -244,40 +267,7 @@ class HomeController extends Controller
             }
         }
 
-        // ACTIVE REQUISITIONS
-        $data['active_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
-            ->where(function ($query) use ($user, $isApprover) {
-                $query->where('submitted_by_user_id', $user->id);
-
-                if ($isApprover) {
-                    $query->orWhere('approver_id', $user->emp_id);
-                }
-            })
-            ->whereHas('candidate', function ($q) {
-                $q->where('candidate_status', 'Active');
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10, ['*'], 'active_page');
-
-
-        // INACTIVE REQUISITIONS
-        $data['inactive_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
-            ->where(function ($query) use ($user, $isApprover) {
-                $query->where('submitted_by_user_id', $user->id);
-
-                if ($isApprover) {
-                    $query->orWhere('approver_id', $user->emp_id);
-                }
-            })
-            ->whereHas('candidate', function ($q) {
-                $q->where('candidate_status', '!=', 'Active');
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10, ['*'], 'inactive_page');
-
-
-        // STATUS-WISE (all)
-        $data['status_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
+        $data['recent_requisitions'] = ManpowerRequisition::with(['submittedBy', 'candidate'])
             ->where(function ($query) use ($user, $isApprover) {
                 $query->where('submitted_by_user_id', $user->id);
 
@@ -286,7 +276,7 @@ class HomeController extends Controller
                 }
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(10, ['*'], 'status_page');
+            ->paginate(10);
 
 
         // dd($data);
@@ -322,35 +312,5 @@ class HomeController extends Controller
 
         $data['is_approver'] = $isApprover;
         return view('dashboard.user', $data);
-    }
-
-    private function attachAgreementData($requisitions)
-    {
-        foreach ($requisitions as $requisition) {
-
-            if ($requisition->candidate) {
-
-                $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
-                    ->where('document_type', 'agreement')
-                    ->where('sign_status', 'SIGNED')
-                    ->latest()
-                    ->first();
-
-                if ($signedAgreement) {
-
-                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
-                        ->first();
-
-                    $requisition->signed_agreement = $signedAgreement;
-                    $requisition->courier_details = $courierDetails;
-                } else {
-
-                    $requisition->signed_agreement = null;
-                    $requisition->courier_details = null;
-                }
-            }
-        }
-
-        return $requisitions;
     }
 }

@@ -29,14 +29,16 @@ class LoginController extends Controller
         if ($employee && $employee->department == 15) {
 
             if (!$user->hasRole('sales')) {
-
                 $user->assignRole('sales');
             }
-
         } else {
 
-            if ($user->hasRole('sales')) {
+            if (!$user->hasRole('user')) {
+                $user->assignRole('user');
+            }
 
+            // optional: remove sales role
+            if ($user->hasRole('sales')) {
                 $user->removeRole('sales');
             }
         }
