@@ -277,159 +277,83 @@
 
 
 	<!-- Recent Requisitions -->
-	@if(isset($recent_requisitions))
+	@if(
+    isset($active_requisitions) ||
+    isset($inactive_requisitions) ||
+    isset($status_requisitions)
+)
 	<div class="row">
 		<div class="col-12">
 			<div class="card">
 				<div class="card-header">
-					<h5 class="card-title mb-0">
-						@if($is_approver)
-						Recent Requisitions & Approvals
-						@else
-						My Recent Requisitions
-						@endif
-					</h5>
+					<h5 class="card-title mb-0">Recent Requisitions</h5>
 				</div>
+
 				<div class="card-body">
-					<div class="table-responsive">
-						<table class="table table-hover">
-							<thead>
-								<tr>
-									<th>Requisition ID</th>
-									<th>Candidate</th>
-									<th>Email</th>
-									<th>Type</th>
-									<th>Status</th>
-									<th>Submitted By</th>
-									<th>Date</th>
-									<th>Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								@if($recent_requisitions->count() > 0)
-								@foreach($recent_requisitions as $req)
-								<tr>
-									<td>
-										<span class="badge bg-secondary">{{ $req->requisition_id }}</span>
-									</td>
-									<td>
-										<div>{{ $req->candidate_name }}</div>
 
-									</td>
-									<td>{{ $req->candidate_email }}</td>
-									<td>
-										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }}">
-											{{ $req->requisition_type }}
-										</span>
-									</td>
-									<td>
-										@php
-										$statusColors = [
-										'Pending HR Verification' => 'warning',
-										'Pending Approval' => 'info',
-										'Approved' => 'success',
-										'Correction Required' => 'danger',
-										'Processed' => 'secondary',
-										'Rejected' => 'dark',
-										'Hr Verified' => 'success',
-										'Unsigned Agreement Uploaded' => 'primary',
-										'Agreement Completed' => 'success'
-										];
-										@endphp
-										<span class="badge bg-{{ $statusColors[$req->status] ?? 'secondary' }}">
-											{{ $req->status }}
-										</span>
-									</td>
-									<td>{{ $req->submittedBy->name ?? 'N/A' }}</td>
-									<td>{{ $req->created_at->format('d-M-Y') }}</td>
-									<!-- In the actions column, after the view button -->
-									<td>
-										<div class="btn-group" role="group">
-											<!-- Existing view button -->
-											<a href="{{ route('requisitions.show', $req) }}"
-												class="btn btn-sm btn-outline-secondary" title="View">
-												<i class="ri-eye-line"></i>
-											</a>
+					<!-- Tabs -->
+					<ul class="nav nav-tabs mb-3" id="reqTabs">
 
-											<!-- ADD THIS - Agreement View Button for submitters -->
-											@if(Auth::user()->id == $req->submitted_by_user_id &&
-											in_array($req->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
-											<a href="{{ route('submitter.agreement.view', $req) }}"
-												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
-												title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
-												<i class="ri-file-text-line"></i>
-												@if($req->status == 'Signed Agreement Uploaded')
-												<span class="badge bg-warning text-dark ms-1">Courier</span>
-												@endif
-											</a>
-											@endif
+						<li class="nav-item">
+							<button class="nav-link active"
+								data-bs-toggle="tab"
+								data-bs-target="#activeTab">
+								Active
+							</button>
+						</li>
 
-											<!-- Rest of your existing buttons -->
-											@if($req->status == 'Correction Required')
-											<a href="{{ route('requisitions.edit', $req) }}"
-												class="btn btn-sm btn-outline-warning" title="Correct Application">
-												<i class="ri-edit-line"></i>
-											</a>
-											@endif
+						<li class="nav-item">
+							<button class="nav-link"
+								data-bs-toggle="tab"
+								data-bs-target="#inactiveTab">
+								Inactive
+							</button>
+						</li>
 
-											@if($req->approver_id == Auth::user()->emp_id && $req->status == 'Pending Approval')
-											<a href="{{ route('approver.requisition.view', $req) }}"
-												class="btn btn-sm btn-outline-warning" title="Review">
-												<i class="ri-search-eye-line"></i>
-											</a>
-											@endif
+						<li class="nav-item">
+							<button class="nav-link"
+								data-bs-toggle="tab"
+								data-bs-target="#statusTab">
+								Status-Wise
+							</button>
+						</li>
 
-											@php
-											$candidate = $req->candidate;
-											@endphp
+					</ul>
 
-											@if(
-											Auth::user()->id == $req->submitted_by_user_id &&
-											$candidate &&
-											$candidate->candidate_status === 'Active' &&
-											(!$candidate->contract_end_date || $candidate->contract_end_date->gte(now()))
-											)
-											<button
-												type="button"
-												class="btn btn-sm btn-outline-danger"
-												data-bs-toggle="modal"
-												data-bs-target="#deactivateModal"
-												data-action="{{ route('candidate.deactivate', $candidate) }}"
-												data-name="{{ $candidate->candidate_name }}"
-												title="Deactivate Team Member">
-												<i class="ri-user-unfollow-line"></i>
-											</button>
-											@endif
-										</div>
-									</td>
-								</tr>
-								@endforeach
 
-								@else
-                                <tr>
-									<td colspan="8" class="text-center py-5">
-										<i class="ri-inbox-line fs-1 text-muted"></i>
-										<h6 class="mt-2">No requisitions yet</h6>
-										<p class="text-muted">
-											You haven't created any requisitions yet.
-										</p>
-										<a href="{{ route('requisitions.index') }}" 
-										class="btn btn-primary btn-sm">
-										Create Your First Requisition
-										</a>
-								    </td>
-								</tr>
+					<div class="tab-content">
 
-								@endif
+						<!-- ACTIVE TAB -->
+						<div class="tab-pane fade show active" id="activeTab">
 
-							</tbody>
-						</table>
-						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
-						<div class="d-flex justify-content-end mt-3">
-							{{ $recent_requisitions->links('pagination::bootstrap-5') }}
+							@include('dashboard.partials.requisition-table', [
+							'requisitions' => $active_requisitions
+							])
+
 						</div>
-						@endif
+
+
+						<!-- INACTIVE TAB -->
+						<div class="tab-pane fade" id="inactiveTab">
+
+							@include('dashboard.partials.requisition-table', [
+							'requisitions' => $inactive_requisitions
+							])
+
+						</div>
+
+
+						<!-- STATUS TAB -->
+						<div class="tab-pane fade" id="statusTab">
+
+							@include('dashboard.partials.requisition-table', [
+							'requisitions' => $status_requisitions
+							])
+
+						</div>
+
 					</div>
+
 				</div>
 			</div>
 		</div>

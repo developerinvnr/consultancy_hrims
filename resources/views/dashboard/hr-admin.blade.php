@@ -202,208 +202,76 @@
 	</div>
 
 	<!-- Recent Requisitions Table -->
-	<!-- Recent Requisitions Table -->
-	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
+	@if(
+    isset($active_requisitions) ||
+    isset($inactive_requisitions) ||
+    isset($status_requisitions)
+)
 	<div class="row">
 		<div class="col-12">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body p-2">
-					<h6 class="mb-2 fs-6">Recent Requisitions</h6>
-					<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-						<table class="table table-sm table-hover mb-0">
-							<thead class="sticky-top bg-white">
-								<tr>
-									<th class="fs-11">ID</th>
-									<th class="fs-11">Candidate</th>
-									<th class="fs-11">Email</th>
-									<th class="fs-11">Type</th>
-									<th class="fs-11">Status</th>
-									<th class="fs-11">Courier Status</th>
-									<th class="fs-11">Date</th>
-									<th class="fs-11">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								@foreach($recent_requisitions as $req)
-								@php
-								$isProcessed = $req->candidate ? true : false;
-								$candidate = $req->candidate;
-								$empStatus = $candidate->candidate_status ?? null;
+			<h6 class="mb-2 fs-6">Recent Requisitions</h6>
 
-								// Use the data we attached in the controller
-								$signedAgreement = $req->signed_agreement ?? null;
-								$courierDetails = $req->courier_details ?? null;
-								@endphp
-								<tr>
-									<td class="fs-11">
-										<span class="badge bg-secondary fs-10">{{ $req->requisition_id }}</span>
-									</td>
-									<td class="fs-11">
-										{{ $req->candidate_name }}
-									</td>
-									<td class="fs-11">
-										<small class="text-muted fs-9">{{ $req->candidate_email }}</small>
-									</td>
-									<td class="fs-11">
-										<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }} fs-10">
-											{{ $req->requisition_type }}
-										</span>
-									</td>
-									<td class="fs-11">
-										@switch($req->status)
-										@case('Pending HR Verification')
-										<span class="badge bg-warning fs-10">Pending HR Verification</span>
-										@break
-										@case('Correction Required')
-										<span class="badge bg-danger fs-10">Correction Required</span>
-										@break
-										@case('Pending Approval')
-										<span class="badge bg-info fs-10">Pending Approval</span>
-										@break
-										@case('Approved')
-										<span class="badge bg-primary fs-10">Ready to Process</span>
-										@break
-										@case('Processed')
-										@php
-										$statusColors = [
-										'Agreement Pending' => 'warning',
-										'Unsigned Agreement Uploaded' => 'info',
-										'Signed Agreement Uploaded' => 'primary',
-										'Agreement Completed' => 'secondary',
-										'Active' => 'success'
-										];
-										@endphp
-										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
-											{{ $empStatus }}
-										</span>
-										@if($candidate?->candidate_code)
-										<br>
-										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
-										@endif
-										@break
-										@default
-										<span class="badge bg-secondary fs-10">{{ $req->status }}</span>
-										@endswitch
-									</td>
+			<!-- Tabs -->
+			<ul class="nav nav-tabs mb-3">
 
-									<!-- COURIER STATUS COLUMN -->
-									<td class="fs-11">
-										@if($courierDetails)
-										@if($courierDetails->received_date)
-										<span class="badge bg-success fs-10">
-											<i class="ri-checkbox-circle-line me-1"></i> Received
-										</span>
-										<small class="d-block text-muted fs-9">
-											{{ \Carbon\Carbon::parse($courierDetails->received_date)->format('d M Y') }}
-										</small>
-										@else
-										<span class="badge bg-warning fs-10">
-											<i class="ri-truck-line me-1"></i> Dispatched
-										</span>
-										<small class="d-block text-muted fs-9">
-											{{ $courierDetails->courier_name }}<br>
-											Docket: {{ $courierDetails->docket_number }}<br>
-											Dispatch: {{ \Carbon\Carbon::parse($courierDetails->dispatch_date)->format('d M Y') }}
-										</small>
-										@endif
-										@elseif($signedAgreement)
-										<span class="badge bg-secondary fs-10">
-											<i class="ri-time-line me-1"></i> Awaiting Dispatch
-										</span>
-										<small class="d-block text-muted fs-9">
-											Signed on: {{ \Carbon\Carbon::parse($signedAgreement->created_at)->format('d M Y') }}
-										</small>
-										@else
-										<span class="text-muted fs-9">N/A</span>
-										@endif
-									</td>
+				<li class="nav-item">
+					<button class="nav-link active"
+						data-bs-toggle="tab"
+						data-bs-target="#hrActiveTab">
+						Active
+					</button>
+				</li>
 
-									<td class="fs-11">{{ $req->created_at->format('d-M') }}</td>
-									<td>
-										<div class="btn-group btn-group-sm" role="group">
-											<a href="{{ route('hr-admin.applications.view', $req) }}"
-												class="btn btn-outline-primary" title="View">
-												<i class="ri-eye-line fs-10"></i>
-											</a>
+				<li class="nav-item">
+					<button class="nav-link"
+						data-bs-toggle="tab"
+						data-bs-target="#hrInactiveTab">
+						Inactive
+					</button>
+				</li>
 
-											@if($req->status === 'Approved' && !$isProcessed)
-											<button type="button" class="btn btn-success process-btn"
-												data-bs-toggle="modal" data-bs-target="#processModal"
-												data-requisition-id="{{ $req->id }}"
-												data-requisition-type="{{ $req->requisition_type }}"
-												data-requisition-name="{{ $req->candidate_name }}"
-												data-current-reporting="{{ $req->reporting_to }}"
-												data-current-manager-id="{{ $req->reporting_manager_employee_id }}">
-												<i class="ri-play-line fs-10"></i>
-											</button>
-											@elseif($req->status === 'Pending Approval')
-											<span class="badge bg-info fs-9">Awaiting Approval</span>
-											@endif
+				<li class="nav-item">
+					<button class="nav-link"
+						data-bs-toggle="tab"
+						data-bs-target="#hrStatusTab">
+						Status-Wise
+					</button>
+				</li>
 
-											<!-- COURIER RECEIVE BUTTON -->
-											@if($courierDetails && !$courierDetails->received_date)
-											<button type="button"
-												class="btn btn-outline-success receive-courier-btn"
-												data-bs-toggle="modal"
-												data-bs-target="#receiveCourierModal"
-												data-requisition-id="{{ $req->id }}"
-												data-agreement-id="{{ $signedAgreement->id ?? '' }}"
-												data-candidate-name="{{ $req->candidate_name }}"
-												data-courier-name="{{ $courierDetails->courier_name }}"
-												data-docket-number="{{ $courierDetails->docket_number }}"
-												data-dispatch-date="{{ \Carbon\Carbon::parse($courierDetails->dispatch_date)->format('d M Y') }}"
-												title="Mark as Received">
-												<i class="ri-check-double-line fs-10"></i>
-											</button>
-											@endif
+			</ul>
 
-											@if($candidate)
-											@php
-											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'UNSIGNED')
-											->exists();
-											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'SIGNED')
-											->exists();
-											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'SIGNED')
-											->where('uploaded_by_role', 'submitter')
-											->exists();
-											$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'UNSIGNED')
-											->value('agreement_number');
-											@endphp
 
-											@if($empStatus == "Active")
-											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
-											@elseif($hasUnsigned && !$hasSigned)
-											<button type="button"
-												class="btn btn-outline-primary upload-signed-btn"
-												data-candidate-id="{{ $candidate->id }}"
-												data-candidate-code="{{ $candidate->candidate_code }}"
-												data-candidate-name="{{ $candidate->candidate_name }}"
-												data-agreement-number="{{ $agreementNumber }}">
-												<i class="ri-upload-line fs-10"></i>
-											</button>
-											@endif
-											@endif {{-- THIS WAS MISSING --}}
-										</div>
-									</td>
-								</tr>
-								@endforeach
-							</tbody>
-						</table>
-						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
-						<div class="d-flex justify-content-end mt-3">
-							{{ $recent_requisitions->links('pagination::bootstrap-5') }}
-						</div>
-						@endif
-					</div>
+			<div class="tab-content">
+
+				<!-- ACTIVE -->
+				<div class="tab-pane fade show active" id="hrActiveTab">
+
+					@include('dashboard.partials.requisition-table', [
+					'requisitions' => $active_requisitions
+					])
+
 				</div>
+
+
+				<!-- INACTIVE -->
+				<div class="tab-pane fade" id="hrInactiveTab">
+
+					@include('dashboard.partials.requisition-table', [
+					'requisitions' => $inactive_requisitions
+					])
+
+				</div>
+
+
+				<!-- STATUS -->
+				<div class="tab-pane fade" id="hrStatusTab">
+
+					@include('dashboard.partials.requisition-table', [
+					'requisitions' => $status_requisitions
+					])
+
+				</div>
+
 			</div>
 		</div>
 	</div>
@@ -590,64 +458,64 @@
 
 <!-- Receive Courier Modal -->
 <div class="modal fade" id="receiveCourierModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Mark Courier as Received</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="receiveCourierForm">
-                @csrf
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="ri-information-line me-2"></i>
-                        Confirm that the courier has been received by the candidate.
-                    </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Mark Courier as Received</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<form id="receiveCourierForm">
+				@csrf
+				<div class="modal-body">
+					<div class="alert alert-info">
+						<i class="ri-information-line me-2"></i>
+						Confirm that the courier has been received by the candidate.
+					</div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Candidate</label>
-                        <input type="text" class="form-control" id="receiveCandidateName" readonly>
-                    </div>
+					<div class="mb-3">
+						<label class="form-label">Candidate</label>
+						<input type="text" class="form-control" id="receiveCandidateName" readonly>
+					</div>
 
-                    <div class="mb-3 bg-light p-2 rounded">
-                        <label class="form-label">Courier Details</label>
-                        <div class="row small">
-                            <div class="col-6">
-                                <strong>Courier:</strong> <span id="receiveCourierName"></span>
-                            </div>
-                            <div class="col-6">
-                                <strong>Docket:</strong> <span id="receiveDocketNumber"></span>
-                            </div>
-                            <div class="col-6 mt-1">
-                                <strong>Dispatch Date:</strong> <span id="receiveDispatchDate"></span>
-                            </div>
-                        </div>
-                    </div>
+					<div class="mb-3 bg-light p-2 rounded">
+						<label class="form-label">Courier Details</label>
+						<div class="row small">
+							<div class="col-6">
+								<strong>Courier:</strong> <span id="receiveCourierName"></span>
+							</div>
+							<div class="col-6">
+								<strong>Docket:</strong> <span id="receiveDocketNumber"></span>
+							</div>
+							<div class="col-6 mt-1">
+								<strong>Dispatch Date:</strong> <span id="receiveDispatchDate"></span>
+							</div>
+						</div>
+					</div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Received Date <span class="text-danger">*</span></label>
-                        <input type="date" 
-                               class="form-control" 
-                               name="received_date" 
-                               id="receivedDate"
-                               value="{{ date('Y-m-d') }}" 
-                               readonly 
-                               style="background-color: #e9ecef; cursor: not-allowed;">
-                        <small class="text-muted">Today's date (auto-filled, cannot be changed)</small>
-                    </div>
+					<div class="mb-3">
+						<label class="form-label">Received Date <span class="text-danger">*</span></label>
+						<input type="date"
+							class="form-control"
+							name="received_date"
+							id="receivedDate"
+							value="{{ date('Y-m-d') }}"
+							readonly
+							style="background-color: #e9ecef; cursor: not-allowed;">
+						<small class="text-muted">Today's date (auto-filled, cannot be changed)</small>
+					</div>
 
-                    <input type="hidden" name="requisition_id" id="receiveRequisitionId">
-                    <input type="hidden" name="agreement_id" id="receiveAgreementId">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success" id="receiveCourierBtn">
-                        <i class="ri-check-double-line me-1"></i> Confirm Received
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+					<input type="hidden" name="requisition_id" id="receiveRequisitionId">
+					<input type="hidden" name="agreement_id" id="receiveAgreementId">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-success" id="receiveCourierBtn">
+						<i class="ri-check-double-line me-1"></i> Confirm Received
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
 </div>
 <!-- Toast Container -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
@@ -1056,6 +924,33 @@
 
 
 	});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    let targetTab = null;
+
+    if (urlParams.has('inactive_page')) {
+        targetTab = '#hrInactiveTab';
+    }
+    else if (urlParams.has('status_page')) {
+        targetTab = '#hrStatusTab';
+    }
+    else if (urlParams.has('active_page')) {
+        targetTab = '#hrActiveTab';
+    }
+
+    if (targetTab) {
+        const triggerEl = document.querySelector(`[data-bs-target="${targetTab}"]`);
+        if (triggerEl) {
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        }
+    }
+
+});
 </script>
 <style>
 	.select2-container {
