@@ -8,7 +8,7 @@
         'Correction Required' => 'danger',
         'Pending Approval' => 'info',
         'Approved' => 'success',
-        'Rejected' => 'dark',
+        'Rejected' => 'danger',
         'Processed' => 'primary',
         'Agreement Pending' => 'secondary',
         'Completed' => 'success'
@@ -281,76 +281,143 @@
         </div>
     </div>
 
-    <!-- Documents -->
-    <div class="col-md-12">
-        <div class="card border">
-            <div class="card-header bg-light py-1 px-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fs-6">Documents</h6>
-                    <span class="badge bg-primary fs-6">{{ $requisition->documents->count() }}</span>
-                </div>
+   <!-- Documents -->
+<div class="col-md-12">
+    <div class="card border">
+        <div class="card-header bg-light py-1 px-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fs-6">Documents</h6>
+                <span class="badge bg-primary fs-6">{{ $requisition->documents->count() }}</span>
             </div>
-            <div class="card-body p-2">
-                @if($requisition->documents && $requisition->documents->count() > 0)
+        </div>
+
+        <div class="card-body p-2">
+
+            @if($requisition->documents && $requisition->documents->count() > 0)
+
                 <div class="row g-1">
+
                     @foreach($requisition->documents as $document)
-                    @php
-                    $s3Url = Storage::disk('s3')->url($document->file_path);
-                    $iconClass = [
-                    'pan_card' => 'ri-bank-card-line',
-                    'aadhaar_card' => 'ri-id-card-line',
-                    'bank_document' => 'ri-bank-line',
-                    'resume' => 'ri-file-text-line',
-                    'driving_licence' => 'ri-car-line',
-                    'zbm_gm_approval' => 'ri-approval-line'
-                    ][$document->document_type] ?? 'ri-file-line';
-                    @endphp
-                    <div class="col-12">
-                        <div class="d-flex justify-content-between align-items-center p-1 border rounded mb-1">
-                            <div class="d-flex align-items-center">
-                                <i class="{{ $iconClass }} me-1 text-primary fs-6"></i>
-                                <div>
-                                    <small class="d-block text-muted">
-                                        @switch($document->document_type)
-                                        @case('pan_card') PAN Card @break
-                                        @case('aadhaar_card') Aadhaar Card @break
-                                        @case('bank_document') Bank Document @break
-                                        @case('resume') Resume @break
-                                        @case('driving_licence') Driving Licence @break
-                                        @case('zbm_gm_approval') ZBM/GM Approval @break
-                                        @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
-                                        @endswitch
-                                    </small>
-                                    <small class="text-muted">{{ $document->file_name }}</small>
+
+                        @php
+                            $s3Url = Storage::disk('s3')->url($document->file_path);
+
+                            // Icon mapping
+                            $iconClass = [
+                                'pan_card' => 'ri-bank-card-line',
+                                'aadhaar_card' => 'ri-id-card-line',
+                                'bank_document' => 'ri-bank-line',
+                                'resume' => 'ri-file-text-line',
+                                'driving_licence' => 'ri-car-line',
+                                'zbm_gm_approval' => 'ri-approval-line'
+                            ][$document->document_type] ?? 'ri-file-line';
+
+                            // Verification status (ONLY for verified document types)
+                            $status = null;
+                            $statusClass = null;
+
+                            if($document->document_type === 'pan_card'){
+                                $status = $requisition->pan_status_2;
+                            }
+                            elseif($document->document_type === 'bank_document'){
+                                $status = $requisition->bank_verification_status;
+                            }
+                            elseif($document->document_type === 'driving_licence'){
+                                $status = $requisition->dl_verification_status;
+                            }
+
+                            // Assign color only if status exists
+                            if(!empty($status)){
+                                $statusClass = match(strtolower($status)){
+                                    'verified','valid','success','successful' => 'success',
+                                    'pending' => 'warning',
+                                    'failed','invalid','rejected','inoperative' => 'danger',
+                                    default => 'secondary'
+                                };
+                            }
+                        @endphp
+
+
+                        <div class="col-12">
+
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-1">
+
+                                <!-- Left section -->
+                                <div class="d-flex align-items-center">
+
+                                    <i class="{{ $iconClass }} me-2 text-primary fs-6"></i>
+
+                                    <div>
+
+                                        <!-- Document name -->
+                                        <small class="d-block text-muted">
+                                            @switch($document->document_type)
+                                                @case('pan_card') PAN Card @break
+                                                @case('aadhaar_card') Aadhaar Card @break
+                                                @case('bank_document') Bank Document @break
+                                                @case('resume') Resume @break
+                                                @case('driving_licence') Driving Licence @break
+                                                @case('zbm_gm_approval') ZBM/GM Approval @break
+                                                @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
+                                            @endswitch
+                                        </small>
+
+                                        <!-- File name -->
+                                        <small class="text-muted d-block">
+                                            {{ $document->file_name }}
+                                        </small>
+
+                                        <!-- Verification badge ONLY if exists -->
+                                        @if(!empty($status))
+                                            <span class="badge bg-{{ $statusClass }} mt-1">
+                                                {{ ucfirst($status) }}
+                                            </span>
+                                        @endif
+
+                                    </div>
+
                                 </div>
+
+
+                                <!-- Right buttons -->
+                                <div class="btn-group btn-group-xs">
+
+                                    <a href="{{ $s3Url }}"
+                                       target="_blank"
+                                       class="btn btn-outline-primary btn-xs"
+                                       title="View">
+                                        <i class="ri-eye-line fs-6"></i>
+                                    </a>
+
+                                    <a href="{{ $s3Url }}"
+                                       download="{{ $document->file_name }}"
+                                       class="btn btn-outline-secondary btn-xs"
+                                       title="Download">
+                                        <i class="ri-download-line fs-6"></i>
+                                    </a>
+
+                                </div>
+
                             </div>
-                            <div class="btn-group btn-group-xs">
-                                <a href="{{ $s3Url }}"
-                                    target="_blank"
-                                    class="btn btn-outline-primary btn-xs"
-                                    title="View">
-                                    <i class="ri-eye-line fs-6"></i>
-                                </a>
-                                <a href="{{ $s3Url }}"
-                                    download="{{ $document->file_name }}"
-                                    class="btn btn-outline-secondary btn-xs"
-                                    title="Download">
-                                    <i class="ri-download-line fs-6"></i>
-                                </a>
-                            </div>
+
                         </div>
-                    </div>
+
                     @endforeach
+
                 </div>
-                @else
+
+            @else
+
                 <div class="text-center py-2">
                     <i class="ri-folder-open-line text-muted fs-3"></i>
                     <p class="text-muted mt-1 small">No documents uploaded</p>
                 </div>
-                @endif
-            </div>
+
+            @endif
+
         </div>
     </div>
+</div>
 
     <!-- Agreements Section -->
    @if(($agreements['unsigned'] ?? collect())->count() > 0 || ($agreements['signed'] ?? null))

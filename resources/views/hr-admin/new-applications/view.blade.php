@@ -285,23 +285,23 @@
                             switch($document->document_type) {
 
                             case 'pan_card':
-                            $status = $candidate->pan_status_2 ?? 'Pending';
+                            $status = $requisition->pan_status_2 ?? 'Pending';
                             break;
 
                             case 'bank_document':
-                            $status = $candidate->bank_verification_status ?? 'Pending';
+                            $status = $requisition->bank_verification_status ?? 'Pending';
                             break;
 
                             case 'driving_licence':
-                            $status = $candidate->dl_verification_status ?? 'Pending';
+                            $status = $requisition->dl_verification_status ?? 'Pending';
                             break;
+
                             }
 
-                            // badge color
-                            $statusClass = match(strtolower($status)) {
+                            $statusClass = match(strtolower($status ?? 'pending')) {
                             'verified', 'valid', 'successful' => 'success',
                             'pending' => 'warning',
-                            'failed', 'invalid', 'rejected' => 'danger',
+                            'failed', 'invalid', 'rejected', 'inoperative' => 'danger',
                             default => 'secondary'
                             };
                             @endphp
