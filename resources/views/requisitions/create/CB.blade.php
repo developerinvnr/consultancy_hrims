@@ -685,7 +685,7 @@
             }
         });
 
-        initContractDateValidation("#contract_start_date");
+        //initContractDateValidation("#contract_start_date");
 
         const requisitionType = $('input[name="requisition_type"]').val();
 
