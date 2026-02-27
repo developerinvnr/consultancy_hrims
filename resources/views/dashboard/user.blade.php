@@ -292,7 +292,7 @@
 				</div>
 				<div class="card-body">
 					<div class="table-responsive">
-						<ul class="nav nav-tabs mb-3">
+						<ul class="nav nav-tabs mb-3 sticky-tabs">
 
 							<li class="nav-item">
 								<a class="nav-link {{ $tab=='status'?'active':'' }}"
@@ -575,4 +575,20 @@
 		});
 	});
 </script>
+<style>
+	.sticky-tabs {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: #fff;
+		border-bottom: 1px solid #dee2e6;
+	}
+
+	.table-responsive thead.sticky-top {
+		top: 42px;
+		/* height of tabs */
+		z-index: 9;
+		background: #fff;
+	}
+	</style>
 @endpush
