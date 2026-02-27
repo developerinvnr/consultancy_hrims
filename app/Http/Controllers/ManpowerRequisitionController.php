@@ -35,7 +35,7 @@ class ManpowerRequisitionController extends Controller
 
         // $isSalesDepartment = $employeeDetails && $employeeDetails->department == '15';
 
-        $isSalesDepartment = $user->hasRole('sales');
+        $isSalesDepartment = $user->can('create tfa requisition') || $user->can('create cb requisition');
 
         //dd($isSalesDepartment);
         $query = ManpowerRequisition::with(['function', 'department', 'vertical'])
@@ -70,28 +70,26 @@ class ManpowerRequisitionController extends Controller
 
         $user = Auth::user();
 
+        // permission mapping
+        $permissionMap = [
+            'Contractual' => 'requisitions.contractual.create',
+            'TFA' => 'requisitions.tfa.create',
+            'CB' => 'requisitions.cb.create',
+        ];
+
+        $requiredPermission = $permissionMap[$type] ?? null;
+
+        if (!$requiredPermission || !$user->can($requiredPermission)) {
+            abort(403, 'You do not have permission to create this requisition type.');
+        }
+
+
         // Get user's employee details from core_employee table
         $employeeDetails = DB::table('core_employee')
             ->where('employee_id', $user->emp_id)
             ->orWhere('emp_code', $user->emp_code)
             ->first();
 
-        // $departmentId = $employeeDetails->department;
-        // $isSalesDepartment = $departmentId == '15';
-        $isSalesDepartment = $user->hasRole('sales');
-
-        // 🔐 Department-based access control
-        if ($isSalesDepartment) {
-            // Sales can only access TFA & CB
-            if (!in_array($type, ['TFA', 'CB'])) {
-                abort(403, 'Sales department can only create TFA and CB requisitions.');
-            }
-        } else {
-            // Other departments can only access Contractual
-            if ($type !== 'Contractual') {
-                abort(403, 'Only Sales department can create TFA and CB requisitions.');
-            }
-        }
 
         // Get dropdown data
         $functions = CoreFunction::where('is_active', '1')->orderBy('function_name')->get();
@@ -105,7 +103,6 @@ class ManpowerRequisitionController extends Controller
         $regions = DB::table('core_region')->where('is_active', '1')->orderBy('region_name')->get();
         $territories = DB::table('core_territory')->where('is_active', '1')->orderBy('territory_name')->get();
 
-        // Get states list from core_state table
         // Get states list from core_state table
         $states = CoreState::where('is_active', '1')
             ->orderBy('state_name')
@@ -539,7 +536,7 @@ class ManpowerRequisitionController extends Controller
         if (! $isSubmitter && ! $isApprover && ! $isHr) {
             abort(403, 'You are not authorized to view this requisition.');
         }
-       // dd($requisition);
+        // dd($requisition);
 
         $requisition->load([
             'function',

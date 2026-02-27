@@ -52,7 +52,7 @@ class RoleController extends Controller
 		]);
 
 		$permissions = Permission::whereIn('id', $request->permission)->get();
-        $role->syncPermissions($permissions);
+		$role->syncPermissions($permissions);
 
 		return redirect()
 			->route('roles.index')
@@ -84,7 +84,7 @@ class RoleController extends Controller
 		]);
 
 		$permissions = Permission::whereIn('id', $request->permission)->get();
-        $role->syncPermissions($permissions);
+		$role->syncPermissions($permissions);
 
 		return redirect()
 			->route('roles.index')
@@ -120,5 +120,35 @@ class RoleController extends Controller
 		$rolePermissions = $role->permissions()->pluck('id')->toArray();
 
 		return view('roles.permissions', compact('role', 'groupedPermissions', 'rolePermissions'));
+	}
+
+	public function updatePermissions(Request $request, Role $role)
+	{
+		try {
+
+			$request->validate([
+				'permissions' => 'nullable|array',
+				'permissions.*' => 'exists:permissions,id'
+			]);
+
+			// Get selected permissions or empty array
+			$permissionIds = $request->permissions ?? [];
+
+			// Sync permissions
+			$permissions = Permission::whereIn('id', $permissionIds)->get();
+
+			$role->syncPermissions($permissions);
+
+			return redirect()
+				->route('roles.permissions', $role->id)
+				->with('success', 'Permissions updated successfully.');
+		} catch (\Exception $e) {
+
+			Log::error('Permission update failed: ' . $e->getMessage());
+
+			return redirect()
+				->back()
+				->with('error', 'Failed to update permissions.');
+		}
 	}
 }

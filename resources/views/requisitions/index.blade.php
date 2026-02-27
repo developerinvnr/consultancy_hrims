@@ -70,28 +70,32 @@
                                     </button>
                                     <ul class="dropdown-menu">
 
-                                        @if($isSalesDepartment)
-                                        <li>
-                                            <a class="dropdown-item"
-                                                href="{{ route('requisitions.create', ['type' => 'TFA']) }}">
-                                                TFA
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <a class="dropdown-item"
-                                                href="{{ route('requisitions.create', ['type' => 'CB']) }}">
-                                                CB
-                                            </a>
-                                        </li>
-                                        @else
+                                        @can('requisitions.contractual.create')
                                         <li>
                                             <a class="dropdown-item"
                                                 href="{{ route('requisitions.create', ['type' => 'Contractual']) }}">
                                                 Contractual
                                             </a>
                                         </li>
-                                        @endif
+                                        @endcan
+
+                                        @can('requisitions.tfa.create')
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('requisitions.create', ['type' => 'TFA']) }}">
+                                                TFA
+                                            </a>
+                                        </li>
+                                        @endcan
+
+                                        @can('requisitions.cb.create')
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('requisitions.create', ['type' => 'CB']) }}">
+                                                CB
+                                            </a>
+                                        </li>
+                                        @endcan
 
                                     </ul>
 
