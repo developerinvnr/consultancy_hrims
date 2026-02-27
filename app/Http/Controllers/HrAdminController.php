@@ -228,6 +228,48 @@ class HrAdminController extends Controller
 		}
 	}
 
+	/** Reject Applications */
+
+	public function rejectApplication(Request $request, ManpowerRequisition $requisition)
+	{
+		if (!auth()->user()->hasRole('hr_admin')) {
+			abort(403, 'Unauthorized');
+		}
+
+		// prevent rejecting already processed applications
+		if (in_array($requisition->status, ['Rejected', 'Approved', 'Processed'])) {
+			return back()->with('error', 'This application cannot be rejected.');
+		}
+
+		$request->validate([
+			'rejection_reason' => 'required|string|min:5|max:1000'
+		]);
+
+		DB::beginTransaction();
+
+		try {
+
+			$requisition->update([
+				'status' => 'Rejected',
+				'rejection_reason' => $request->rejection_reason,
+				'rejection_date' => now(),   // ✅ correct column
+			]);
+
+			DB::commit();
+
+			return redirect()
+				->route('hr-admin.applications.new')
+				->with('success', 'Application rejected successfully.');
+		} catch (\Exception $e) {
+
+			DB::rollBack();
+
+			Log::error('Reject failed: ' . $e->getMessage());
+
+			return back()->with('error', 'Failed to reject application.');
+		}
+	}
+
 
 	/**
 	 * Get edit form for a section

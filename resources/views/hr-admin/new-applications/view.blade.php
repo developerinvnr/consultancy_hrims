@@ -42,6 +42,15 @@
                         <i class="ri-send-plane-line"></i>
                     </button>
                     @endif
+
+                    @if($requisition->status === 'Pending HR Verification')
+                    <button type="button" class="btn btn-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#rejectModal"
+                        title="Reject Application">
+                        <i class="ri-close-circle-line"></i>
+                    </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -609,6 +618,52 @@
                     </button>
                     @endif
                 </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Application Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST"
+                action="{{ route('hr-admin.applications.reject', $requisition) }}">
+                @csrf
+
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">Reject Application</h6>
+                    <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="alert alert-danger">
+                        This action cannot be undone.
+                    </div>
+
+                    <label class="form-label">
+                        Rejection Reason <span class="text-danger">*</span>
+                    </label>
+
+                    <textarea name="rejection_reason"
+                        class="form-control"
+                        required minlength="5"></textarea>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-light"
+                        data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button class="btn btn-danger">
+                        Reject Application
+                    </button>
+                </div>
+
             </form>
         </div>
     </div>

@@ -122,6 +122,9 @@ Route::middleware('auth')->group(function () {
                 ->name('process-modal');
             Route::get('upload-agreement/{candidate}', [HrAdminController::class, 'showUploadAgreementByEmployee'])->name('upload-agreement');
             Route::post('upload-agreement/{candidate}', [HrAdminController::class, 'uploadAgreementStoreByEmployee'])->name('upload-agreement-store');
+
+            //Reject Applications
+            Route::post('/new/{requisition}/reject', [HrAdminController::class, 'rejectApplication'])->name('reject');
         });
 
         // Master Tab
@@ -332,7 +335,9 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::get('/remuneration', [ReportController::class, 'remuneration'])->name('remuneration');
     Route::get('/focus-master', [ReportController::class, 'focusMaster'])->name('focus-master');
     Route::get('/jv', [ReportController::class, 'JVReport'])->name('jv');
-    Route::get('/tds-jv',[ReportController::class, 'TDSJVReport']
+    Route::get(
+        '/tds-jv',
+        [ReportController::class, 'TDSJVReport']
     )->name('tds-jv');
     Route::get('/payment-jv', [ReportController::class, 'PaymentJVReport'])->name('payment-jv');
 
