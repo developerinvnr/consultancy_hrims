@@ -32,14 +32,7 @@ class SalaryCalculator
         }
 
         // 2️⃣ Month stats
-        $totalDays = \Carbon\Carbon::create($year, $month)->daysInMonth;
-
-        $sundays = 0;
-        for ($d = 1; $d <= $totalDays; $d++) {
-            if (date('w', strtotime("$year-$month-$d")) == 0) {
-                $sundays++;
-            }
-        }
+       
 
         // Detect contract start & end month
         $contractStart = $candidate->contract_start_date
@@ -52,21 +45,7 @@ class SalaryCalculator
 
         $currentMonth = date('Y-m', strtotime("$year-$month-01"));
 
-        // Default working days = 26
-        // Always use actual working days of month
-        $workingDays = $totalDays - $sundays;
-
-        // Safety cap (optional business rule)
-        if ($workingDays > 26) {
-            $workingDays = 26;
-        }
-
-
-        if ($workingDays <= 0) {
-            throw new Exception("Invalid working days");
-        }
-
-
+        
 
         // 3️⃣ Salary base
         $monthlySalary = (float) $candidate->remuneration_per_month;
@@ -74,9 +53,12 @@ class SalaryCalculator
             throw new Exception("Salary not defined");
         }
 
-        // ❗ DO NOT ROUND HERE
-        $perDay = $monthlySalary / $workingDays;
+        $totalDays = \Carbon\Carbon::create($year, $month)->daysInMonth;
 
+        // FIXED rule: always 26 days salary base
+        $workingDays = 26;
+
+        $perDay = $monthlySalary / 26;
         // 4️⃣ Count paid & absent WORKING days only
         $presentDays = 0;
         $absentDays = 0;
@@ -143,8 +125,8 @@ class SalaryCalculator
 
         // 7️⃣ Final rounded values (ONLY here)
         return [
-            'monthly_salary'   => round($monthlySalary, 2),
-            'per_day_salary'   => round($perDay, 2),
+            'monthly_salary'   => round($monthlySalary),
+            'per_day_salary'   => round($perDay),
 
             'total_working_days' => $workingDays,
             'paid_days'        => $paidDays,
@@ -152,10 +134,10 @@ class SalaryCalculator
 
             'approved_sundays' => $approvedSundays,
 
-            'deduction_amount' => round($absentDays * $perDay, 2),
-            'extra_amount'     => round($extraAmount, 2),
+            'deduction_amount' => round($absentDays * $perDay),
+            'extra_amount'     => round($extraAmount),
 
-            'net_pay'          => round($netPay, 2),
+            'net_pay'          => round($netPay),
         ];
     }
 }

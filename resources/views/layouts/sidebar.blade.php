@@ -135,6 +135,17 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 @endif
 
                 @if(auth()->user()->hasAnyRole(['hr_admin']))
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('attendance.sunday.requests')"
+                        href="{{ route('attendance.sunday.requests') }}">
+
+                        <i class="ri-calendar-check-line"></i>
+                        <span>Sunday Work Approval</span>
+
+                    </a>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.*')" href="{{ route('salary.index') }}">
                         <i class="ri-money-rupee-circle-line"></i>

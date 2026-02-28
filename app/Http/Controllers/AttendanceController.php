@@ -282,50 +282,49 @@ class AttendanceController extends Controller
             //     }
             // }
 
-          if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
+            if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
 
-    $todayDay = $today->day;
+                $todayDay = $today->day;
 
-    // 🔥 RELAXATION FOR FEB 2026 (but no future dates)
-    if ($month == 2 && $year == 2026) {
+                // 🔥 RELAXATION FOR FEB 2026 (but no future dates)
+                if ($month == 2 && $year == 2026) {
 
-        foreach ($attendanceData as $day => $status) {
+                    foreach ($attendanceData as $day => $status) {
 
-            if ($status === null || $status === '') continue;
+                        if ($status === null || $status === '') continue;
 
-            if ((int)$day > $todayDay) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot update future dates'
-                ]);
+                        if ((int)$day > $todayDay) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Cannot update future dates'
+                            ]);
+                        }
+                    }
+                } else {
+
+                    $allowedDays = [];
+                    $cursor = $today->copy();
+
+                    while (count($allowedDays) < 7) {
+                        if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
+                            $allowedDays[] = $cursor->day;
+                        }
+                        $cursor->subDay();
+                    }
+
+                    foreach ($attendanceData as $day => $status) {
+
+                        if ($status === null || $status === '') continue;
+
+                        if (!in_array((int)$day, $allowedDays)) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Reporting Managers can update only last 7 working days'
+                            ]);
+                        }
+                    }
+                }
             }
-        }
-
-    } else {
-
-        $allowedDays = [];
-        $cursor = $today->copy();
-
-        while (count($allowedDays) < 7) {
-            if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
-                $allowedDays[] = $cursor->day;
-            }
-            $cursor->subDay();
-        }
-
-        foreach ($attendanceData as $day => $status) {
-
-            if ($status === null || $status === '') continue;
-
-            if (!in_array((int)$day, $allowedDays)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reporting Managers can update only last 7 working days'
-                ]);
-            }
-        }
-    }
-}
 
             /* ---------------- ATTENDANCE RECORD ---------------- */
 
@@ -1277,5 +1276,43 @@ class AttendanceController extends Controller
                 ->back()
                 ->with('error', 'Failed to export attendance report. Please try again.');
         }
+    }
+
+
+    public function sundayRequests()
+    {
+        $requests = SundayWorkRequest::select(
+            'sunday_work_requests.id',
+            'sunday_work_requests.*',
+            'candidate_master.candidate_name',
+            'candidate_master.candidate_code',
+            'users.name as requested_by_name'
+        )
+            ->join('candidate_master', 'candidate_master.id', '=', 'sunday_work_requests.candidate_id')
+            ->join('users', 'users.id', '=', 'sunday_work_requests.requested_by')
+            ->orderBy('sunday_work_requests.sunday_date', 'desc')
+            ->get();
+
+        return view('hr-admin.attendance.sunday-requests', compact('requests'));
+    }
+
+    public function updateSundayRequest(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+            'status' => 'required|in:approved,rejected'
+        ]);
+
+        $req = SundayWorkRequest::findOrFail($request->id);
+
+        $req->status = $request->status;
+        $req->approved_by = Auth::id();
+        $req->approved_at = now();
+
+        $req->save();
+
+        return response()->json([
+            'success' => true
+        ]);
     }
 }

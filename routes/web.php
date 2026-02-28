@@ -236,6 +236,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/get-active-candidates', [AttendanceController::class, 'getActiveCandidates'])->name('attendance.get-active-candidates');
         Route::post('/submit-sunday-work', [AttendanceController::class, 'submitSundayWork'])->name('attendance.submit-sunday-work');
         Route::get('/export', [AttendanceController::class, 'export'])->name('attendance.export');
+        
+        Route::get('/sunday-requests', [AttendanceController::class, 'sundayRequests'])
+          ->name('attendance.sunday.requests');
+        Route::post('/sunday-requests/update', [AttendanceController::class, 'updateSundayRequest'])
+          ->name('attendance.sunday.update');
     });
 
     Route::prefix('my-team')->middleware(['auth'])->group(function () {
