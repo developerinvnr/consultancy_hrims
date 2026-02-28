@@ -48,10 +48,10 @@
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-1 d-flex justify-content-between align-items-center">
 					<div class="flex-grow-1">
-						<p class="text-muted mb-0 fs-10 text-truncate">Pending Verification</p>
+						<p class="text-muted mb-0 fs-10 text-truncate">This Month</p>
 					</div>
 					<div class="flex-shrink-0">
-						<h5 class="mb-0 fw-bold text-warning">{{ $stats['pending_verification'] }}</h5>
+						<h5 class="mb-0 fw-bold text-info">{{ $stats['this_month']['submissions'] }}</h5>
 					</div>
 				</div>
 			</div>
@@ -61,10 +61,10 @@
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-1 d-flex justify-content-between align-items-center">
 					<div class="flex-grow-1">
-						<p class="text-muted mb-0 fs-10 text-truncate">This Month</p>
+						<p class="text-muted mb-0 fs-10 text-truncate">Pending Verification</p>
 					</div>
 					<div class="flex-shrink-0">
-						<h5 class="mb-0 fw-bold text-info">{{ $stats['this_month']['submissions'] }}</h5>
+						<h5 class="mb-0 fw-bold text-warning">{{ $stats['pending_verification'] }}</h5>
 					</div>
 				</div>
 			</div>
@@ -87,7 +87,7 @@
 			<div class="card border-0 shadow-sm h-100">
 				<div class="card-body p-1 d-flex justify-content-between align-items-center">
 					<div class="flex-grow-1">
-						<p class="text-muted mb-0 fs-10 text-truncate">Unsigned Uploaded</p>
+						<p class="text-muted mb-0 fs-10 text-truncate">Unsigned Agreement Created</p>
 					</div>
 					<div class="flex-shrink-0">
 						<h5 class="mb-0 fw-bold text-info">{{ $stats['unsigned_uploaded'] }}</h5>
@@ -232,14 +232,13 @@
 									Inactive
 								</a>
 							</li>
+
 							<li class="nav-item">
 								<a class="nav-link {{ $tab=='rejected'?'active':'' }}"
-									href="?tab=rejected">Rejected</a>
+									href="{{ url()->current() }}?tab=rejected">
+									Rejected
+								</a>
 							</li>
-
-
-
-
 						</ul>
 						<table class="table table-sm table-hover mb-0">
 							<thead class="sticky-top bg-white">
@@ -281,40 +280,65 @@
 										</span>
 									</td>
 									<td class="fs-11">
-										@switch($req->status)
-										@case('Pending HR Verification')
-										<span class="badge bg-warning fs-10">Pending HR Verification</span>
-										@break
-										@case('Correction Required')
-										<span class="badge bg-danger fs-10">Correction Required</span>
-										@break
-										@case('Pending Approval')
-										<span class="badge bg-info fs-10">Pending Approval</span>
-										@break
-										@case('Approved')
-										<span class="badge bg-primary fs-10">Ready to Process</span>
-										@break
-										@case('Processed')
+										@if($candidate && $candidate->candidate_status)
+
 										@php
+										$status = trim($candidate->candidate_status);
+
+										$displayStatus = ($status === 'Unsigned Agreement Uploaded')
+										? 'Unsigned Agreement Created'
+										: $status;
+
 										$statusColors = [
 										'Agreement Pending' => 'warning',
 										'Unsigned Agreement Uploaded' => 'info',
 										'Signed Agreement Uploaded' => 'primary',
 										'Agreement Completed' => 'secondary',
-										'Active' => 'success'
+										'Active' => 'success',
+										'Inactive' => 'danger',
+										'Rejected' => 'danger'
 										];
 										@endphp
-										<span class="badge bg-{{ $statusColors[$empStatus] ?? 'secondary' }} fs-10">
-											{{ $empStatus }}
+
+										<span class="badge bg-{{ $statusColors[$status] ?? 'secondary' }} fs-10">
+											{{ $displayStatus }}
 										</span>
-										@if($candidate?->candidate_code)
+
+										@if($candidate->candidate_code)
 										<br>
 										<small class="text-muted fs-9">{{ $candidate->candidate_code }}</small>
 										@endif
+
+										@else
+
+										@switch($req->status)
+
+										@case('Pending HR Verification')
+										<span class="badge bg-warning fs-10">Pending HR Verification</span>
 										@break
+
+										@case('Correction Required')
+										<span class="badge bg-danger fs-10">Correction Required</span>
+										@break
+
+										@case('Pending Approval')
+										<span class="badge bg-info fs-10">Pending Approval</span>
+										@break
+
+										@case('Approved')
+										<span class="badge bg-primary fs-10">Ready to Process</span>
+										@break
+
+										@case('Rejected')
+										<span class="badge bg-danger fs-10">Rejected</span>
+										@break
+
 										@default
 										<span class="badge bg-secondary fs-10">{{ $req->status }}</span>
+
 										@endswitch
+
+										@endif
 									</td>
 
 									<!-- COURIER STATUS COLUMN -->
@@ -1096,21 +1120,6 @@
 
 	.bg-soft-success {
 		background-color: #e6f7f0 !important;
-	}
-
-	.sticky-tabs {
-		position: sticky;
-		top: 0;
-		z-index: 10;
-		background: #fff;
-		border-bottom: 1px solid #dee2e6;
-	}
-
-	.table-responsive thead.sticky-top {
-		top: 42px;
-		/* height of tabs */
-		z-index: 9;
-		background: #fff;
 	}
 </style>
 @endpush

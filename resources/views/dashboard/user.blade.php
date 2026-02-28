@@ -315,9 +315,11 @@
 								</a>
 							</li>
 
-							<li class="nav-item">
+							 <li class="nav-item">
 								<a class="nav-link {{ $tab=='rejected'?'active':'' }}"
-									href="?tab=rejected">Rejected</a>
+									href="{{ url()->current() }}?tab=rejected">
+									Rejected
+								</a>
 							</li>
 
 

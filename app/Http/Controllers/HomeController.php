@@ -44,53 +44,49 @@ class HomeController extends Controller
         switch ($tab) {
 
             case 'active':
-
-                $query->whereHas('candidate', function ($q) {
-                    $q->where('candidate_status', 'Active');
-                });
-
+                $query->whereHas(
+                    'candidate',
+                    fn($q) =>
+                    $q->where('candidate_status', 'Active')
+                );
                 break;
-
 
             case 'inactive':
-
-                $query->whereHas('candidate', function ($q) {
-                    $q->where('candidate_status', 'Inactive');
-                });
-
+                $query->whereHas(
+                    'candidate',
+                    fn($q) =>
+                    $q->where('candidate_status', 'Inactive')
+                );
                 break;
-
 
             case 'rejected':
-
-                // show rejected requisitions
-                $query->where('status', 'Rejected')
-                    ->orWhereHas('candidate', function ($q) {
-                        $q->where('candidate_status', 'Rejected');
-                    });
-
+                $query->where(function ($q) {
+                    $q->where('status', 'Rejected')
+                        ->orWhereHas(
+                            'candidate',
+                            fn($sub) =>
+                            $sub->where('candidate_status', 'Rejected')
+                        );
+                });
                 break;
-
 
             case 'status':
             default:
-
-                // show workflow items only
                 $query->where(function ($q) {
 
-                    // requisitions without candidate (Pending HR, Approval, etc)
                     $q->whereDoesntHave('candidate')
 
-                        // OR candidate exists but not Active/Inactive/Rejected
-                        ->orWhereHas('candidate', function ($sub) {
+                        ->orWhereHas(
+                            'candidate',
+                            fn($sub) =>
                             $sub->whereNotIn('candidate_status', [
                                 'Active',
                                 'Inactive',
                                 'Rejected'
-                            ]);
-                        });
-                });
-
+                            ])
+                        );
+                })
+                    ->where('status', '!=', 'Rejected');
                 break;
         }
 
@@ -245,19 +241,13 @@ class HomeController extends Controller
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
     private function formatHours($hours)
     {
-        if ($hours == 0 || $hours == null || $hours < 0) {
+        if (!$hours || $hours <= 0) {
             return 'N/A';
         }
 
         $days = $hours / 24;
 
-        if ($days >= 1) {
-            // Show days if 1 or more days
-            return number_format($days, 1) . 'd';
-        } else {
-            // Show hours if less than 1 day
-            return number_format($hours, 1) . 'h';
-        }
+        return number_format($days, 1) . 'd';
     }
 
     private function userDashboard($user, Request $request)
@@ -357,19 +347,21 @@ class HomeController extends Controller
 
                 $query->where(function ($q) {
 
-                    // no candidate yet (Pending HR, Approval, etc)
+                    // workflow items without candidate
                     $q->whereDoesntHave('candidate')
 
-                        // candidate exists but not active/inactive/rejected
+                        // OR candidate exists but not Active/Inactive/Rejected
                         ->orWhereHas('candidate', function ($sub) {
-
                             $sub->whereNotIn('candidate_status', [
                                 'Active',
                                 'Inactive',
                                 'Rejected'
                             ]);
                         });
-                });
+                })
+
+                    // IMPORTANT: also exclude rejected requisitions
+                    ->where('status', '!=', 'Rejected');
 
                 break;
         }

@@ -18,18 +18,18 @@ class SalaryCalculator
             ->first();
 
         if (!$attendance) {
-    return [
-        'monthly_salary'      => (float) $candidate->remuneration_per_month,
-        'per_day_salary'      => 0,
-        'total_working_days'  => 0,
-        'paid_days'           => 0,
-        'absent_days'         => 0,
-        'approved_sundays'    => 0,
-        'deduction_amount'    => 0,
-        'extra_amount'        => 0,
-        'net_pay'             => 0,
-    ];
-}
+            return [
+                'monthly_salary'      => (float) $candidate->remuneration_per_month,
+                'per_day_salary'      => 0,
+                'total_working_days'  => 0,
+                'paid_days'           => 0,
+                'absent_days'         => 0,
+                'approved_sundays'    => 0,
+                'deduction_amount'    => 0,
+                'extra_amount'        => 0,
+                'net_pay'             => 0,
+            ];
+        }
 
         // 2️⃣ Month stats
         $totalDays = \Carbon\Carbon::create($year, $month)->daysInMonth;
@@ -53,17 +53,14 @@ class SalaryCalculator
         $currentMonth = date('Y-m', strtotime("$year-$month-01"));
 
         // Default working days = 26
-        $workingDays = 26;
+        // Always use actual working days of month
+        $workingDays = $totalDays - $sundays;
 
-        // If contract start OR end month → use actual working days
-        if ($currentMonth == $contractStart || $currentMonth == $contractEnd) {
-            $workingDays = $totalDays - $sundays;
-        }
-
-        // Safety: Never allow > 26
+        // Safety cap (optional business rule)
         if ($workingDays > 26) {
             $workingDays = 26;
         }
+
 
         if ($workingDays <= 0) {
             throw new Exception("Invalid working days");
@@ -122,7 +119,11 @@ class SalaryCalculator
         $extraAmount = $approvedSundays * $perDay;
 
         // 6️⃣ Net Pay
-        $netPay = ($paidDays * $perDay) + $extraAmount;
+        if ($paidDays >= $workingDays) {
+            $netPay = $monthlySalary + $extraAmount;
+        } else {
+            $netPay = ($paidDays * $perDay) + $extraAmount;
+        }
 
         // 7️⃣ Final rounded values (ONLY here)
         return [
