@@ -78,12 +78,11 @@ class SalaryCalculator
         $perDay = $monthlySalary / $workingDays;
 
         // 4️⃣ Count paid & absent WORKING days only
-        $paidDays = 0;
+        $presentDays = 0;
         $absentDays = 0;
 
         for ($d = 1; $d <= $totalDays; $d++) {
 
-            // Skip Sundays completely
             if (date('w', strtotime("$year-$month-$d")) == 0) {
                 continue;
             }
@@ -95,18 +94,28 @@ class SalaryCalculator
                 case 'CL':
                 case 'OD':
                 case 'H':
-                    $paidDays += 1;
+                    $presentDays++;
                     break;
 
                 case 'CH':
-                    $paidDays += 0.5;
+                    $presentDays += 0.5;
                     break;
 
                 case 'A':
                 case 'LWP':
-                    $absentDays += 1;
+                    $absentDays++;
                     break;
             }
+        }
+
+        // FIXED working days rule
+        $workingDays = 26;
+
+        // Paid days = workingDays − absentDays
+        $paidDays = $workingDays - $absentDays;
+
+        if ($paidDays < 0) {
+            $paidDays = 0;
         }
 
         // 5️⃣ Approved Sunday work (EXTRA PAY)
