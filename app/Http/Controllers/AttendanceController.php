@@ -1384,4 +1384,105 @@ class AttendanceController extends Controller
             'Party_Attendance_List' => $data
         ]);
     }
+
+    public function partyAttendanceUpdate(Request $request)
+    {
+        $request->validate([
+            'party_id' => 'required|integer',
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer',
+            'day'      => 'required|integer|min:1|max:31',
+            'status'   => 'nullable|string|max:5'
+        ]);
+
+        try {
+
+            $candidateId = $request->party_id;
+            $month       = $request->month;
+            $year        = $request->year;
+            $day         = $request->day;
+            $status      = $request->status;
+
+            /*
+        |---------------------------------------
+        | Get existing attendance or create new
+        |---------------------------------------
+        */
+            $attendance = Attendance::firstOrNew([
+                'candidate_id' => $candidateId,
+                'month' => $month,
+                'year' => $year
+            ]);
+
+            $attendance->candidate_id = $candidateId;
+            $attendance->month = $month;
+            $attendance->year  = $year;
+
+            /*
+        |---------------------------------------
+        | Update specific day
+        |---------------------------------------
+        */
+            $column = "A" . $day;
+            $attendance->$column = $status;
+
+            /*
+        |---------------------------------------
+        | Recalculate totals
+        |---------------------------------------
+        */
+            $totalPresent = 0;
+            $totalAbsent  = 0;
+            $totalCL      = 0;
+            $totalLWP     = 0;
+            $totalOD      = 0;
+
+            for ($i = 1; $i <= 31; $i++) {
+                $col = "A" . $i;
+                $val = $attendance->$col;
+
+                switch ($val) {
+                    case 'P':
+                        $totalPresent++;
+                        break;
+
+                    case 'A':
+                        $totalAbsent++;
+                        break;
+
+                    case 'CL':
+                        $totalCL++;
+                        break;
+
+                    case 'LWP':
+                        $totalLWP++;
+                        break;
+
+                    case 'OD':
+                        $totalOD++;
+                        break;
+                }
+            }
+
+            $attendance->total_present = $totalPresent;
+            $attendance->total_absent  = $totalAbsent;
+            $attendance->total_cl      = $totalCL;
+            $attendance->total_lwp     = $totalLWP;
+            $attendance->total_od      = $totalOD;
+
+            $attendance->save();
+
+            return response()->json([
+                'Code' => '200',
+                'Message' => 'Attendance updated successfully',
+                'total_present' => $totalPresent,
+                'total_absent' => $totalAbsent
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'Code' => '500',
+                'Message' => $e->getMessage()
+            ]);
+        }
+    }
 }
