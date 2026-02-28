@@ -111,11 +111,18 @@ class SalaryCalculator
         // FIXED working days rule
         $workingDays = 26;
 
-        // Paid days = workingDays − absentDays
-        $paidDays = $workingDays - $absentDays;
+        // Paid days = presentDays (not workingDays - absentDays)
+        $paidDays = $presentDays;
 
-        if ($paidDays < 0) {
-            $paidDays = 0;
+        // Absent days = workingDays - paidDays
+        $absentDays = $workingDays - $paidDays;
+
+        if ($absentDays < 0) {
+            $absentDays = 0;
+        }
+
+        if ($paidDays > $workingDays) {
+            $paidDays = $workingDays;
         }
 
         // 5️⃣ Approved Sunday work (EXTRA PAY)
