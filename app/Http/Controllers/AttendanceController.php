@@ -1315,4 +1315,73 @@ class AttendanceController extends Controller
             'success' => true
         ]);
     }
+
+    public function partyAttendanceMonthly(Request $request)
+    {
+        $managerId = $request->empid;
+        $month     = $request->Month;
+        $year      = $request->Year;
+
+        if (!$managerId || !$month || !$year) {
+            return response()->json([
+                'Code' => '400',
+                'Message' => 'empid, Month, Year required'
+            ]);
+        }
+
+        $daysInMonth = \Carbon\Carbon::createFromDate($year, $month)->daysInMonth;
+
+        /*
+    |-----------------------------------------
+    | Get parties under manager
+    |-----------------------------------------
+    */
+        $parties = DB::table('candidate_master')
+            ->where('reporting_manager_employee_id', $managerId)
+            ->where('final_status', 'A') // ✅ correct column
+            ->get();
+
+        $data = [];
+
+        foreach ($parties as $party) {
+            $attendance = DB::table('attendance')
+                ->where('candidate_id', $party->id)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            $days = [];
+
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $column = "A" . $i;
+
+                $date = \Carbon\Carbon::createFromDate($year, $month, $i);
+
+                $days[] = [
+                    'day' => $i,
+                    'date' => $date->format('Y-m-d'),
+                    'day_name' => $date->format('l'),
+                    'status' => $attendance->$column ?? null
+                ];
+            }
+
+            $data[] = [
+                'party_id' => $party->id,
+                'party_code' => $party->requisition_id,
+                'party_name' => $party->candidate_name,
+                'mobile' => $party->mobile_no,
+                'location' => $party->work_location_hq,
+
+                'total_present' => $attendance->total_present ?? 0,
+                'total_absent' => $attendance->total_absent ?? 0,
+
+                'days' => $days
+            ];
+        }
+
+        return response()->json([
+            'Code' => '300',
+            'Party_Attendance_List' => $data
+        ]);
+    }
 }

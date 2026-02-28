@@ -110,7 +110,7 @@
                                     $isProcessed = !is_null($candidate);
                                     @endphp
                                     <td>
-                                        <strong>{{ $requisition->requisition_id }}</strong>
+                                        <strong>{{ $requisition->id }}</strong>
                                     </td>
                                     <td>
                                         @php
