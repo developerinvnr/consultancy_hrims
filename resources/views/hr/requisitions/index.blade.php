@@ -30,10 +30,10 @@
                             <div class="d-flex justify-content-end gap-2">
                                 <!-- Filter Form -->
                                 <form method="GET" action="{{ route('hr_requisitions.index') }}" class="d-flex me-2">
-                                     <input type="text" 
-                                        name="search" 
-                                        class="form-control form-control-sm me-2" 
-                                        placeholder="Search by ID, Name, Email, Code..." 
+                                    <input type="text"
+                                        name="search"
+                                        class="form-control form-control-sm me-2"
+                                        placeholder="Search by ID, Name, Email, Code..."
                                         value="{{ request('search') }}"
                                         style="width: 200px;">
                                     <select name="type" class="form-select form-select-sm me-2" style="width: auto;">
@@ -54,14 +54,14 @@
                                         <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
                                     </select>
                                     <select name="employee_status" class="form-select form-select-sm me-2" style="width: auto;">
-                                                <option value="">All Party Status</option>
-                                                <option value="Active" {{ request('employee_status') == 'Active' ? 'selected' : '' }}>
-                                                    Active
-                                                </option>
-                                                <option value="Inactive" {{ request('employee_status') == 'Inactive' ? 'selected' : '' }}>
-                                                    Inactive
-                                                </option>
-                                            </select>
+                                        <option value="">All Party Status</option>
+                                        <option value="Active" {{ request('employee_status') == 'Active' ? 'selected' : '' }}>
+                                            Active
+                                        </option>
+                                        <option value="Inactive" {{ request('employee_status') == 'Inactive' ? 'selected' : '' }}>
+                                            Inactive
+                                        </option>
+                                    </select>
                                     <button type="submit" class="btn btn-primary btn-sm me-2" style="color:#000;">
                                         <i class="ri-search-line"></i>
                                     </button>
@@ -91,19 +91,24 @@
                         <table class="table table-bordered table-hover w-100">
                             <thead>
                                 <tr>
-                                    <th width="10%">Req ID</th>
-                                    <th width="10%">Type</th>
+                                    <th width="8%">Req ID</th>
+                                    <th width="8%">Type</th>
                                     <th width="15%">Candidate</th>
                                     <th width="15%">Submitted By</th>
-                                    <th width="10%">Date</th>
-                                    <th width="15%">Status</th>
-                                    <th width="15%">HR Status</th>
+                                    <th width="8%">Date</th>
+                                    <th width="12%">Req Status</th>
+                                    <th width="12%">Party Code</th>
+                                    <th width="12%">Party Status</th>
                                     <th width="10%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($requisitions as $requisition)
                                 <tr>
+                                    @php
+                                    $candidate = $requisition->candidate;
+                                    $isProcessed = !is_null($candidate);
+                                    @endphp
                                     <td>
                                         <strong>{{ $requisition->requisition_id }}</strong>
                                     </td>
@@ -129,6 +134,13 @@
                                     <td>{{ $requisition->created_at->format('d-m-Y') }}</td>
                                     <td>
                                         @php
+                                        $status = $requisition->status;
+
+                                        // change only display text
+                                        $displayStatus = $status === 'Unsigned Agreement Uploaded'
+                                        ? 'Unsigned Agreement Created'
+                                        : $status;
+
                                         $statusColors = [
                                         'Pending HR Verification' => 'warning',
                                         'Correction Required' => 'danger',
@@ -137,31 +149,66 @@
                                         'Rejected' => 'dark',
                                         'Processed' => 'primary',
                                         'Agreement Pending' => 'secondary',
-                                        'Completed' => 'success'
+                                        'Completed' => 'success',
+                                        'Unsigned Agreement Uploaded' => 'info'
                                         ];
-                                        $color = $statusColors[$requisition->status] ?? 'secondary';
+
+                                        $color = $statusColors[$status] ?? 'secondary';
                                         @endphp
-                                        <span class="badge bg-{{ $color }}">{{ $requisition->status }}</span>
+
+                                        <span class="badge bg-{{ $color }}">
+                                            {{ $displayStatus }}
+                                        </span>
                                     </td>
                                     <td>
-                                        @if($requisition->hr_verification_status)
-                                        @php
-                                        $hrStatusColors = [
-                                        'Pending' => 'warning',
-                                        'Verified' => 'info',
-                                        'Approved' => 'success',
-                                        'Rejected' => 'danger',
-                                        'Correction Required' => 'danger'
-                                        ];
-                                        $hrColor = $hrStatusColors[$requisition->hr_verification_status] ?? 'secondary';
-                                        @endphp
-                                        <span class="badge bg-{{ $hrColor }}">{{ $requisition->hr_verification_status }}</span>
-                                        @if($requisition->hr_verification_date)
-                                        <br><small class="text-muted">{{ \Carbon\Carbon::parse($requisition->hr_verification_date)->format('d-m-Y') }}</small>
-                                        @endif
+
+                                        @if($candidate)
+
+                                        <span class="badge bg-dark">
+                                            {{ $candidate->candidate_code }}
+                                        </span>
+
                                         @else
-                                        <span class="badge bg-light text-dark">Not Reviewed</span>
+
+                                        <span class="text-muted">Not Created</span>
+
                                         @endif
+
+                                    </td>
+                                    <td>
+
+                                        @if($candidate)
+
+                                        @php
+
+                                        $status = $candidate->candidate_status;
+
+                                        $displayStatus = $status == 'Unsigned Agreement Uploaded'
+                                        ? 'Unsigned Agreement Created'
+                                        : $status;
+
+                                        $colors = [
+                                        'Agreement Pending'=>'warning',
+                                        'Unsigned Agreement Uploaded'=>'info',
+                                        'Signed Agreement Uploaded'=>'primary',
+                                        'Active'=>'success',
+                                        'Inactive'=>'danger'
+                                        ];
+
+                                        $color = $colors[$status] ?? 'secondary';
+
+                                        @endphp
+
+                                        <span class="badge bg-{{ $color }}">
+                                            {{ $displayStatus }}
+                                        </span>
+
+                                        @else
+
+                                        <span class="text-muted">—</span>
+
+                                        @endif
+
                                     </td>
                                     <!-- Actions column -->
                                     <!-- Actions column -->
@@ -182,11 +229,6 @@
                                             @endif
 
                                             <!-- Process Button (for Approved requisitions without candidate master) -->
-                                            @php
-                                            $isProcessed = \App\Models\CandidateMaster::where('requisition_id', $requisition->id)->exists();
-                                            $candidate = \App\Models\CandidateMaster::where('requisition_id', $requisition->id)->first();
-                                            @endphp
-
                                             @if($requisition->status === 'Approved' && !$isProcessed)
                                             <button type="button" class="btn btn-sm btn-success process-btn"
                                                 data-bs-toggle="modal" data-bs-target="#processModal"
@@ -204,34 +246,27 @@
                                             <!-- After Processing: Show candidate status and workflow buttons -->
                                             @if($isProcessed && $candidate)
                                             @php
-                                            $statusColors = [
-                                            'Agreement Pending' => 'warning',
-                                            'Unsigned Agreement Uploaded' => 'info',
-                                            'Agreement Completed' => 'secondary',
-                                            'Active' => 'success'
-                                            ];
-                                            $empStatus = $candidate->candidate_status ?? 'Agreement Pending';
-                                            $empColor = $statusColors[$empStatus] ?? 'secondary';
+
 
                                             // Check if candidate has unsigned agreement
-                                            $hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-                                            ->where('document_type', 'agreement')
-                                            ->where('sign_status', 'UNSIGNED')
-                                            ->exists();
-                                            $hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-                                            ->where('document_type', 'agreement')
-                                            ->where('sign_status', 'SIGNED')
-                                            ->exists();
-                                            $agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-                                            ->where('document_type', 'agreement')
-                                            ->where('sign_status', 'UNSIGNED')
-                                            ->value('agreement_number');
+                                            $hasUnsigned = $candidate->agreementDocuments
+                                            ->where('document_type','agreement')
+                                            ->where('sign_status','UNSIGNED')
+                                            ->count() > 0;
+
+                                            $hasSigned = $candidate->agreementDocuments
+                                            ->where('document_type','agreement')
+                                            ->where('sign_status','SIGNED')
+                                            ->count() > 0;
+
+                                            $agreementNumber = optional(
+                                            $candidate->agreementDocuments
+                                            ->where('document_type','agreement')
+                                            ->where('sign_status','UNSIGNED')
+                                            ->first()
+                                            )->agreement_number;
                                             @endphp
 
-                                            <!-- Candidate Status Badge -->
-                                            <span class="badge bg-{{ $empColor }}" title="Candidate Status: {{ $empStatus }}">
-                                                {{ $candidate->candidate_code ?? $candidate->employee_id }}
-                                            </span>
 
                                             <!-- EDIT PARTY BUTTON - ADD THIS LINE -->
                                             <a href="{{ route('hr-admin.edit-party', $candidate->id) }}"
@@ -249,11 +284,6 @@
                                                 data-agreement-number="{{ $agreementNumber }}">
                                                 <i class="ri-mail-line"></i>
                                             </button>
-                                            @endif
-
-                                            <!-- Active Status (read-only) -->
-                                            @if($empStatus == "Active")
-                                            <span class="badge bg-success">Active</span>
                                             @endif
                                             @endif
                                         </div>

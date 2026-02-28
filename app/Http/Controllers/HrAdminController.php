@@ -1300,37 +1300,61 @@ class HrAdminController extends Controller
 	 */
 	private function generateCandidateCode($requisitionType)
 	{
-		// Prefix mapping
-		$prefix = match ($requisitionType) {
-			'Contractual' => 'CRS',
-			'TFA'         => 'TFA',
-			'CB'          => 'CBS',
-			default       => 'CAN',
-		};
+		return DB::transaction(function () use ($requisitionType) {
 
-		return DB::transaction(function () use ($prefix, $requisitionType) {
+			if ($requisitionType === 'TFA') {
 
-			// Lock rows to avoid duplicate code generation (IMPORTANT)
-			$lastCandidate = CandidateMaster::where('requisition_type', $requisitionType)
-				->whereNotNull('candidate_code')
-				->lockForUpdate()
-				->orderBy('candidate_code', 'desc')
-				->first();
+				// Format: TFA-1903
+				$prefix = 'TFA-';
 
-			if ($lastCandidate && $lastCandidate->candidate_code) {
+				$last = CandidateMaster::where('candidate_code', 'like', 'TFA-%')
+					->selectRaw("CAST(SUBSTRING_INDEX(candidate_code, '-', -1) AS UNSIGNED) as num")
+					->orderByDesc('num')
+					->lockForUpdate()
+					->first();
 
-				// Extract numeric part from code (e.g. CRS0005 → 0005)
-				preg_match('/(\d+)$/', $lastCandidate->candidate_code, $matches);
+				$next = $last ? $last->num + 1 : 1;
 
-				$nextNumber = isset($matches[1])
-					? ((int)$matches[1] + 1)
-					: 1;
-			} else {
-				$nextNumber = 1;
+				return 'TFA-' . $next;
 			}
 
-			// Format: CRS0001 / TFA0001 / CBS0001
-			return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+			if ($requisitionType === 'Contractual') {
+
+				// Format: CRS0191
+				$prefix = 'CRS';
+
+				$last = CandidateMaster::where('candidate_code', 'like', 'CRS%')
+					->selectRaw("CAST(SUBSTRING(candidate_code, 4) AS UNSIGNED) as num")
+					->orderByDesc('num')
+					->lockForUpdate()
+					->first();
+
+				$next = $last ? $last->num + 1 : 1;
+
+				return 'CRS' . str_pad($next, 4, '0', STR_PAD_LEFT);
+			}
+
+
+			if ($requisitionType === 'CB') {
+
+				// Format: CBS0020
+				$prefix = 'CBS';
+
+				$last = CandidateMaster::where('candidate_code', 'like', 'CBS%')
+					->selectRaw("CAST(SUBSTRING(candidate_code, 4) AS UNSIGNED) as num")
+					->orderByDesc('num')
+					->lockForUpdate()
+					->first();
+
+				$next = $last ? $last->num + 1 : 1;
+
+				return 'CBS' . str_pad($next, 4, '0', STR_PAD_LEFT);
+			}
+
+
+			// fallback
+			return 'CAN' . time();
 		});
 	}
 

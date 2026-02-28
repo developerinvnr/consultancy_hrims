@@ -29,8 +29,13 @@ class HrRequisitionController extends Controller
         $employeeStatus = $request->get('employee_status', '');
 
         $search = $request->get('search', '');
-        $query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy', 'candidate'])
-            ->orderBy('created_at', 'desc');
+        $query = ManpowerRequisition::with([
+            'function',
+            'department',
+            'vertical',
+            'submittedBy',
+            'candidate.agreementDocuments'
+        ])->orderBy('created_at', 'desc');
 
         if ($type !== 'all') {
             $query->where('requisition_type', $type);
