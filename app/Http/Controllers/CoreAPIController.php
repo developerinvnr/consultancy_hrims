@@ -63,9 +63,14 @@ class CoreAPIController extends Controller
 
             // Use a transaction to ensure atomic operation
 
-            DB::table('core_apis')->truncate();
-            DB::table('core_apis')->insert($apiRecords); // Batch insert for performance
+            // DB::table('core_apis')->truncate();
+            // DB::table('core_apis')->insert($apiRecords); // Batch insert for performance
 
+            DB::table('core_apis')->upsert(
+                $apiRecords,
+                ['api_id'], // unique key
+                ['api_name', 'api_end_point', 'description', 'parameters', 'table_name']
+            );
 
             return response()->json(['status' => 200, 'msg' => 'API synchronized successfully.']);
         } catch (\Illuminate\Database\QueryException $e) {

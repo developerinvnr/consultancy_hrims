@@ -93,7 +93,7 @@
 
 
                                         </div>
-                                        
+
 
                                         <!-- Second Row: Aadhaar Status, Bank Document, Account Holder Name, Account Number -->
                                         <div class="row">
@@ -411,12 +411,7 @@
                                                 </select>
                                                 <input type="hidden" name="vertical_id" value="{{ $autoFillData['vertical_id'] ?? '' }}">
                                             </div>
-                                            <div class="col-md-2 mb-3">
-                                                <label for="work_location_hq" class="form-label">Work Location/HQ <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    id="work_location_hq" name="work_location_hq" required>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
+
                                             <div class="col-md-2 mb-3">
                                                 <label for="state_work_location" class="form-label">State (Work) <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm" id="state_work_location" name="state_work_location" required>
@@ -427,13 +422,41 @@
                                                 </select>
                                                 <div class="invalid-feedback"></div>
                                             </div>
+
+                                            <div class="col-md-2 mb-3">
+                                                <label class="form-label">
+                                                    District <span class="text-danger">*</span>
+                                                </label>
+
+                                                <select class="form-select form-select-sm"
+                                                    id="cb_district_id"
+                                                    name="district_id"
+                                                    required>
+                                                    <option value="">Select District</option>
+                                                </select>
+
+                                                <input type="hidden" name="district" id="cb_district_name">
+
+                                                <div class="invalid-feedback"></div>
+                                            </div>
                                         </div>
 
                                         <div class="row">
+
                                             <div class="col-md-2 mb-3">
-                                                <label for="district" class="form-label">District <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    id="district" name="district" required>
+                                                <label class="form-label">
+                                                    Work Location/HQ <span class="text-danger">*</span>
+                                                </label>
+
+                                                <select class="form-select form-select-sm"
+                                                    id="cb_work_location_id"
+                                                    name="work_location_id"
+                                                    required>
+                                                    <option value="">Select City</option>
+                                                </select>
+
+                                                <input type="hidden" name="work_location_hq" id="cb_work_location_name">
+
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                             <div class="col-md-2 mb-3">
@@ -685,7 +708,7 @@
             }
         });
 
-        //initContractDateValidation("#contract_start_date");
+        initContractDateValidation("#contract_start_date");
 
         const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -786,7 +809,7 @@
 
             statusText.text(message);
         }
-        
+
         // ==================== BANK VERIFICATION ====================
 
         // Auto-extract from uploaded bank document
@@ -1298,6 +1321,70 @@
                 }
             });
         });
+
+        $('#state_work_location').on('change', function() {
+
+            const stateId = $(this).val();
+
+            $('#cb_district_id').html('<option value="">Loading...</option>');
+            $('#cb_work_location_id').html('<option value="">Select City</option>');
+
+            if (!stateId) return;
+
+            $.get("{{ url('/get-districts-by-state') }}", {
+                    state_id: stateId
+                },
+                function(data) {
+
+                    let options = '<option value="">Select District</option>';
+
+                    data.forEach(function(district) {
+                        options += `<option value="${district.id}">
+                                ${district.district_name}
+                            </option>`;
+                    });
+
+                    $('#cb_district_id').html(options);
+                }
+            );
+        });
+
+        $('#cb_district_id').on('change', function() {
+
+            const districtId = $(this).val();
+            const selectedText = $("#cb_district_id option:selected").text();
+
+            $('#cb_district_name').val(selectedText);
+
+            $('#cb_work_location_id').html('<option value="">Loading...</option>');
+
+            if (!districtId) return;
+
+            $.get("{{ url('/get-cities-by-district') }}", {
+                    district_id: districtId
+                },
+                function(data) {
+
+                    let options = '<option value="">Select City</option>';
+
+                    data.forEach(function(city) {
+                        options += `<option value="${city.id}">
+                                ${city.city_village_name}
+                            </option>`;
+                    });
+
+                    $('#cb_work_location_id').html(options);
+                }
+            );
+        });
+
+        $('#cb_work_location_id').on('change', function() {
+
+            const selectedText = $("#cb_work_location_id option:selected").text();
+            $('#cb_work_location_name').val(selectedText);
+
+        });
+
     });
 </script>
 @endpush

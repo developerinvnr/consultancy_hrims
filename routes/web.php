@@ -22,6 +22,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrRequisitionController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\HierarchyController;
+use App\Http\Controllers\LocationController;
 
 
 
@@ -314,6 +315,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('hr/get-zone-by-bu', [HrRequisitionController::class, 'getZoneByBu'])->name('hr.get.zone.by.bu');
     Route::post('hr/get-region-by-zone', [HrRequisitionController::class, 'getRegionByZone'])->name('hr.get.region.by.zone');
     Route::post('hr/get-territory-by-region', [HrRequisitionController::class, 'getTerritoryByRegion'])->name('hr.get.territory.by.region');
+
+    Route::get('/get-districts-by-state', [LocationController::class, 'getDistricts']);
+    Route::get('/get-cities-by-district', [LocationController::class, 'getCities']);
 });
 
 // Import routes

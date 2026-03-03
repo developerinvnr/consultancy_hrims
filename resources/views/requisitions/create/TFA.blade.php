@@ -54,7 +54,7 @@
 						<input type="hidden" name="resume_filepath" id="resume_filepath">
 
 						<!-- ==================== SECTION 1: DOCUMENT UPLOADS & VERIFICATION ==================== -->
-						<div class="row mb-3">
+						{{--<div class="row mb-3">
 							<div class="col-12">
 								<div class="card border">
 									<div class="card-header bg-light py-2">
@@ -142,21 +142,21 @@
 													placeholder="Auto-filled" readonly>
 											</div>
 
-											
-											
+
+
 										</div>
 
 										<!-- ==================== BANK SECTION ==================== -->
 										<div class="row">
 
-										   <!-- Bank Document Upload -->
+											<!-- Bank Document Upload -->
 											<div class="col-md-3 mb-3">
 												<label for="bank_document" class="form-label">Upload Bank Doc<span class="text-danger">*</span></label>
 												<input type="file" class="form-control form-control-sm"
 													id="bank_document" name="bank_document" accept=".pdf,.jpg,.jpeg,.png">
 												<small class="text-muted d-block" style="font-size: 0.7rem;">Passbook/Cheque</small>
 											</div>
-							
+
 
 											<!-- Account Number with Verify Button -->
 											<div class="col-md-3 mb-3">
@@ -191,7 +191,7 @@
 													placeholder="As per bank records">
 											</div>
 
-											
+
 										</div>
 										<div class="row">
 											<!-- Bank Name (Auto-filled from IFSC) -->
@@ -208,7 +208,7 @@
 													id="bank_branch_address" name="bank_branch_address"
 													rows="1" readonly></textarea>
 											</div>
-												<!-- Bank Verification Status (Auto-filled) -->
+											<!-- Bank Verification Status (Auto-filled) -->
 											<div class="col-md-4 mb-3">
 												<label class="form-label">Bank Status</label>
 												<input type="text" class="form-control form-control-sm bg-light"
@@ -221,7 +221,7 @@
 										<!-- ==================== DRIVING LICENSE SECTION ==================== -->
 										<div class="row">
 
-										
+
 											<!-- DL Upload -->
 											<div class="col-md-3 mb-3">
 												<label for="driving_licence" class="form-label">Upload DL<span class="text-danger">*</span></label>
@@ -282,14 +282,14 @@
 												<small class="text-muted d-block" style="font-size: 0.7rem;">Additional docs</small>
 											</div>
 										</div>
-		
+
 									</div>
 								</div>
 							</div>
-						</div>
+						</div>--}}
 
 						<!-- ==================== SECTION 2: Personal Information ==================== -->
-						<div class="row mb-4">
+						{{--<div class="row mb-4">
 							<div class="col-12">
 								<div class="card border">
 
@@ -342,7 +342,7 @@
 										<!-- ===== Row 2 ===== -->
 										<div class="row">
 
-											
+
 
 											<!-- Mobile -->
 											<div class="col-md-3 mb-3">
@@ -383,7 +383,7 @@
 										</div>
 
 										<div class="row">
-											
+
 											<div class="col-md-2 mb-3">
 												<label for="college_name" class="form-label">College/University</label>
 												<input type="text" class="form-control form-select-sm"
@@ -420,16 +420,16 @@
 													id="pin_code" name="pin_code" maxlength="6">
 												<div class="invalid-feedback"></div>
 											</div>
-											
+
 
 										</div>
 
 									</div>
 								</div>
 							</div>
-						</div>
+						</div>--}}
 
-						
+
 						<!-- ==================== SECTION 3: WORK INFORMATION ==================== -->
 						<div class="row mb-4">
 							<div class="col-12">
@@ -478,12 +478,6 @@
 												</select>
 												<input type="hidden" name="vertical_id" value="{{ $autoFillData['vertical_id'] ?? '' }}">
 											</div>
-											<div class="col-md-2 mb-3">
-												<label for="work_location_hq" class="form-label">Work Location/HQ<span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="work_location_hq" name="work_location_hq">
-												<div class="invalid-feedback"></div>
-											</div>
 											<div class="col-md-3 mb-3">
 												<label for="state_work_location" class="form-label">State (Work) <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" id="state_work_location" name="state_work_location">
@@ -494,15 +488,38 @@
 												</select>
 												<div class="invalid-feedback"></div>
 											</div>
+
+											<input type="hidden" name="district" id="district_name">
+											<div class="col-md-2 mb-3">
+												<label for="district_id" class="form-label">
+													District <span class="text-danger">*</span>
+												</label>
+												<select class="form-select form-select-sm"
+													id="district_id"
+													name="district_id">
+													<option value="">Select District</option>
+												</select>
+												<div class="invalid-feedback"></div>
+											</div>
+
 										</div>
 
 										<div class="row g-1">
+
+
 											<div class="col-md-2 mb-3">
-												<label for="district" class="form-label">District <span class="text-danger">*</span></label>
-												<input type="text" class="form-control form-select-sm"
-													id="district" name="district">
+												<label for="work_location_id" class="form-label">
+													Work Location/HQ <span class="text-danger">*</span>
+												</label>
+												<select class="form-select form-select-sm"
+													id="work_location_id"
+													name="work_location_id">
+													<option value="">Select City</option>
+												</select>
 												<div class="invalid-feedback"></div>
 											</div>
+
+											<input type="hidden" name="work_location_hq" id="work_location_name">
 											<div class="col-md-2 mb-3">
 												<label for="sub_department_id" class="form-label">Sub-department <span class="text-danger">*</span></label>
 												<select class="form-select form-select-sm" id="sub_department_id_display" disabled>
@@ -783,7 +800,7 @@
 			}
 		});
 
-		//initContractDateValidation("#contract_start_date");
+		initContractDateValidation("#contract_start_date");
 
 		// Get requisition type from hidden input
 		const requisitionType = $('input[name="requisition_type"]').val();
@@ -1572,6 +1589,61 @@
 					}
 				}
 			});
+		});
+
+		$('#state_work_location').on('change', function() {
+
+			const stateId = $(this).val();
+
+			$('#district_id').html('<option value="">Loading...</option>');
+			$('#work_location_id').html('<option value="">Select City</option>');
+
+			if (!stateId) return;
+
+			$.get("{{ url('/get-districts-by-state') }}", {
+				state_id: stateId
+			}, function(data) {
+
+				let options = '<option value="">Select District</option>';
+
+				data.forEach(function(district) {
+					options += `<option value="${district.id}">${district.district_name}</option>`;
+				});
+
+				$('#district_id').html(options);
+			});
+		});
+
+		$('#district_id').on('change', function() {
+
+			const districtId = $(this).val();
+
+			const selectedText = $("#district_id option:selected").text();
+			$('#district_name').val(selectedText);
+
+			$('#work_location_id').html('<option value="">Loading...</option>');
+
+			if (!districtId) return;
+
+			$.get("{{ url('/get-cities-by-district') }}", {
+				district_id: districtId
+			}, function(data) {
+
+				let options = '<option value="">Select City</option>';
+
+				data.forEach(function(city) {
+					options += `<option value="${city.id}">${city.city_village_name}</option>`;
+				});
+
+				$('#work_location_id').html(options);
+			});
+		});
+
+		$('#work_location_id').on('change', function() {
+
+			const selectedText = $("#work_location_id option:selected").text();
+			$('#work_location_name').val(selectedText);
+
 		});
 	});
 </script>
