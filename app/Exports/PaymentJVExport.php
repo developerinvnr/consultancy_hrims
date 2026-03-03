@@ -28,12 +28,14 @@ class PaymentJVExport implements
     protected $month;
     protected $status;
     protected $year;
+    protected $requisitionType;
 
-    public function __construct($financialYear, $month, $status)
+    public function __construct($financialYear, $month, $status, $requisitionType)
     {
         $this->financialYear = $financialYear;
         $this->month = (int) $month;
         $this->status = $status ?? 'All';
+        $this->requisitionType = $requisitionType;
 
         [$startYear, $endYear] = explode('-', $financialYear);
         $this->year = ($this->month >= 4) ? $startYear : $endYear;
@@ -49,21 +51,25 @@ class PaymentJVExport implements
             'candidate.subDepartmentRef',
             'candidate.zoneRef'
         ])
-        ->where('month', $this->month)
-        ->where('year', $this->year)
-        ->whereHas('candidate', function ($q) {
-            if ($this->status !== 'All') {
-                $q->where('final_status', $this->status);
-            } else {
-                $q->whereIn('final_status', ['A','D']);
-            }
-        })
-        ->get();
+            ->where('month', $this->month)
+            ->where('year', $this->year)
+            ->whereHas('candidate', function ($q) {
+                if ($this->status !== 'All') {
+                    $q->where('final_status', $this->status);
+                } else {
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+
+                if (!empty($this->requisitionType)) {
+                    $q->where('requisition_type', $this->requisitionType);
+                }
+            })
+            ->get();
 
         return $records->map(function ($rec) {
 
-            $tds = round($rec->net_pay * 0.02,0);
-            $paymentAmount = round($rec->net_pay - $tds,0);
+            $tds = round($rec->net_pay * 0.02, 0);
+            $paymentAmount = round($rec->net_pay - $tds, 0);
 
             return [
                 '',
@@ -95,7 +101,7 @@ class PaymentJVExport implements
                 $paymentAmount,
                 '',
                 '',
-                round($rec->net_pay,0),
+                round($rec->net_pay, 0),
                 $tds,
                 ''
             ];
@@ -105,13 +111,37 @@ class PaymentJVExport implements
     public function headings(): array
     {
         return [
-            'DocNo','Date','Time','CashBankAC','TDSJVNo','sNarration',
-            'sChequeNo','TransactiontypeCode','Activity','Category',
-            'Region','Crop','Farm','Business Entity','Cost Center',
-            'Department','PMT Category','Business Unit','Location','State',
-            'Function','FC-Vertical','Sub Department','Zone',
-            'Account','Amount','Reference','sRemarks',
-            'TDSBillAmount','TDS','sBRSUser'
+            'DocNo',
+            'Date',
+            'Time',
+            'CashBankAC',
+            'TDSJVNo',
+            'sNarration',
+            'sChequeNo',
+            'TransactiontypeCode',
+            'Activity',
+            'Category',
+            'Region',
+            'Crop',
+            'Farm',
+            'Business Entity',
+            'Cost Center',
+            'Department',
+            'PMT Category',
+            'Business Unit',
+            'Location',
+            'State',
+            'Function',
+            'FC-Vertical',
+            'Sub Department',
+            'Zone',
+            'Account',
+            'Amount',
+            'Reference',
+            'sRemarks',
+            'TDSBillAmount',
+            'TDS',
+            'sBRSUser'
         ];
     }
 

@@ -18,7 +18,7 @@
                   class="row g-3 align-items-end">
 
                 {{-- Financial Year --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Financial Year</label>
                     <select name="financial_year" class="form-select form-select-sm">
                         @php
@@ -38,7 +38,7 @@
                 </div>
 
                 {{-- Month --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Month</label>
                     @php $fyMonths=[4,5,6,7,8,9,10,11,12,1,2,3]; @endphp
                     <select name="month" class="form-select form-select-sm">
@@ -52,7 +52,7 @@
                 </div>
 
                 {{-- Status --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="All" {{ $status=='All'?'selected':'' }}>All</option>
@@ -60,6 +60,16 @@
                         <option value="D" {{ $status=='D'?'selected':'' }}>Inactive</option>
                     </select>
                 </div>
+
+                <div class="col-md-3">
+				<label class="form-label form-label-sm">Requisition Type</label>
+				<select name="requisition_type" class="form-select form-select-sm">
+					<option value="">All Types</option>
+					<option value="TFA" {{ request('requisition_type') == 'TFA' ? 'selected' : '' }}>TFA</option>
+					<option value="CB" {{ request('requisition_type') == 'CB' ? 'selected' : '' }}>CB</option>
+					<option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
+				</select>
+			</div>
 
                 {{-- Buttons --}}
                 <div class="col-md-3 d-flex gap-2">

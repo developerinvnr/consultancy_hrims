@@ -26,12 +26,15 @@ class JVExport implements
     protected $month;
     protected $status;
     protected $year;
+    protected $requisitionType;
 
-    public function __construct($financialYear, $month, $status)
+    public function __construct($financialYear, $month, $status, $requisitionType)
     {
         $this->financialYear = $financialYear;
         $this->month = (int) $month;
         $this->status = $status ?? 'All';
+        $this->requisitionType = $requisitionType;
+
 
         // 🔥 Calculate Year from Financial Year
         [$startYear, $endYear] = explode('-', $financialYear);
@@ -50,18 +53,23 @@ class JVExport implements
             'candidate.function',
             'candidate.workState'
         ])
-        ->where('month', $this->month)
-        ->where('year', $this->year)
-        ->whereHas('candidate', function ($q) {
+            ->where('month', $this->month)
+            ->where('year', $this->year)
+            ->whereHas('candidate', function ($q) {
 
-            if ($this->status !== 'All') {
-                $q->where('final_status', $this->status);
-            } else {
-                $q->whereIn('final_status', ['A','D']);
-            }
-        })
-        ->orderBy('id')
-        ->get();
+                if ($this->status !== 'All') {
+                    $q->where('final_status', $this->status);
+                } else {
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+
+
+                if (!empty($this->requisitionType)) {
+                    $q->where('requisition_type', $this->requisitionType);
+                }
+            })
+            ->orderBy('id')
+            ->get();
 
         $narration = "Being Contractual Expenses for the Month of "
             . Carbon::create()->month($this->month)->format('F')

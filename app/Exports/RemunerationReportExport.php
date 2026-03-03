@@ -26,12 +26,15 @@ class RemunerationReportExport implements
     protected $month;
     protected $year;
     protected $departmentId;
+    protected $requisitionType;
 
-    public function __construct($month, $year, $departmentId)
+    public function __construct($month, $year, $departmentId, $requisitionType)
     {
         $this->month = $month;
         $this->year = $year;
         $this->departmentId = $departmentId;
+        $this->requisitionType = $requisitionType;
+
     }
 
     public function collection()
@@ -52,6 +55,10 @@ class RemunerationReportExport implements
 
             if (!empty($this->departmentId)) {
                 $q->where('department_id', $this->departmentId);
+            }
+
+             if (!empty($this->requisitionType)) {
+                $q->where('requisition_type', $this->requisitionType);
             }
         })
         ->join('candidate_master', 'salary_processings.candidate_id', '=', 'candidate_master.id')
@@ -91,13 +98,13 @@ class RemunerationReportExport implements
                 $index + 1,
                 $record->candidate->candidate_code ?? '-',
                 $record->candidate->candidate_name ?? '-',
-                $record->candidate->businessUnit->business_unit_name ?? '-',
-                $record->candidate->vertical->vertical_name ?? '-',
-                $record->candidate->zoneRef->zone_name ?? '-',
-                $record->candidate->regionRef->region_name ?? '-',
-                $record->candidate->territoryRef->territory_name ?? '-',
-                $record->candidate->department->department_name ?? '-',
-                $record->candidate->subDepartmentRef->sub_department_name ?? '-',
+                $record->candidate->businessUnit->business_unit_code ?? '-',
+                $record->candidate->vertical->vertical_code ?? '-',
+                $record->candidate->zoneRef->zone_code ?? '-',
+                $record->candidate->regionRef->focus_code ?? '-',
+                $record->candidate->territoryRef->territory_code ?? '-',
+                $record->candidate->department->department_code ?? '-',
+                $record->candidate->subDepartmentRef->focus_code ?? '-',
                 $paidDays,
                 $workingDays,
                 $sunday,

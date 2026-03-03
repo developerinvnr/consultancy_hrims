@@ -65,7 +65,7 @@
                 <td>{{ $record->candidate->vertical->vertical_code ?? '-' }}</td>
                 <td>{{ $record->candidate->zoneRef->zone_code ?? '-' }}</td>
                 <td>{{ $record->candidate->regionRef->focus_code ?? '-' }}</td>
-                <td>{{ $record->candidate->territoryRef->territory_name ?? '-' }}</td>
+                <td>{{ $record->candidate->territoryRef->territory_code ?? '-' }}</td>
                 <td>{{ $record->candidate->department->department_code ?? '-' }}</td>
                 <td>{{ $record->candidate->subDepartmentRef->focus_code ?? '-' }}</td>
 

@@ -13,45 +13,55 @@
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
             <form method="GET"
-                  action="{{ route('reports.payment-jv') }}"
-                  id="paymentForm"
-                  class="row g-3 align-items-end">
+                action="{{ route('reports.payment-jv') }}"
+                id="paymentForm"
+                class="row g-3 align-items-end">
 
                 {{-- Financial Year --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Financial Year</label>
                     <select name="financial_year" class="form-select form-select-sm">
                         @for($y=date('Y')-2;$y<=date('Y');$y++)
                             @php $fy=$y.'-'.($y+1); @endphp
                             <option value="{{ $fy }}"
-                                {{ $financialYear==$fy?'selected':'' }}>
-                                {{ $fy }}
+                            {{ $financialYear==$fy?'selected':'' }}>
+                            {{ $fy }}
                             </option>
-                        @endfor
+                            @endfor
                     </select>
                 </div>
 
                 {{-- Month --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Month</label>
                     @php $fyMonths=[4,5,6,7,8,9,10,11,12,1,2,3]; @endphp
                     <select name="month" class="form-select form-select-sm">
                         @foreach($fyMonths as $m)
-                            <option value="{{ $m }}"
-                                {{ $month==$m?'selected':'' }}>
-                                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
-                            </option>
+                        <option value="{{ $m }}"
+                            {{ $month==$m?'selected':'' }}>
+                            {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
 
                 {{-- Status --}}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="All" {{ $status=='All'?'selected':'' }}>All</option>
                         <option value="A" {{ $status=='A'?'selected':'' }}>Active</option>
                         <option value="D" {{ $status=='D'?'selected':'' }}>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm">Requisition Type</label>
+                    <select name="requisition_type" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        <option value="TFA" {{ request('requisition_type') == 'TFA' ? 'selected' : '' }}>TFA</option>
+                        <option value="CB" {{ request('requisition_type') == 'CB' ? 'selected' : '' }}>CB</option>
+                        <option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
                     </select>
                 </div>
 
@@ -61,8 +71,8 @@
                         Generate
                     </button>
                     <button type="button"
-                            class="btn btn-sm btn-success w-50"
-                            onclick="exportPayment()">
+                        class="btn btn-sm btn-success w-50"
+                        onclick="exportPayment()">
                         Export
                     </button>
                 </div>
@@ -87,11 +97,11 @@
             </thead>
 
             <tbody>
-            @forelse($records as $rec)
+                @forelse($records as $rec)
 
                 @php
-                    $tds = round($rec->net_pay * 0.02,0);
-                    $paymentAmount = round($rec->net_pay - $tds,0);
+                $tds = round($rec->net_pay * 0.02,0);
+                $paymentAmount = round($rec->net_pay - $tds,0);
                 @endphp
 
                 <tr>
@@ -107,11 +117,11 @@
                     <td>{{ $tds }}</td>
                 </tr>
 
-            @empty
+                @empty
                 <tr>
                     <td colspan="7" class="text-center">No records found</td>
                 </tr>
-            @endforelse
+                @endforelse
             </tbody>
         </table>
     </div>
@@ -124,10 +134,10 @@
 @endsection
 
 <script>
-function exportPayment(){
-    let form = $('#paymentForm');
-    let params = form.serialize();
-    window.location.href =
-        "{{ route('reports.payment-jv.export') }}?" + params;
-}
+    function exportPayment() {
+        let form = $('#paymentForm');
+        let params = form.serialize();
+        window.location.href =
+            "{{ route('reports.payment-jv.export') }}?" + params;
+    }
 </script>

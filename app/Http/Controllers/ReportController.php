@@ -254,7 +254,7 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($departmentId,$requisitionType) {
+            ->whereHas('candidate', function ($q) use ($departmentId, $requisitionType) {
                 $q->whereIn('final_status', ['A', 'D']);
 
                 if (!empty($departmentId)) {
@@ -333,6 +333,7 @@ class ReportController extends Controller
             'month' => 'required|numeric|between:1,12',
             'financial_year' => 'required|string',
             'department_id' => 'nullable|integer|exists:core_departments,id',
+            'requisition_type' => 'nullable|string',
         ]);
 
         $month = (int) $request->month;
@@ -344,7 +345,8 @@ class ReportController extends Controller
             new RemunerationReportExport(
                 $month,
                 $year,
-                $request->department_id ?? ''
+                $request->department_id ?? '',
+                $request->requisition_type ?? ''
             ),
             "Payout_Report_{$month}_{$year}.xlsx"
         );
@@ -451,7 +453,7 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($status,$requisitionType) {
+            ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
 
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
@@ -489,7 +491,8 @@ class ReportController extends Controller
             new JVExport(
                 $request->financial_year,
                 $request->month,
-                $request->status
+                $request->status,
+                $request->requisition_type ?? ''
             ),
             'JV_Report.xlsx'
         );
@@ -516,15 +519,19 @@ class ReportController extends Controller
 
         $month = (int) $request->get('month', $currentMonth);
         $year  = ($month >= 4) ? $startYear : $endYear;
-
+        $requisitionType = $request->get('requisition_type');
         $query = SalaryProcessing::with('candidate')
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($status) {
+            ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
                 } else {
                     $q->whereIn('final_status', ['A', 'D']);
+                }
+
+                if (!empty($requisitionType)) {
+                    $q->where('requisition_type', $requisitionType);
                 }
             });
 
@@ -545,7 +552,8 @@ class ReportController extends Controller
             new TDSJVExport(
                 $request->financial_year,
                 $request->month,
-                $request->status
+                $request->status,
+                $request->requisition_type ?? ''
             ),
             'TDS_JV_Report.xlsx'
         );
@@ -572,7 +580,7 @@ class ReportController extends Controller
 
         $month = (int) $request->get('month', $currentMonth);
         $year  = ($month >= 4) ? $startYear : $endYear;
-
+        $requisitionType = $request->get('requisition_type');
         $records = SalaryProcessing::with([
             'candidate.department',
             'candidate.businessUnit',
@@ -585,11 +593,15 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($status) {
+            ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
                 } else {
                     $q->whereIn('final_status', ['A', 'D']);
+                }
+
+                if (!empty($requisitionType)) {
+                    $q->where('requisition_type', $requisitionType);
                 }
             })
             ->paginate(20)
@@ -610,7 +622,8 @@ class ReportController extends Controller
             new PaymentJVExport(
                 $request->financial_year,
                 $request->month,
-                $request->status
+                $request->status,
+                $request->requisition_type ?? ''
             ),
             'Payment_JV_Report.xlsx'
         );

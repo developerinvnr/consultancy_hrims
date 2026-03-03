@@ -26,12 +26,15 @@ class TDSJVExport implements
     protected $month;
     protected $status;
     protected $year;
+    protected $requisitionType;
 
-    public function __construct($financialYear, $month, $status)
+    public function __construct($financialYear, $month, $status, $requisitionType)
     {
         $this->financialYear = $financialYear;
         $this->month = (int) $month;
         $this->status = $status ?? 'All';
+        $this->requisitionType = $requisitionType;
+
 
         [$startYear, $endYear] = explode('-', $financialYear);
         $this->year = ($this->month >= 4) ? $startYear : $endYear;
@@ -46,7 +49,11 @@ class TDSJVExport implements
                 if ($this->status !== 'All') {
                     $q->where('final_status', $this->status);
                 } else {
-                    $q->whereIn('final_status', ['A','D']);
+                    $q->whereIn('final_status', ['A', 'D']);
+                }
+
+                if (!empty($this->requisitionType)) {
+                    $q->where('requisition_type', $this->requisitionType);
                 }
             })
             ->get();
@@ -56,7 +63,7 @@ class TDSJVExport implements
             $tds = round($rec->net_pay * 0.02, 0);
 
             $narration = "TDS deducted on Rs. "
-                . round($rec->net_pay,0)
+                . round($rec->net_pay, 0)
                 . " @2%, Being Contractual Expenses for the Month of "
                 . Carbon::create()->month($this->month)->format('F')
                 . " {$this->year}";
