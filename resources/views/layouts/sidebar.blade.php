@@ -68,6 +68,13 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('focus.*')" href="{{ route('focus.index') }}">
+                        <i class="ri-map-pin-line"></i>
+                        <span>Location Map with Focus</span>
+                    </a>
+                </li>
+
 
                 {{-- Leave --}}
                 {{--<li class="nav-item">

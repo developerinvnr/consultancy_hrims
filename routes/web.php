@@ -320,6 +320,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-cities-by-district', [LocationController::class, 'getCities']);
 });
 
+Route::prefix('focus')->name('focus.')->middleware('auth')->group(function () {
+    Route::get('/', [LocationController::class, 'focusIndex'])->name('index');
+    Route::get('/cities', [LocationController::class, 'getCitiesWithFocus'])->name('cities');
+    Route::post('/update', [LocationController::class, 'updateFocusCode'])->name('update');
+});
+
 // Import routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/import/candidates', [ImportController::class, 'showImportPage'])->name('import.candidates');

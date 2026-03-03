@@ -28,4 +28,47 @@ class LocationController extends Controller
 
         return response()->json($cities);
     }
+
+    public function focusIndex()
+    {
+        $states = DB::table('core_state')
+            ->where('is_active', 1)
+            ->orderBy('state_name')
+            ->get(['id', 'state_name']);
+
+        return view('focus.index', compact('states'));
+    }
+
+    public function getCitiesWithFocus(Request $request)
+    {
+        $cities = DB::table('core_city_village')
+            ->where('district_id', $request->district_id)
+            ->where('is_active', 1)
+            ->orderBy('city_village_name')
+            ->get([
+                'id',
+                'division_name',
+                'city_village_name',
+                'city_village_code',
+                'focus_code'
+            ]);
+
+        return response()->json($cities);
+    }
+
+    public function updateFocusCode(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'focus_code' => 'nullable|string|max:50'
+        ]);
+
+        DB::table('core_city_village')
+            ->where('id', $request->id)
+            ->update([
+                'focus_code' => $request->focus_code
+            ]);
+
+        return response()->json(['success' => true]);
+    }
 }
