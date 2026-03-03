@@ -118,8 +118,8 @@
                     <td>{{ $rec->requisition_type ?? '-' }}</td>
                     <td>{{ $rec->requisition_type ?? '-' }}</td>
                     <td>120</td>
-                    <td>{{ $rec->vertical->vertical_name ?? '-' }}</td>
-                    <td>{{ $rec->regionRef->region_name ?? '-' }}</td>
+                    <td>{{ $rec->vertical->vertical_code ?? '-' }}</td>
+                    <td>{{ $rec->regionRef->focus_code ?? '-' }}</td>
                     <td>{{ $rec->formatted_address }}</td>
                     <td>{{ $rec->city ?? '-' }}</td>
                     <td>{{ $rec->pin_code ?? '-' }}</td>
@@ -134,16 +134,16 @@
                     <td>NO</td>
                     <td>{{ $rec->workState->state_name ?? '-' }}</td>
                     <td>IND</td>
-                    <td>{{ $rec->businessUnit->business_unit_name ?? '-' }}</td>
+                    <td>{{ $rec->businessUnit->business_unit_code ?? '-' }}</td>
                     <td>{{ $rec->pan_no ?? '-' }}</td>
-                    <td>{{ $rec->department->department_name ?? '-' }}</td>
+                    <td>{{ $rec->department->department_code ?? '-' }}</td>
                     <td>{{ $rec->requisition_type ?? '-' }}</td>
                     <td>{{ $rec->requisition_type ?? '-' }}</td>
                     <td>{{ $rec->reportingManager?->emp_name ?? '-' }}</td>
                     <td>{{ $rec->aadhaar_no ?? '-' }}</td>
                     <td>S & M</td>
-                    <td>{{ $rec->subDepartmentRef->sub_department_name ?? '-' }}</td>
-                    <td>{{ $rec->zoneRef->zone_name ?? '-' }}</td>
+                    <td>{{ $rec->subDepartmentRef->focus_code ?? '-' }}</td>
+                    <td>{{ $rec->zoneRef->zone_code ?? '-' }}</td>
                     <td>{{ optional($rec->contract_start_date)->format('d/m/Y') }}</td>
                     <td>{{ $rec->reportingManager?->emp_designation ?? '-' }}</td>
                     <td>{{ $rec->reportingManager?->emp_email ?? '-' }}</td>
