@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AttendanceExport;
+   use Illuminate\Support\Facades\Log;
+
 
 class AttendanceController extends Controller
 {
@@ -1385,104 +1387,164 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function partyAttendanceUpdate(Request $request)
-    {
-        $request->validate([
-            'party_id' => 'required|integer',
-            'month'    => 'required|integer|min:1|max:12',
-            'year'     => 'required|integer',
-            'day'      => 'required|integer|min:1|max:31',
-            'status'   => 'nullable|string|max:5'
-        ]);
 
-        try {
+public function partyAttendanceUpdate(Request $request)
+{
+    Log::info('Attendance Update API Request', $request->all());
 
-            $candidateId = $request->party_id;
-            $month       = $request->month;
-            $year        = $request->year;
-            $day         = $request->day;
-            $status      = $request->status;
+    $request->validate([
+        'party_id' => 'required|integer',
+        'month'    => 'required|integer|min:1|max:12',
+        'year'     => 'required|integer',
+        'day'      => 'required|integer|min:1|max:31',
+        'status'   => 'nullable|string|max:5'
+    ]);
 
-            /*
-        |---------------------------------------
-        | Get existing attendance or create new
-        |---------------------------------------
-        */
-            $attendance = Attendance::firstOrNew([
+    DB::beginTransaction();
+
+    try {
+
+        $candidateId = $request->party_id;
+        $month       = $request->month;
+        $year        = $request->year;
+        $day         = $request->day;
+
+        // ✅ force uppercase
+        $status = $request->status ? strtoupper($request->status) : null;
+
+        // ✅ validate real days in month
+        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+
+        if ($day > $daysInMonth) {
+
+            Log::warning('Invalid attendance day', [
                 'candidate_id' => $candidateId,
+                'day' => $day,
                 'month' => $month,
                 'year' => $year
             ]);
 
-            $attendance->candidate_id = $candidateId;
-            $attendance->month = $month;
-            $attendance->year  = $year;
-
-            /*
-        |---------------------------------------
-        | Update specific day
-        |---------------------------------------
-        */
-            $column = "A" . $day;
-            $attendance->$column = $status;
-
-            /*
-        |---------------------------------------
-        | Recalculate totals
-        |---------------------------------------
-        */
-            $totalPresent = 0;
-            $totalAbsent  = 0;
-            $totalCL      = 0;
-            $totalLWP     = 0;
-            $totalOD      = 0;
-
-            for ($i = 1; $i <= 31; $i++) {
-                $col = "A" . $i;
-                $val = $attendance->$col;
-
-                switch ($val) {
-                    case 'P':
-                        $totalPresent++;
-                        break;
-
-                    case 'A':
-                        $totalAbsent++;
-                        break;
-
-                    case 'CL':
-                        $totalCL++;
-                        break;
-
-                    case 'LWP':
-                        $totalLWP++;
-                        break;
-
-                    case 'OD':
-                        $totalOD++;
-                        break;
-                }
-            }
-
-            $attendance->total_present = $totalPresent;
-            $attendance->total_absent  = $totalAbsent;
-            $attendance->total_cl      = $totalCL;
-            $attendance->total_lwp     = $totalLWP;
-            $attendance->total_od      = $totalOD;
-
-            $attendance->save();
-
             return response()->json([
-                'Code' => '200',
-                'Message' => 'Attendance updated successfully',
-                'total_present' => $totalPresent,
-                'total_absent' => $totalAbsent
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'Code' => '500',
-                'Message' => $e->getMessage()
-            ]);
+                'Code' => 400,
+                'Message' => "Invalid day. Month has only {$daysInMonth} days"
+            ], 400);
         }
+
+        Log::info('Processing attendance update', [
+            'candidate_id' => $candidateId,
+            'month' => $month,
+            'year' => $year,
+            'day' => $day,
+            'status' => $status
+        ]);
+
+        // ✅ fetch or create
+        $attendance = Attendance::firstOrNew([
+            'candidate_id' => $candidateId,
+            'month' => $month,
+            'year' => $year
+        ]);
+
+        $attendance->candidate_id = $candidateId;
+        $attendance->month = $month;
+        $attendance->year  = $year;
+
+        // ✅ update only selected day
+        $column = "A".$day;
+        $attendance->$column = $status;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recalculate totals correctly
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPresent = 0;
+        $totalAbsent  = 0;
+        $totalCL      = 0;
+        $totalLWP     = 0;
+        $totalOD      = 0;
+
+        for ($i = 1; $i <= $daysInMonth; $i++) {
+
+            $col = "A".$i;
+            $val = $attendance->$col;
+
+            switch ($val) {
+
+                case 'P':
+                    $totalPresent++;
+                    break;
+
+                case 'A':
+                    $totalAbsent++;
+                    break;
+
+                case 'CL':
+                    $totalCL++;
+                    break;
+
+                case 'LWP':
+                    $totalLWP++;
+                    break;
+
+                case 'OD':
+                    $totalOD++;
+                    break;
+            }
+        }
+
+        $attendance->total_present = $totalPresent;
+        $attendance->total_absent  = $totalAbsent;
+        $attendance->total_cl      = $totalCL;
+        $attendance->total_lwp     = $totalLWP;
+        $attendance->total_od      = $totalOD;
+        $attendance->status        = 'submitted';
+
+        $attendance->save();
+
+        DB::commit();
+
+        Log::info('Attendance updated successfully', [
+            'candidate_id' => $candidateId,
+            'month' => $month,
+            'year' => $year,
+            'day' => $day,
+            'status' => $status
+        ]);
+
+        return response()->json([
+
+            'Code' => 200,
+            'Message' => 'Attendance updated successfully',
+
+            // ✅ important for mobile update
+            'updated_day' => [
+                'day' => $day,
+                'status' => $status
+            ],
+
+            'total_present' => $totalPresent,
+            'total_absent'  => $totalAbsent,
+            'total_cl'      => $totalCL,
+            'total_od'      => $totalOD,
+            'total_lwp'     => $totalLWP
+        ]);
+
     }
+    catch (\Exception $e) {
+
+        DB::rollBack();
+
+        Log::error('Attendance update failed', [
+            'error' => $e->getMessage(),
+            'request' => $request->all()
+        ]);
+
+        return response()->json([
+            'Code' => 500,
+            'Message' => 'Server error'
+        ], 500);
+    }
+}
 }
