@@ -67,8 +67,8 @@ class FocusMasterExport implements
                 $rec->requisition_type ?? '-',
                 $rec->requisition_type ?? '-',
                 120,
-                $rec->vertical->vertical_name ?? '-',
-                $rec->regionRef->region_name ?? '-',
+                $rec->vertical->vertical_code ?? '-',
+                $rec->regionRef->focus_code ?? '-',
                 $rec->formatted_address,
                 $rec->city ?? '-',
                 $rec->pin_code ?? '-',
@@ -83,9 +83,9 @@ class FocusMasterExport implements
                 'NO',
                 $rec->workState->state_name ?? '-',
                 'IND',
-                $rec->businessUnit->business_unit_name ?? '-',
+                $rec->businessUnit->business_unit_code ?? '-',
                 $rec->pan_no ?? '-',
-                $rec->department->department_name ?? '-',
+                $rec->department->department_code ?? '-',
                 $rec->requisition_type ?? '-',
                 $rec->requisition_type ?? '-',
 
@@ -94,8 +94,8 @@ class FocusMasterExport implements
 
                 $rec->aadhaar_no ?? '-',
                 'S & M',
-                $rec->subDepartmentRef->sub_department_name ?? '-',
-                $rec->zoneRef->zone_name ?? '-',
+                $rec->subDepartmentRef->focus_code ?? '-',
+                $rec->zoneRef->zone_code ?? '-',
                 optional($rec->contract_start_date)->format('d/m/Y'),
 
                 // Reporting details from relation

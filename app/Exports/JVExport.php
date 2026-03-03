@@ -75,13 +75,19 @@ class JVExport implements
             . Carbon::create()->month($this->month)->format('F')
             . " {$this->year}";
 
-        $billNo = Carbon::create()->month($this->month)->format('M-y');
 
         $billDate = Carbon::create($this->year, $this->month, 1)
             ->endOfMonth()
             ->format('d-m-Y');
 
-        return $records->map(function ($rec) use ($narration, $billNo, $billDate) {
+        return $records->map(function ($rec) use ($narration) {
+
+            $billingDate = Carbon::create($this->year, $this->month, 1);
+            $invoiceDatePart = $billingDate->endOfMonth()->format('dmy');
+
+            $billNo = $rec->candidate->candidate_code . '-' . $invoiceDatePart;
+
+            $billDate = $billingDate->endOfMonth()->format('d-m-Y');
 
             return [
                 '', // DocNo
@@ -92,24 +98,24 @@ class JVExport implements
                 '', // ReverseCharge_Yn_
                 $billNo,
                 $billDate,
-                $rec->candidate->department->department_name ?? '',
+                $rec->candidate->department->department_code ?? '',
                 'N/A', // Cost Center
-                $rec->candidate->businessUnit->business_unit_name ?? '',
+                $rec->candidate->businessUnit->business_unit_code ?? '',
                 'All Activity',
                 $rec->candidate->city ?? '',
                 $rec->candidate->workState->state_name ?? '',
                 'N/A',
                 'All Crop',
-                $rec->candidate->regionRef->region_name ?? 'N/A',
-                $rec->candidate->function->function_name ?? '',
-                $rec->candidate->vertical->vertical_name ?? '',
-                $rec->candidate->subDepartmentRef->sub_department_name ?? '',
-                $rec->candidate->zoneRef->zone_name ?? '',
-                'INDIRECT-MSC-17', // DrAccount
+                $rec->candidate->regionRef->focus_code ?? 'N/A',
+                $rec->candidate->function->function_code ?? '',
+                $rec->candidate->vertical->vertical_code ?? '',
+                $rec->candidate->subDepartmentRef->focus_code ?? '',
+                $rec->candidate->zoneRef->zone_code ?? '',
+                'INDIRECT-MSC-17',
                 $rec->candidate->candidate_code,
                 round($rec->net_pay, 0),
-                '', // TDS
-                '', // TDSPer
+                '',
+                '',
             ];
         });
     }

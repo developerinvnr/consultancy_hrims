@@ -135,8 +135,11 @@
 				. \Carbon\Carbon::create()->month($month)->format('F')
 				. " $year";
 
-				$billNo = \Carbon\Carbon::create()->month($month)->format('M-y');
-				$billDate = \Carbon\Carbon::create($year,$month,1)->endOfMonth()->format('d-m-Y');
+				$billingDate = \Carbon\Carbon::create($year, $month, 1);
+				$invoiceDatePart = $billingDate->endOfMonth()->format('dmy');
+
+				$billNo = $rec->candidate->candidate_code . '-' . $invoiceDatePart;
+				$billDate = $billingDate->endOfMonth()->format('d-m-Y');
 				@endphp
 
 				<tr>
