@@ -84,7 +84,7 @@
     $billingMonth = $billingDate->format('m');
     $lastDate = $billingDate->endOfMonth()->format('d');
     $yearShort = $billingDate->format('y');
-    $invoiceDatePart = $billingDate->endOfMonth()->format('dmY');
+    $invoiceDatePart = $billingDate->endOfMonth()->format('dmy');
 
     $invoiceNumber = $candidateCode . '-' . $invoiceDatePart;
 
