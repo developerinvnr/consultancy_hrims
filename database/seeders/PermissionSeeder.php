@@ -55,6 +55,13 @@ class PermissionSeeder extends Seeder
             // Reports
             ['name' => 'reports.view', 'group_name' => 'reports'],
             ['name' => 'reports.export', 'group_name' => 'reports'],
+			['name' => 'master_report', 'group_name' => 'reports'],
+			['name' => 'payout_report', 'group_name' => 'reports'],
+			['name' => 'focus_maste_report', 'group_name' => 'reports'],
+			['name' => 'jv_report', 'group_name' => 'reports'],
+			['name' => 'tds_jv_report', 'group_name' => 'reports'],
+			['name' => 'payment_jv_report', 'group_name' => 'reports'],
+			['name' => 'management_report', 'group_name' => 'reports'],
 
             // Settings
             ['name' => 'settings.full-access', 'group_name' => 'settings'],

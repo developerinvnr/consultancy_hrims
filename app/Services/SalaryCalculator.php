@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CandidateMaster;
 use App\Models\Attendance;
 use App\Models\SundayWorkRequest;
+use Carbon\Carbon;
 use Exception;
 
 class SalaryCalculator
@@ -17,11 +18,17 @@ class SalaryCalculator
             ->where('year', $year)
             ->first();
 
+        $monthlySalary = (float) $candidate->remuneration_per_month;
+
+        if ($monthlySalary <= 0) {
+            throw new Exception("Salary not defined");
+        }
+
         if (!$attendance) {
             return [
-                'monthly_salary'      => (float) $candidate->remuneration_per_month,
+                'monthly_salary'      => round($monthlySalary),
                 'per_day_salary'      => 0,
-                'total_working_days'  => 0,
+                'total_working_days'  => 26,
                 'paid_days'           => 0,
                 'absent_days'         => 0,
                 'approved_sundays'    => 0,
@@ -31,41 +38,41 @@ class SalaryCalculator
             ];
         }
 
-        // 2️⃣ Month stats
-       
-
-        // Detect contract start & end month
-        $contractStart = $candidate->contract_start_date
-            ? date('Y-m', strtotime($candidate->contract_start_date))
-            : null;
-
-        $contractEnd = $candidate->contract_end_date
-            ? date('Y-m', strtotime($candidate->contract_end_date))
-            : null;
-
-        $currentMonth = date('Y-m', strtotime("$year-$month-01"));
-
-        
-
-        // 3️⃣ Salary base
-        $monthlySalary = (float) $candidate->remuneration_per_month;
-        if ($monthlySalary <= 0) {
-            throw new Exception("Salary not defined");
-        }
-
-        $totalDays = \Carbon\Carbon::create($year, $month)->daysInMonth;
-
-        // FIXED rule: always 26 days salary base
+        // 2️⃣ Fixed Salary Rule
         $workingDays = 26;
-
         $perDay = $monthlySalary / 26;
-        // 4️⃣ Count paid & absent WORKING days only
+
+        $totalDays = Carbon::create($year, $month)->daysInMonth;
+
+        // 3️⃣ Contract Start & End Dates
+        $joinDate = $candidate->contract_start_date
+            ? Carbon::parse($candidate->contract_start_date)
+            : null;
+
+        $endDate = $candidate->contract_end_date
+            ? Carbon::parse($candidate->contract_end_date)
+            : null;
+
         $presentDays = 0;
         $absentDays = 0;
 
+        // 4️⃣ Attendance Loop
         for ($d = 1; $d <= $totalDays; $d++) {
 
-            if (date('w', strtotime("$year-$month-$d")) == 0) {
+            $currentDate = Carbon::create($year, $month, $d);
+
+            // Skip Sundays
+            if ($currentDate->dayOfWeek == Carbon::SUNDAY) {
+                continue;
+            }
+
+            // Skip before joining
+            if ($joinDate && $currentDate->lt($joinDate)) {
+                continue;
+            }
+
+            // Skip after relieving
+            if ($endDate && $currentDate->gt($endDate)) {
                 continue;
             }
 
@@ -90,24 +97,33 @@ class SalaryCalculator
             }
         }
 
-        // FIXED working days rule
-        $workingDays = 26;
+        $actualWorkingDays = $presentDays + $absentDays;
 
-        // Paid days = presentDays (not workingDays - absentDays)
-        $paidDays = $presentDays;
+        // 5️⃣ Apply 26-Day Payroll Rule
 
-        // Absent days = workingDays - paidDays
-        $absentDays = $workingDays - $paidDays;
-
-        if ($absentDays < 0) {
+        if ($actualWorkingDays == 0) {
+            $paidDays = 0;
             $absentDays = 0;
         }
-
-        if ($paidDays > $workingDays) {
-            $paidDays = $workingDays;
+        elseif ($absentDays == 0) {
+            // Full attendance → show 26
+            $paidDays = 26;
+            $absentDays = 0;
+        } else {
+            // Deduct only actual absents
+            $paidDays = 26 - $absentDays;
         }
 
-        // 5️⃣ Approved Sunday work (EXTRA PAY)
+        // Safety cap
+        if ($paidDays > 26) {
+            $paidDays = 26;
+        }
+
+        if ($paidDays < 0) {
+            $paidDays = 0;
+        }
+
+        // 6️⃣ Sunday Work Extra
         $approvedSundays = SundayWorkRequest::where('candidate_id', $candidate->id)
             ->where('month', $month)
             ->where('year', $year)
@@ -116,28 +132,20 @@ class SalaryCalculator
 
         $extraAmount = $approvedSundays * $perDay;
 
-        // 6️⃣ Net Pay
-        if ($paidDays >= $workingDays) {
-            $netPay = $monthlySalary + $extraAmount;
-        } else {
-            $netPay = ($paidDays * $perDay) + $extraAmount;
-        }
+        // 7️⃣ Final Net Pay
+        $deductionAmount = $absentDays * $perDay;
+        $netPay = ($monthlySalary - $deductionAmount) + $extraAmount;
 
-        // 7️⃣ Final rounded values (ONLY here)
         return [
-            'monthly_salary'   => round($monthlySalary),
-            'per_day_salary'   => round($perDay),
-
-            'total_working_days' => $workingDays,
-            'paid_days'        => $paidDays,
-            'absent_days'      => $absentDays,
-
-            'approved_sundays' => $approvedSundays,
-
-            'deduction_amount' => round($absentDays * $perDay),
-            'extra_amount'     => round($extraAmount),
-
-            'net_pay'          => round($netPay),
+            'monthly_salary'      => round($monthlySalary),
+            'per_day_salary'      => round($perDay),
+            'total_working_days'  => 26,
+            'paid_days'           => round($paidDays, 2),
+            'absent_days'         => round($absentDays, 2),
+            'approved_sundays'    => $approvedSundays,
+            'deduction_amount'    => round($deductionAmount),
+            'extra_amount'        => round($extraAmount),
+            'net_pay'             => round($netPay),
         ];
     }
 }

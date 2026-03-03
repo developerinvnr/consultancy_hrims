@@ -13,8 +13,8 @@
     <div class="row g-3">
 
         <!-- Master Report -->
-        @if(auth()->user()->hasAnyRole(['hr_admin']))
-
+       
+       @can('master_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -28,7 +28,8 @@
                 </div>
             </div>
         </div>
-
+     @endcan
+		@can('payout_report')
         <!-- Management Report -->
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
@@ -43,7 +44,8 @@
                 </div>
             </div>
         </div>
-
+@endcan
+		@can('focus_maste_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -58,7 +60,8 @@
                 </div>
             </div>
         </div>
-
+@endcan
+		@can('jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -73,7 +76,8 @@
                 </div>
             </div>
         </div>
-
+@endcan
+		@can('tds_jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -88,8 +92,8 @@
                 </div>
             </div>
         </div>
-
-
+@endcan
+@can('payment_jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -104,8 +108,8 @@
                 </div>
             </div>
         </div>
-        @endif
-
+        @endcan
+@can('management_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -119,7 +123,7 @@
                 </div>
             </div>
         </div>
-
+@endcan
 
 
 
