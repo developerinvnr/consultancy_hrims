@@ -54,7 +54,7 @@
 						<input type="hidden" name="resume_filepath" id="resume_filepath">
 
 						<!-- ==================== SECTION 1: DOCUMENT UPLOADS & VERIFICATION ==================== -->
-						{{--<div class="row mb-3">
+						<div class="row mb-3">
 							<div class="col-12">
 								<div class="card border">
 									<div class="card-header bg-light py-2">
@@ -286,10 +286,10 @@
 									</div>
 								</div>
 							</div>
-						</div>--}}
+						</div>
 
 						<!-- ==================== SECTION 2: Personal Information ==================== -->
-						{{--<div class="row mb-4">
+						<div class="row mb-4">
 							<div class="col-12">
 								<div class="card border">
 
@@ -427,7 +427,7 @@
 									</div>
 								</div>
 							</div>
-						</div>--}}
+						</div>
 
 
 						<!-- ==================== SECTION 3: WORK INFORMATION ==================== -->
