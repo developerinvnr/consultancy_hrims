@@ -5,7 +5,7 @@
 
 <div class="row mb-1">
         <div class="col-12">
-            <div class="page-title-box d-flex justify-content-between align-items-center">
+           <div class="page-title-box d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Payout Report</h4>
             </div>
         </div>
@@ -26,14 +26,6 @@
 </div>
 @endsection
 <style>
-
-    .main-content {
-    overflow-x: hidden;
-}
-
-.container-fluid {
-    overflow-x: hidden;
-}
 .remuneration-scroll {
     width: 100%;
     max-height: 70vh;

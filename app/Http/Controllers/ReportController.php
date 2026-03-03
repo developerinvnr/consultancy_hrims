@@ -218,6 +218,7 @@ class ReportController extends Controller
             'month' => 'nullable|integer|between:1,12',
             'year' => 'nullable|integer|min:2020',
             'department_id' => 'nullable|integer|exists:core_department,id',
+            'requisition_type' => 'nullable|string|in:TFA,CB,Contractual',
         ]);
 
         $financialYear = $request->get('financial_year');
@@ -240,7 +241,7 @@ class ReportController extends Controller
         // Map month to correct calendar year
         $year = ($month >= 4) ? $startYear : $endYear;
         $departmentId = $request->get('department_id', '');
-
+        $requisitionType = $request->get('requisition_type');
         // Build query for remuneration report
         $query = SalaryProcessing::with([
             'candidate.department',
@@ -253,11 +254,15 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($departmentId) {
+            ->whereHas('candidate', function ($q) use ($departmentId,$requisitionType) {
                 $q->whereIn('final_status', ['A', 'D']);
 
                 if (!empty($departmentId)) {
                     $q->where('department_id', $departmentId);
+                }
+
+                if (!empty($requisitionType)) {
+                    $q->where('requisition_type', $requisitionType);
                 }
             });
 
@@ -430,7 +435,7 @@ class ReportController extends Controller
 
         // Map FY month to actual calendar year
         $year = ($month >= 4) ? $startYear : $endYear;
-
+        $requisitionType = $request->get('requisition_type');
         // -------------------------------
         // 4️⃣ Build Query
         // -------------------------------
@@ -446,12 +451,16 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('candidate', function ($q) use ($status) {
+            ->whereHas('candidate', function ($q) use ($status,$requisitionType) {
 
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
                 } else {
                     $q->whereIn('final_status', ['A', 'D']);
+                }
+
+                if (!empty($requisitionType)) {
+                    $q->where('requisition_type', $requisitionType);
                 }
             });
 

@@ -19,7 +19,7 @@
 			$endYear = $fyStart;
 			@endphp
 
-			<div class="col-md-3">
+			<div class="col-md-2">
 				<label class="form-label form-label-sm">Financial Year</label>
 				<select name="financial_year" class="form-select form-select-sm">
 					@for($y = $startYear; $y <= $endYear; $y++)
@@ -33,7 +33,7 @@
 			</div>
 
 			{{-- Month AFTER --}}
-			<div class="col-md-3">
+			<div class="col-md-2">
 				<label class="form-label form-label-sm">
 					Month <small class="text-muted">(FY Based)</small>
 				</label>
@@ -61,6 +61,16 @@
 						{{ $dept->department_name }}
 					</option>
 					@endforeach
+				</select>
+			</div>
+
+			<div class="col-md-2">
+				<label class="form-label form-label-sm">Requisition Type</label>
+				<select name="requisition_type" class="form-select form-select-sm">
+					<option value="">All Types</option>
+					<option value="TFA" {{ request('requisition_type') == 'TFA' ? 'selected' : '' }}>TFA</option>
+					<option value="CB" {{ request('requisition_type') == 'CB' ? 'selected' : '' }}>CB</option>
+					<option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
 				</select>
 			</div>
 

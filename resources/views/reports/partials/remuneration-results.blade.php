@@ -61,13 +61,13 @@
                 <td>{{ $record->candidate->candidate_code ?? '-' }}</td>
                 <td>{{ $record->candidate->candidate_name ?? '-' }}</td>
 
-                <td>{{ $record->candidate->businessUnit->business_unit_name ?? '-' }}</td>
-                <td>{{ $record->candidate->vertical->vertical_name ?? '-' }}</td>
-                <td>{{ $record->candidate->zoneRef->zone_name ?? '-' }}</td>
-                <td>{{ $record->candidate->regionRef->region_name ?? '-' }}</td>
+                <td>{{ $record->candidate->businessUnit->business_unit_code ?? '-' }}</td>
+                <td>{{ $record->candidate->vertical->vertical_code ?? '-' }}</td>
+                <td>{{ $record->candidate->zoneRef->zone_code ?? '-' }}</td>
+                <td>{{ $record->candidate->regionRef->focus_code ?? '-' }}</td>
                 <td>{{ $record->candidate->territoryRef->territory_name ?? '-' }}</td>
-                <td>{{ $record->candidate->department->department_name ?? '-' }}</td>
-                <td>{{ $record->candidate->subDepartmentRef->sub_department_name ?? '-' }}</td>
+                <td>{{ $record->candidate->department->department_code ?? '-' }}</td>
+                <td>{{ $record->candidate->subDepartmentRef->focus_code ?? '-' }}</td>
 
                 <td>{{ $paidDays }}</td>
                 <td>{{ $record->total_days ?? 0 }}</td>

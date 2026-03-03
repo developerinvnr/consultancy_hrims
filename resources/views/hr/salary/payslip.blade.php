@@ -84,8 +84,9 @@
     $billingMonth = $billingDate->format('m');
     $lastDate = $billingDate->endOfMonth()->format('d');
     $yearShort = $billingDate->format('y');
+    $invoiceDatePart = $billingDate->endOfMonth()->format('dmY');
 
-    $invoiceNumber = $candidateCode . '-' . $billingMonth . '-' . $lastDate . $yearShort;
+    $invoiceNumber = $candidateCode . '-' . $invoiceDatePart;
 
     $tdsRate = 0.02;
 

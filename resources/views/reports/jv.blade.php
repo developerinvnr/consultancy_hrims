@@ -17,7 +17,7 @@
 				id="jvForm"
 				class="row g-3 align-items-end">
 
-				<div class="col-md-3">
+				<div class="col-md-2">
 					<label class="form-label form-label-sm">Financial Year</label>
 					<select name="financial_year" class="form-select form-select-sm">
 						@php
@@ -44,7 +44,7 @@
 					</select>
 				</div>
 
-				<div class="col-md-3">
+				<div class="col-md-2">
 					<label class="form-label form-label-sm">Month</label>
 					@php $fyMonths = [4,5,6,7,8,9,10,11,12,1,2,3]; @endphp
 					<select name="month" class="form-select form-select-sm">
@@ -63,6 +63,16 @@
 						<option value="All" {{ $status=='All'?'selected':'' }}>All</option>
 						<option value="A" {{ $status=='A'?'selected':'' }}>Active</option>
 						<option value="D" {{ $status=='D'?'selected':'' }}>Inactive</option>
+					</select>
+				</div>
+
+				<div class="col-md-2">
+					<label class="form-label form-label-sm">Requisition Type</label>
+					<select name="requisition_type" class="form-select form-select-sm">
+						<option value="">All Types</option>
+						<option value="TFA" {{ request('requisition_type') == 'TFA' ? 'selected' : '' }}>TFA</option>
+						<option value="CB" {{ request('requisition_type') == 'CB' ? 'selected' : '' }}>CB</option>
+						<option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
 					</select>
 				</div>
 
@@ -138,19 +148,19 @@
 					<td></td> {{-- ReverseCharge --}}
 					<td>{{ $billNo }}</td>
 					<td>{{ $billDate }}</td>
-					<td>{{ $rec->candidate->department->department_name ?? '' }}</td>
+					<td>{{ $rec->candidate->department->department_code ?? '' }}</td>
 					<td>N/A</td> {{-- Cost Center --}}
-					<td>{{ $rec->candidate->businessUnit->business_unit_name ?? '' }}</td>
+					<td>{{ $rec->candidate->businessUnit->business_unit_code ?? '' }}</td>
 					<td>All Activity</td>
 					<td>{{ $rec->candidate->city ?? '' }}</td>
 					<td>{{ $rec->candidate->workState->state_name ?? '' }}</td>
 					<td>N/A</td>
 					<td>All Crop</td>
-					<td>{{ $rec->candidate->regionRef->region_name ?? 'N/A' }}</td>
-					<td>{{ $rec->candidate->function->function_name ?? '' }}</td>
-					<td>{{ $rec->candidate->vertical->vertical_name ?? '' }}</td>
-					<td>{{ $rec->candidate->subDepartmentRef->sub_department_name ?? '' }}</td>
-					<td>{{ $rec->candidate->zoneRef->zone_name ?? '' }}</td>
+					<td>{{ $rec->candidate->regionRef->focus_code ?? 'N/A' }}</td>
+					<td>{{ $rec->candidate->function->function_code ?? '' }}</td>
+					<td>{{ $rec->candidate->vertical->vertical_code ?? '' }}</td>
+					<td>{{ $rec->candidate->subDepartmentRef->focus_code ?? '' }}</td>
+					<td>{{ $rec->candidate->zoneRef->zone_code ?? '' }}</td>
 					<td>INDIRECT-MSC-17</td>
 					<td>{{ $rec->candidate->candidate_code }}</td>
 					<td>{{ number_format($rec->net_pay,0) }}</td>
