@@ -937,6 +937,8 @@ class HrAdminController extends Controller
 				'college_name' => $requisition->college_name,
 				'work_location_hq' => $requisition->work_location_hq,
 				'district' => $requisition->district,
+				'district_id'       => $requisition->district_id,
+                'work_location_id'  => $requisition->work_location_id,
 				'state_work_location' => $requisition->state_work_location,
 				'function_id' => $requisition->function_id,
 				'department_id' => $requisition->department_id,
