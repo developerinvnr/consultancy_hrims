@@ -95,11 +95,28 @@ class SalaryCalculator
                 case 'LWP':
                     $absentDays++;
                     break;
+                default:
+                    // Blank or null attendance
+                    $absentDays++;
+                    break;
             }
         }
 
         $actualWorkingDays = $presentDays + $absentDays;
 
+        if ($presentDays == 0 && $absentDays > 0) {
+            return [
+                'monthly_salary'      => round($monthlySalary),
+                'per_day_salary'      => round($perDay),
+                'total_working_days'  => 26,
+                'paid_days'           => 0,
+                'absent_days'         => $absentDays,
+                'approved_sundays'    => 0,
+                'deduction_amount'    => round($monthlySalary),
+                'extra_amount'        => 0,
+                'net_pay'             => 0,
+            ];
+        }
         // 5️⃣ Apply 26-Day Payroll Rule
         // 5️⃣ Apply Payroll Rule
 
