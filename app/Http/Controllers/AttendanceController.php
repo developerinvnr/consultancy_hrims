@@ -1334,10 +1334,10 @@ class AttendanceController extends Controller
         $daysInMonth = \Carbon\Carbon::createFromDate($year, $month)->daysInMonth;
 
         /*
-    |-----------------------------------------
-    | Get parties under manager
-    |-----------------------------------------
-    */
+        |-----------------------------------------
+        | Get parties under manager
+        |-----------------------------------------
+        */
         $parties = DB::table('candidate_master')
             ->where('reporting_manager_employee_id', $managerId)
             ->where('final_status', 'A') // ✅ correct column
@@ -1367,7 +1367,7 @@ class AttendanceController extends Controller
                 ];
             }
 
-            $data[] = [
+            $data['Consultancy'][] = [
                 'party_id' => $party->id,
                 'party_code' => $party->requisition_id,
                 'party_name' => $party->candidate_name,
