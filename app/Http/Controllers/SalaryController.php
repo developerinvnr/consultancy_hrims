@@ -190,6 +190,7 @@ class SalaryController extends Controller
                     'arrear_days' => $request->arrear_days,
                     'arrear_amount' => $request->arrear_amount,
                     'arrear_remarks' => $request->arrear_remarks,
+                    'created_by' => auth()->id(),
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
