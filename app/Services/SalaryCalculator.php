@@ -100,27 +100,32 @@ class SalaryCalculator
         $actualWorkingDays = $presentDays + $absentDays;
 
         // 5️⃣ Apply 26-Day Payroll Rule
+        // 5️⃣ Apply Payroll Rule
+
+        $joinedThisMonth = $joinDate &&
+            $joinDate->month == $month &&
+            $joinDate->year == $year;
+
+        $leftThisMonth = $endDate &&
+            $endDate->month == $month &&
+            $endDate->year == $year;
 
         if ($actualWorkingDays == 0) {
+
             $paidDays = 0;
             $absentDays = 0;
-        }
-        elseif ($absentDays == 0) {
-            // Full attendance → show 26
-            $paidDays = 26;
-            $absentDays = 0;
+        } elseif ($joinedThisMonth || $leftThisMonth) {
+
+            // Pro-rated salary for join/exit month
+            $paidDays = $presentDays;
         } else {
-            // Deduct only actual absents
-            $paidDays = 26 - $absentDays;
-        }
 
-        // Safety cap
-        if ($paidDays > 26) {
-            $paidDays = 26;
-        }
-
-        if ($paidDays < 0) {
-            $paidDays = 0;
+            // Normal payroll rule
+            if ($absentDays == 0) {
+                $paidDays = 26;
+            } else {
+                $paidDays = 26 - $absentDays;
+            }
         }
 
         // 6️⃣ Sunday Work Extra
