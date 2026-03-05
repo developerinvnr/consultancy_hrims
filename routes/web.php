@@ -26,8 +26,8 @@ use App\Http\Controllers\LocationController;
 
 
 
-Route::get('/test-web', function () {
-    return 'WEB OK';
+Route::get('/debug-root', function () {
+    return base_path();
 });
 
 Route::get('/', function () {
