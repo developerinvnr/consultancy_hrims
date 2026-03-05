@@ -138,8 +138,8 @@ class SalaryCalculator
         $extraAmount = $approvedSundays * $perDay;
 
         // 7️⃣ Final Net Pay
-        $deductionAmount = $absentDays * $perDay;
-        $netPay = ($monthlySalary - $deductionAmount) + $extraAmount;
+        $deductionAmount = (26 - $paidDays) * $perDay;
+        $netPay = ($paidDays * $perDay) + $extraAmount;
 
         return [
             'monthly_salary'      => round($monthlySalary),
