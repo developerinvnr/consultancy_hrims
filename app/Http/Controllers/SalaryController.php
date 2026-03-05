@@ -40,18 +40,19 @@ class SalaryController extends Controller
             'candidate_ids.*' => 'integer|exists:candidate_master,id',
 
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
-
-            'candidate_arrears' => 'sometimes|array',
-            'local_arrears'     => 'sometimes|array',
         ]);
+
+        // Resolve arrears
+        $arrearAmount  = 0;
+        $arrearDays    = 0;
+        $arrearRemarks = null;
+
 
         $month = (int) $validated['month'];
         $year  = (int) $validated['year'];
         $force = $validated['force'] ?? false;
 
         $requisitionType  = $validated['requisition_type'] ?? null;
-        $candidateArrears = $validated['candidate_arrears'] ?? [];
-        $localArrears     = $validated['local_arrears'] ?? [];
 
         DB::beginTransaction();
 
@@ -102,28 +103,20 @@ class SalaryController extends Controller
                     // Core salary calculation
                     $salaryData = SalaryCalculator::calculate($candidate, $month, $year);
 
-                    // Resolve arrears (priority based)
-                    $arrearAmount  = 0;
-                    $arrearDays    = 0;
-                    $arrearRemarks = null;
+                    // Fetch arrear from DB
+                    $arrear = DB::table('salary_arrears')
+                        ->where('candidate_id', $candidate->id)
+                        ->where('month', $month)
+                        ->where('year', $year)
+                        ->first();
 
-                    if (!empty($candidateArrears[$candidate->id])) {
-                        $arrearAmount  = $candidateArrears[$candidate->id]['amount'] ?? 0;
-                        $arrearDays    = $candidateArrears[$candidate->id]['days'] ?? 0;
-                        $arrearRemarks = $candidateArrears[$candidate->id]['remarks'] ?? null;
+                    // Resolve arrears (priority based)
+                    $arrearAmount  = $arrear->arrear_amount ?? 0;
+                    $arrearDays    = $arrear->arrear_days ?? 0;
+                    $arrearRemarks = $arrear->arrear_remarks ?? null;
+
+                    if ($arrearAmount > 0) {
                         $arrearsIncluded++;
-                    } else {
-                        $arrearKey = "{$candidate->id}_{$month}_{$year}";
-                        if (!empty($localArrears[$arrearKey])) {
-                            $arrearAmount  = $localArrears[$arrearKey]['amount'] ?? 0;
-                            $arrearDays    = $localArrears[$arrearKey]['days'] ?? 0;
-                            $arrearRemarks = $localArrears[$arrearKey]['remarks'] ?? null;
-                            $arrearsIncluded++;
-                        } elseif ($existing) {
-                            $arrearAmount  = $existing->arrear_amount ?? 0;
-                            $arrearDays    = $existing->arrear_days ?? 0;
-                            $arrearRemarks = $existing->arrear_remarks ?? null;
-                        }
                     }
 
                     SalaryProcessing::updateOrCreate(
@@ -170,6 +163,49 @@ class SalaryController extends Controller
                 'success' => false,
                 'message' => 'Salary processing failed',
                 'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function saveArrear(Request $request)
+    {
+        $request->validate([
+            'candidate_id' => 'required|integer|exists:candidate_master,id',
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer',
+            'arrear_days' => 'required|numeric|min:0|max:31',
+            'arrear_amount' => 'required|numeric|min:0',
+            'arrear_remarks' => 'nullable|string|max:500',
+        ]);
+
+        try {
+
+            DB::table('salary_arrears')->updateOrInsert(
+                [
+                    'candidate_id' => $request->candidate_id,
+                    'month' => $request->month,
+                    'year' => $request->year
+                ],
+                [
+                    'arrear_days' => $request->arrear_days,
+                    'arrear_amount' => $request->arrear_amount,
+                    'arrear_remarks' => $request->arrear_remarks,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Arrear saved successfully'
+            ]);
+        } catch (\Exception $e) {
+
+            \Log::error("Arrear save error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save arrear'
             ], 500);
         }
     }
@@ -257,13 +293,19 @@ class SalaryController extends Controller
         //dd($salaryMonthEnd);
         $result = [];
 
+        $arrears = DB::table('salary_arrears')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('candidate_id');
+
         foreach ($candidates as $candidate) {
             // Check if already processed
             $salary = SalaryProcessing::where('candidate_id', $candidate->id)
                 ->where('month', $month)
                 ->where('year', $year)
                 ->first();
-
+            $ar = $arrears[$candidate->id] ?? null;
             if ($salary) {
                 // Already processed → use saved data
                 $row = $salary->toArray();
@@ -278,8 +320,8 @@ class SalaryController extends Controller
                         'candidate_id' => $candidate->id,
                         'candidate'    => $candidate,
                         'processed'    => false,
-                        'arrear_amount' => 0,
-                        'arrear_days' => 0,
+                         'arrear_amount' => $ar->arrear_amount ?? 0,
+    'arrear_days'   => $ar->arrear_days ?? 0,
                     ]);
                 } catch (\Exception $e) {
                     // Attendance missing etc.
@@ -288,8 +330,8 @@ class SalaryController extends Controller
                         'candidate'    => $candidate,
                         'error'        => $e->getMessage(),
                         'processed'    => false,
-                        'arrear_amount' => 0,
-                        'arrear_days' => 0,
+                        'arrear_amount' => $ar->arrear_amount ?? 0,
+                        'arrear_days'   => $ar->arrear_days ?? 0,
                     ];
                 }
             }

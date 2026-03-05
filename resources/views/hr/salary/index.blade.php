@@ -251,7 +251,6 @@
     let currentYear = null;
     let currentRequisitionType = 'All';
     let dailyRate = 0;
-    let localArrearData = {}; // Store arrear data locally before processing
 
     flatpickr("#monthYear", {
         plugins: [
@@ -321,29 +320,18 @@
             }
             const requisitionType = r.candidate?.requisition_type || r.requisition_type || '-';
             const monthlySalary = Number(r.monthly_salary || 0);
-            const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));
-
-            // Check for locally stored arrear data (not yet saved to DB)
-            const candidateKey = `${r.candidate_id}_${currentMonth}_${currentYear}`;
-            let localArrear = localArrearData[candidateKey] || {
-                days: 0,
-                amount: 0
-            };
+            const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));         
 
             // Use saved arrear if processed, otherwise use local arrear
-            const arrearAmount = r.processed ?
-                Number(r.arrear_amount || 0) :
-                Number(localArrear.amount || 0);
-            const arrearDays = r.processed ?
-                Number(r.arrear_days || 0) :
-                Number(localArrear.days || 0);
+           const arrearAmount = Number(r.arrear_amount || 0);
+           const arrearDays = Number(r.arrear_days || 0);
 
             // Calculate net pay
             const baseNetPay = Number(r.net_pay || 0);
             const netPay = baseNetPay + arrearAmount;
 
             // Calculate arrear text
-            let arrearText = '₹ 0';
+            let arrearText = '<span class="text-muted">₹ 0</span>';
             let arrearLinkText = 'Add Arrear';
             let arrearLinkClass = 'arrear-link';
 
@@ -444,7 +432,7 @@
         $('#arrear_remarks').val('');
 
         // Update modal title
-        const modalTitle = salaryId ? 'Manage Arrear' : 'Add Arrear (Local Calculation)';
+        const modalTitle = 'Manage Arrear';
         $('#arrearModalLabel').text(modalTitle);
 
         // Add info message for pending salaries
@@ -507,7 +495,6 @@
         $('#calculated_arrear').val(parseFloat(arrearAmount).toLocaleString('en-IN'));
     });
 
-    // Save arrear LOCALLY (not to database)
     function saveArrear() {
         const salaryId = $('#salary_id').val();
         const candidateId = $('#candidate_id').val();
@@ -569,62 +556,51 @@
                 }
             });
         }
-        // For PENDING salaries: Store locally
         else {
-            // Store arrear data locally
-            const candidateKey = `${candidateId}_${month}_${year}`;
-            localArrearData[candidateKey] = {
-                days: arrearDays,
-                amount: parseFloat(arrearAmount),
-                remarks: remarks,
-                monthlySalary: parseFloat($('#monthly_salary').val().replace(/,/g, '')),
-                perDaySalary: dailyRate
-            };
 
-            // Close modal and update table
-            $('#arrearModal').modal('hide');
-            toastr.success('Arrear calculated locally. It will be included when salary is processed.');
+    Swal.fire({
+        title: 'Saving...',
+        text: 'Saving arrear',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
 
-            // Re-render the table to show updated arrear
-           // loadSalaryList(); // This will refresh from server but we need to preserve local data
-            // Instead, we can directly update the row
-            updateRowWithLocalArrear(candidateId, arrearDays, arrearAmount);
-        }
-    }
+    $.ajax({
+        url: "{{ route('salary.save.arrear') }}",
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            candidate_id: candidateId,
+            month: month,
+            year: year,
+            arrear_days: arrearDays,
+            arrear_amount: arrearAmount,
+            arrear_remarks: remarks
+        },
+        success: function(response) {
 
-    // Function to update specific row with local arrear data
-    function updateRowWithLocalArrear(candidateId, days, amount) {
-        const row = $(`tr[data-candidate-id="${candidateId}"]`);
-        if (row.length) {
-            const arrearCell = row.find('td:nth-child(9)');
-            const netPayCell = row.find('td:nth-child(10)');
-            // Update arrear display
-            let arrearText = '₹ 0';
-            if (amount > 0) {
-                arrearText = `<span class="text-success fw-bold">+ ₹ ${parseFloat(amount).toLocaleString('en-IN')}</span>`;
+            Swal.close();
+
+            if (response.success) {
+
+                toastr.success('Arrear saved');
+
+                $('#arrearModal').modal('hide');
+
+                // update UI immediately
+loadSalaryList();
+
+            } else {
+                toastr.error(response.message || 'Failed to save arrear');
             }
-
-            // Update arrear cell
-            arrearCell.html(`
-                ${arrearText}<br>
-                <small>
-                    <a href="javascript:void(0)" 
-                       onclick="openArrearModal(null, ${candidateId}, ${localArrearData[`${candidateId}_${currentMonth}_${currentYear}`]?.monthlySalary || 0}, ${localArrearData[`${candidateId}_${currentMonth}_${currentYear}`]?.perDaySalary || 0}, '${row.find('td:nth-child(2)').text()}', '${row.find('td:nth-child(3)').text()}', '${row.find('td:nth-child(4) .badge').text()}', ${amount}, ${days})" 
-                       class="arrear-link">
-                        Edit Arrear
-                    </a>
-                </small>
-            `);
-
-            // Update net pay
-            const monthlySalary = parseFloat(row.find('td:nth-child(5)').text().replace(/[^0-9.-]+/g, ''));
-            const extra = parseFloat(row.find('td:nth-child(6)').text().match(/\d+/g)?.join('') || 0);
-            const deduction = parseFloat(row.find('td:nth-child(7)').text().match(/\d+/g)?.join('') || 0);
-            const baseNetPay = monthlySalary + extra - deduction;
-            const netPay = baseNetPay + parseFloat(amount);
-
-            netPayCell.html(`<strong>₹ ${netPay.toLocaleString('en-IN')}</strong>`);
+        },
+        error: function(xhr) {
+            Swal.close();
+            toastr.error(xhr.responseJSON?.message || "Failed to save arrear");
         }
+    });
+
+}
     }
 
     // Process All with warning - Modified to include local arrear data
@@ -640,15 +616,7 @@
             year: currentYear,
         }, function(response) {
             let exists = response.exists || false;
-            let count = response.count || 0;
-
-            // Check if we have local arrear data that needs to be saved
-            let localArrearCount = 0;
-            Object.keys(localArrearData).forEach(key => {
-                if (key.includes(`_${currentMonth}_${currentYear}`)) {
-                    localArrearCount++;
-                }
-            });
+            let count = response.count || 0;          
 
             let confirmMessage = exists ?
                 `<div class="alert alert-danger">
@@ -658,15 +626,7 @@
                 </div>` :
                 `Process salary${filterText} for ${currentMonth}/${currentYear}?`;
 
-            // Add local arrear info if any
-            if (localArrearCount > 0) {
-                confirmMessage += `
-                    <div class="alert alert-info mt-2">
-                        <i class="ri-information-line"></i>
-                        <strong>Note:</strong> ${localArrearCount} employee(s) have local arrear calculations that will be saved during processing.
-                    </div>
-                `;
-            }
+
 
             if (exists) {
                 confirmMessage += `
@@ -708,7 +668,6 @@
                     year: currentYear,
                     force: exists ? '1' : '0',
                     requisition_type: currentRequisitionType,
-                    local_arrears: localArrearCount > 0 ? localArrearData : null
                 };
 
                 // Show processing loader
@@ -726,7 +685,6 @@
                     if (response.success) {
                         toastr.success(response.message);
                         // Clear local arrear data after successful processing
-                        localArrearData = {};
                         loadSalaryList();
                     } else {
                         toastr.error(response.message || "Processing failed");
@@ -762,21 +720,6 @@
             }
         });
 
-        // Check for local arrear data in selected rows
-        let localArrearSelected = [];
-        selected.each(function() {
-            const candidateId = $(this).data('candidate-id');
-            const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-            if (localArrearData[candidateKey]) {
-                localArrearSelected.push({
-                    id: candidateId,
-                    name: $(this).find('td:nth-child(3)').text().trim(),
-                    days: localArrearData[candidateKey].days,
-                    amount: localArrearData[candidateKey].amount
-                });
-            }
-        });
-
         let confirmMessage = `Process ${selectedIds.length} selected employee(s)?`;
         if (alreadyProcessed.length > 0) {
             confirmMessage = `
@@ -787,15 +730,6 @@
                 </div>`;
         }
 
-        // Add local arrear info if any
-        if (localArrearSelected.length > 0) {
-            confirmMessage += `
-                <div class="alert alert-info mt-2">
-                    <i class="ri-information-line"></i>
-                    <strong>Note:</strong> ${localArrearSelected.length} selected employee(s) have local arrear calculations that will be saved.
-                </div>
-            `;
-        }
 
         if (alreadyProcessed.length > 0) {
             confirmMessage += `
@@ -831,7 +765,6 @@
 
             // Prepare candidate IDs to process
             let candidateIdsToProcess = [];
-            let candidateArrearsToProcess = {};
 
             if (skipProcessed) {
                 selected.each(function() {
@@ -843,9 +776,7 @@
 
                         // Include local arrear if exists
                         const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-                        if (localArrearData[candidateKey]) {
-                            candidateArrearsToProcess[candidateId] = localArrearData[candidateKey];
-                        }
+                      
                     }
                 });
 
@@ -858,9 +789,7 @@
                 // Include all local arrears for selected candidates
                 selectedIds.forEach(candidateId => {
                     const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-                    if (localArrearData[candidateKey]) {
-                        candidateArrearsToProcess[candidateId] = localArrearData[candidateKey];
-                    }
+                  
                 });
             }
 
@@ -884,7 +813,6 @@
                     year: currentYear,
                     force: force ? '1' : '0',
                     candidate_ids: candidateIdsToProcess,
-                    local_arrears: localArrearData,
                     requisition_type: currentRequisitionType
                 }),
                 contentType: 'application/json',
@@ -893,11 +821,6 @@
                     Swal.close();
                     if (response.success) {
                         toastr.success(response.message);
-                        // Clear processed local arrear data
-                        candidateIdsToProcess.forEach(candidateId => {
-                            const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-                            delete localArrearData[candidateKey];
-                        });
                         loadSalaryList();
                     } else {
                         toastr.error(response.message || "Processing failed");

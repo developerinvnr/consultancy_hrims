@@ -273,6 +273,8 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
     Route::get('/export-management-report', [SalaryController::class, 'exportManagementReport'])->name('salary.export.management.report');
 
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
+    Route::post('/save-arrear',[SalaryController::class,'saveArrear'])
+    ->name('salary.save.arrear');
     Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
 
     Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
