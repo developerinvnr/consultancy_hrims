@@ -596,9 +596,8 @@
     function updateRowWithLocalArrear(candidateId, days, amount) {
         const row = $(`tr[data-candidate-id="${candidateId}"]`);
         if (row.length) {
-            const arrearCell = row.find('td:nth-child(8)');
-            const netPayCell = row.find('td:nth-child(9)');
-
+            const arrearCell = row.find('td:nth-child(9)');
+            const netPayCell = row.find('td:nth-child(10)');
             // Update arrear display
             let arrearText = '₹ 0';
             if (amount > 0) {
