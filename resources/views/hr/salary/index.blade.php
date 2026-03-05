@@ -643,7 +643,6 @@
             _token: '{{ csrf_token() }}',
             month: currentMonth,
             year: currentYear,
-            requisition_type: currentRequisitionType
         }, function(response) {
             let exists = response.exists || false;
             let count = response.count || 0;

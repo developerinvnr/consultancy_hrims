@@ -304,18 +304,11 @@ class SalaryController extends Controller
         $request->validate([
             'month' => 'required|integer',
             'year'  => 'required|integer',
-            'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
-        $query = SalaryProcessing::where('month', $request->month)
-            ->where('year', $request->year);
-
-        // Apply requisition_type filter if provided
-        if ($request->filled('requisition_type') && $request->requisition_type !== 'All') {
-            $query->where('requisition_type', $request->requisition_type);
-        }
-
-        $count = $query->count();
+        $count = SalaryProcessing::where('month', $request->month)
+            ->where('year', $request->year)
+            ->count();
 
         return response()->json([
             'exists' => $count > 0,
@@ -764,10 +757,10 @@ class SalaryController extends Controller
         $financialYear  = $request->financial_year;
         $filters = $request->only(['department', 'bu', 'zone', 'region', 'territory', 'requisition_type']);
 
-        $filename = "Management_Salary_Report_{$financialYear }";
+        $filename = "Management_Salary_Report_{$financialYear}";
 
         return Excel::download(
-            new ManagementSalaryReportExport($financialYear , $filters),
+            new ManagementSalaryReportExport($financialYear, $filters),
             "{$filename}.xlsx"
         );
     }
