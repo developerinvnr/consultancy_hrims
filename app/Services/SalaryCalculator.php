@@ -87,7 +87,8 @@ class SalaryCalculator
                     break;
 
                 case 'CH':
-                    $presentDays += 0.5;
+                    //$presentDays += 0.5;
+                    $presentDays += 1;
                     break;
 
                 case 'A':
