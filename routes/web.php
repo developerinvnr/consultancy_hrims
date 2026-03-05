@@ -26,6 +26,9 @@ use App\Http\Controllers\LocationController;
 
 
 
+Route::get('/test-web', function () {
+    return 'WEB OK';
+});
 
 Route::get('/', function () {
     return view('auth.login');
