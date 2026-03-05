@@ -177,8 +177,9 @@ class SalaryController extends Controller
     // Update the updateArrear method (only for processed salaries)
     public function updateArrear(Request $request)
     {
+        //dd($request->all());
         $request->validate([
-            'salary_id' => 'required|integer|exists:salary_processing,id',
+            'salary_id' => 'required|integer|exists:salary_processings,id',
             'candidate_id' => 'required|integer|exists:candidate_master,id',
             'month' => 'required|integer|between:1,12',
             'year' => 'required|integer',

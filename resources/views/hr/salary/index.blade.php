@@ -564,12 +564,8 @@
                     }
                 },
                 error: function(xhr) {
-                    Swal.close();
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        toastr.error(xhr.responseJSON.message);
-                    } else {
-                        toastr.error('Failed to save arrear');
-                    }
+                    console.log(xhr.responseJSON);
+                    toastr.error(xhr.responseJSON?.message || "Failed to save arrear");
                 }
             });
         }
@@ -590,7 +586,7 @@
             toastr.success('Arrear calculated locally. It will be included when salary is processed.');
 
             // Re-render the table to show updated arrear
-            loadSalaryList(); // This will refresh from server but we need to preserve local data
+           // loadSalaryList(); // This will refresh from server but we need to preserve local data
             // Instead, we can directly update the row
             updateRowWithLocalArrear(candidateId, arrearDays, arrearAmount);
         }
@@ -889,7 +885,7 @@
                     year: currentYear,
                     force: force ? '1' : '0',
                     candidate_ids: candidateIdsToProcess,
-                    candidate_arrears: candidateArrearsToProcess,
+                    local_arrears: localArrearData,
                     requisition_type: currentRequisitionType
                 }),
                 contentType: 'application/json',
