@@ -40,7 +40,8 @@ class FocusMasterExport implements
             'zoneRef',
             'regionRef',
             'workState',
-            'reportingManager'
+            'reportingManager',
+            'workLocation' 
         ])
         ->whereIn('final_status', ['A','D']);
 
@@ -106,7 +107,7 @@ class FocusMasterExport implements
                 $rec->bank_account_no ?? '-',
                 $rec->bank_ifsc ?? '-',
                 $rec->account_holder_name . ' ' . $rec->candidate_code,
-                $rec->work_location_hq ?? '-',
+                $rec->workLocation->focus_code ?? '-',
                 'All Crop',
                 'NEFT',
             ];

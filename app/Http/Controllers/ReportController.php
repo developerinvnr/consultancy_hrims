@@ -363,7 +363,8 @@ class ReportController extends Controller
             'vertical',
             'businessUnit',
             'zoneRef',
-            'regionRef'
+            'regionRef',
+            'workLocation',
         ])
             ->whereIn('final_status', ['A', 'D']);
 

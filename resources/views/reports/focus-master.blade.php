@@ -151,7 +151,7 @@
                     <td>{{ $rec->bank_account_no ?? '-' }}</td>
                     <td>{{ $rec->bank_ifsc ?? '-' }}</td>
                     <td>{{ $rec->account_holder_name }} {{ $rec->candidate_code }}</td>
-                    <td>{{ $rec->work_location_hq ?? '-' }}</td>
+                    <td>{{ $rec->workLocation->focus_code ?? '-' }}</td>
                     <td>All Crop</td>
                     <td>NEFT</td>
                 </tr>

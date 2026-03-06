@@ -241,4 +241,9 @@ class CandidateMaster extends Model
 
         return implode(', ', $parts);
     }
+
+    public function workLocation()
+    {
+        return $this->belongsTo(\App\Models\CoreCityVillage::class, 'work_location_id', 'id');
+    }
 }
