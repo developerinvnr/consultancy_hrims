@@ -34,7 +34,6 @@ class RemunerationReportExport implements
         $this->year = $year;
         $this->departmentId = $departmentId;
         $this->requisitionType = $requisitionType;
-
     }
 
     public function collection()
@@ -48,23 +47,23 @@ class RemunerationReportExport implements
             'candidate.regionRef',
             'candidate.territoryRef'
         ])
-        ->where('month', $this->month)
-        ->where('year', $this->year)
-        ->whereHas('candidate', function ($q) {
-            $q->whereIn('final_status', ['A', 'D']);
+            ->where('month', $this->month)
+            ->where('year', $this->year)
+            ->whereHas('candidate', function ($q) {
+                $q->whereIn('final_status', ['A', 'D']);
 
-            if (!empty($this->departmentId)) {
-                $q->where('department_id', $this->departmentId);
-            }
+                if (!empty($this->departmentId)) {
+                    $q->where('department_id', $this->departmentId);
+                }
 
-             if (!empty($this->requisitionType)) {
-                $q->where('requisition_type', $this->requisitionType);
-            }
-        })
-        ->join('candidate_master', 'salary_processings.candidate_id', '=', 'candidate_master.id')
-        ->orderBy('candidate_master.candidate_code')
-        ->select('salary_processings.*')
-        ->get();
+                if (!empty($this->requisitionType)) {
+                    $q->where('requisition_type', $this->requisitionType);
+                }
+            })
+            ->join('candidate_master', 'salary_processings.candidate_id', '=', 'candidate_master.id')
+            ->orderBy('candidate_master.candidate_code')
+            ->select('salary_processings.*')
+            ->get();
 
         $data = collect();
         $totalFinal = 0;
@@ -82,12 +81,11 @@ class RemunerationReportExport implements
             $extra = $record->extra_amount ?? 0;
             $deduction = $record->deduction_amount ?? 0;
 
-            // Final Payable (same as UI)
-            $final = (($rpm / 26) * $paidDays) + $extra - $deduction;
-            $final = round($final);
+            // Final Payable from SalaryCalculator
+            $final = $record->net_pay ?? 0;
 
             // TDS 2%
-            $tds = round(($final / 98) * 2);
+            $tds = $final > 0 ? round(($final / 98) * 2) : 0;
 
             // Gross Up
             $gross = round($final + $tds);
@@ -126,10 +124,22 @@ class RemunerationReportExport implements
         $totalGross = round($totalFinal + $totalTds);
 
         $data->push([
-            '', '', 'TOTAL',
-            '', '', '', '', '', '', '',
-            '', '', '', '',
-            '', '',
+            '',
+            '',
+            'TOTAL',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
             '',
             '',
             $totalFinal,

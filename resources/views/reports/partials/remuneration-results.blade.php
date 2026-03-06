@@ -38,17 +38,16 @@
 
             @php
             $rpm = $record->candidate->remuneration_per_month ?? 0;
-            $contractAmount = $record->candidate->contract_amount ?? 0;
+$contractAmount = $record->candidate->contract_amount ?? 0;
 
-            $paidDays = $record->paid_days ?? 0;
-            $extra = $record->extra_amount ?? 0;
-            $deduction = $record->deduction_amount ?? 0;
+$paidDays = $record->paid_days ?? 0;
+$extra = $record->extra_amount ?? 0;
+$deduction = $record->deduction_amount ?? 0;
 
-            // Final Payable Calculation
-            $basedOnPaidDays = (($rpm / 26) * $paidDays) + $extra - $deduction;
+$basedOnPaidDays = $record->net_pay ?? 0;
 
             // TDS 2%
-            $tds = ($basedOnPaidDays / 98) * 2;
+            $tds = $basedOnPaidDays > 0 ? ($basedOnPaidDays / 98) * 2 : 0;
 
             // Gross Up
             $grossUp = $basedOnPaidDays + $tds;
