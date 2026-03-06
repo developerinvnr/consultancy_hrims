@@ -29,9 +29,10 @@ class MasterReportExport implements
     protected $departmentId;
     protected $search;
 
-    public function __construct($financialYear, $status, $requisitionType, $workLocation, $departmentId, $search)
+    public function __construct($financialYear, $month, $status, $requisitionType, $workLocation, $departmentId, $search)
     {
         $this->financialYear = $financialYear;
+        $this->month = $month;
         $this->status = $status;
         $this->requisitionType = $requisitionType;
         $this->workLocation = $workLocation;
@@ -47,10 +48,22 @@ class MasterReportExport implements
         if (!empty($this->financialYear)) {
             [$startYear, $endYear] = explode('-', $this->financialYear);
 
-            $startDate = $startYear . '-04-01';
-            $endDate   = $endYear . '-03-31';
+            if (!empty($this->month)) {
 
-            $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+                $year = ($this->month >= 4) ? $startYear : $endYear;
+
+                $startDate = "{$year}-{$this->month}-01";
+
+                $endDate = Carbon::parse($startDate)->endOfMonth();
+
+                $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+            } else {
+
+                $startDate = $startYear . '-04-01';
+                $endDate   = $endYear . '-03-31';
+
+                $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+            }
         }
 
         // Status filter

@@ -42,6 +42,7 @@ class ReportController extends Controller
     public function master(Request $request)
     {
         $financialYear = $request->get('financial_year');
+        $month = $request->get('month');
         // ✅ ADD THIS BLOCK
         if (!$financialYear) {
             $currentMonth = date('n');
@@ -64,12 +65,25 @@ class ReportController extends Controller
 
         // Apply Financial Year filter
         if (!empty($financialYear)) {
+
             [$startYear, $endYear] = explode('-', $financialYear);
 
-            $startDate = $startYear . '-04-01';
-            $endDate   = $endYear . '-03-31';
+            if (!empty($month)) {
 
-            $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+                // Map FY month to actual year
+                $year = ($month >= 4) ? $startYear : $endYear;
+
+                $startDate = "{$year}-{$month}-01";
+                $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth();
+
+                $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+            } else {
+
+                $startDate = $startYear . '-04-01';
+                $endDate   = $endYear . '-03-31';
+
+                $query->whereBetween('contract_start_date', [$startDate, $endDate]);
+            }
         }
 
         // Apply Status filter
@@ -133,6 +147,7 @@ class ReportController extends Controller
         return view('reports.master', compact(
             'candidates',
             'financialYear',
+            'month',
             'status',
             'requisitionType',
             'workLocation',
@@ -301,6 +316,7 @@ class ReportController extends Controller
     {
         $request->validate([
             'financial_year' => 'required|string',
+            'month' => 'nullable|integer|between:1,12',
             'status' => 'nullable|string|in:A,D,All',
             'requisition_type' => 'nullable|string|in:Contractual,TFA,CB,All',
             'work_location' => 'nullable|string|max:255',
@@ -314,6 +330,7 @@ class ReportController extends Controller
         return Excel::download(
             new MasterReportExport(
                 $request->financial_year,
+                $request->month ?? '',
                 $request->status ?? 'All',
                 $request->requisition_type ?? 'All',
                 $request->work_location ?? '',

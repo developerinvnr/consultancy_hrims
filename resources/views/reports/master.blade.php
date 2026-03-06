@@ -20,7 +20,7 @@
     <div class="card mb-2 shadow-sm">
         <div class="card-body">
             <form id="filterForm" method="GET" action="{{ route('reports.master') }}" class="row g-3 align-items-end">
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label form-label-sm">Financial Year</label>
                     <select name="financial_year" id="financialYear" class="form-select form-select-sm" required>
                         @php
@@ -44,6 +44,28 @@
                             {{ $fy }}
                             </option>
                             @endfor
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label form-label-sm">Month</label>
+                    <select name="month" class="form-select form-select-sm">
+
+                        <option value="">All</option>
+
+                        <option value="4" {{ request('month') == 4 ? 'selected' : '' }}>Apr</option>
+                        <option value="5" {{ request('month') == 5 ? 'selected' : '' }}>May</option>
+                        <option value="6" {{ request('month') == 6 ? 'selected' : '' }}>Jun</option>
+                        <option value="7" {{ request('month') == 7 ? 'selected' : '' }}>Jul</option>
+                        <option value="8" {{ request('month') == 8 ? 'selected' : '' }}>Aug</option>
+                        <option value="9" {{ request('month') == 9 ? 'selected' : '' }}>Sep</option>
+                        <option value="10" {{ request('month') == 10 ? 'selected' : '' }}>Oct</option>
+                        <option value="11" {{ request('month') == 11 ? 'selected' : '' }}>Nov</option>
+                        <option value="12" {{ request('month') == 12 ? 'selected' : '' }}>Dec</option>
+                        <option value="1" {{ request('month') == 1 ? 'selected' : '' }}>Jan</option>
+                        <option value="2" {{ request('month') == 2 ? 'selected' : '' }}>Feb</option>
+                        <option value="3" {{ request('month') == 3 ? 'selected' : '' }}>Mar</option>
+
                     </select>
                 </div>
 
@@ -374,6 +396,7 @@
     // Export function
     function exportReport() {
         const financialYear = document.getElementById('financialYear').value;
+        const month = document.querySelector('[name="month"]').value;
         const status = document.querySelector('[name="status"]').value;
         const requisitionType = document.querySelector('[name="requisition_type"]').value;
         const workLocation = document.querySelector('[name="work_location"]').value;
@@ -384,6 +407,7 @@
             toastr.error("Please select financial year");
             return;
         }
+
 
         let url = `{{ route('reports.master.export') }}?financial_year=${financialYear}`;
 
@@ -407,6 +431,10 @@
             url += `&search=${encodeURIComponent(search)}`;
         }
 
+        if (month) {
+            url += `&month=${month}`;
+        }
+
         window.location.href = url;
     }
 
@@ -425,6 +453,10 @@
         document.getElementById('filterForm').submit();
     });
 
+
+    document.querySelector('[name="month"]').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
     // Debounced search
     let searchTimeout;
     document.querySelector('[name="search"]').addEventListener('keyup', function(e) {
