@@ -156,7 +156,7 @@ class SubmitterController extends Controller
 		try {
 			/* ---------------- REMOVE OLD SIGNED AGREEMENT ---------------- */
 			$oldSigned = AgreementDocument::where('candidate_id', $candidate->id)
-				->where('document_type', 'signed')
+				->where('document_type', 'agreement')
 				->first();
 
 			if ($oldSigned) {
@@ -198,6 +198,7 @@ class SubmitterController extends Controller
 			/* ---------------- UPDATE CANDIDATE & REQUISITION ---------------- */
 			$candidate->update([
 				'candidate_status' => 'Signed Agreement Uploaded',
+				'final_status' => 'A'
 			]);
 
 			$requisition->update([
