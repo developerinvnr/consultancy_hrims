@@ -942,7 +942,7 @@ class HrAdminController extends Controller
 				'work_location_hq' => $requisition->work_location_hq,
 				'district' => $requisition->district,
 				'district_id'       => $requisition->district_id,
-				'work_location_id'  => $requisition->work_location_id,
+                'work_location_id'  => $requisition->work_location_id,
 				'state_work_location' => $requisition->state_work_location,
 				'function_id' => $requisition->function_id,
 				'department_id' => $requisition->department_id,
@@ -1081,6 +1081,11 @@ class HrAdminController extends Controller
 			$requisition->update([
 				'status' => 'Unsigned Agreement Uploaded',
 				'processing_date' => now(),
+			]);
+
+			// Update candidate status
+			$candidate->update([
+				'candidate_status' => 'Unsigned Agreement Uploaded',
 			]);
 
 			DB::commit();
@@ -1230,8 +1235,7 @@ class HrAdminController extends Controller
 				CURLOPT_POST           => true,
 				CURLOPT_POSTFIELDS     => http_build_query($apiData),
 				CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
-				CURLOPT_TIMEOUT        => 300,
-				CURLOPT_CONNECTTIMEOUT => 60,   
+				CURLOPT_TIMEOUT        => 30,
 				CURLOPT_SSL_VERIFYPEER => false,
 				CURLOPT_SSL_VERIFYHOST => false,
 			]);
@@ -1241,8 +1245,8 @@ class HrAdminController extends Controller
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-			\Log::error('Curl Error: ' . $curlError);
-            \Log::error('HTTP Code: ' . $httpCode);
+			\Log::info('API Response: ' . $response);
+			\Log::info('HTTP Code: ' . $httpCode);
 
 			if ($curlError || !$response) {
 				return [
