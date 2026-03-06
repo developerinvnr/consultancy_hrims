@@ -155,7 +155,7 @@
 					<td>N/A</td> {{-- Cost Center --}}
 					<td>{{ $rec->candidate->businessUnit->business_unit_code ?? '' }}</td>
 					<td>All Activity</td>
-					<td>{{ $rec->candidate->city ?? '' }}</td>
+					<td>{{ $rec->candidate->workLocation->focus_code ?? '' }}</td>
 					<td>{{ $rec->candidate->workState->state_code ?? '' }}</td>
 					<td>N/A</td>
 					<td>All Crop</td>

@@ -467,7 +467,8 @@ class ReportController extends Controller
             'candidate.zoneRef',
             'candidate.regionRef',
             'candidate.function',
-            'candidate.workState'
+            'candidate.workState',
+            'candidate.workLocation'
         ])
             ->where('month', $month)
             ->where('year', $year)

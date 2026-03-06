@@ -51,7 +51,8 @@ class JVExport implements
             'candidate.zoneRef',
             'candidate.regionRef',
             'candidate.function',
-            'candidate.workState'
+            'candidate.workState',
+            'candidate.workLocation'
         ])
             ->where('month', $this->month)
             ->where('year', $this->year)
@@ -102,8 +103,8 @@ class JVExport implements
                 'N/A', // Cost Center
                 $rec->candidate->businessUnit->business_unit_code ?? '',
                 'All Activity',
-                $rec->candidate->city ?? '',
-                $rec->candidate->workState->state_name ?? '',
+                $rec->candidate->workLocation->focus_code ?? '',
+                $rec->candidate->workState->state_code ?? '',
                 'N/A',
                 'All Crop',
                 $rec->candidate->regionRef->focus_code ?? 'N/A',
