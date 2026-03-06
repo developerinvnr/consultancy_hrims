@@ -1078,11 +1078,6 @@ class HrAdminController extends Controller
 				'processing_date' => now(),
 			]);
 
-			// Update candidate status
-			$candidate->update([
-				'candidate_status' => 'Unsigned Agreement Uploaded',
-			]);
-
 			DB::commit();
 
 			\Log::info('Process completed successfully for candidate: ' . $candidateCode);
