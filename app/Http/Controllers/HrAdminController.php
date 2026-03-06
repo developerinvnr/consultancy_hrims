@@ -917,6 +917,10 @@ class HrAdminController extends Controller
 				$contractAmount = $baseAmount;
 			}
 
+			$empCode = DB::table('core_employee')
+						->where('employee_id', $request->reporting_manager_employee_id)
+						->value('emp_code');
+
 			// Create candidate master record WITH ALL REQUIRED FIELDS
 			$candidate = CandidateMaster::create([
 				'candidate_code' => $candidateCode,
@@ -980,6 +984,7 @@ class HrAdminController extends Controller
 				'candidate_status' => 'Agreement Pending',
 				'created_by_user_id' => auth()->id(),
 				'updated_by_user_id' => auth()->id(),
+				'emp_code' => $empCode,
 			]);
 
 			// Create initial LeaveBalance record for Contractual candidates
@@ -1235,8 +1240,8 @@ class HrAdminController extends Controller
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-			\Log::info('API Response: ' . $response);
-			\Log::info('HTTP Code: ' . $httpCode);
+			\Log::error('Curl Error: ' . $curlError);
+            \Log::error('HTTP Code: ' . $httpCode);
 
 			if ($curlError || !$response) {
 				return [
