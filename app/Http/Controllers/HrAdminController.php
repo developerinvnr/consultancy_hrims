@@ -1230,8 +1230,8 @@ class HrAdminController extends Controller
 				CURLOPT_POST           => true,
 				CURLOPT_POSTFIELDS     => http_build_query($apiData),
 				CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
-				CURLOPT_TIMEOUT        => 120,
-				CURLOPT_CONNECTTIMEOUT => 15,   
+				CURLOPT_TIMEOUT        => 300,
+				CURLOPT_CONNECTTIMEOUT => 60,   
 				CURLOPT_SSL_VERIFYPEER => false,
 				CURLOPT_SSL_VERIFYHOST => false,
 			]);
