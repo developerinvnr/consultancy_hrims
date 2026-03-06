@@ -156,7 +156,7 @@
 					<td>{{ $rec->candidate->businessUnit->business_unit_code ?? '' }}</td>
 					<td>All Activity</td>
 					<td>{{ $rec->candidate->city ?? '' }}</td>
-					<td>{{ $rec->candidate->workState->state_name ?? '' }}</td>
+					<td>{{ $rec->candidate->workState->state_code ?? '' }}</td>
 					<td>N/A</td>
 					<td>All Crop</td>
 					<td>{{ $rec->candidate->regionRef->focus_code ?? 'N/A' }}</td>
