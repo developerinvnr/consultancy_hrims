@@ -2,14 +2,12 @@ function initContractDateValidation(selector) {
     const input = document.querySelector(selector);
     if (!input) return;
 
-    // Sunday is off
     function isSunday(date) {
         return date.getDay() === 0;
     }
 
-    // Get last N working days of the month (Saturday is working)
     function getLastWorkingDays(year, month, count = 4) {
-        let date = new Date(year, month + 1, 0); // last date of month
+        let date = new Date(year, month + 1, 0);
         const blocked = [];
 
         while (blocked.length < count) {
@@ -29,12 +27,14 @@ function initContractDateValidation(selector) {
         return `${y}-${m}-${d}`;
     }
 
-    input.addEventListener("change", function () {
-        if (!this.value) return;
+    function validateDate() {
 
-        const selected = new Date(this.value + "T00:00:00");
+        if (!input.value) return;
+
+        const selected = new Date(input.value + "T00:00:00");
+
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0,0,0,0);
 
         // Rule 1: Only last 2 days allowed in past
         const minAllowed = new Date(today);
@@ -42,11 +42,11 @@ function initContractDateValidation(selector) {
 
         if (selected < minAllowed) {
             alert("You can select only up to last 2 days in past.");
-            this.value = '';
+            input.value = '';
             return;
         }
 
-        // Rule 2: Block last 4 working days of the selected month
+        // Rule 2: Block last 4 working days
         const blockedDates = getLastWorkingDays(
             selected.getFullYear(),
             selected.getMonth()
@@ -56,8 +56,12 @@ function initContractDateValidation(selector) {
 
         if (blockedDates.includes(selectedFormatted)) {
             alert("Last 4 working days of the month are not allowed.");
-            this.value = '';
+            input.value = '';
             return;
         }
-    });
+    }
+
+    // Trigger validation
+    input.addEventListener("change", validateDate);
+    input.addEventListener("input", validateDate);
 }
