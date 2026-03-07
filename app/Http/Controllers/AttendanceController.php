@@ -194,7 +194,7 @@ class AttendanceController extends Controller
                     $clRemaining = 0;
                 }
 
-                $result['candidates'][] = [
+                $result[] = [
                     'sno' => $index + 1,
                     'candidate_id' => $candidate->candidate_id,
                     'candidate_code' => $candidate->candidate_code,
