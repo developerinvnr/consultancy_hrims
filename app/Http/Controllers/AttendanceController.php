@@ -156,23 +156,24 @@ class AttendanceController extends Controller
 
                 // Calculate CL remaining for Contractual candidates
                 $clRemaining = 0;
-                if ($candidate->requisition_type === 'Contractual') {
 
-                    if ($leaveBalance) {
+                    if ($candidate->requisition_type === 'Contractual') {
 
-                        $clRemaining = max(
-                            0,
-                            $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized
-                        );
-                    } else {
+                        if ($leaveBalance) {
 
-                        // fallback to credited leave
-                        $clRemaining = $candidate->leave_credited ?? 0;
+                            $clRemaining = max(
+                                0,
+                                ($leaveBalance->opening_cl_balance ?? 0) -
+                                ($leaveBalance->cl_utilized ?? 0)
+                            );
+
+                        } else {
+
+                            $clRemaining = max(0, $candidate->leave_credited ?? 0);
+                        }
                     }
-                } else {
 
-                    $clRemaining = 0;
-                }
+                               // dd($candidate->candidate_code, $leaveBalance);
 
                 $result['candidates'][] = [
                     'sno' => $index + 1,
