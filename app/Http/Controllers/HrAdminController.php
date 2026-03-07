@@ -918,8 +918,8 @@ class HrAdminController extends Controller
 			}
 
 			$empCode = DB::table('core_employee')
-						->where('employee_id', $request->reporting_manager_employee_id)
-						->value('emp_code');
+				->where('employee_id', $request->reporting_manager_employee_id)
+				->value('emp_code');
 
 			// Create candidate master record WITH ALL REQUIRED FIELDS
 			$candidate = CandidateMaster::create([
@@ -942,7 +942,7 @@ class HrAdminController extends Controller
 				'work_location_hq' => $requisition->work_location_hq,
 				'district' => $requisition->district,
 				'district_id'       => $requisition->district_id,
-                'work_location_id'  => $requisition->work_location_id,
+				'work_location_id'  => $requisition->work_location_id,
 				'state_work_location' => $requisition->state_work_location,
 				'function_id' => $requisition->function_id,
 				'department_id' => $requisition->department_id,
@@ -1294,7 +1294,10 @@ class HrAdminController extends Controller
 			return 0;
 		}
 
-		$months = Carbon::parse($startDate)->diffInMonths(Carbon::parse($endDate));
+		$start = Carbon::parse($startDate);
+		$end = Carbon::parse($endDate);
+
+		$months = $start->diffInMonths($end) + 1;
 
 		return min($months, 12);
 	}
