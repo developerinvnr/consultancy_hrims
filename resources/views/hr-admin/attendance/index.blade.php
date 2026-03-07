@@ -1,5 +1,4 @@
 @extends('layouts.guest')
-
 @section('content')
 <div class="container-fluid">
     <div class="row mb-2">
