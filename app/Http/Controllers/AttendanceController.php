@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AttendanceExport;
-   use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;
 
 
 class AttendanceController extends Controller
@@ -157,40 +157,20 @@ class AttendanceController extends Controller
                 // Calculate CL remaining for Contractual candidates
                 $clRemaining = 0;
                 if ($candidate->requisition_type === 'Contractual') {
+
                     if ($leaveBalance) {
-                        // Calculate CL remaining from existing leave balance record
-                        $clRemaining = max(0, $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized);
+
+                        $clRemaining = max(
+                            0,
+                            $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized
+                        );
                     } else {
-                        // If no leave balance record exists, we need to create one or calculate from candidate data
-                        $joiningDate = Carbon::parse($candidate->contract_start_date);
 
-                        $joiningYear = $joiningDate->year;
-
-                        if ($joiningYear < $year) {
-                            // Joined in previous year - full 12 days
-                            $clRemaining = 12;
-                        } else if ($joiningYear == $year) {
-                            // Joined in current year - check if before current month
-                            if ($joiningDate->month <= $month) {
-                                // Eligible for prorated leave
-                                $eligibleMonths = 13 - $joiningDate->month;
-                                $clRemaining = min($eligibleMonths, 12);
-                            } else {
-                                // Not eligible yet (joining in future month)
-                                $clRemaining = 0;
-                            }
-                        } else {
-                            // Joining in future year
-                            $clRemaining = 0;
-                        }
-
-                        // If candidate has leave_credited value, use it
-                        if ($candidate->leave_credited && $candidate->leave_credited > 0) {
-                            $clRemaining = $candidate->leave_credited;
-                        }
+                        // fallback to credited leave
+                        $clRemaining = $candidate->leave_credited ?? 0;
                     }
                 } else {
-                    // Non-contractual candidates should have 0 CL
+
                     $clRemaining = 0;
                 }
 
@@ -1388,163 +1368,161 @@ class AttendanceController extends Controller
     }
 
 
-public function partyAttendanceUpdate(Request $request)
-{
-    Log::info('Attendance Update API Request', $request->all());
+    public function partyAttendanceUpdate(Request $request)
+    {
+        Log::info('Attendance Update API Request', $request->all());
 
-    $request->validate([
-        'party_id' => 'required|integer',
-        'month'    => 'required|integer|min:1|max:12',
-        'year'     => 'required|integer',
-        'day'      => 'required|integer|min:1|max:31',
-        'status'   => 'nullable|string|max:5'
-    ]);
+        $request->validate([
+            'party_id' => 'required|integer',
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer',
+            'day'      => 'required|integer|min:1|max:31',
+            'status'   => 'nullable|string|max:5'
+        ]);
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
+        try {
 
-        $candidateId = $request->party_id;
-        $month       = $request->month;
-        $year        = $request->year;
-        $day         = $request->day;
+            $candidateId = $request->party_id;
+            $month       = $request->month;
+            $year        = $request->year;
+            $day         = $request->day;
 
-        // ✅ force uppercase
-        $status = $request->status ? strtoupper($request->status) : null;
+            // ✅ force uppercase
+            $status = $request->status ? strtoupper($request->status) : null;
 
-        // ✅ validate real days in month
-        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+            // ✅ validate real days in month
+            $daysInMonth = Carbon::create($year, $month)->daysInMonth;
 
-        if ($day > $daysInMonth) {
+            if ($day > $daysInMonth) {
 
-            Log::warning('Invalid attendance day', [
+                Log::warning('Invalid attendance day', [
+                    'candidate_id' => $candidateId,
+                    'day' => $day,
+                    'month' => $month,
+                    'year' => $year
+                ]);
+
+                return response()->json([
+                    'Code' => 400,
+                    'Message' => "Invalid day. Month has only {$daysInMonth} days"
+                ], 400);
+            }
+
+            Log::info('Processing attendance update', [
                 'candidate_id' => $candidateId,
+                'month' => $month,
+                'year' => $year,
                 'day' => $day,
+                'status' => $status
+            ]);
+
+            // ✅ fetch or create
+            $attendance = Attendance::firstOrNew([
+                'candidate_id' => $candidateId,
                 'month' => $month,
                 'year' => $year
             ]);
 
-            return response()->json([
-                'Code' => 400,
-                'Message' => "Invalid day. Month has only {$daysInMonth} days"
-            ], 400);
-        }
+            $attendance->candidate_id = $candidateId;
+            $attendance->month = $month;
+            $attendance->year  = $year;
 
-        Log::info('Processing attendance update', [
-            'candidate_id' => $candidateId,
-            'month' => $month,
-            'year' => $year,
-            'day' => $day,
-            'status' => $status
-        ]);
+            // ✅ update only selected day
+            $column = "A" . $day;
+            $attendance->$column = $status;
 
-        // ✅ fetch or create
-        $attendance = Attendance::firstOrNew([
-            'candidate_id' => $candidateId,
-            'month' => $month,
-            'year' => $year
-        ]);
-
-        $attendance->candidate_id = $candidateId;
-        $attendance->month = $month;
-        $attendance->year  = $year;
-
-        // ✅ update only selected day
-        $column = "A".$day;
-        $attendance->$column = $status;
-
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Recalculate totals correctly
         |--------------------------------------------------------------------------
         */
 
-        $totalPresent = 0;
-        $totalAbsent  = 0;
-        $totalCL      = 0;
-        $totalLWP     = 0;
-        $totalOD      = 0;
+            $totalPresent = 0;
+            $totalAbsent  = 0;
+            $totalCL      = 0;
+            $totalLWP     = 0;
+            $totalOD      = 0;
 
-        for ($i = 1; $i <= $daysInMonth; $i++) {
+            for ($i = 1; $i <= $daysInMonth; $i++) {
 
-            $col = "A".$i;
-            $val = $attendance->$col;
+                $col = "A" . $i;
+                $val = $attendance->$col;
 
-            switch ($val) {
+                switch ($val) {
 
-                case 'P':
-                    $totalPresent++;
-                    break;
+                    case 'P':
+                        $totalPresent++;
+                        break;
 
-                case 'A':
-                    $totalAbsent++;
-                    break;
+                    case 'A':
+                        $totalAbsent++;
+                        break;
 
-                case 'CL':
-                    $totalCL++;
-                    break;
+                    case 'CL':
+                        $totalCL++;
+                        break;
 
-                case 'LWP':
-                    $totalLWP++;
-                    break;
+                    case 'LWP':
+                        $totalLWP++;
+                        break;
 
-                case 'OD':
-                    $totalOD++;
-                    break;
+                    case 'OD':
+                        $totalOD++;
+                        break;
+                }
             }
-        }
 
-        $attendance->total_present = $totalPresent;
-        $attendance->total_absent  = $totalAbsent;
-        $attendance->total_cl      = $totalCL;
-        $attendance->total_lwp     = $totalLWP;
-        $attendance->total_od      = $totalOD;
-        $attendance->status        = 'submitted';
+            $attendance->total_present = $totalPresent;
+            $attendance->total_absent  = $totalAbsent;
+            $attendance->total_cl      = $totalCL;
+            $attendance->total_lwp     = $totalLWP;
+            $attendance->total_od      = $totalOD;
+            $attendance->status        = 'submitted';
 
-        $attendance->save();
+            $attendance->save();
 
-        DB::commit();
+            DB::commit();
 
-        Log::info('Attendance updated successfully', [
-            'candidate_id' => $candidateId,
-            'month' => $month,
-            'year' => $year,
-            'day' => $day,
-            'status' => $status
-        ]);
-
-        return response()->json([
-
-            'Code' => 200,
-            'Message' => 'Attendance updated successfully',
-
-            // ✅ important for mobile update
-            'updated_day' => [
+            Log::info('Attendance updated successfully', [
+                'candidate_id' => $candidateId,
+                'month' => $month,
+                'year' => $year,
                 'day' => $day,
                 'status' => $status
-            ],
+            ]);
 
-            'total_present' => $totalPresent,
-            'total_absent'  => $totalAbsent,
-            'total_cl'      => $totalCL,
-            'total_od'      => $totalOD,
-            'total_lwp'     => $totalLWP
-        ]);
+            return response()->json([
 
+                'Code' => 200,
+                'Message' => 'Attendance updated successfully',
+
+                // ✅ important for mobile update
+                'updated_day' => [
+                    'day' => $day,
+                    'status' => $status
+                ],
+
+                'total_present' => $totalPresent,
+                'total_absent'  => $totalAbsent,
+                'total_cl'      => $totalCL,
+                'total_od'      => $totalOD,
+                'total_lwp'     => $totalLWP
+            ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            Log::error('Attendance update failed', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
+            ]);
+
+            return response()->json([
+                'Code' => 500,
+                'Message' => 'Server error'
+            ], 500);
+        }
     }
-    catch (\Exception $e) {
-
-        DB::rollBack();
-
-        Log::error('Attendance update failed', [
-            'error' => $e->getMessage(),
-            'request' => $request->all()
-        ]);
-
-        return response()->json([
-            'Code' => 500,
-            'Message' => 'Server error'
-        ], 500);
-    }
-}
 }

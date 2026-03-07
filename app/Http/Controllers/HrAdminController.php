@@ -1295,9 +1295,13 @@ class HrAdminController extends Controller
 		}
 
 		$start = Carbon::parse($startDate);
-		$end = Carbon::parse($endDate);
+		$end   = Carbon::parse($endDate);
 
-		$months = $start->diffInMonths($end) + 1;
+		if ($end->lt($start)) {
+			return 0;
+		}
+
+		$months = $start->diffInMonths($end);
 
 		return min($months, 12);
 	}
