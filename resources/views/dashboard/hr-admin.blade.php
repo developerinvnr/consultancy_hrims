@@ -324,8 +324,6 @@
 								@if($recent_requisitions->count() > 0)
 
 								@foreach($recent_requisitions as $req)
-
-								@foreach($recent_requisitions as $req)
 								@php
 								$isProcessed = $req->candidate ? true : false;
 								$candidate = $req->candidate;
@@ -489,15 +487,12 @@
 											->where('document_type', 'agreement')
 											->where('sign_status', 'UNSIGNED')
 											->exists();
+
 											$hasSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 											->where('document_type', 'agreement')
 											->where('sign_status', 'SIGNED')
 											->exists();
-											$submitterSigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-											->where('document_type', 'agreement')
-											->where('sign_status', 'SIGNED')
-											->where('uploaded_by_role', 'submitter')
-											->exists();
+
 											$agreementNumber = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
 											->where('document_type', 'agreement')
 											->where('sign_status', 'UNSIGNED')
@@ -505,8 +500,19 @@
 											@endphp
 
 											@if($empStatus == "Active")
-											<button class="btn btn-outline-info disabled">{{ $empStatus }}</button>
-											@elseif($hasUnsigned && !$hasSigned)
+											<button
+												type="button"
+												class="btn btn-outline-danger end-contract-btn"
+												data-bs-toggle="modal"
+												data-bs-target="#endContractModal"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-name="{{ $candidate->candidate_name }}"
+												title="End Contract">
+												<i class="ri-user-unfollow-line"></i>
+											</button>
+											@endif
+
+											@if($hasUnsigned && !$hasSigned)
 											<button type="button"
 												class="btn btn-outline-primary upload-signed-btn"
 												data-candidate-id="{{ $candidate->id }}"
@@ -516,11 +522,11 @@
 												<i class="ri-upload-line fs-10"></i>
 											</button>
 											@endif
-											@endif {{-- THIS WAS MISSING --}}
+
+											@endif
 										</div>
 									</td>
 								</tr>
-								@endforeach
 								@endforeach
 
 								@else
@@ -785,6 +791,58 @@
 					</button>
 				</div>
 			</form>
+		</div>
+	</div>
+</div>
+
+<!-- End Contract Modal -->
+<div class="modal fade" id="endContractModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+
+			<div class="modal-header">
+				<h5 class="modal-title">
+					End Contract
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+
+			<form id="endContractForm">
+				@csrf
+
+				<div class="modal-body">
+
+					<div class="mb-3">
+						<label class="form-label">Candidate</label>
+						<input type="text" class="form-control" id="endCandidateName" readonly>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">Last Working Date *</label>
+						<input type="date"
+							name="last_working_date"
+							class="form-control"
+							max="{{ date('Y-m-d') }}"
+							required>
+					</div>
+
+					<input type="hidden" name="candidate_id" id="endCandidateId">
+
+				</div>
+
+				<div class="modal-footer">
+					<button class="btn btn-light" data-bs-dismiss="modal">
+						Cancel
+					</button>
+
+					<button type="submit" class="btn btn-danger">
+						<i class="ri-user-unfollow-line me-1"></i>
+						End Contract
+					</button>
+				</div>
+
+			</form>
+
 		</div>
 	</div>
 </div>
@@ -1191,6 +1249,51 @@
 				Swal.fire('Error!', 'Failed to process request', 'error');
 				submitBtn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Confirm Received');
 			});
+		});
+
+		// Open End Contract Modal
+		$(document).on('click', '.end-contract-btn', function() {
+
+			let candidateId = $(this).data('candidate-id');
+			let candidateName = $(this).data('candidate-name');
+
+			$('#endCandidateId').val(candidateId);
+			$('#endCandidateName').val(candidateName);
+
+			// Set today's date automatically
+			let today = new Date().toISOString().split('T')[0];
+			$('input[name="last_working_date"]').val(today);
+
+		});
+
+		$('#endContractForm').on('submit', function(e) {
+
+			e.preventDefault();
+
+			let formData = $(this).serialize();
+			let candidateId = $('#endCandidateId').val();
+
+			Swal.fire({
+				title: 'End Contract?',
+				text: 'Candidate will be marked inactive.',
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: 'Yes, End Contract'
+			}).then((result) => {
+
+				if (result.isConfirmed) {
+
+					$.post('/candidate/' + candidateId + '/deactivate', formData, function(response) {
+
+						Swal.fire('Success', 'Contract ended successfully', 'success')
+							.then(() => location.reload());
+
+					});
+
+				}
+
+			});
+
 		});
 
 		$('#applyFilter').on('click', function() {

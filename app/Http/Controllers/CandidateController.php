@@ -19,10 +19,9 @@ class CandidateController extends Controller
         // Authorization: only creator can deactivate
         $requisition = ManpowerRequisition::findOrFail($candidate->requisition_id);
 
-        if ($requisition->submitted_by_user_id !== Auth::id()) {
+        if ($requisition->submitted_by_user_id !== Auth::id() && !Auth::user()->hasRole('hr_admin')) {
             abort(403, 'You are not allowed to deactivate this team member.');
         }
-
         // Only Active candidates can be deactivated
         if ($candidate->candidate_status !== 'Active') {
             return back()->with('error', 'This candidate is not active.');
@@ -41,7 +40,7 @@ class CandidateController extends Controller
             // Update requisition
             $requisition->update([
                 'last_working_date' => $request->last_working_date,
-                'status'            => 'Completed',
+                'status'            => 'Inactive',
             ]);
         });
 

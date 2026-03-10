@@ -45,6 +45,7 @@ class CandidateMaster extends Model
         'contract_start_date',
         'contract_duration',
         'contract_end_date',
+        'last_working_date',
         'remuneration_per_month',
         'contract_amount',
         'account_holder_name',
@@ -81,6 +82,7 @@ class CandidateMaster extends Model
         'contract_end_date' => 'date',
         'remuneration_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
+        'last_working_date' => 'date',
     ];
 
     // ADD THIS RELATIONSHIP
