@@ -202,8 +202,7 @@
 	</div>
 
 	<!-- Recent Requisitions Table -->
-	<!-- Recent Requisitions Table -->
-	@if(isset($recent_requisitions) && $recent_requisitions->count() > 0)
+	@if(isset($recent_requisitions))
 	<div class="row">
 		<div class="col-12">
 			<div class="card border-0 shadow-sm">
@@ -240,6 +239,79 @@
 								</a>
 							</li>
 						</ul>
+
+						@if($tab == 'status')
+						<div class="row mb-3">
+
+							<div class="col-md-3">
+								<select id="statusFilter" class="form-select form-select-sm">
+
+									<option value="">All Status</option>
+
+									<option value="Pending HR Verification"
+										{{ request('status_filter') == 'Pending HR Verification' ? 'selected' : '' }}>
+										Pending HR Verification
+									</option>
+
+									<option value="Pending Approval"
+										{{ request('status_filter') == 'Pending Approval' ? 'selected' : '' }}>
+										Pending Approval
+									</option>
+
+									<option value="Approved"
+										{{ request('status_filter') == 'Approved' ? 'selected' : '' }}>
+										Approved
+									</option>
+
+									<option value="Agreement Pending"
+										{{ request('status_filter') == 'Agreement Pending' ? 'selected' : '' }}>
+										Agreement Pending
+									</option>
+
+									<option value="Unsigned Agreement Uploaded"
+										{{ request('status_filter') == 'Unsigned Agreement Uploaded' ? 'selected' : '' }}>
+										Unsigned Agreement Created
+									</option>
+
+									<option value="Signed Agreement Uploaded"
+										{{ request('status_filter') == 'Signed Agreement Uploaded' ? 'selected' : '' }}>
+										Signed Agreement Uploaded
+									</option>
+
+								</select>
+							</div>
+
+							<div class="col-md-3">
+								<select id="actionFilter" class="form-select form-select-sm">
+
+									<option value="">All Actions</option>
+
+									<option value="process"
+										{{ request('action_filter') == 'process' ? 'selected' : '' }}>
+										Process Button
+									</option>
+
+									<option value="upload_signed"
+										{{ request('action_filter') == 'upload_signed' ? 'selected' : '' }}>
+										Upload Signed Agreement
+									</option>
+
+									<option value="receive_courier"
+										{{ request('action_filter') == 'receive_courier' ? 'selected' : '' }}>
+										Receive Courier
+									</option>
+
+								</select>
+							</div>
+
+							<div class="col-md-2">
+								<button class="btn btn-sm btn-primary" id="applyFilter">
+									Apply
+								</button>
+							</div>
+
+						</div>
+						@endif
 						<table class="table table-sm table-hover mb-0">
 							<thead class="sticky-top bg-white">
 								<tr>
@@ -254,6 +326,10 @@
 								</tr>
 							</thead>
 							<tbody>
+								@if($recent_requisitions->count() > 0)
+
+								@foreach($recent_requisitions as $req)
+
 								@foreach($recent_requisitions as $req)
 								@php
 								$isProcessed = $req->candidate ? true : false;
@@ -450,6 +526,19 @@
 									</td>
 								</tr>
 								@endforeach
+								@endforeach
+
+								@else
+
+								<tr>
+									<td colspan="8" class="text-center text-muted py-4">
+										No requisitions found for the selected filter.
+									</td>
+								</tr>
+
+								@endif
+
+
 							</tbody>
 						</table>
 						@if($recent_requisitions instanceof \Illuminate\Pagination\LengthAwarePaginator)
@@ -1107,6 +1196,31 @@
 				Swal.fire('Error!', 'Failed to process request', 'error');
 				submitBtn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Confirm Received');
 			});
+		});
+
+		$('#applyFilter').on('click', function() {
+
+			let status = $('#statusFilter').val();
+			let action = $('#actionFilter').val();
+
+			let url = new URL(window.location.href);
+
+			// Always keep tab=status
+			url.searchParams.set('tab', 'status');
+
+			if (status) {
+				url.searchParams.set('status_filter', status);
+			} else {
+				url.searchParams.delete('status_filter');
+			}
+
+			if (action) {
+				url.searchParams.set('action_filter', action);
+			} else {
+				url.searchParams.delete('action_filter');
+			}
+
+			window.location.href = url.toString();
 		});
 
 

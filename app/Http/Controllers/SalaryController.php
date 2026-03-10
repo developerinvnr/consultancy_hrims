@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\CandidateMaster;
 use App\Models\SalaryProcessing;
+use App\Models\CoreDepartment;
 use App\Services\SalaryCalculator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ class SalaryController extends Controller
 {
     public function index()
     {
-        return view('hr.salary.index');
+         $departments = CoreDepartment::orderBy('department_name')->get();
+         return view('hr.salary.index', compact('departments'));
     }
 
     // Update the process method in SalaryController
@@ -267,6 +269,7 @@ class SalaryController extends Controller
             'month' => 'required|integer',
             'year'  => 'required|integer',
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
+            'department_id' => 'nullable|integer',
         ]);
 
         $month = $request->month;
@@ -284,6 +287,10 @@ class SalaryController extends Controller
                 $q->whereNull('contract_end_date')
                     ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
             });
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
 
         // Apply requisition_type filter if provided and not 'All'
         if ($requisitionType && $requisitionType !== 'All') {
@@ -322,7 +329,7 @@ class SalaryController extends Controller
                         'candidate'    => $candidate,
                         'processed'    => false,
                          'arrear_amount' => $ar->arrear_amount ?? 0,
-    'arrear_days'   => $ar->arrear_days ?? 0,
+        'arrear_days'   => $ar->arrear_days ?? 0,
                     ]);
                 } catch (\Exception $e) {
                     // Attendance missing etc.
@@ -383,11 +390,13 @@ class SalaryController extends Controller
             'month' => 'required|integer|between:1,12',
             'year'  => 'required|integer|min:2020',
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
+            'department_id' => 'nullable|integer'
         ]);
 
         $month = $request->month;
         $year = $request->year;
         $requisitionType = $request->requisition_type ?? 'All';
+        $departmentId = $request->department_id;
 
         $filename = "Salary_Report_{$month}_{$year}";
         if ($requisitionType !== 'All') {

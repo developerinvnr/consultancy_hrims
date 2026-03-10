@@ -39,6 +39,15 @@
                     </select>
 
                 </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label form-label-sm">Department</label>
+                    <select id="departmentFilter" class="form-select form-select-sm">
+                        <option value="">All Departments</option>
+                        @foreach($departments as $dept)
+                        <option value="{{ $dept->id }}">{{ $dept->department_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="col-md-5 ms-auto d-flex gap-2 flex-wrap justify-content-end">
                     <button class="btn btn-sm btn-primary" onclick="processSelected()">
@@ -264,7 +273,7 @@
 
 
     // Load list when month or requisition type changes
-    $('#monthYear, #requisitionType').on('change', function() {
+    $('#monthYear, #requisitionType, #departmentFilter').on('change', function() {
         const monthVal = $('#monthYear').val();
         if (!monthVal) return;
 
@@ -275,21 +284,25 @@
 
     function loadSalaryList() {
         if (!currentMonth || !currentYear) return;
-
+        let department = $('#departmentFilter').val();
         if (!currentRequisitionType) {
             toastr.warning('Please select requisition type');
             return;
         }
 
-        $.post("{{ route('salary.list') }}", {
+        let data = {
             _token: '{{ csrf_token() }}',
             month: currentMonth,
             year: currentYear,
             requisition_type: currentRequisitionType
-        }, function(data) {
+        };
+
+        if (department) {
+            data.department_id = department;
+        }
+
+        $.post("{{ route('salary.list') }}", data, function(data) {
             renderTable(data);
-        }).fail(() => {
-            toastr.error("Failed to load salary data");
         });
     }
 
@@ -320,11 +333,11 @@
             }
             const requisitionType = r.candidate?.requisition_type || r.requisition_type || '-';
             const monthlySalary = Number(r.monthly_salary || 0);
-            const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));         
+            const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));
 
             // Use saved arrear if processed, otherwise use local arrear
-           const arrearAmount = Number(r.arrear_amount || 0);
-           const arrearDays = Number(r.arrear_days || 0);
+            const arrearAmount = Number(r.arrear_amount || 0);
+            const arrearDays = Number(r.arrear_days || 0);
 
             // Calculate net pay
             const baseNetPay = Number(r.net_pay || 0);
@@ -555,52 +568,51 @@
                     toastr.error(xhr.responseJSON?.message || "Failed to save arrear");
                 }
             });
+        } else {
+
+            Swal.fire({
+                title: 'Saving...',
+                text: 'Saving arrear',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            $.ajax({
+                url: "{{ route('salary.save.arrear') }}",
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    candidate_id: candidateId,
+                    month: month,
+                    year: year,
+                    arrear_days: arrearDays,
+                    arrear_amount: arrearAmount,
+                    arrear_remarks: remarks
+                },
+                success: function(response) {
+
+                    Swal.close();
+
+                    if (response.success) {
+
+                        toastr.success('Arrear saved');
+
+                        $('#arrearModal').modal('hide');
+
+                        // update UI immediately
+                        loadSalaryList();
+
+                    } else {
+                        toastr.error(response.message || 'Failed to save arrear');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    toastr.error(xhr.responseJSON?.message || "Failed to save arrear");
+                }
+            });
+
         }
-        else {
-
-    Swal.fire({
-        title: 'Saving...',
-        text: 'Saving arrear',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    $.ajax({
-        url: "{{ route('salary.save.arrear') }}",
-        method: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            candidate_id: candidateId,
-            month: month,
-            year: year,
-            arrear_days: arrearDays,
-            arrear_amount: arrearAmount,
-            arrear_remarks: remarks
-        },
-        success: function(response) {
-
-            Swal.close();
-
-            if (response.success) {
-
-                toastr.success('Arrear saved');
-
-                $('#arrearModal').modal('hide');
-
-                // update UI immediately
-loadSalaryList();
-
-            } else {
-                toastr.error(response.message || 'Failed to save arrear');
-            }
-        },
-        error: function(xhr) {
-            Swal.close();
-            toastr.error(xhr.responseJSON?.message || "Failed to save arrear");
-        }
-    });
-
-}
     }
 
     // Process All with warning - Modified to include local arrear data
@@ -616,7 +628,7 @@ loadSalaryList();
             year: currentYear,
         }, function(response) {
             let exists = response.exists || false;
-            let count = response.count || 0;          
+            let count = response.count || 0;
 
             let confirmMessage = exists ?
                 `<div class="alert alert-danger">
@@ -776,7 +788,7 @@ loadSalaryList();
 
                         // Include local arrear if exists
                         const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-                      
+
                     }
                 });
 
@@ -789,7 +801,7 @@ loadSalaryList();
                 // Include all local arrears for selected candidates
                 selectedIds.forEach(candidateId => {
                     const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
-                  
+
                 });
             }
 
@@ -856,9 +868,16 @@ loadSalaryList();
             showLoaderOnConfirm: true,
             preConfirm: () => {
                 return new Promise((resolve, reject) => {
+                    let department = $('#departmentFilter').val();
+
                     let url = `/hr/salary/export?month=${currentMonth}&year=${currentYear}`;
+
                     if (currentRequisitionType && currentRequisitionType !== 'All') {
                         url += `&requisition_type=${currentRequisitionType}`;
+                    }
+
+                    if (department) {
+                        url += `&department_id=${department}`;
                     }
                     url += `&_token={{ csrf_token() }}`;
 

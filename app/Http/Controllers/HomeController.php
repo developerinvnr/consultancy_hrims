@@ -38,7 +38,8 @@ class HomeController extends Controller
     private function hrAdminDashboard(Request $request)
     {
         $tab = $request->get('tab', 'status');
-
+        $statusFilter = $request->get('status_filter');
+        $actionFilter = $request->get('action_filter');
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate']);
 
         switch ($tab) {
@@ -90,10 +91,64 @@ class HomeController extends Controller
                 break;
         }
 
+        // Apply status filter
+        if ($statusFilter) {
+
+            $query->where(function ($q) use ($statusFilter) {
+
+                // Requisition workflow statuses
+                $workflowStatuses = [
+                    'Pending HR Verification',
+                    'Pending Approval',
+                    'Approved',
+                    'Correction Required'
+                ];
+
+                if (in_array($statusFilter, $workflowStatuses)) {
+
+                    $q->where('status', $statusFilter);
+                } else {
+
+                    // Candidate statuses
+                    $q->whereHas('candidate', function ($sub) use ($statusFilter) {
+                        $sub->where('candidate_status', $statusFilter);
+                    });
+                }
+            });
+        }
+
+        // Apply action filter
+        if ($actionFilter) {
+
+            switch ($actionFilter) {
+
+                case 'process':
+                    $query->where('status', 'Approved')
+                        ->whereDoesntHave('candidate');
+                    break;
+
+                case 'upload_signed':
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Unsigned Agreement Uploaded');
+                    });
+                    break;
+
+                case 'receive_courier':
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Signed Agreement Uploaded');
+                    });
+                    break;
+            }
+        }
+
         $recent_requisitions = $query
             ->latest()
             ->paginate(10)
-            ->appends(['tab' => $tab]);
+            ->appends([
+                'tab' => $tab,
+                'status_filter' => $statusFilter,
+                'action_filter' => $actionFilter
+            ]);
         // KPI Stats with more detailed breakdowns
         $stats = [
             // Requisition Pipeline Stats

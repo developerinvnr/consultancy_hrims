@@ -292,9 +292,9 @@ class HrAdminController extends Controller
 
 		switch ($section) {
 			case 'work_info':
-				$data['functions'] = \App\Models\FunctionModel::orderBy('function_name')->get();
-				$data['departments'] = \App\Models\Department::orderBy('department_name')->get();
-				$data['verticals'] = \App\Models\Vertical::orderBy('vertical_name')->get();
+				$data['functions'] = \App\Models\CoreFunction::orderBy('function_name')->get();
+				$data['departments'] = \App\Models\CoreDepartment::orderBy('department_name')->get();
+				$data['verticals'] = \App\Models\CoreVertical::orderBy('vertical_name')->get();
 				break;
 
 			case 'basic_info':
