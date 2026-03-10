@@ -258,11 +258,6 @@
 										Pending Approval
 									</option>
 
-									<option value="Approved"
-										{{ request('status_filter') == 'Approved' ? 'selected' : '' }}>
-										Approved
-									</option>
-
 									<option value="Agreement Pending"
 										{{ request('status_filter') == 'Agreement Pending' ? 'selected' : '' }}>
 										Agreement Pending
