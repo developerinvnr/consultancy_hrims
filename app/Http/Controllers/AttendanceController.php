@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\CandidateMaster;
 use App\Models\LeaveBalance;
 use App\Models\SundayWorkRequest;
+use App\Models\CoreDepartment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,8 @@ class AttendanceController extends Controller
      */
     public function index()
     {
-        return view('hr-admin.attendance.index');
+        $departments = CoreDepartment::orderBy('department_name')->get();
+        return view('hr-admin.attendance.index', compact('departments'));
     }
 
     /**
@@ -34,7 +36,8 @@ class AttendanceController extends Controller
         $request->validate([
             'month' => 'required|integer|between:1,12',
             'year' => 'required|integer',
-            'employee_type' => 'nullable|string'
+            'employee_type' => 'nullable|string',
+            'department_id' => 'nullable'
         ]);
 
         try {
@@ -42,6 +45,7 @@ class AttendanceController extends Controller
             $month = $request->month;
             $year = $request->year;
             $employeeType = $request->employee_type;
+            $departmentId = $request->department_id;
             $currentDate = Carbon::now();
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
@@ -71,6 +75,9 @@ class AttendanceController extends Controller
             // Filter by employee type if provided and not 'all'
             if ($employeeType && $employeeType !== 'all') {
                 $query->where('requisition_type', $employeeType);
+            }
+            if ($departmentId && $departmentId !== 'all') {
+                $query->where('department_id', $departmentId);
             }
             $query->where(function ($q) use ($year, $month) {
                 $monthStart = Carbon::create($year, $month, 1)->startOfMonth();

@@ -83,6 +83,22 @@
                         </div>
 
                         <div class="col-auto">
+                            <label class="form-label mb-0 small text-muted">Department</label>
+                        </div>
+
+                        <div class="col-md-2 col-sm-3">
+                            <select name="department_id" id="departmentFilter" class="form-select form-select-sm">
+                                <option value="all">All Departments</option>
+
+                                @foreach($departments as $department)
+                                <option value="{{ $department->id }}">
+                                    {{ $department->department_name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-auto">
                             <button type="button" onclick="loadAttendance()" class="btn btn-sm btn-primary">
                                 <i class="ri-refresh-line align-middle"></i> Load
                             </button>
@@ -248,6 +264,7 @@
     // Load attendance data
     function loadAttendance() {
         const monthYear = $('#monthFilter').val().split('-');
+        let currentDepartment = $('#departmentFilter').val();
         if (!monthYear[0] || !monthYear[1]) {
             toastr.error('Please select month and year');
             return;
@@ -268,7 +285,8 @@
                 _token: '{{ csrf_token() }}',
                 month: currentMonth,
                 year: currentYear,
-                employee_type: currentEmployeeType
+                employee_type: currentEmployeeType,
+                department_id: currentDepartment
             },
             success: function(response) {
                 $('#loadingSpinner').hide();
