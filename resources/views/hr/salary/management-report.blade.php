@@ -167,8 +167,11 @@
 							<th rowspan="2" class="align-middle">S No.</th>
 							<th rowspan="2" class="align-middle">PC</th>
 							<th rowspan="2" class="align-middle">Name</th>
+							<th rowspan="2" class="align-middle">Contract Start Date</th>
+							<th rowspan="2" class="align-middle">Contract End Date</th>
+							<th rowspan="2" class="align-middle">Termination Date</th>
 							<th colspan="12" class="text-center">Monthly Remuneration</th>
-							<th rowspan="2" class="align-middle">Grand Total</th>
+							<th rowspan="3" class="align-middle">Grand Total</th>
 						</tr>
 						<tr>
 							<th class="text-center">April</th>
@@ -347,18 +350,21 @@
                     <td class="text-center">${index + 1}</td>
                     <td>${employee.code}</td>
                     <td>${employee.name}</td>
-                    <td>${formatCurrency(employee.april)}</td>
-<td>${formatCurrency(employee.may)}</td>
-<td>${formatCurrency(employee.june)}</td>
-<td>${formatCurrency(employee.july)}</td>
-<td>${formatCurrency(employee.august)}</td>
-<td>${formatCurrency(employee.september)}</td>
-<td>${formatCurrency(employee.october)}</td>
-<td>${formatCurrency(employee.november)}</td>
-<td>${formatCurrency(employee.december)}</td>
-<td>${formatCurrency(employee.january)}</td>
-<td>${formatCurrency(employee.february)}</td>
-<td>${formatCurrency(employee.march)}</td>
+					<td>${employee.contract_start_date ?? '-'}</td>
+					<td>${employee.contract_end_date ?? '-'}</td>
+					<td>${employee.termination_date ?? '-'}</td>
+										<td>${formatCurrency(employee.april)}</td>
+					<td>${formatCurrency(employee.may)}</td>
+					<td>${formatCurrency(employee.june)}</td>
+					<td>${formatCurrency(employee.july)}</td>
+					<td>${formatCurrency(employee.august)}</td>
+					<td>${formatCurrency(employee.september)}</td>
+					<td>${formatCurrency(employee.october)}</td>
+					<td>${formatCurrency(employee.november)}</td>
+					<td>${formatCurrency(employee.december)}</td>
+					<td>${formatCurrency(employee.january)}</td>
+					<td>${formatCurrency(employee.february)}</td>
+					<td>${formatCurrency(employee.march)}</td>
                     <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
                 </tr>
             `;
@@ -369,7 +375,7 @@
 		if (monthlyTotals) {
 			const footerRow = `
                 <tr class="table-light fw-bold">
-                    <td colspan="3" class="text-center">Grand Total</td>
+                    <td colspan="6" class="text-center">Grand Total</td>
                     <td class="text-end">${formatCurrency(monthlyTotals.january)}</td>
                     <td class="text-end">${formatCurrency(monthlyTotals.february)}</td>
                     <td class="text-end">${formatCurrency(monthlyTotals.march)}</td>

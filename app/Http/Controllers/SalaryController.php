@@ -730,7 +730,40 @@ class SalaryController extends Controller
             }
         }
 
-        $candidates = $query->orderBy('candidate_code')->get();
+        $candidates = $query
+    ->leftJoin('salary_processings as sp', 'candidate_master.id', '=', 'sp.candidate_id')
+    ->select(
+        'candidate_master.id',
+        'candidate_master.candidate_code',
+        'candidate_master.candidate_name',
+        'candidate_master.contract_start_date',
+        'candidate_master.contract_end_date',
+        'candidate_master.last_working_date',
+
+        DB::raw("SUM(CASE WHEN sp.month = 4 THEN sp.net_pay ELSE 0 END) as april"),
+        DB::raw("SUM(CASE WHEN sp.month = 5 THEN sp.net_pay ELSE 0 END) as may"),
+        DB::raw("SUM(CASE WHEN sp.month = 6 THEN sp.net_pay ELSE 0 END) as june"),
+        DB::raw("SUM(CASE WHEN sp.month = 7 THEN sp.net_pay ELSE 0 END) as july"),
+        DB::raw("SUM(CASE WHEN sp.month = 8 THEN sp.net_pay ELSE 0 END) as august"),
+        DB::raw("SUM(CASE WHEN sp.month = 9 THEN sp.net_pay ELSE 0 END) as september"),
+        DB::raw("SUM(CASE WHEN sp.month = 10 THEN sp.net_pay ELSE 0 END) as october"),
+        DB::raw("SUM(CASE WHEN sp.month = 11 THEN sp.net_pay ELSE 0 END) as november"),
+        DB::raw("SUM(CASE WHEN sp.month = 12 THEN sp.net_pay ELSE 0 END) as december"),
+        DB::raw("SUM(CASE WHEN sp.month = 1 THEN sp.net_pay ELSE 0 END) as january"),
+        DB::raw("SUM(CASE WHEN sp.month = 2 THEN sp.net_pay ELSE 0 END) as february"),
+        DB::raw("SUM(CASE WHEN sp.month = 3 THEN sp.net_pay ELSE 0 END) as march"),
+        DB::raw("SUM(sp.net_pay) as grand_total")
+    )
+    ->groupBy(
+        'candidate_master.id',
+        'candidate_master.candidate_code',
+        'candidate_master.candidate_name',
+        'candidate_master.contract_start_date',
+        'candidate_master.contract_end_date',
+        'candidate_master.last_working_date'
+    )
+    ->orderBy('candidate_master.candidate_code')
+    ->get();
 
         $months = [
             'april',
@@ -758,6 +791,17 @@ class SalaryController extends Controller
                 'id' => $candidate->id,
                 'code' => $candidate->candidate_code,
                 'name' => $candidate->candidate_name,
+
+                // NEW FIELDS
+                'contract_start_date' => $candidate->contract_start_date 
+                    ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : null,
+
+                'contract_end_date' => $candidate->contract_end_date 
+                    ? Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : null,
+
+                'termination_date' => $candidate->last_working_date 
+                    ? Carbon::parse($candidate->last_working_date)->format('d-m-Y') : null,
+
                 'grand_total' => 0
             ];
 

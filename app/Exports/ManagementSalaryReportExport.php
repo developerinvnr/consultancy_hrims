@@ -106,10 +106,19 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 
 		$this->data = [];
 		$this->monthlyTotals = [
-			4 => 0, 5 => 0, 6 => 0, 7 => 0, 8 => 0, 9 => 0,
-			10 => 0, 11 => 0, 12 => 0,
-			1 => 0, 2 => 0, 3 => 0,
-		];		
+			4 => 0,
+			5 => 0,
+			6 => 0,
+			7 => 0,
+			8 => 0,
+			9 => 0,
+			10 => 0,
+			11 => 0,
+			12 => 0,
+			1 => 0,
+			2 => 0,
+			3 => 0,
+		];
 
 		$this->monthlyTotals['grand_total'] = 0;
 
@@ -118,6 +127,15 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 			$employeeData = [
 				'code' => $candidate->candidate_code,
 				'name' => $candidate->candidate_name,
+				// NEW FIELDS
+				'contract_start_date' => $candidate->contract_start_date
+					? \Carbon\Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : '-',
+
+				'contract_end_date' => $candidate->contract_end_date
+					? \Carbon\Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : '-',
+
+				'termination_date' => $candidate->last_working_date
+					? \Carbon\Carbon::parse($candidate->last_working_date)->format('d-m-Y') : '-',
 				'monthly_salary' => array_fill_keys(range(1, 12), 0),
 				'grand_total' => 0
 			];
@@ -147,22 +165,29 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 	public function headings(): array
 	{
 		$months = [
-			 'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-    'January',
-    'February',
-    'March'
+			'April',
+			'May',
+			'June',
+			'July',
+			'August',
+			'September',
+			'October',
+			'November',
+			'December',
+			'January',
+			'February',
+			'March'
 		];
 
 		return array_merge(
-			['S No.', 'EC', 'Name'],
+			[
+				'S No.',
+				'PC',
+				'Name',
+				'Contract Start Date',
+				'Contract End Date',
+				'Termination Date'
+			],
 			$months,
 			['Grand Total']
 		);
@@ -176,15 +201,18 @@ class ManagementSalaryReportExport implements FromCollection, WithHeadings, With
 		$row = [
 			$index,
 			$employee['code'],
-			$employee['name']
+			$employee['name'],
+			$employee['contract_start_date'],
+			$employee['contract_end_date'],
+			$employee['termination_date']
 		];
 
 		// Add monthly amounts
-		$fyMonths = [4,5,6,7,8,9,10,11,12,1,2,3];
+		$fyMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 
-foreach ($fyMonths as $month) {
-    $row[] = $employee['monthly_salary'][$month] ?? 0;
-}
+		foreach ($fyMonths as $month) {
+			$row[] = $employee['monthly_salary'][$month] ?? 0;
+		}
 		// Add grand total
 		$row[] = $employee['grand_total'];
 
@@ -211,17 +239,20 @@ foreach ($fyMonths as $month) {
 
 				// Set column widths
 				$sheet->getColumnDimension('A')->setWidth(8);  // S No.
-				$sheet->getColumnDimension('B')->setWidth(15); // EC
+				$sheet->getColumnDimension('B')->setWidth(15); // PC
 				$sheet->getColumnDimension('C')->setWidth(30); // Name
+				$sheet->getColumnDimension('D')->setWidth(18);
+				$sheet->getColumnDimension('E')->setWidth(18);
+				$sheet->getColumnDimension('F')->setWidth(18);
 
 				// Set column widths for months
-				for ($col = 'D'; $col <= 'O'; $col++) {
+				for ($col = 'G'; $col <= 'R'; $col++) {
 					$sheet->getColumnDimension($col)->setWidth(15);
 				}
 				$sheet->getColumnDimension('P')->setWidth(15); // Grand Total
 
 				// Format number columns (D to P)
-				$sheet->getStyle('D2:P' . ($lastRow + 1))
+				$sheet->getStyle('G2:S' . ($lastRow + 1))
 					->getNumberFormat()
 					->setFormatCode('#,##0.00');
 
@@ -240,13 +271,13 @@ foreach ($fyMonths as $month) {
 					->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
 				// Add borders
-				$sheet->getStyle('A1:P' . ($lastRow + 1))
+				$sheet->getStyle('A1:S' . ($lastRow + 1))
 					->getBorders()
 					->getAllBorders()
 					->setBorderStyle(Border::BORDER_THIN);
 
 				// Style header row
-				$sheet->getStyle('A1:P1')->applyFromArray([
+				$sheet->getStyle('A1:S1')->applyFromArray([
 					'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
 					'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2c3e50']],
 					'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
@@ -255,17 +286,17 @@ foreach ($fyMonths as $month) {
 				// Add grand totals row
 				$totalsRow = $lastRow + 1;
 				$sheet->setCellValue('A' . $totalsRow, 'Grand Total');
-				$sheet->mergeCells('A' . $totalsRow . ':C' . $totalsRow);
+				$sheet->mergeCells('A' . $totalsRow . ':F' . $totalsRow);
 
 				// Add monthly totals
-				$fyMonths = [4,5,6,7,8,9,10,11,12,1,2,3];
+				$fyMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 
-foreach ($fyMonths as $index => $month) {
-    $col = chr(68 + $index); // D onwards
-    $sheet->setCellValue($col . $totalsRow, $this->monthlyTotals[$month]);
-}
+				foreach ($fyMonths as $index => $month) {
+					$col = chr(71 + $index); // G onwards
+					$sheet->setCellValue($col . $totalsRow, $this->monthlyTotals[$month]);
+				}
 				// Add grand total
-				$sheet->setCellValue('P' . $totalsRow, $this->monthlyTotals['grand_total']);
+				$sheet->setCellValue('S' . $totalsRow, $this->monthlyTotals['grand_total']);
 
 				// Style totals row
 				$sheet->getStyle('A' . $totalsRow . ':P' . $totalsRow)->applyFromArray([
@@ -280,7 +311,7 @@ foreach ($fyMonths as $index => $month) {
 
 				// Add title
 				$sheet->insertNewRowBefore(1, 2);
-				$sheet->mergeCells('A1:P1');
+				$sheet->mergeCells('A1:S1');
 
 				$title = "Management Remuneration Report - {$this->financialYear}";
 				$filterText = '';

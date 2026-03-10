@@ -109,7 +109,6 @@
             </div>
         </div>
         @endcan
-@can('management_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -123,10 +122,6 @@
                 </div>
             </div>
         </div>
-@endcan
-
-
-
 
         <!-- Vendor Details -->
         {{--<div class="col-md-4">
