@@ -8,7 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class RequisitionApprovalRequest extends Mailable
+class RequisitionApprovalReminder extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -21,13 +21,12 @@ class RequisitionApprovalRequest extends Mailable
         $this->requisition = $requisition;
         $this->approver = $approver;
         $this->approvalUrl = route('hr_requisitions.index');
-        // or better: route('approver.requisition.view', $requisition->id)
     }
 
     public function build()
     {
         return $this->subject(
-            'Peepal Bonsai Portal: Approval Required – Requisition ID ' . $this->requisition->id
-        )->markdown('emails.requisition.approval-request');
+            'Reminder: Approval Pending – Requisition ID ' . $this->requisition->requisition_id
+        )->markdown('emails.requisition.reminder');
     }
 }

@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Mail\RequisitionApprovalRequest;
-use App\Mail\RequisitionApproved;
-use App\Mail\RequisitionRejected;
+use App\Mail\PartyCodeGenerated;
+use App\Mail\RequisitionRejectedMail;
 use App\Mail\CorrectionRequested;
 use App\Services\AgriSamvidaService;
 use Illuminate\Support\Facades\Validator;
@@ -30,6 +30,12 @@ use App\Services\S3Service;
 class HrAdminController extends Controller
 {
 
+	private $communicationService;
+
+	public function __construct(\App\Services\CommunicationService $communicationService)
+	{
+		$this->communicationService = $communicationService;
+	}
 	/**
 	 * HR Admin Dashboard
 	 */
@@ -253,12 +259,45 @@ class HrAdminController extends Controller
 				'status' => 'Rejected',
 				'rejection_reason' => $request->rejection_reason,
 				'rejection_date' => now(),   // ✅ correct column
+				'hr_verified_id' => auth()->user()->emp_id
 			]);
+
+			/* |------------------------------------------ | Communication Control|------------------------------------------ */
+			$canSendEmail = $this->communicationService->isEnabled('rejection_notifications');
+
+			if ($canSendEmail) {
+
+				// Get reporting manager
+				$reportingManager = Employee::where(
+					'employee_id',
+					$requisition->reporting_manager_employee_id
+				)->first();
+
+				$rmCC = null;
+
+				if ($reportingManager && $reportingManager->emp_reporting) {
+
+					$rmCC = Employee::where(
+						'employee_id',
+						$reportingManager->emp_reporting
+					)->first();
+				}
+
+				if ($reportingManager && $reportingManager->emp_email) {
+
+					Mail::to($reportingManager->emp_email)
+						->cc($rmCC?->emp_email)
+						->send(new RequisitionRejectedMail(
+							$requisition,
+							$request->rejection_reason
+						));
+				}
+			}
 
 			DB::commit();
 
 			return redirect()
-				->route('hr-admin.applications.new')
+				->route('hr_requisitions.index')
 				->with('success', 'Application rejected successfully.');
 		} catch (\Exception $e) {
 
@@ -637,6 +676,8 @@ class HrAdminController extends Controller
 			// Update requisition status to "Pending Approval"
 			$requisition->status = 'Pending Approval';
 			$requisition->approver_id = $request->approver_id;
+			$requisition->approval_requested_at = now();
+			$requisition->reminder_level = 0;
 			$requisition->save();
 
 			// Find the approver
@@ -648,10 +689,7 @@ class HrAdminController extends Controller
 			// =================================================
 			// ADD COMMUNICATION CONTROL CHECK HERE
 			// =================================================
-			$communicationService = app(\App\Services\CommunicationService::class);
-
-			// Check if both master toggle and approval reminders are enabled
-			$canSendEmail = $communicationService->isEnabled('approval_reminders');
+			$canSendEmail = $this->communicationService->isEnabled('approval_reminders');
 			$emailStatus = "";
 			// =================================================
 
@@ -682,8 +720,7 @@ class HrAdminController extends Controller
 				// Log that email was skipped due to communication controls
 				Log::info('Approval email skipped - communication control disabled', [
 					'requisition_id' => $requisition->id,
-					'email_enabled' => $communicationService->isEnabled('email_enabled'),
-					'approval_reminders' => $communicationService->isEnabled('approval_reminders')
+					'approval_reminders' => $this->communicationService->isEnabled('approval_reminders')
 				]);
 
 				$emailStatus = "Email notification not sent (communication control disabled).";
@@ -692,7 +729,7 @@ class HrAdminController extends Controller
 			DB::commit();
 
 			// Redirect back with success message
-			return redirect()->route('hr-admin.applications.new')
+			return redirect()->route('hr_requisitions.index')
 				->with('success', 'Application sent for approval successfully. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
@@ -722,34 +759,44 @@ class HrAdminController extends Controller
 			$requisition->status = 'Correction Required';
 			$requisition->hr_verification_remarks = $request->correction_remarks;
 			$requisition->save();
+			//$requisition->hr_verified_id = auth()->user()->emp_id;
+			
 
 			// Load relationships for email if needed
 			$requisition->load(['function', 'department', 'vertical']);
 
 			// Get communication service
-			$communicationService = app(\App\Services\CommunicationService::class);
-
-			// Check if both master toggle and correction notifications are enabled
-			$canSendEmail = $communicationService->isEnabled('correction_notifications');
+			$canSendEmail = $this->communicationService->isEnabled('correction_notifications');
 			$emailStatus = "";
 
 			if ($canSendEmail) {
 				try {
-					$submitter = $requisition->submittedBy;
+					$reportingManager = Employee::where(
+						'employee_id',
+						$requisition->reporting_manager_employee_id
+					)->first();
 
-					if (!$submitter || !$submitter->email) {
-						throw new \Exception('Submitter email missing');
+					$rmCC = null;
+
+					if ($reportingManager && $reportingManager->emp_reporting) {
+						$rmCC = Employee::where(
+							'employee_id',
+							$reportingManager->emp_reporting
+						)->first();
 					}
+					if ($reportingManager && $reportingManager->emp_email) {
 
-					Mail::to($submitter->email)
-						->send(new CorrectionRequested($requisition, $request->correction_remarks));
+						Mail::to($reportingManager->emp_email)
+							->cc($rmCC?->emp_email)
+							->send(new CorrectionRequested($requisition, $request->correction_remarks));
+					}
 
 					Log::info('Correction request email sent', [
 						'requisition_id' => $requisition->id,
-						'email' => $submitter->email
+						'email' => $reportingManager->emp_email
 					]);
 
-					$emailStatus = "Correction request email sent to {$submitter->email}";
+					$emailStatus = "Correction request email sent to {$reportingManager->emp_email}";
 				} catch (\Exception $e) {
 					Log::error('Correction email failed: ' . $e->getMessage());
 					$emailStatus = "Correction email failed.";
@@ -765,7 +812,7 @@ class HrAdminController extends Controller
 
 			DB::commit();
 
-			return redirect()->route('hr-admin.new-applications')
+			return redirect()->route('hr_requisitions.index')
 				->with('success', 'Correction request sent. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
@@ -1089,6 +1136,26 @@ class HrAdminController extends Controller
 			]);
 
 			DB::commit();
+
+			// Check communication control
+			$canSendEmail = $this->communicationService->isEnabled('party_code_notifications');
+			if ($canSendEmail) {
+				$reportingManager = Employee::where(
+					'employee_id',
+					$request->reporting_manager_employee_id
+				)->first();
+				$approver = Employee::where(
+					'employee_id',
+					$requisition->approver_id
+				)->first();
+				if ($reportingManager && $reportingManager->emp_email) {
+					Mail::to($reportingManager->emp_email)
+						->cc($approver?->emp_email)
+						->send(new PartyCodeGenerated($candidate, $requisition));
+
+				}
+			}
+			// end Check communication control
 
 			\Log::info('Process completed successfully for candidate: ' . $candidateCode);
 

@@ -7,28 +7,25 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class CorrectionRequested extends Mailable
+class RequisitionRejectedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $requisition;
-    public $remarks;
-    public $correctionUrl;
+    public ManpowerRequisition $requisition;
+    public string $remarks;
 
     public function __construct(ManpowerRequisition $requisition, string $remarks)
     {
         $this->requisition = $requisition;
         $this->remarks = $remarks;
-
-        $this->correctionUrl = route('requisitions.edit', $requisition->id);
     }
 
     public function build()
     {
         return $this->subject(
-            'Peepal Bonsai Portal: Action Required – Requisition Correction | ' 
+            'Peepal Bonsai Portal: Requisition Not Approved at HR Verification | '
             . $this->requisition->requisition_id
         )
-        ->markdown('emails.requisition.correction-requested');
+        ->markdown('emails.requisition.rejected');
     }
 }

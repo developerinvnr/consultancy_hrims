@@ -1,29 +1,31 @@
 @component('mail::message')
-# Correction Required – Manpower Requisition
 
-Dear {{ $requisition->submittedBy->name ?? 'User' }},
+# Requisition Returned for Correction
 
-Your manpower requisition requires correction before it can proceed further.
+Dear {{ $requisition->reportingManager->emp_name ?? 'Reporting Manager' }},
 
-## Requisition Details:
-- **Requisition ID:** {{ $requisition->requisition_id }}
-- **Candidate Name:** {{ $requisition->candidate_name }}
-- **Department:** {{ $requisition->department->department_name ?? 'N/A' }}
-- **Function:** {{ $requisition->function->function_name ?? 'N/A' }}
+During HR verification, discrepancies have been identified in the requisition submitted via the **Peepal Bonsai Portal**.
 
-## HR Remarks:
-@component('mail::panel')
+### Details
+
+• **Requisition ID:** {{ $requisition->requisition_id }}  
+• **Name:** {{ $requisition->candidate_name }}  
+• **Engagement Type:** {{ $requisition->requisition_type }}  
+• **Duration:** {{ $requisition->contract_start_date }} – {{ $requisition->contract_end_date }}
+
+### Correction Description
+
 {{ $remarks }}
-@endcomponent
-
-Please review and update the requisition using the button below.
 
 @component('mail::button', ['url' => $correctionUrl])
-Edit Requisition
+Open Peepal Bonsai Portal
 @endcomponent
 
-**Note:** This is a system generated email. Please do not reply.
+The requisition has been returned for correction in the portal.
 
-Thanks,  
-{{ config('app.name') }}
+Kindly review and resubmit at the earliest.
+
+Regards  
+**HR**
+
 @endcomponent

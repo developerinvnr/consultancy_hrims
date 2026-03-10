@@ -1,41 +1,35 @@
 @component('mail::message')
-# Manpower Requisition Approval Required
 
-Dear {{ $approver->emp_name  }},
+# Requisition Sent for Approval
 
-A new manpower requisition requires your approval.
+Subject: **Peepal Bonsai Portal: Approval Required – Requisition ID {{ $requisition->requisition_id }}**
 
-## Requisition Details:
+Dear {{ $approver->emp_name }},
+
+A requisition has been submitted in the **Peepal Bonsai Portal** and requires your review and approval.
+
+### Details
+
 - **Requisition ID:** {{ $requisition->requisition_id }}
-- **Candidate Name:** {{ $requisition->candidate_name }}
-- **Position Type:** {{ $requisition->requisition_type }}
-- **Submitted By:** {{ $requisition->submitted_by_name }} ({{ $requisition->submitted_by_employee_id }})
-- **Submission Date:** {{ optional($requisition->submission_date)->format('d M Y, H:i') ?? 'N/A' }}
-- **Joining Date Required:** {{ optional($requisition->contract_start_date)->format('d M Y') ?? 'N/A' }}
-
-## Employment Details:
-- **Department:** {{ $requisition->department->department_name ?? 'N/A' }}
-- **Function:** {{ $requisition->function->function_name ?? 'N/A' }}
-- **Location:** {{ $requisition->work_location_hq ?? 'N/A' }}
-- **Remuneration:** ₹{{ number_format($requisition->remuneration_per_month ?? 0, 2) }}/month
-
-## HR Verification:
-- **Verified by:** {{ $requisition->hrVerifier->name ?? 'N/A' }}
-- **Verification Date:** {{ optional($requisition->hr_verification_date)->format('d M Y, H:i') ?? 'N/A' }}
-@if($requisition->hr_verification_remarks)
-- **HR Remarks:** {{ $requisition->hr_verification_remarks }}
-@endif
+- **Name:** {{ $requisition->candidate_name }}
+- **Engagement Type:** {{ $requisition->requisition_type }}
+- **Duration:** {{ optional($requisition->contract_start_date)->format('d M Y') ?? 'N/A' }}
+  – {{ optional($requisition->contract_end_date)->format('d M Y') ?? 'N/A' }}
 
 @component('mail::button', ['url' => $approvalUrl])
-View & Approve Requisition
+Open Peepal Bonsai Portal
 @endcomponent
 
-**Note:** Please log in to the system to review and approve/reject this requisition.
+Your approval in the portal is required to proceed further.
+
+For any clarification, please connect with **HR Operations**.
+
+Regards,  
+**HR**
 
 @component('mail::panel')
+Mail to Reporting Manager with Peepal portal link.  
 This is a system generated email. Please do not reply.
 @endcomponent
 
-Thanks,  
-{{ config('app.name') }}
 @endcomponent
