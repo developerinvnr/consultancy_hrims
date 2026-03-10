@@ -259,7 +259,8 @@ class HrAdminController extends Controller
 				'status' => 'Rejected',
 				'rejection_reason' => $request->rejection_reason,
 				'rejection_date' => now(),   // ✅ correct column
-				'hr_verified_id' => auth()->user()->emp_id
+				'hr_verified_id' => auth()->user()->emp_id,
+				'rejected_by_user_id' => auth()->id()
 			]);
 
 			/* |------------------------------------------ | Communication Control|------------------------------------------ */

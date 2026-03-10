@@ -40,7 +40,7 @@ class HomeController extends Controller
         $tab = $request->get('tab', 'status');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
-        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate']);
+        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy']);
 
         switch ($tab) {
 

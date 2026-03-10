@@ -148,6 +148,7 @@ class ApproverController extends Controller
 			$requisition->status = 'Rejected';
 			$requisition->rejection_reason = $request->rejection_reason;
 			$requisition->rejection_date = now();
+			$requisition->rejected_by_user_id = auth()->id();
 			$requisition->save();
 
 			DB::commit();

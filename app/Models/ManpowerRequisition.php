@@ -66,6 +66,7 @@ class ManpowerRequisition extends Model
         'approver_remarks',
         'rejection_date',
         'rejection_reason',
+        'rejected_by_user_id',
         'processing_date',
         'team_id',
         'other_reimbursement',
@@ -198,5 +199,10 @@ class ManpowerRequisition extends Model
     public function qualification()
     {
         return $this->belongsTo(\App\Models\MasterEducation::class, 'highest_qualification', 'EducationId');
+    }
+
+    public function rejectedBy()
+    {
+        return $this->belongsTo(User::class, 'rejected_by_user_id');
     }
 }

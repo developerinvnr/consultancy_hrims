@@ -315,6 +315,7 @@
 									<th class="fs-11">Email</th>
 									<th class="fs-11">Type</th>
 									<th class="fs-11">Status</th>
+									<th class="fs-11">Remark</th>
 									<th class="fs-11">Courier Status</th>
 									<th class="fs-11">Date</th>
 									<th class="fs-11">Actions</th>
@@ -400,6 +401,22 @@
 
 										@case('Rejected')
 										<span class="badge bg-danger fs-10">Rejected</span>
+
+
+										@if($req->rejectedBy)
+										<br>
+										<small class="text-muted fs-9">
+											By {{ $req->rejectedBy->name }}
+
+											@if($req->rejectedBy->hasRole('hr_admin'))
+											(HR Admin)
+											@elseif($req->rejectedBy->emp_id == $req->approver_id)
+											(Approver)
+											@endif
+
+										</small>
+										@endif
+
 										@break
 
 										@default
@@ -408,6 +425,24 @@
 										@endswitch
 
 										@endif
+									</td>
+
+									<!-- REMARK COLUMN -->
+									<td class="fs-11">
+
+										@if($req->status == 'Rejected' && $req->rejection_reason)
+
+										<small class="text-danger"
+											title="{{ $req->rejection_reason }}">
+											{{ \Illuminate\Support\Str::limit($req->rejection_reason, 50) }}
+										</small>
+
+										@else
+
+										<span class="text-muted fs-9">-</span>
+
+										@endif
+
 									</td>
 
 									<!-- COURIER STATUS COLUMN -->
@@ -532,7 +567,7 @@
 								@else
 
 								<tr>
-									<td colspan="8" class="text-center text-muted py-4">
+									<td colspan="9" class="text-center text-muted py-4">
 										No requisitions found for the selected filter.
 									</td>
 								</tr>
