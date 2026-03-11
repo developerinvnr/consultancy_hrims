@@ -837,7 +837,9 @@
 						const data = response.data;
 
 						if (data.aadhaarNumber) {
-							$('#aadhaar_no').val(data.aadhaarNumber);
+							$('#aadhaar_no')
+								.val(data.aadhaarNumber)
+								.prop('readonly', true);
 						}
 
 						// ✅ ADD THIS
@@ -854,7 +856,10 @@
 					$('#aadhaar_status_text').text('Failed - enter manually');
 				},
 				complete: function() {
-					$('#aadhaar_no').prop('readonly', false);
+					if (!$('#aadhaar_no').val()) {
+						$('#aadhaar_no').prop('readonly', false);
+					}
+
 				}
 
 			});
@@ -907,7 +912,27 @@
 						const data = response.data;
 
 						// Fill PAN number
-						$('#pan_no').val(data.panNumber);
+						//$('#pan_no').val(data.panNumber);
+
+						$('#pan_no').val(data.panNumber).prop('readonly', true);
+
+						// Autofill father name
+						if (data.fatherName && !$('#father_name').val()) {
+							$('#father_name')
+								.val(data.fatherName.toUpperCase().trim())
+								.prop('readonly', true); // 🔒 lock field
+						}
+
+						// Autofill DOB
+						if (data.dateOfBirth && !$('#date_of_birth').val()) {
+
+							const parts = data.dateOfBirth.split('/'); // DD/MM/YYYY
+							const formattedDOB = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+							$('#date_of_birth')
+								.val(formattedDOB)
+								.prop('readonly', true); // 🔒 lock field
+						}
 
 						// Map verification data to form fields
 						if (data.verificationData) {
@@ -943,6 +968,7 @@
 							// Optional: Auto-fill candidate name if available and empty
 							if (vData.name && !$('#candidate_name').val()) {
 								$('#candidate_name').val(vData.name);
+								$('#candidate_name').prop('readonly', true);
 							}
 
 							showToast('PAN extracted and verified successfully!', 'success');
@@ -951,6 +977,7 @@
 							$('#pan_verification_status').val('Pending');
 							$('#pan_status_2').val('Unverified');
 							$('#pan_aadhaar_link_status').val('Unknown');
+							$('#candidate_name').prop('readonly', false);
 							showToast('PAN extracted but verification data incomplete', 'warning');
 						}
 
@@ -965,6 +992,8 @@
 
 					} else {
 						showToast('Unexpected response format', 'warning');
+						$('#father_name').prop('readonly', false);
+						$('#date_of_birth').prop('readonly', false);
 						resetPanFields();
 					}
 				},
@@ -992,7 +1021,9 @@
 					showToast(errorMessage, 'error');
 				},
 				complete: function() {
-					$('#pan_no').prop('readonly', false);
+					if (!$('#pan_no').val()) {
+						$('#pan_no').prop('readonly', false);
+					}
 				}
 			});
 		}

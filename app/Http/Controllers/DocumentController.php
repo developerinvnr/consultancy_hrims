@@ -70,7 +70,8 @@ class DocumentController extends Controller
 			}
 
 			$panNumber = $extractData['data']['panNumber'];
-
+			$fatherName = $extractData['data']['fatherName'] ?? null;
+            $dateOfBirth = $extractData['data']['dateOfBirth'] ?? null;
 			Log::info('Sending PAN verification request', ['pan_number' => $panNumber]);
 
 			// Verify PAN with external API
@@ -100,6 +101,8 @@ class DocumentController extends Controller
 				'status' => 'SUCCESS',
 				'data' => [
 					'panNumber' => $panNumber,
+					'fatherName' => $fatherName,
+                    'dateOfBirth' => $dateOfBirth,
 					'isVerified' => $isVerified,
 					'verificationData' => $verifyData['data'] ?? null,
 					'filename' => $filename,

@@ -745,7 +745,9 @@
                         const data = response.data;
 
                         if (data.aadhaarNumber) {
-                            $('#aadhaar_no').val(data.aadhaarNumber);
+                            $('#aadhaar_no')
+                                .val(data.aadhaarNumber)
+                                .prop('readonly', true);
                         }
 
                         // Store filename for submission
@@ -756,9 +758,14 @@
                         if (data.isVerified) {
                             $('#aadhaar_verification_status').val('Verified');
                             $('#aadhaar_status_text').text('Extracted & Verified');
+                            // 🔒 LOCK FIELD
+                            $('#aadhaar_no').prop('readonly', true);
+
                         } else {
                             $('#aadhaar_verification_status').val('Pending');
                             $('#aadhaar_status_text').text('Extracted - Pending Verification');
+                            // allow editing if not verified
+                            $('#aadhaar_no').prop('readonly', false);
                         }
 
                         showToast('Aadhaar extracted successfully!', 'success');
@@ -774,7 +781,9 @@
                     showToast('Failed to extract Aadhaar', 'error');
                 },
                 complete: function() {
-                    $('#aadhaar_no').prop('readonly', false);
+                    if (!$('#aadhaar_no').val()) {
+                        $('#aadhaar_no').prop('readonly', false);
+                    }
                 }
             });
         });
@@ -827,7 +836,26 @@
                         const data = response.data;
 
                         // Fill PAN number
-                        $('#pan_no').val(data.panNumber);
+                        $('#pan_no').val(data.panNumber).prop('readonly', true);
+
+                        // Autofill father name
+                        // Autofill father name
+                        if (data.fatherName && !$('#father_name').val()) {
+                            $('#father_name')
+                                .val(data.fatherName.toUpperCase().trim())
+                                .prop('readonly', true); // 🔒 lock field
+                        }
+
+                        // Autofill DOB
+                        if (data.dateOfBirth && !$('#date_of_birth').val()) {
+
+                            const parts = data.dateOfBirth.split('/'); // DD/MM/YYYY
+                            const formattedDOB = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+                            $('#date_of_birth')
+                                .val(formattedDOB)
+                                .prop('readonly', true); // 🔒 lock field
+                        }
 
                         // Map verification data to form fields
                         if (data.verificationData) {
@@ -836,8 +864,12 @@
                             // 1. PAN Validity (pan_verification_status)
                             if (vData.is_valid === true || vData.pan_status === 'Valid') {
                                 $('#pan_verification_status').val('Valid');
+                                // 🔒 LOCK PAN FIELD
+                                $('#pan_no').prop('readonly', true);
                             } else {
                                 $('#pan_verification_status').val('Invalid');
+                                // allow editing
+                                $('#pan_no').prop('readonly', false);
                             }
 
                             // 2. PAN Status (pan_status_2)
@@ -863,6 +895,7 @@
                             // Optional: Auto-fill candidate name if available and empty
                             if (vData.name && !$('#candidate_name').val()) {
                                 $('#candidate_name').val(vData.name);
+                                $('#candidate_name').prop('readonly', true);
                             }
 
                             showToast('PAN extracted and verified successfully!', 'success');
@@ -907,7 +940,9 @@
                     showToast(errorMessage, 'error');
                 },
                 complete: function() {
-                    $('#pan_no').prop('readonly', false);
+                    if (!$('#pan_no').val()) {
+                        $('#pan_no').prop('readonly', false);
+                    }
                 }
             });
         }
@@ -1073,9 +1108,16 @@
                         // Status
                         if (data.isVerified || vData.verification_status === 'VERIFIED') {
                             $('#bank_verification_status').val('Verified');
+                            // 🔒 LOCK BANK FIELDS
+                            $('#bank_account_no').prop('readonly', true);
+                            $('#bank_ifsc').prop('readonly', true);
+                            $('#account_holder_name').prop('readonly', true);
                             showToast('Bank details extracted & verified!', 'success');
                         } else {
                             $('#bank_verification_status').val('Partially Verified');
+                            $('#bank_account_no').prop('readonly', false);
+                            $('#bank_ifsc').prop('readonly', false);
+                            $('#account_holder_name').prop('readonly', false);
                             showToast('Bank details extracted. Click verify to confirm.', 'info');
                         }
 
