@@ -113,7 +113,7 @@ class RemunerationReportExport implements
                 round($deduction),
                 $final,
                 ucfirst($record->payment_instruction ?? 'Pending'),
-                $record->hr_remarks ?? '-',
+                $record->hr_hold_remark ?? '-',
                 $tds,
                 $gross,
             ]);
