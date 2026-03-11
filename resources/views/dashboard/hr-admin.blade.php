@@ -201,6 +201,63 @@
 		</div>
 	</div>
 
+	@if(isset($expiry))
+	<div class="row mb-3">
+		<div class="col-12">
+			<div class="card border-0 shadow-sm">
+				<div class="card-body p-2">
+
+					<h6 class="mb-3 fs-6">
+						<i class="ri-calendar-event-line me-1"></i>
+						Contract Expiry
+					</h6>
+
+					<ul class="nav nav-tabs mb-3">
+
+						<li class="nav-item">
+							<a class="nav-link {{ request('exp_tab','exp30')=='exp30'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp30']) }}">
+								< 30 Days
+									</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link {{ request('exp_tab')=='exp60'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp60']) }}">
+								30 - 60 Days
+							</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link {{ request('exp_tab')=='exp90'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp90']) }}">
+								60 - 90 Days
+							</a>
+						</li>
+					</ul>
+
+					<div class="tab-content">
+
+						<div class="tab-pane fade {{ request('exp_tab','exp30')=='exp30' ? 'show active' : '' }}">
+							@include('dashboard.partials.expiry-table', ['list'=>$expiry['lt_30_days']])
+						</div>
+
+						<div class="tab-pane fade {{ request('exp_tab')=='exp60' ? 'show active' : '' }}">
+							@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_30_60']])
+						</div>
+
+						<div class="tab-pane fade {{ request('exp_tab')=='exp90' ? 'show active' : '' }}">
+							@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_60_90']])
+						</div>
+
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	@endif
+
 	<!-- Recent Requisitions Table -->
 	@if(isset($recent_requisitions))
 	<div class="row">
@@ -212,35 +269,35 @@
 						<ul class="nav nav-tabs mb-3 sticky-tabs">
 
 							<li class="nav-item">
-								<a class="nav-link {{ $tab=='status'?'active':'' }}"
-									href="{{ url()->current() }}?tab=status">
+								<a class="nav-link {{ $req_tab=='status'?'active':'' }}"
+									href="{{ request()->fullUrlWithQuery(['req_tab'=>'status']) }}">
 									Status Wise
 								</a>
 							</li>
 
 							<li class="nav-item">
-								<a class="nav-link {{ $tab=='active'?'active':'' }}"
-									href="{{ url()->current() }}?tab=active">
+								<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
+									href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
 									Active
 								</a>
 							</li>
 
 							<li class="nav-item">
-								<a class="nav-link {{ $tab=='inactive'?'active':'' }}"
-									href="{{ url()->current() }}?tab=inactive">
+								<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
+									href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
 									Inactive
 								</a>
 							</li>
 
 							<li class="nav-item">
-								<a class="nav-link {{ $tab=='rejected'?'active':'' }}"
-									href="{{ url()->current() }}?tab=rejected">
+								<a class="nav-link {{ $req_tab=='rejected'?'active':'' }}"
+									href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected']) }}">
 									Rejected
 								</a>
 							</li>
 						</ul>
 
-						@if($tab == 'status')
+						@if($req_tab == 'status')
 						<div class="row mb-3">
 
 							<div class="col-md-3">
@@ -1339,7 +1396,7 @@
 			let url = new URL(window.location.href);
 
 			// Always keep tab=status
-			url.searchParams.set('tab', 'status');
+			url.searchParams.set('req_tab', 'status');
 
 			if (status) {
 				url.searchParams.set('status_filter', status);

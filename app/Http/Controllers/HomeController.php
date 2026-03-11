@@ -11,6 +11,8 @@ use App\Models\AgreementCourier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
 
 class HomeController extends Controller
 {
@@ -37,12 +39,13 @@ class HomeController extends Controller
 
     private function hrAdminDashboard(Request $request)
     {
-        $tab = $request->get('tab', 'status');
+        $reqTab = $request->get('req_tab', 'status');
+         $expTab = $request->get('exp_tab', 'exp30');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy']);
 
-        switch ($tab) {
+        switch ($reqTab) {
 
             case 'active':
                 $query->whereHas(
@@ -145,7 +148,8 @@ class HomeController extends Controller
             ->latest()
             ->paginate(10)
             ->appends([
-                'tab' => $tab,
+                'req_tab' => $reqTab,
+                'exp_tab' => $expTab,
                 'status_filter' => $statusFilter,
                 'action_filter' => $actionFilter
             ]);
@@ -290,7 +294,28 @@ class HomeController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'tab'));
+        $today = Carbon::today();
+
+        $expiry = [
+
+            'lt_30_days' => CandidateMaster::whereNotNull('contract_end_date')
+                ->whereBetween('contract_end_date', [$today, $today->copy()->addDays(30)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'lt30_page'),
+
+            'days_30_60' => CandidateMaster::whereNotNull('contract_end_date')
+                ->whereBetween('contract_end_date', [$today->copy()->addDays(31), $today->copy()->addDays(60)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'd30_page'),
+
+            'days_60_90' => CandidateMaster::whereNotNull('contract_end_date')
+                ->whereBetween('contract_end_date', [$today->copy()->addDays(61), $today->copy()->addDays(90)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'd60_page'),
+
+        ];
+
+        return view('dashboard.hr-admin',compact('stats','recent_requisitions','expiry'))->with(['req_tab' => $reqTab,'exp_tab' => $expTab]);
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
@@ -351,8 +376,8 @@ class HomeController extends Controller
             }
         }
 
-        $tab = $request->get('tab', 'status');
-
+        $tab = $request->get('req_tab', 'status');
+        $expTab = $request->get('exp_tab', 'exp30');          
         $query = ManpowerRequisition::with(['submittedBy', 'candidate'])
             ->where(function ($q) use ($user, $isApprover) {
 
@@ -425,7 +450,7 @@ class HomeController extends Controller
         $data['recent_requisitions'] = $query
             ->latest()
             ->paginate(10)
-            ->appends(['tab' => $tab]);
+            ->appends(['req_tab' => $tab, 'exp_tab' => $expTab]);
 
         $data['tab'] = $tab;
 
@@ -473,7 +498,33 @@ class HomeController extends Controller
                 ->where('status', 'Processed')->count(),
         ];
 
+        $today = Carbon::today();
+        //dd($user->emp_id);
+        $data['expiry'] = [
+
+            'lt_30_days' => CandidateMaster::whereNotNull('contract_end_date')
+                ->where('reporting_manager_employee_id', $user->emp_id)
+                ->whereBetween('contract_end_date', [$today, $today->copy()->addDays(30)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'lt30_page'),
+
+            'days_30_60' => CandidateMaster::whereNotNull('contract_end_date')
+                ->where('reporting_manager_employee_id', $user->emp_id)
+                ->whereBetween('contract_end_date', [$today->copy()->addDays(31), $today->copy()->addDays(60)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'd30_page'),
+
+            'days_60_90' => CandidateMaster::whereNotNull('contract_end_date')
+                ->where('reporting_manager_employee_id', $user->emp_id)
+                ->whereBetween('contract_end_date', [$today->copy()->addDays(61), $today->copy()->addDays(90)])
+                ->orderBy('contract_end_date')
+                ->paginate(10, ['*'], 'd90_page'),
+
+        ];
+
         $data['is_approver'] = $isApprover;
+        $data['req_tab'] = $tab;
+        $data['exp_tab'] = $expTab;
         return view('dashboard.user', $data);
     }
 }
