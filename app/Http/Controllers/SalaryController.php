@@ -865,7 +865,7 @@ class SalaryController extends Controller
     public function togglePayment(Request $request)
     {
         $request->validate([
-            'salary_id' => 'required|exists:salary_processing,id',
+            'salary_id' => 'required|exists:salary_processings,id',
             'action'    => 'required|in:hold,release',
             'remark'    => 'required|string|max:500'
         ]);
