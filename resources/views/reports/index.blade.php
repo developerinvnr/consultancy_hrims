@@ -13,8 +13,8 @@
     <div class="row g-3">
 
         <!-- Master Report -->
-       
-       @can('master_report')
+
+        @can('master_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -28,8 +28,8 @@
                 </div>
             </div>
         </div>
-     @endcan
-		@can('payout_report')
+        @endcan
+        @can('payout_report')
         <!-- Management Report -->
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
@@ -44,8 +44,8 @@
                 </div>
             </div>
         </div>
-@endcan
-		@can('focus_maste_report')
+        @endcan
+        @can('focus_maste_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -60,8 +60,8 @@
                 </div>
             </div>
         </div>
-@endcan
-		@can('jv_report')
+        @endcan
+        @can('jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -76,8 +76,8 @@
                 </div>
             </div>
         </div>
-@endcan
-		@can('tds_jv_report')
+        @endcan
+        @can('tds_jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -92,8 +92,8 @@
                 </div>
             </div>
         </div>
-@endcan
-@can('payment_jv_report')
+        @endcan
+        @can('payment_jv_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -103,6 +103,21 @@
                     </p>
                     <a href="{{ route('reports.payment-jv') }}"
                         class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('tat_report')
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">TAT Report</h6>
+                    <p class="text-muted small">
+                        Turnaround time report action wise.
+                    </p>
+                    <a href="{{ route('reports.tat') }}" class="btn btn-sm btn-primary">
                         Open Report
                     </a>
                 </div>
@@ -122,6 +137,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- Vendor Details -->
         {{--<div class="col-md-4">

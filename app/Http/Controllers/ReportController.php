@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CandidateMaster;
 use App\Models\SalaryProcessing;
 use App\Models\CoreDepartment;
+use App\Models\ManpowerRequisition;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MasterReportExport;
 use App\Exports\RemunerationReportExport;
@@ -12,6 +13,7 @@ use App\Exports\FocusMasterExport;
 use App\Exports\JVExport;
 use App\Exports\TDSJVExport;
 use App\Exports\PaymentJVExport;
+use App\Exports\TatReportExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -645,6 +647,94 @@ class ReportController extends Controller
                 $request->requisition_type ?? ''
             ),
             'Payment_JV_Report.xlsx'
+        );
+    }
+
+    public function tat(Request $request)
+    {
+        $financialYear = $request->get('financial_year');
+        $month = $request->get('month');
+        $departmentId = $request->get('department_id');
+        $requisitionType = $request->get('requisition_type');
+        $status = $request->get('status');
+
+        // Default financial year
+        if (!$financialYear) {
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+
+            if ($currentMonth >= 4) {
+                $financialYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                $financialYear = ($currentYear - 1) . '-' . $currentYear;
+            }
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        $query = ManpowerRequisition::query();
+
+        // Financial year filter
+        if ($month) {
+
+            $year = ($month >= 4) ? $startYear : $endYear;
+
+            $startDate = "{$year}-{$month}-01";
+            $endDate = Carbon::parse($startDate)->endOfMonth();
+
+            $query->whereBetween('submission_date', [$startDate, $endDate]);
+        } else {
+
+            $query->whereBetween('submission_date', [
+                $startYear . '-04-01',
+                $endYear . '-03-31'
+            ]);
+        }
+
+        // Department filter
+        if (!empty($departmentId)) {
+            $query->where('department_id', $departmentId);
+        }
+
+        // Requisition type
+        if (!empty($requisitionType)) {
+            $query->where('requisition_type', $requisitionType);
+        }
+
+        // Status
+        if (!empty($status)) {
+            $query->where('status', $status);
+        }
+
+        $records = $query
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        $departments = CoreDepartment::orderBy('department_name')->get();
+
+        return view('reports.tat', compact(
+            'records',
+            'financialYear',
+            'month',
+            'departmentId',
+            'requisitionType',
+            'status',
+            'departments'
+        ));
+    }
+
+    public function tatExport(Request $request)
+    {
+        return Excel::download(
+            new TatReportExport(
+                $request->financial_year,
+                $request->month,
+                $request->department_id,
+                $request->requisition_type,
+                $request->status
+            ),
+            'TAT_Report.xlsx'
         );
     }
 }

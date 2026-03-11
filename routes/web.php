@@ -370,7 +370,10 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::get('/tds-jv/export', [ReportController::class, 'TDSJVExport'])->name('tds-jv.export');
 
     Route::get('/payment-jv/export', [ReportController::class, 'PaymentJVExport'])->name('payment-jv.export');
-});
+
+    Route::get('/tat', [ReportController::class, 'tat'])->name('tat');
+    Route::get('/tat/export', [ReportController::class, 'tatExport'])->name('tat.export');
+    });
 
 
 // Route::post('/test/agreement-api', function(Request $request) {

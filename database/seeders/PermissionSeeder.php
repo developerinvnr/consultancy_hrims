@@ -62,6 +62,7 @@ class PermissionSeeder extends Seeder
 			['name' => 'tds_jv_report', 'group_name' => 'reports'],
 			['name' => 'payment_jv_report', 'group_name' => 'reports'],
 			['name' => 'management_report', 'group_name' => 'reports'],
+            ['name' => 'tat_report', 'group_name' => 'reports'],
 
             // Settings
             ['name' => 'settings.full-access', 'group_name' => 'settings'],
