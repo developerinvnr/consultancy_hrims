@@ -92,7 +92,7 @@ $basedOnPaidDays = $record->net_pay ?? 0;
                     @endif
                 </td>
 
-                <td>{{ $record->hr_remarks ?? '-' }}</td>
+                <td>{{ $record->hr_hold_remark ?? '-' }}</td>
 
                 <td>{{ number_format(round($tds)) }}</td>
                 <td>{{ number_format(round($grossUp)) }}</td>
