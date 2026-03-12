@@ -56,9 +56,9 @@
                     <button class="btn btn-sm btn-success" onclick="processAll()">
                         <i class="ri-check-double-line"></i> Process All Filtered
                     </button>
-                    <button class="btn btn-sm btn-info" onclick="exportExcel()">
+                    {{--<button class="btn btn-sm btn-info" onclick="exportExcel()">
                         <i class="ri-file-excel-2-line"></i> Export Excel
-                    </button>
+                    </button>--}}
                 </div>
             </div>
         </div>
@@ -571,7 +571,7 @@ Awaiting Payout
         }
 
         Swal.fire({
-            title: 'Process All Salaries?',
+            title: 'Process All Remuneration?',
             text: `Process salary for ${currentMonth}/${currentYear}?`,
             icon: 'question',
             showCancelButton: true,
