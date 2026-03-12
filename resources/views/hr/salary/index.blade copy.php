@@ -74,7 +74,6 @@
                             <th width="40"><input type="checkbox" id="selectAll"></th>
                             <th>Code</th>
                             <th>Name</th>
-                            <th>PAN Status</th>
                             <th>Requisition Type</th>
                             <th>Paid Days</th>
                             <th>Monthly Base</th>
@@ -88,7 +87,7 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="13" class="text-center py-4 text-muted">
+                            <td colspan="11" class="text-center py-4 text-muted">
                                 Select month-year to load active candidates
                             </td>
                         </tr>
@@ -188,6 +187,29 @@
     </div>
 </div>
 
+<div class="modal fade" id="holdReleaseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Payment Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hold_salary_id">
+                <input type="hidden" id="hold_action">
+
+                <div class="mb-3">
+                    <label class="form-label">Remark (Required)</label>
+                    <textarea id="hold_remark" class="form-control" rows="3" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" onclick="saveHoldRelease()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -297,21 +319,17 @@
 
         let html = '';
         records.forEach(r => {
-            const panBadge = r.pan_status_2 === 'Operative' ?
-                `<span class="badge bg-success">Operative</span>` :
-                `<span class="badge bg-danger">Inoperative</span>`;
             let statusClass = 'warning';
             let statusText = 'Pending';
 
-            if (!r.can_process) {
-                statusClass = 'danger';
-                statusText = 'PAN Inoperative';
-            } else if (Number(r.paid_days || 0) === 0) {
-                statusClass = 'warning';
-                statusText = 'Attendance Missing';
-            } else if (r.processed) {
-                statusClass = 'success';
-                statusText = 'Processed';
+            if (r.processed) {
+                if (r.payment_instruction === 'hold') {
+                    statusClass = 'danger';
+                    statusText = 'Held';
+                } else {
+                    statusClass = 'success';
+                    statusText = 'Released';
+                }
             }
             const requisitionType = r.candidate?.requisition_type || r.requisition_type || '-';
             const monthlySalary = Number(r.monthly_salary || 0);
@@ -351,20 +369,10 @@
                 </a>`;
 
             html += `
-            <tr 
-    data-id="${r.id || ''}" 
-    data-candidate-id="${r.candidate_id}"
-    data-processed="${r.processed ? 1 : 0}"
->
-                <td>
-                    ${r.can_process 
-                        ? `<input type="checkbox" class="row-check">`
-                        : `<span class="text-danger small">Blocked</span>`
-                    }
-                </td>
+            <tr data-id="${r.id || ''}" data-candidate-id="${r.candidate_id}">
+                <td><input type="checkbox" class="row-check"></td>
                 <td>${r.candidate?.candidate_code ?? '-'}</td>
                 <td>${r.candidate?.candidate_name ?? '-'}</td>
-                <td>${panBadge}</td>
                 <td><span class="badge bg-secondary">${requisitionType}</span></td>
                 <td>${Number(r.paid_days || 0)}</td>
                 <td>₹ ${monthlySalary.toLocaleString('en-IN')}</td>
@@ -378,20 +386,30 @@
                 <td>
                     <span class="badge bg-${statusClass}">${statusText}</span>
                 </td>
-               <td>
-${r.processed ? `
-<div class="d-flex gap-1 flex-wrap">
+                <td>
+                    ${r.processed ? `
+    <div class="d-flex gap-1 flex-wrap">
+        <a href="/hr/salary/payslip/${r.id}" 
+           class="btn btn-sm btn-outline-primary" target="_blank">
+            <i class="ri-download-line"></i>
+        </a>
 
-<span class="badge bg-info">
-Awaiting Payout
-</span>
-
-</div>
-
+        ${r.payment_instruction === 'hold' ? `
+            <button class="btn btn-sm btn-success"
+                onclick="openHoldReleaseModal(${r.id}, 'release')">
+                Release
+            </button>
+        ` : `
+            <button class="btn btn-sm btn-danger"
+                onclick="openHoldReleaseModal(${r.id}, 'hold')">
+                Hold
+            </button>
+        `}
+    </div>
 ` : `
-<span class="text-muted small">Not processed</span>
+    <span class="text-muted small">Not processed</span>
 `}
-</td>
+                </td>
             </tr>`;
         });
 
@@ -446,6 +464,41 @@ Awaiting Payout
 
         // Show modal
         $('#arrearModal').modal('show');
+    }
+
+    function openHoldReleaseModal(salaryId, action) {
+        $('#hold_salary_id').val(salaryId);
+        $('#hold_action').val(action);
+        $('#hold_remark').val('');
+        $('#holdReleaseModal').modal('show');
+    }
+
+    function saveHoldRelease() {
+        const salaryId = $('#hold_salary_id').val();
+        const action = $('#hold_action').val();
+        const remark = $('#hold_remark').val();
+
+        if (!remark.trim()) {
+            toastr.error("Remark is required");
+            return;
+        }
+
+        $.post("{{ route('salary.toggle.payment') }}", {
+            _token: '{{ csrf_token() }}',
+            salary_id: salaryId,
+            action: action,
+            remark: remark
+        }, function(response) {
+            if (response.success) {
+                toastr.success(response.message);
+                $('#holdReleaseModal').modal('hide');
+                loadSalaryList();
+            } else {
+                toastr.error(response.message);
+            }
+        }).fail(function(xhr) {
+            toastr.error(xhr.responseJSON?.message || "Error occurred");
+        });
     }
 
     // Calculate arrear on days change
@@ -564,85 +617,205 @@ Awaiting Payout
 
     // Process All with warning - Modified to include local arrear data
     function processAll() {
+        if (!currentMonth || !currentYear) return toastr.error("Select month-year first");
 
-        if (!currentMonth || !currentYear) {
-            toastr.error("Select month-year first");
-            return;
-        }
+        const filterText = currentRequisitionType !== 'All' ? ` for ${currentRequisitionType}` : '';
 
-        Swal.fire({
-            title: 'Process All Salaries?',
-            text: `Process salary for ${currentMonth}/${currentYear}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Process All',
-            confirmButtonColor: '#198754'
-        }).then((result) => {
+        // Check if any records exist for this month
+        $.post("{{ route('salary.checkExists') }}", {
+            _token: '{{ csrf_token() }}',
+            month: currentMonth,
+            year: currentYear,
+        }, function(response) {
+            let exists = response.exists || false;
+            let count = response.count || 0;
 
-            if (!result.isConfirmed) return;
+            let confirmMessage = exists ?
+                `<div class="alert alert-danger">
+                    <i class="ri-alert-line"></i> 
+                    <strong>${count} salary record(s) already exist${filterText} for ${currentMonth}/${currentYear}!</strong><br>
+                    Processing will overwrite all existing data.
+                </div>` :
+                `Process salary${filterText} for ${currentMonth}/${currentYear}?`;
+
+
+
+            if (exists) {
+                confirmMessage += `
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="forceAll">
+                    <label class="form-check-label" for="forceAll">
+                        I understand this will overwrite existing records
+                    </label>
+                </div>`;
+            }
 
             Swal.fire({
-                title: 'Processing...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
+                title: exists ? `Overwrite Existing${filterText} Records?` : `Process All${filterText} Salaries?`,
+                html: confirmMessage,
+                icon: exists ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: exists ? 'Overwrite All' : 'Process All',
+                confirmButtonColor: exists ? '#dc3545' : '#198754',
+                preConfirm: () => {
+                    if (exists) {
+                        return {
+                            force: $('#forceAll').is(':checked')
+                        }
+                    }
+                    return {};
+                }
+            }).then((result) => {
+                if (!result.isConfirmed) return;
 
-            $.post("{{ route('salary.process') }}", {
-                _token: '{{ csrf_token() }}',
-                month: currentMonth,
-                year: currentYear,
-                requisition_type: currentRequisitionType
-            }, function(response) {
-
-                Swal.close();
-
-                if (response.success) {
-                    toastr.success(response.message);
-                    loadSalaryList();
-                } else {
-                    toastr.warning(response.message);
+                if (exists && !result.value?.force) {
+                    toastr.warning("Operation cancelled - confirmation not checked");
+                    return;
                 }
 
-            }).fail(function() {
-                Swal.close();
-                toastr.error("Processing failed");
+                // Prepare data with local arrear
+                const processData = {
+                    _token: '{{ csrf_token() }}',
+                    month: currentMonth,
+                    year: currentYear,
+                    force: exists ? '1' : '0',
+                    requisition_type: currentRequisitionType,
+                };
+
+                // Show processing loader
+                Swal.fire({
+                    title: 'Processing...',
+                    text: `Processing${filterText} salaries`,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.post("{{ route('salary.process') }}", processData, function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        toastr.success(response.message);
+                        // Clear local arrear data after successful processing
+                        loadSalaryList();
+                    } else {
+                        toastr.error(response.message || "Processing failed");
+                    }
+                }).fail(function(xhr) {
+                    Swal.close();
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else {
+                        toastr.error("Bulk processing failed");
+                    }
+                });
             });
-
         });
-
     }
 
     // Process Selected (checkboxes) - Modified to include local arrear data
     function processSelected() {
-
         const selected = $('.row-check:checked').closest('tr');
-
-        const candidateIds = selected.map(function() {
+        const selectedIds = selected.map(function() {
             return $(this).data('candidate-id');
         }).get();
 
-        if (candidateIds.length === 0) {
-            toastr.warning("No Party selected");
-            return;
+        if (selectedIds.length === 0) return toastr.warning("No employees selected");
+
+        // Check if any selected are already processed
+        let alreadyProcessed = [];
+        selected.each(function() {
+            const row = $(this).closest('tr');
+            const statusBadge = row.find('.badge');
+            if (statusBadge.hasClass('bg-success') || statusBadge.text().includes('Processed')) {
+                alreadyProcessed.push(row.find('td:nth-child(3)').text().trim()); // Name column
+            }
+        });
+
+        let confirmMessage = `Process ${selectedIds.length} selected employee(s)?`;
+        if (alreadyProcessed.length > 0) {
+            confirmMessage = `
+                <div class="alert alert-warning">
+                    <i class="ri-alert-line"></i> ${alreadyProcessed.length} employee(s) are already processed:<br>
+                    <small class="text-muted">${alreadyProcessed.slice(0, 3).join(', ')}${alreadyProcessed.length > 3 ? '...' : ''}</small><br>
+                    <strong>Processing again will overwrite existing data!</strong>
+                </div>`;
+        }
+
+
+        if (alreadyProcessed.length > 0) {
+            confirmMessage += `
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="forceProcess">
+                    <label class="form-check-label" for="forceProcess">
+                        Force Recalculation (overwrite existing)
+                    </label>
+                </div>
+            `;
         }
 
         Swal.fire({
-            title: 'Process Selected?',
-            text: `Process ${candidateIds.length} employee(s)?`,
-            icon: 'question',
+            title: alreadyProcessed.length > 0 ? 'Overwrite Processed Salaries?' : 'Process Selected?',
+            html: confirmMessage,
+            icon: alreadyProcessed.length > 0 ? 'warning' : 'question',
             showCancelButton: true,
-            confirmButtonText: 'Process',
-            confirmButtonColor: '#198754'
+            confirmButtonText: alreadyProcessed.length > 0 ? 'Yes, Overwrite' : 'Yes, Process',
+            confirmButtonColor: alreadyProcessed.length > 0 ? '#dc3545' : '#198754',
+            showDenyButton: alreadyProcessed.length > 0,
+            denyButtonText: 'Skip Processed & Only Process New',
+            denyButtonColor: '#6c757d',
+            preConfirm: () => {
+                return {
+                    force: $('#forceProcess').is(':checked')
+                }
+            }
         }).then((result) => {
+            if (result.isDismissed) return;
 
-            if (!result.isConfirmed) return;
+            const force = result.value?.force || false;
+            const skipProcessed = result.isDenied;
 
+            // Prepare candidate IDs to process
+            let candidateIdsToProcess = [];
+
+            if (skipProcessed) {
+                selected.each(function() {
+                    const row = $(this).closest('tr');
+                    const statusBadge = row.find('.badge');
+                    if (!statusBadge.hasClass('bg-success') && !statusBadge.text().includes('Processed')) {
+                        const candidateId = $(this).closest('tr').data('candidate-id');
+                        candidateIdsToProcess.push(candidateId);
+
+                        // Include local arrear if exists
+                        const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
+
+                    }
+                });
+
+                if (candidateIdsToProcess.length === 0) {
+                    toastr.info("All selected are already processed");
+                    return;
+                }
+            } else {
+                candidateIdsToProcess = selectedIds;
+                // Include all local arrears for selected candidates
+                selectedIds.forEach(candidateId => {
+                    const candidateKey = `${candidateId}_${currentMonth}_${currentYear}`;
+
+                });
+            }
+
+            // Show processing loader
             Swal.fire({
                 title: 'Processing...',
+                text: `Processing ${candidateIdsToProcess.length} employee(s)`,
                 allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
+            // Send as JSON array with local arrear data
             $.ajax({
                 url: "{{ route('salary.process') }}",
                 method: 'POST',
@@ -650,31 +823,31 @@ Awaiting Payout
                     _token: '{{ csrf_token() }}',
                     month: currentMonth,
                     year: currentYear,
-                    candidate_ids: candidateIds,
+                    force: force ? '1' : '0',
+                    candidate_ids: candidateIdsToProcess,
                     requisition_type: currentRequisitionType
                 }),
                 contentType: 'application/json',
-
+                dataType: 'json',
                 success: function(response) {
-
                     Swal.close();
-
                     if (response.success) {
                         toastr.success(response.message);
                         loadSalaryList();
                     } else {
-                        toastr.error(response.message);
+                        toastr.error(response.message || "Processing failed");
                     }
-
                 },
-                error: function() {
+                error: function(xhr) {
                     Swal.close();
-                    toastr.error("Processing failed");
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else {
+                        toastr.error("Processing failed");
+                    }
                 }
             });
-
         });
-
     }
 
     // Export Excel with current filters

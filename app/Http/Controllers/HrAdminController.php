@@ -139,6 +139,18 @@ class HrAdminController extends Controller
 						}
 					}
 
+					$label = 'Agreement';
+
+					if ($doc->document_type === 'agreement' && $doc->stamp_type === 'NONE') {
+						$label = 'Generated Agreement';
+					}
+					elseif ($doc->document_type === 'agreement' && $doc->stamp_type === 'E_STAMP') {
+						$label = 'Generated Agreement (E-Stamp Format)';
+					}
+					elseif ($doc->document_type === 'estamp') {
+						$label = 'Uploaded E-Stamp Page';
+					}
+
 					$agreementDocuments[] = [
 						'id' => $doc->id,
 						'type' => 'Agreement',
@@ -150,6 +162,7 @@ class HrAdminController extends Controller
 						's3_url' => $s3Url,
 						'has_file' => $hasFile,
 						'document_category' => 'agreement',
+						'type' => $label,
 						'candidate_code' => $doc->candidate_code
 					];
 				}
@@ -761,7 +774,7 @@ class HrAdminController extends Controller
 			$requisition->hr_verification_remarks = $request->correction_remarks;
 			$requisition->save();
 			//$requisition->hr_verified_id = auth()->user()->emp_id;
-			
+
 
 			// Load relationships for email if needed
 			$requisition->load(['function', 'department', 'vertical']);
@@ -1153,7 +1166,6 @@ class HrAdminController extends Controller
 					Mail::to($reportingManager->emp_email)
 						->cc($approver?->emp_email)
 						->send(new PartyCodeGenerated($candidate, $requisition));
-
 				}
 			}
 			// end Check communication control
@@ -1188,39 +1200,39 @@ class HrAdminController extends Controller
 		return $dob ? Carbon::parse($dob)->age : null;
 	}
 
-	private function generateMockResponse($apiData, $candidateCode)
-	{
-		// For testing purposes only
-		$agreementNumber = 'MOCK-' . date('Ymd-His') . '-' . $candidateCode;
+	// private function generateMockResponse($apiData, $candidateCode)
+	// {
+	// 	// For testing purposes only
+	// 	$agreementNumber = 'MOCK-' . date('Ymd-His') . '-' . $candidateCode;
 
-		// Create a mock file in storage
-		$filePath = 'mock_agreements/' . $agreementNumber . '.pdf';
+	// 	// Create a mock file in storage
+	// 	$filePath = 'mock_agreements/' . $agreementNumber . '.pdf';
 
-		// Create directory if not exists
-		if (!Storage::disk('public')->exists('mock_agreements')) {
-			Storage::disk('public')->makeDirectory('mock_agreements');
-		}
+	// 	// Create directory if not exists
+	// 	if (!Storage::disk('public')->exists('mock_agreements')) {
+	// 		Storage::disk('public')->makeDirectory('mock_agreements');
+	// 	}
 
-		// Create mock PDF content (simple text for testing)
-		$content = "MOCK AGREEMENT DOCUMENT\n\n";
-		$content .= "Agreement Number: {$agreementNumber}\n";
-		$content .= "Generated: " . now()->toDateTimeString() . "\n\n";
-		$content .= "Candidate Details:\n";
-		foreach ($apiData as $key => $value) {
-			$content .= "  " . str_pad($key . ':', 15) . " {$value}\n";
-		}
+	// 	// Create mock PDF content (simple text for testing)
+	// 	$content = "MOCK AGREEMENT DOCUMENT\n\n";
+	// 	$content .= "Agreement Number: {$agreementNumber}\n";
+	// 	$content .= "Generated: " . now()->toDateTimeString() . "\n\n";
+	// 	$content .= "Candidate Details:\n";
+	// 	foreach ($apiData as $key => $value) {
+	// 		$content .= "  " . str_pad($key . ':', 15) . " {$value}\n";
+	// 	}
 
-		Storage::disk('public')->put($filePath, $content);
+	// 	Storage::disk('public')->put($filePath, $content);
 
-		return [
-			'success' => true,
-			'agreement_number' => $agreementNumber,
-			'file_path' => $filePath,
-			'file_url' => Storage::disk('public')->url($filePath),
-			'message' => 'Mock agreement generated successfully (DEBUG MODE)',
-			'debug_data' => $apiData
-		];
-	}
+	// 	return [
+	// 		'success' => true,
+	// 		'agreement_number' => $agreementNumber,
+	// 		'file_path' => $filePath,
+	// 		'file_url' => Storage::disk('public')->url($filePath),
+	// 		'message' => 'Mock agreement generated successfully (DEBUG MODE)',
+	// 		'debug_data' => $apiData
+	// 	];
+	// }
 
 	// New method to handle API call for agreement generation
 	private function generateAgreementViaAPI($requisition, $candidateCode)
@@ -1657,20 +1669,22 @@ class HrAdminController extends Controller
 	/**
 	 * Upload Signed Agreement
 	 */
-	public function uploadSignedAgreement(Request $request, CandidateMaster $candidate)
+	public function uploadSignedAgreement(Request $request, CandidateMaster $candidate, S3Service $s3Service)
 	{
-		/* ---------------- VALIDATION ---------------- */
 		$request->validate([
 			'agreement_file'   => 'required|file|mimes:pdf|max:10240',
 			'agreement_number' => 'required|string|max:100',
 		]);
-		//dd($candidate);
+
 		DB::beginTransaction();
 
 		try {
+
 			/* ---------------- REMOVE OLD SIGNED AGREEMENT ---------------- */
+
 			$oldSigned = $candidate->agreementDocuments()
-				->where('document_type', 'signed')
+				->where('document_type', 'agreement')
+				->where('sign_status', 'SIGNED')
 				->first();
 
 			if ($oldSigned) {
@@ -1679,19 +1693,24 @@ class HrAdminController extends Controller
 			}
 
 			/* ---------------- UPLOAD FILE TO S3 ---------------- */
-			$file     = $request->file('agreement_file');
-			$fileName = 'signed_' . $candidate->candidate_code . '_' . time() . '.pdf';
-			$filePath = 'agreements/signed/' . $fileName;
 
-			Storage::disk('s3')->put(
-				$filePath,
-				file_get_contents($file),
-				'public'
+			$file = $request->file('agreement_file');
+
+			$upload = $s3Service->uploadAgreementDocument(
+				$file,
+				$candidate->requisition_type,
+				'signed'
 			);
 
-			$fileUrl = Storage::disk('s3')->url($filePath);
+			if (!$upload['success']) {
+				throw new \Exception($upload['error']);
+			}
+
+			$filePath = $upload['key'];
+			$fileUrl  = $upload['url'];
 
 			/* ---------------- CREATE AGREEMENT RECORD ---------------- */
+
 			AgreementDocument::create([
 				'candidate_id'        => $candidate->id,
 				'candidate_code'      => $candidate->candidate_code,
@@ -1706,21 +1725,23 @@ class HrAdminController extends Controller
 			]);
 
 			/* ---------------- UPDATE CANDIDATE ---------------- */
+
 			$candidate->update([
 				'candidate_status' => 'Active',
 				'final_status'     => 'A',
 			]);
 
 			/* ---------------- UPDATE REQUISITION ---------------- */
+
 			if ($candidate->requisition) {
 				$candidate->requisition->update([
 					'status' => 'Agreement Completed',
 				]);
 			}
 
-			/* ---------------- COMMIT DATABASE ---------------- */
 			DB::commit();
 		} catch (\Exception $e) {
+
 			DB::rollBack();
 
 			Log::error('Signed agreement upload failed', [
@@ -1728,62 +1749,17 @@ class HrAdminController extends Controller
 				'error'        => $e->getMessage(),
 			]);
 
-			return $request->ajax()
-				? response()->json([
-					'success' => false,
-					'message' => 'Failed to upload signed agreement.',
-				], 500)
-				: redirect()->back()->with('error', 'Failed to upload signed agreement.');
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to upload signed agreement.'
+			], 500);
 		}
 
-		/* ---------------- SYNC TO SUBMITTER PORTAL (POST-COMMIT) ---------------- */
-		try {
-			$apiPayload = [
-				'agreement_id' => $request->agreement_number,
-				'file_url'     => $fileUrl,
-			];
-
-			$ch = curl_init();
-			curl_setopt_array($ch, [
-				CURLOPT_URL            => 'https://vnragro.com/agrisamvida/generated_signed_agreement.php',
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_POST           => true,
-				CURLOPT_POSTFIELDS     => http_build_query($apiPayload),
-				CURLOPT_HTTPHEADER     => [
-					'Content-Type: application/x-www-form-urlencoded',
-				],
-				CURLOPT_TIMEOUT        => 30,
-				CURLOPT_SSL_VERIFYPEER => false,
-				CURLOPT_SSL_VERIFYHOST => false,
-			]);
-
-			$response  = curl_exec($ch);
-			$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$curlError = curl_error($ch);
-			curl_close($ch);
-
-			Log::info('Submitter portal sync response', [
-				'http_code' => $httpCode,
-				'response'  => $response,
-				'error'     => $curlError,
-				'payload'   => $apiPayload,
-			]);
-		} catch (\Exception $apiEx) {
-			Log::warning('Submitter portal API exception', [
-				'message' => $apiEx->getMessage(),
-			]);
-		}
-
-		/* ---------------- FINAL RESPONSE ---------------- */
-		return $request->ajax()
-			? response()->json([
-				'success' => true,
-				'message' => 'Signed agreement uploaded successfully. Process completed.',
-				'status'  => $candidate->candidate_status,
-			])
-			: redirect()->back()->with('success', 'Signed agreement uploaded successfully.');
+		return response()->json([
+			'success' => true,
+			'message' => 'Signed agreement uploaded successfully.'
+		]);
 	}
-
 
 
 	/**
@@ -1950,87 +1926,7 @@ class HrAdminController extends Controller
 			], 500);
 		}
 	}
-	// public function updateAgreement(Request $request, CandidateMaster $candidate, $type)
-	// {
-	// 	$request->validate([
-	// 		'agreement_file' => 'nullable|file|mimes:pdf|max:10240',
-	// 		'agreement_number' => 'required|string|max:100',
-	// 		'reason' => 'required|string|max:500',
-	// 	]);
 
-	// 	if (!in_array($type, ['unsigned', 'signed'])) {
-	// 		return redirect()->back()->with('error', 'Invalid type.');
-	// 	}
-
-	// 	DB::beginTransaction();
-	// 	try {
-	// 		// Get current agreement
-	// 		$currentAgreement = $candidate->agreementDocuments()
-	// 			->where('document_type', $type)
-	// 			->first();
-
-	// 		if (!$currentAgreement) {
-	// 			return redirect()->back()->with('error', 'No agreement found.');
-	// 		}
-
-	// 		$filePath = $currentAgreement->agreement_path;
-
-	// 		// If new file uploaded
-	// 		if ($request->hasFile('agreement_file')) {
-	// 			$file = $request->file('agreement_file');
-	// 			$fileName = $type . '_updated_' . $candidate->candidate_code . '.pdf';
-	// 			$filePath = 'agreements/' . $type . '/' . $fileName;
-
-	// 			Storage::disk('s3')->put($filePath, file_get_contents($file));
-	// 		}
-
-	// 		// Update agreement
-	// 		$currentAgreement->update([
-	// 			'agreement_number' => $request->agreement_number,
-	// 			'agreement_path' => $filePath,
-	// 			'uploaded_by_user_id' => Auth::id(),
-	// 			'uploaded_by_role' => 'hr_admin',
-	// 		]);
-
-	// 		Log::info('Agreement updated', [
-	// 			'candidate_id' => $candidate->id,
-	// 			'type' => $type,
-	// 			'old_number' => $currentAgreement->agreement_number,
-	// 			'new_number' => $request->agreement_number,
-	// 			'reason' => $request->reason
-	// 		]);
-
-	// 		DB::commit();
-
-	// 		return redirect()->back()
-	// 			->with('success', 'Agreement updated successfully.');
-	// 	} catch (\Exception $e) {
-	// 		DB::rollBack();
-	// 		Log::error('Error updating agreement: ' . $e->getMessage());
-	// 		return redirect()->back()->with('error', 'Failed to update agreement.');
-	// 	}
-	// }
-
-
-
-	/**
-	 * Notify submitter
-	 */
-	// private function notifySubmitter($candidate, $agreementNumber)
-	// {
-	// 	try {
-	// 		$submitter = $candidate->requisition->submittedBy;
-	// 		if ($submitter && $submitter->email) {
-	// 			Mail::to($submitter->email)->send(new \App\Mail\UnsignedAgreementUploaded(
-	// 				$candidate,
-	// 				$submitter,
-	// 				$agreementNumber
-	// 			));
-	// 		}
-	// 	} catch (\Exception $e) {
-	// 		Log::error('Failed to send email: ' . $e->getMessage());
-	// 	}
-	// }
 	/**
 	 * Download Agreement
 	 */
@@ -2632,7 +2528,7 @@ class HrAdminController extends Controller
 				$extension = $file->getClientOriginalExtension();
 				$timestamp = time();
 				$filename = 'unsigned_agreement_' . $candidate->candidate_code . '_' . $timestamp . '.' . $extension;
-				$filePath = 'agreements/unsigned/' . $filename;
+				$filePath = 'Consultancy/Agreements/unsigned/' . $filename;
 
 				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
 				$fileUrl = Storage::disk('s3')->url($filePath);
@@ -2676,7 +2572,7 @@ class HrAdminController extends Controller
 				$extension = $file->getClientOriginalExtension();
 				$timestamp = time();
 				$filename = 'signed_agreement_' . $candidate->candidate_code . '_' . $timestamp . '.' . $extension;
-				$filePath = 'agreements/signed/' . $filename;
+				$filePath = 'Consultancy/Agreements/signed/' . $filename;
 
 				Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
 				$fileUrl = Storage::disk('s3')->url($filePath);
@@ -2995,7 +2891,7 @@ class HrAdminController extends Controller
 		try {
 			$file = $request->file('document_file');
 			$fileName = $request->document_type . '_' . $candidate->candidate_code . '_' . time() . '.' . $file->getClientOriginalExtension();
-			$filePath = 'documents/' . $request->document_type . '/' . $fileName;
+			$filePath = 'Consultancy/documents/' . $request->document_type . '/' . $fileName;
 
 			Storage::disk('s3')->put($filePath, file_get_contents($file), 'public');
 			$fileUrl = Storage::disk('s3')->url($filePath);
@@ -3023,5 +2919,104 @@ class HrAdminController extends Controller
 				'message' => 'Failed to upload document: ' . $e->getMessage()
 			], 500);
 		}
+	}
+
+	public function uploadEstamp(Request $request, CandidateMaster $candidate, S3Service $s3Service)
+	{
+		$request->validate([
+			'estamp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240'
+		]);
+
+		DB::beginTransaction();
+
+		try {
+
+			/* -------- Upload to S3 using service -------- */
+
+			$file = $request->file('estamp_file');
+
+			$upload = $s3Service->uploadAgreementDocument(
+				$file,
+				$candidate->requisition_type,
+				'estamp'
+			);
+
+			if (!$upload['success']) {
+				throw new \Exception($upload['error']);
+			}
+
+			$filePath = $upload['key'];
+			$fileUrl  = $upload['url'];
+
+			/* -------- Get agreement number -------- */
+
+			$agreement = AgreementDocument::where('candidate_id', $candidate->id)
+				->where('document_type', 'agreement')
+				->where('stamp_type', 'E_STAMP')
+				->firstOrFail();
+
+			/* -------- Create estamp record -------- */
+
+			AgreementDocument::create([
+				'candidate_id'        => $candidate->id,
+				'candidate_code'      => $candidate->candidate_code,
+				'document_type'       => 'estamp',
+				'stamp_type'          => 'E_STAMP',
+				'sign_status'         => 'UNSIGNED',
+				'agreement_number'    => $agreement->agreement_number,
+				'agreement_path'      => $filePath,
+				'file_url'            => $fileUrl,
+				'uploaded_by_user_id' => Auth::id(),
+				'uploaded_by_role'    => 'hr_admin',
+			]);
+
+			DB::commit();
+		} catch (\Exception $e) {
+
+			DB::rollBack();
+
+			Log::error('Estamp upload failed', [
+				'candidate_id' => $candidate->id,
+				'error' => $e->getMessage()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Estamp upload failed'
+			], 500);
+		}
+
+		/* -------- Call API -------- */
+
+		try {
+
+			$payload = [
+				'agreement_id' => $agreement->agreement_number,
+				'file_url'     => $fileUrl
+			];
+
+			$ch = curl_init();
+
+			curl_setopt_array($ch, [
+				CURLOPT_URL => 'https://vnragro.com/agrisamvida/generated_signed_agreement.php',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_POST => true,
+				CURLOPT_POSTFIELDS => http_build_query($payload),
+			]);
+
+			curl_exec($ch);
+
+			curl_close($ch);
+		} catch (\Exception $e) {
+
+			Log::error('Estamp API error', [
+				'error' => $e->getMessage()
+			]);
+		}
+
+		return response()->json([
+			'success' => true,
+			'message' => 'Estamp uploaded successfully'
+		]);
 	}
 }

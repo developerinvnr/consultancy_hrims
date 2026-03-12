@@ -193,4 +193,23 @@ class S3Service
             abort(500, 'Unable to download file');
         }
     }
+
+    public function uploadAgreementDocument($file, $requisitionType, $category, $customPath = null)
+    {
+        $timestamp = now()->timestamp;
+        $originalName = $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+
+        $safeName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
+        $filename = "{$safeName}_{$timestamp}.{$extension}";
+
+        if ($customPath) {
+            $path = trim($customPath, '/') . '/' . $filename;
+        } else {
+            // Structure: Consultancy/Agreements/{Type}/{Category}/{filename}
+            $path = "Consultancy/Agreements/{$requisitionType}/{$category}/{$filename}";
+        }
+
+        return $this->uploadFile($file, $path);
+    }
 }

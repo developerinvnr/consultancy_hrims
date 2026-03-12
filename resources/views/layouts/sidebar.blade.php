@@ -160,6 +160,13 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
+               <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('salary.hr.*')" href="{{ route('salary.hr.review') }}">
+                        <i class="ri-shield-user-line"></i>
+                        <span>HR Salary Review</span>
+                    </a>
+                </li>
+
                 {{--<li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
                 <i class="ri-database-2-line"></i>

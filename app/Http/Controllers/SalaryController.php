@@ -25,17 +25,17 @@ class SalaryController extends Controller
 {
     public function index()
     {
-         $departments = CoreDepartment::orderBy('department_name')->get();
-         return view('hr.salary.index', compact('departments'));
+        $departments = CoreDepartment::orderBy('department_name')->get();
+        return view('hr.salary.index', compact('departments'));
     }
 
     // Update the process method in SalaryController
     public function process(Request $request)
     {
+        // dd($request->all());
         $validated = $request->validate([
             'month' => 'required|integer|between:1,12',
             'year'  => 'required|integer|min:2020|max:' . (date('Y') + 1),
-            'force' => 'sometimes|boolean',
 
             'candidate_id'   => 'sometimes|integer|exists:candidate_master,id',
             'candidate_ids'  => 'sometimes|array',
@@ -52,27 +52,56 @@ class SalaryController extends Controller
 
         $month = (int) $validated['month'];
         $year  = (int) $validated['year'];
-        $force = $validated['force'] ?? false;
 
         $requisitionType  = $validated['requisition_type'] ?? null;
 
         DB::beginTransaction();
 
         try {
+            $salaryMonthStart = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+            $salaryMonthEnd   = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
             // Build candidate query
-            $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
+            if (!empty($validated['candidate_ids'])) {
 
+                // Process only selected employees BUT still enforce eligibility rules
+                $query = CandidateMaster::whereIn('id', $validated['candidate_ids'])
+                    ->whereNotIn('id', function ($q) use ($month, $year) {
+                        $q->select('candidate_id')
+                            ->from('salary_processings')
+                            ->where('month', $month)
+                            ->where('year', $year);
+                    })
+                    ->whereIn('final_status', ['A', 'D'])
+                    ->where('pan_status_2', 'Operative')
+                    ->whereDate('contract_start_date', '<=', $salaryMonthEnd)
+                    ->where(function ($q) use ($salaryMonthStart) {
+                        $q->whereNull('contract_end_date')
+                            ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
+                    });
+            } else {
 
-            if ($requisitionType && $requisitionType !== 'All') {
-                $query->where('requisition_type', $requisitionType);
-            }
+                // Process all filtered employees
+                $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
+                    ->where('pan_status_2', 'Operative')
+                    ->whereNotIn('id', function ($q) use ($month, $year) {
+                        $q->select('candidate_id')
+                            ->from('salary_processings')
+                            ->where('month', $month)
+                            ->where('year', $year);
+                    })
+                    ->whereDate('contract_start_date', '<=', $salaryMonthEnd)
+                    ->where(function ($q) use ($salaryMonthStart) {
+                        $q->whereNull('contract_end_date')
+                            ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
+                    });
 
-            if ($request->filled('candidate_id')) {
-                $query->where('id', $validated['candidate_id']);
-            }
+                if ($requisitionType && $requisitionType !== 'All') {
+                    $query->where('requisition_type', $requisitionType);
+                }
 
-            if ($request->filled('candidate_ids')) {
-                $query->whereIn('id', $validated['candidate_ids']);
+                if ($request->filled('candidate_id')) {
+                    $query->where('id', $validated['candidate_id']);
+                }
             }
 
             $candidates = $query->get();
@@ -80,63 +109,69 @@ class SalaryController extends Controller
             if ($candidates->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No active candidates found'
-                ], 404);
+                    'message' => 'No party available to process'
+                ]);
             }
 
             $processed = 0;
             $skipped   = 0;
             $errors    = [];
             $arrearsIncluded = 0;
+            $skippedAttendance = 0;
+            $skippedExisting   = 0;
 
+            $arrears = DB::table('salary_arrears')
+                ->where('month', $month)
+                ->where('year', $year)
+                ->get()
+                ->keyBy('candidate_id');
+
+            $existingProcessed = SalaryProcessing::where('month', $month)
+                ->where('year', $year)
+                ->pluck('candidate_id')
+                ->flip();
             foreach ($candidates as $candidate) {
 
-                $existing = SalaryProcessing::where('candidate_id', $candidate->id)
-                    ->where('month', $month)
-                    ->where('year', $year)
-                    ->first();
-
-                if ($existing && $existing->processed_at && !$force) {
+                if (isset($existingProcessed[$candidate->id])) {
                     $skipped++;
+                    $skippedExisting++;
                     continue;
                 }
 
                 try {
-                    // Core salary calculation
+
                     $salaryData = SalaryCalculator::calculate($candidate, $month, $year);
 
-                    // Fetch arrear from DB
-                    $arrear = DB::table('salary_arrears')
-                        ->where('candidate_id', $candidate->id)
-                        ->where('month', $month)
-                        ->where('year', $year)
-                        ->first();
+                    if ($salaryData['paid_days'] == 0) {
+                        $skipped++;
+                        $skippedAttendance++;
+                        continue;
+                    }
 
-                    // Resolve arrears (priority based)
-                    $arrearAmount  = $arrear->arrear_amount ?? 0;
-                    $arrearDays    = $arrear->arrear_days ?? 0;
-                    $arrearRemarks = $arrear->arrear_remarks ?? null;
+                    $ar = $arrears[$candidate->id] ?? null;
+
+                    $arrearAmount  = $ar->arrear_amount ?? 0;
+                    $arrearDays    = $ar->arrear_days ?? 0;
+                    $arrearRemarks = $ar->arrear_remarks ?? null;
 
                     if ($arrearAmount > 0) {
                         $arrearsIncluded++;
                     }
 
-                    SalaryProcessing::updateOrCreate(
-                        [
-                            'candidate_id' => $candidate->id,
-                            'month'        => $month,
-                            'year'         => $year,
-                        ],
-                        array_merge($salaryData, [
-                            'arrear_amount'  => $arrearAmount,
-                            'arrear_days'    => $arrearDays,
-                            'arrear_remarks' => $arrearRemarks,
+                    SalaryProcessing::create(array_merge($salaryData, [
+                        'candidate_id' => $candidate->id,
+                        'month'        => $month,
+                        'year'         => $year,
 
-                            'status'         => 'processed',
-                            'processed_by'   => auth()->id(),
-                            'processed_at'   => now(),
-                        ])
-                    );
+                        'arrear_amount'  => $arrearAmount,
+                        'arrear_days'    => $arrearDays,
+                        'arrear_remarks' => $arrearRemarks,
+
+                        'status'         => 'processed',
+                        'payment_instruction' => 'pending',
+                        'processed_by'   => auth()->id(),
+                        'processed_at'   => now(),
+                    ]));
 
                     $processed++;
                 } catch (\Exception $e) {
@@ -147,13 +182,32 @@ class SalaryController extends Controller
                     ];
                 }
             }
-
             DB::commit();
+
+            $message = "Salary processing completed. Processed: {$processed}, Skipped: {$skipped}";
+
+            $details = [];
+
+            if ($skippedAttendance > 0) {
+                $details[] = "{$skippedAttendance} attendance missing";
+            }
+
+            if ($skippedExisting > 0) {
+                $details[] = "{$skippedExisting} already processed";
+            }
+
+            if (!empty($details)) {
+                $message .= " (" . implode(', ', $details) . ")";
+            }
+
+
+            if ($arrearsIncluded > 0) {
+                $message .= ", Arrears included: {$arrearsIncluded}";
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => "Salary processed. Processed: {$processed}, Skipped: {$skipped}" .
-                    ($arrearsIncluded ? ", Arrears included: {$arrearsIncluded}" : ''),
+                'message' => $message,
                 'processed' => $processed,
                 'skipped'   => $skipped,
                 'errors'    => $errors,
@@ -297,7 +351,12 @@ class SalaryController extends Controller
             $query->where('requisition_type', $requisitionType);
         }
 
-        $candidates = $query->get();
+        $candidates = $query->whereNotIn('id', function ($q) use ($month, $year) {
+            $q->select('candidate_id')
+                ->from('salary_processings')
+                ->where('month', $month)
+                ->where('year', $year);
+        })->get();
         //dd($salaryMonthEnd);
         $result = [];
 
@@ -308,40 +367,35 @@ class SalaryController extends Controller
             ->keyBy('candidate_id');
 
         foreach ($candidates as $candidate) {
-            // Check if already processed
-            $salary = SalaryProcessing::where('candidate_id', $candidate->id)
-                ->where('month', $month)
-                ->where('year', $year)
-                ->first();
-            $ar = $arrears[$candidate->id] ?? null;
-            if ($salary) {
-                // Already processed → use saved data
-                $row = $salary->toArray();
-                $row['candidate'] = $candidate;
-                $row['processed'] = true;
-            } else {
-                // Not processed → calculate preview
-                try {
-                    $calc = SalaryCalculator::calculate($candidate, $month, $year);
 
-                    $row = array_merge($calc, [
-                        'candidate_id' => $candidate->id,
-                        'candidate'    => $candidate,
-                        'processed'    => false,
-                         'arrear_amount' => $ar->arrear_amount ?? 0,
-        'arrear_days'   => $ar->arrear_days ?? 0,
-                    ]);
-                } catch (\Exception $e) {
-                    // Attendance missing etc.
-                    $row = [
-                        'candidate_id' => $candidate->id,
-                        'candidate'    => $candidate,
-                        'error'        => $e->getMessage(),
-                        'processed'    => false,
-                        'arrear_amount' => $ar->arrear_amount ?? 0,
-                        'arrear_days'   => $ar->arrear_days ?? 0,
-                    ];
-                }
+            $ar = $arrears[$candidate->id] ?? null;
+            $canProcess = $candidate->pan_status_2 === 'Operative';
+
+            try {
+
+                $calc = SalaryCalculator::calculate($candidate, $month, $year);
+
+                $row = array_merge($calc, [
+                    'candidate_id' => $candidate->id,
+                    'candidate'    => $candidate,
+                    'processed'    => false,
+                    'pan_status_2' => $candidate->pan_status_2,
+                    'can_process'  => $canProcess,
+                    'arrear_amount' => $ar->arrear_amount ?? 0,
+                    'arrear_days'  => $ar->arrear_days ?? 0,
+                ]);
+            } catch (\Exception $e) {
+
+                $row = [
+                    'candidate_id' => $candidate->id,
+                    'candidate'    => $candidate,
+                    'error'        => $e->getMessage(),
+                    'processed'    => false,
+                    'pan_status_2' => $candidate->pan_status_2,
+                    'can_process'  => $canProcess,
+                    'arrear_amount' => $ar->arrear_amount ?? 0,
+                    'arrear_days'  => $ar->arrear_days ?? 0,
+                ];
             }
 
             $result[] = $row;
@@ -371,8 +425,8 @@ class SalaryController extends Controller
     {
         $salary = SalaryProcessing::with('candidate')->findOrFail($id);
 
-        if ($salary->status !== 'processed') {
-            abort(403, 'Payslip can only be downloaded after salary is processed.');
+        if ($salary->status !== 'release') {
+            abort(403, 'Payslip available after payout release.');
         }
 
         $pdf = Pdf::loadView('hr.salary.payslip', compact('salary'))
@@ -731,39 +785,39 @@ class SalaryController extends Controller
         }
 
         $candidates = $query
-    ->leftJoin('salary_processings as sp', 'candidate_master.id', '=', 'sp.candidate_id')
-    ->select(
-        'candidate_master.id',
-        'candidate_master.candidate_code',
-        'candidate_master.candidate_name',
-        'candidate_master.contract_start_date',
-        'candidate_master.contract_end_date',
-        'candidate_master.last_working_date',
+            ->leftJoin('salary_processings as sp', 'candidate_master.id', '=', 'sp.candidate_id')
+            ->select(
+                'candidate_master.id',
+                'candidate_master.candidate_code',
+                'candidate_master.candidate_name',
+                'candidate_master.contract_start_date',
+                'candidate_master.contract_end_date',
+                'candidate_master.last_working_date',
 
-        DB::raw("SUM(CASE WHEN sp.month = 4 THEN sp.net_pay ELSE 0 END) as april"),
-        DB::raw("SUM(CASE WHEN sp.month = 5 THEN sp.net_pay ELSE 0 END) as may"),
-        DB::raw("SUM(CASE WHEN sp.month = 6 THEN sp.net_pay ELSE 0 END) as june"),
-        DB::raw("SUM(CASE WHEN sp.month = 7 THEN sp.net_pay ELSE 0 END) as july"),
-        DB::raw("SUM(CASE WHEN sp.month = 8 THEN sp.net_pay ELSE 0 END) as august"),
-        DB::raw("SUM(CASE WHEN sp.month = 9 THEN sp.net_pay ELSE 0 END) as september"),
-        DB::raw("SUM(CASE WHEN sp.month = 10 THEN sp.net_pay ELSE 0 END) as october"),
-        DB::raw("SUM(CASE WHEN sp.month = 11 THEN sp.net_pay ELSE 0 END) as november"),
-        DB::raw("SUM(CASE WHEN sp.month = 12 THEN sp.net_pay ELSE 0 END) as december"),
-        DB::raw("SUM(CASE WHEN sp.month = 1 THEN sp.net_pay ELSE 0 END) as january"),
-        DB::raw("SUM(CASE WHEN sp.month = 2 THEN sp.net_pay ELSE 0 END) as february"),
-        DB::raw("SUM(CASE WHEN sp.month = 3 THEN sp.net_pay ELSE 0 END) as march"),
-        DB::raw("SUM(sp.net_pay) as grand_total")
-    )
-    ->groupBy(
-        'candidate_master.id',
-        'candidate_master.candidate_code',
-        'candidate_master.candidate_name',
-        'candidate_master.contract_start_date',
-        'candidate_master.contract_end_date',
-        'candidate_master.last_working_date'
-    )
-    ->orderBy('candidate_master.candidate_code')
-    ->get();
+                DB::raw("SUM(CASE WHEN sp.month = 4 THEN sp.net_pay ELSE 0 END) as april"),
+                DB::raw("SUM(CASE WHEN sp.month = 5 THEN sp.net_pay ELSE 0 END) as may"),
+                DB::raw("SUM(CASE WHEN sp.month = 6 THEN sp.net_pay ELSE 0 END) as june"),
+                DB::raw("SUM(CASE WHEN sp.month = 7 THEN sp.net_pay ELSE 0 END) as july"),
+                DB::raw("SUM(CASE WHEN sp.month = 8 THEN sp.net_pay ELSE 0 END) as august"),
+                DB::raw("SUM(CASE WHEN sp.month = 9 THEN sp.net_pay ELSE 0 END) as september"),
+                DB::raw("SUM(CASE WHEN sp.month = 10 THEN sp.net_pay ELSE 0 END) as october"),
+                DB::raw("SUM(CASE WHEN sp.month = 11 THEN sp.net_pay ELSE 0 END) as november"),
+                DB::raw("SUM(CASE WHEN sp.month = 12 THEN sp.net_pay ELSE 0 END) as december"),
+                DB::raw("SUM(CASE WHEN sp.month = 1 THEN sp.net_pay ELSE 0 END) as january"),
+                DB::raw("SUM(CASE WHEN sp.month = 2 THEN sp.net_pay ELSE 0 END) as february"),
+                DB::raw("SUM(CASE WHEN sp.month = 3 THEN sp.net_pay ELSE 0 END) as march"),
+                DB::raw("SUM(sp.net_pay) as grand_total")
+            )
+            ->groupBy(
+                'candidate_master.id',
+                'candidate_master.candidate_code',
+                'candidate_master.candidate_name',
+                'candidate_master.contract_start_date',
+                'candidate_master.contract_end_date',
+                'candidate_master.last_working_date'
+            )
+            ->orderBy('candidate_master.candidate_code')
+            ->get();
 
         $months = [
             'april',
@@ -793,13 +847,13 @@ class SalaryController extends Controller
                 'name' => $candidate->candidate_name,
 
                 // NEW FIELDS
-                'contract_start_date' => $candidate->contract_start_date 
+                'contract_start_date' => $candidate->contract_start_date
                     ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : null,
 
-                'contract_end_date' => $candidate->contract_end_date 
+                'contract_end_date' => $candidate->contract_end_date
                     ? Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : null,
 
-                'termination_date' => $candidate->last_working_date 
+                'termination_date' => $candidate->last_working_date
                     ? Carbon::parse($candidate->last_working_date)->format('d-m-Y') : null,
 
                 'grand_total' => 0
@@ -895,5 +949,30 @@ class SalaryController extends Controller
             'success' => true,
             'message' => 'Payment status updated successfully.'
         ]);
+    }
+
+    public function hrReview()
+    {
+        return view('hr.salary.hr-review');
+    }
+
+    public function hrReviewList(Request $request)
+    {
+        $request->validate([
+            'month' => 'required',
+            'year' => 'required',
+            'type' => 'required'
+        ]);
+
+        $query = SalaryProcessing::with('candidate')
+            ->where('month', $request->month)
+            ->where('year', $request->year)
+            ->where('status', 'processed');
+
+        if ($request->type != 'all') {
+            $query->where('payment_instruction', $request->type);
+        }
+
+        return response()->json($query->get());
     }
 }

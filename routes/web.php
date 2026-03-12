@@ -140,6 +140,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/employee/{candidate}/upload-unsigned', [HrAdminController::class, 'uploadUnsignedAgreement'])->name('upload-unsigned');
             Route::post('/employee/{candidate}/upload-signed', [HrAdminController::class, 'uploadSignedAgreement'])->name('upload-signed');
             Route::get('/agreement/{agreement}/download', [HrAdminController::class, 'downloadAgreement'])->name('download-agreement');
+            Route::post('/employee/{candidate}/upload-estamp',[HrAdminController::class, 'uploadEstamp'])->name('upload-estamp');
         });
 
         Route::get('/document/{document}/download', [HrAdminController::class, 'downloadDocument'])
@@ -240,11 +241,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/get-active-candidates', [AttendanceController::class, 'getActiveCandidates'])->name('attendance.get-active-candidates');
         Route::post('/submit-sunday-work', [AttendanceController::class, 'submitSundayWork'])->name('attendance.submit-sunday-work');
         Route::get('/export', [AttendanceController::class, 'export'])->name('attendance.export');
-        
+
         Route::get('/sunday-requests', [AttendanceController::class, 'sundayRequests'])
-          ->name('attendance.sunday.requests');
+            ->name('attendance.sunday.requests');
         Route::post('/sunday-requests/update', [AttendanceController::class, 'updateSundayRequest'])
-          ->name('attendance.sunday.update');
+            ->name('attendance.sunday.update');
     });
 
     Route::prefix('my-team')->middleware(['auth'])->group(function () {
@@ -273,9 +274,18 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
     Route::get('/export-management-report', [SalaryController::class, 'exportManagementReport'])->name('salary.export.management.report');
 
     Route::get('/export', [SalaryController::class, 'exportExcel'])->name('salary.export');
-    Route::post('/save-arrear',[SalaryController::class,'saveArrear'])
-    ->name('salary.save.arrear');
+    Route::post('/save-arrear', [SalaryController::class, 'saveArrear'])
+        ->name('salary.save.arrear');
     Route::post('/update-arrear', [SalaryController::class, 'updateArrear'])->name('salary.update.arrear');
+
+    // Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
+    //     ->name('salary.toggle.payment');
+
+    Route::get('/hr-review', [SalaryController::class, 'hrReview'])
+        ->name('salary.hr.review');
+
+    Route::post('/hr-review/hrReviewList', [SalaryController::class, 'hrReviewList'])
+        ->name('salary.hr.review.list');
 
     Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
         ->name('salary.toggle.payment');
@@ -373,7 +383,7 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 
     Route::get('/tat', [ReportController::class, 'tat'])->name('tat');
     Route::get('/tat/export', [ReportController::class, 'tatExport'])->name('tat.export');
-    });
+});
 
 
 // Route::post('/test/agreement-api', function(Request $request) {

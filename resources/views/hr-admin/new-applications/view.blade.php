@@ -354,38 +354,56 @@
                     @if(!empty($agreementDocuments) && count($agreementDocuments) > 0)
                     <div class="mt-3 pt-2 border-top">
                         <h6 class="text-muted small mb-2">Agreement Documents</h6>
+
                         @foreach($agreementDocuments as $doc)
-                        <div class="d-flex justify-content-between align-items-center p-1 border rounded mb-1 {{ !$doc['has_file'] ? 'opacity-75' : '' }}">
+
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2 {{ !$doc['has_file'] ? 'opacity-75' : '' }}">
+
                             <div class="d-flex align-items-center">
-                                <i class="ri-file-contract-line me-1 {{ $doc['has_file'] ? 'text-success' : 'text-muted' }} fs-6"></i>
+                                <i class="ri-file-contract-line me-2 {{ $doc['has_file'] ? 'text-success' : 'text-muted' }}"></i>
+
                                 <div>
-                                    <small class="d-block {{ $doc['has_file'] ? 'text-dark' : 'text-muted' }}">
-                                        {{ $doc['stamp_type'] }} {{ $doc['sign_status'] }}
+                                    <small class="d-block fw-semibold">
+                                        {{ $doc['type'] }}
+                                    </small>
+
+                                    <small class="text-muted">
+                                        Status:
+                                        <span class="badge bg-light text-dark">
+                                            {{ $doc['sign_status'] }}
+                                        </span>
+
                                         @if(!empty($doc['agreement_number']))
-                                        <span class="text-muted">#{{ $doc['agreement_number'] }}</span>
+                                        <span class="ms-2">#{{ $doc['agreement_number'] }}</span>
                                         @endif
                                     </small>
                                 </div>
                             </div>
-                            <div class="btn-group btn-group-xs">
+
+                            <div class="btn-group btn-group-sm">
                                 @if($doc['has_file'] && $doc['s3_url'])
-                                <button class="btn btn-outline-primary btn-xs view-agreement-document-btn"
+
+                                <button class="btn btn-outline-primary view-agreement-document-btn"
                                     data-document-url="{{ $doc['s3_url'] }}"
                                     data-document-name="{{ $doc['file_name'] }}">
-                                    <i class="ri-eye-line fs-6"></i>
+                                    <i class="ri-eye-line"></i>
                                 </button>
+
                                 <a href="{{ $doc['s3_url'] }}"
                                     download="{{ $doc['file_name'] }}"
-                                    class="btn btn-outline-secondary btn-xs">
-                                    <i class="ri-download-line fs-6"></i>
+                                    class="btn btn-outline-secondary">
+                                    <i class="ri-download-line"></i>
                                 </a>
+
                                 @else
-                                <button class="btn btn-xs btn-light" disabled title="File not available">
-                                    <i class="ri-eye-off-line fs-6"></i>
+                                <button class="btn btn-light" disabled title="File not available">
+                                    <i class="ri-eye-off-line"></i>
                                 </button>
                                 @endif
                             </div>
+
                         </div>
+
                         @endforeach
                     </div>
                     @endif

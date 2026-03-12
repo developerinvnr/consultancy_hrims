@@ -265,6 +265,10 @@
                                             ->where('sign_status','UNSIGNED')
                                             ->first()
                                             )->agreement_number;
+
+                                            $hasEstamp = $candidate->agreementDocuments
+                                            ->where('document_type','estamp')
+                                            ->count() > 0;
                                             @endphp
 
 
@@ -273,6 +277,18 @@
                                                 class="btn btn-sm btn-primary" title="Edit Party Details">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
+
+                                            @if(!$hasEstamp)
+
+                                            <button type="button"
+                                                class="btn btn-sm btn-warning upload-estamp-btn"
+                                                data-candidate-id="{{ $candidate->id }}"
+                                                data-candidate-code="{{ $candidate->candidate_code }}"
+                                                data-candidate-name="{{ $candidate->candidate_name }}">
+                                                <i class="ri-file-upload-line"></i>
+                                            </button>
+
+                                            @endif
 
                                             <!-- Upload Signed Agreement Button (for Unsigned Agreement Uploaded status) -->
                                             @if($hasUnsigned && !$hasSigned)
@@ -285,7 +301,8 @@
                                                 <i class="ri-mail-line"></i>
                                             </button>
                                             @endif
-                                            @endif
+
+                                            @endif {{-- closes: @if($isProcessed && $candidate) --}}
                                         </div>
                                     </td>
                                 </tr>
@@ -321,146 +338,11 @@
 </div>
 
 <!-- Process Modal -->
-<div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Process Approved Application</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="processForm" action="{{ route('hr-admin.applications.process-modal') }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <input type="hidden" name="requisition_id" id="modalRequisitionId">
-                    <input type="hidden" name="requisition_type" id="modalRequisitionType">
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label-sm">Party</label>
-                                <input type="text" class="form-control form-control-sm" id="modalCandidateName" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label-sm">Current Reporting Manager</label>
-                                <input type="text" class="form-control form-control-sm" id="currentReporting" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label-sm">Current Reporting ID</label>
-                                <input type="text" class="form-control form-control-sm" id="currentManagerId" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h6>Change Reporting Manager</h6>
-                    <div class="mb-3">
-                        <label for="reporting_manager_employee_id" class="form-label-sm">Reporting Manager *</label>
-                        <select class="form-select form-select-sm select2-modal" id="reporting_manager_employee_id"
-                            name="reporting_manager_employee_id" required>
-                            <option value="">-- Select Reporting Manager --</option>
-                        </select>
-                        <small class="text-muted">Select the reporting manager from the department hierarchy</small>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="reporting_to" class="form-label">Reporting To Name *</label>
-                                <input type="text" class="form-control form-control-sm" id="reporting_to"
-                                    name="reporting_to" required readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="reporting_manager_id" class="form-label-sm">Reporting Manager ID *</label>
-                                <input type="text" class="form-control form-control-sm" id="reporting_manager_id"
-                                    name="reporting_manager_id" required readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="team_id" class="form-label small">
-                                Team <span class="text-danger">*</span>
-                            </label>
-
-                            <select name="team_id"
-                                id="team_id"
-                                class="form-select form-select-sm"
-                                style="border-color:#007bff;"
-                                required>
-                                <option value="">Select Team</option>
-                                <option value="11">TFA-CB</option>
-                                <option value="1">BTS-RnD FCzzz</option>
-                                <option value="2">Contractual</option>
-                                <option value="3">Marketing</option>
-                                <option value="4">PD VC+FC</option>
-                                <option value="5">Production VC KushDutt Sir</option>
-                                <option value="6">Production VC</option>
-                                <option value="7">QA VC+FC</option>
-                                <option value="8">RnD VC</option>
-                                <option value="9">Sales (P Srinivas Sir) 2</option>
-                                <option value="10">Sales (P Srinivas Sir)</option>
-                            </select>
-
-                            <small class="text-muted team-help-text">
-                                Select the appropriate team for this requisition.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="ri-save-line me-1"></i> Generate Party Code & Process
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Upload Signed Agreement Modal (from Email) -->
-<div class="modal fade" id="uploadSignedModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Upload Signed Agreement (from Email)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="uploadSignedEmailForm" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Candidate</label>
-                        <input type="text" class="form-control" id="signedCandidateInfo" readonly>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Agreement Number *</label>
-                        <input type="text" class="form-control" id="signedAgreementNumber" name="agreement_number" required
-                            placeholder="Enter agreement number" maxlength="100">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Signed Agreement File (PDF) *</label>
-                        <input type="file" class="form-control" name="agreement_file"
-                            accept=".pdf" required>
-                        <small class="text-muted">Maximum file size: 10MB</small>
-                    </div>
-
-                    <input type="hidden" name="candidate_id" id="signedCandidateId">
-                    <input type="hidden" name="source" value="email">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">Upload Signed Agreement</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+@include('hr.modals.process-modal')
+<!-- Upload Signed Agreement Modal -->
+@include('hr.modals.upload-signed-modal')
+<!-- upload estamp Modal -->
+@include('hr.modals.upload-estamp-modal')
 
 <!-- Toast Container -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
@@ -470,6 +352,13 @@
 @endsection
 
 @push('scripts')
+<script>
+    window.routes = {
+        uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate' => 'CANDIDATE_ID']) }}"
+    };
+</script>
+<script src="{{ asset('assets/js/hr-common.js') }}"></script>
+
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -486,229 +375,6 @@
             width: '100%'
         });
 
-        // Process Modal Show Event
-        $('#processModal').on('shown.bs.modal', function(event) {
-            let button = $(event.relatedTarget);
-            let requisitionId = button.data('requisition-id');
-            let candidateName = button.data('requisition-name');
-            let currentReporting = button.data('current-reporting');
-            let currentManagerId = button.data('current-manager-id');
-            let requisitionType = button.data('requisition-type');
-
-            let modal = $(this);
-            modal.find('#modalRequisitionId').val(requisitionId);
-            modal.find('#modalRequisitionType').val(requisitionType);
-            modal.find('#modalCandidateName').val(candidateName);
-            modal.find('#currentReporting').val(currentReporting);
-            modal.find('#currentManagerId').val(currentManagerId);
-
-            // Handle team selection based on requisition type
-            let teamSelect = $('#team_id');
-            let isTfaOrCb = ['TFA', 'CB'].includes(requisitionType);
-
-            if (isTfaOrCb) {
-                // For TFA/CB, disable other options and select TFA-CB
-                teamSelect.val('11').prop('disabled', false);
-                teamSelect.find('option:not([value="11"])').prop('disabled', true);
-                $('.team-help-text').text('Team is fixed for TFA / CB requisitions.');
-            } else {
-                // For Contractual, enable all options
-                teamSelect.val('').prop('disabled', false);
-                teamSelect.find('option').prop('disabled', false);
-                $('.team-help-text').text('Select the appropriate team for this Contractual requisition.');
-            }
-
-            // Rest of your existing code for loading managers...
-            let select = $('#reporting_manager_employee_id');
-            select.html('<option value="">Loading...</option>');
-            select.trigger('change');
-
-
-            // AJAX call to load managers
-            $.ajax({
-                url: '{{ url("hr-admin/applications/get-reporting-managers") }}/' + requisitionId,
-                type: 'GET',
-                success: function(response) {
-                    if (!response.success) {
-                        select.html('<option value="">No data found</option>');
-                        select.trigger('change');
-                        return;
-                    }
-
-                    let data = response.data;
-                    select.empty();
-                    select.append('<option value="">-- Select Reporting Manager --</option>');
-
-                    // Current manager
-                    if (data.current) {
-                        select.append(`
-                            <option value="${data.current.reporting_manager_employee_id}" selected>
-                                ${data.current.reporting_to} (${data.current.reporting_manager_employee_id}) - Current
-                            </option>
-                        `);
-
-                        $('#reporting_to').val(data.current.reporting_to);
-                        $('#reporting_manager_id').val(data.current.reporting_manager_employee_id);
-                    }
-
-                    // Managers
-                    if (data.managers?.length) {
-                        select.append('<optgroup label="Department Managers">');
-                        data.managers.forEach(m => {
-                            if (!data.current || m.employee_id != data.current.reporting_manager_employee_id) {
-                                select.append(`
-                                    <option value="${m.employee_id}">
-                                        ${m.emp_name} (${m.employee_id}) - ${m.emp_designation}
-                                    </option>
-                                `);
-                            }
-                        });
-                    }
-
-                    // Employees
-                    if (data.employees?.length) {
-                        select.append('<optgroup label="Department Employees">');
-                        data.employees.forEach(e => {
-                            if (!data.current || e.employee_id != data.current.reporting_manager_employee_id) {
-                                select.append(`
-                                    <option value="${e.employee_id}">
-                                        ${e.emp_name} (${e.employee_id}) - ${e.emp_designation}
-                                    </option>
-                                `);
-                            }
-                        });
-                    }
-
-                    select.trigger('change.select2');
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Failed to load reporting managers'
-                    });
-                }
-            });
-        });
-
-        // Update fields when dropdown changes
-        $('#reporting_manager_employee_id').on('change', function() {
-            let selectedText = $(this).find('option:selected').text();
-            let selectedValue = $(this).val();
-
-            if (selectedValue) {
-                let name = selectedText.split('(')[0].trim();
-                $('#reporting_to').val(name);
-                $('#reporting_manager_id').val(selectedValue);
-            }
-        });
-
-        // Submit process form
-        $('#processForm').on('submit', function(e) {
-            e.preventDefault();
-            let formData = $(this).serialize();
-
-            Swal.fire({
-                title: 'Process Employee?',
-                html: '<p>This will generate party code.</p>',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#198754',
-                confirmButtonText: 'Yes, process it',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return $.ajax({
-                        url: '{{ route("hr-admin.applications.process-modal") }}',
-                        type: 'POST',
-                        data: formData
-                    });
-                }
-            }).then((result) => {
-                if (result.isConfirmed && result.value?.success) {
-                    Swal.fire('Success', result.value.message, 'success')
-                        .then(() => location.reload());
-                } else if (result.isConfirmed) {
-                    Swal.fire('Error', result.value?.message || 'Something went wrong', 'error');
-                }
-            });
-        });
-
-        // Upload Signed Agreement Modal (from email)
-        $('.upload-signed-btn').on('click', function() {
-            const candidateId = $(this).data('candidate-id');
-            const candidateCode = $(this).data('candidate-code');
-            const candidateName = $(this).data('candidate-name');
-            const agreementNumber = $(this).data('agreement-number');
-
-            $('#signedCandidateInfo').val(`${candidateCode} - ${candidateName}`);
-            $('#signedCandidateId').val(candidateId);
-            $('#signedAgreementNumber').val(agreementNumber);
-
-            $('#uploadSignedModal').modal('show');
-        });
-
-        // Submit upload signed form
-        $('#uploadSignedEmailForm').on('submit', function(e) {
-            e.preventDefault();
-            submitAgreementForm($(this), '/hr-admin/agreement/{candidate}/upload-signed');
-        });
-
-        function submitAgreementForm(form, baseUrl) {
-            const candidateId = form.find('input[name="candidate_id"]').val();
-            const url = baseUrl.replace('{candidate}', candidateId);
-            const formData = new FormData(form[0]);
-
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                beforeSend: function() {
-                    form.find('button[type="submit"]').prop('disabled', true).html('<i class="ri-loader-4-line ri-spin"></i> Processing...');
-                },
-                success: function(response) {
-                    if (response.success) {
-                        showToast('success', response.message);
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        showToast('error', response.message || 'An error occurred');
-                        form.find('button[type="submit"]').prop('disabled', false).html('Upload Agreement');
-                    }
-                },
-                error: function(xhr) {
-                    let errorMessage = 'Failed to upload. Please try again.';
-                    if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        errorMessage = Object.values(xhr.responseJSON.errors).flat().join('<br>');
-                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    showToast('error', errorMessage);
-                    form.find('button[type="submit"]').prop('disabled', false).html('Upload Agreement');
-                }
-            });
-        }
-
-        function showToast(type, message) {
-            const toast = `<div class="toast align-items-center text-bg-${type} border-0" role="alert">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>`;
-
-            $('.toast-container').append(toast);
-            $('.toast').last().toast('show');
-
-            setTimeout(() => {
-                $('.toast').last().remove();
-            }, 5000);
-        }
     });
 </script>
 <style>
