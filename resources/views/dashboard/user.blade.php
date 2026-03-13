@@ -360,21 +360,21 @@
 
 							<li class="nav-item">
 								<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
-									href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
+									href="{{ url()->current() }}?req_tab=active">
 									Active
 								</a>
 							</li>
 
 							<li class="nav-item">
 								<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
-									href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
+									href="{{ url()->current() }}?req_tab=inactive">
 									Inactive
 								</a>
 							</li>
 
 							<li class="nav-item">
 								<a class="nav-link {{ $req_tab=='rejected'?'active':'' }}"
-									href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected']) }}">
+									href="{{ url()->current() }}?req_tab=rejected">
 									Rejected
 								</a>
 							</li>

@@ -215,50 +215,50 @@
 
 	<div>
 		<div class="fw-bold text-primary">{{ $stats['pipeline']['submission'] }}</div>
-		<small>Submitted</small>
-	</div>
+<small>Submitted</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-warning">{{ $stats['pipeline']['hr_verification'] }}</div>
-		<small>HR Verify</small>
-	</div>
+<div>
+	<div class="fw-bold text-warning">{{ $stats['pipeline']['hr_verification'] }}</div>
+	<small>HR Verify</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-info">{{ $stats['pipeline']['approval'] }}</div>
-		<small>Approval</small>
-	</div>
+<div>
+	<div class="fw-bold text-info">{{ $stats['pipeline']['approval'] }}</div>
+	<small>Approval</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-secondary">{{ $stats['pipeline']['agreement_pending'] }}</div>
-		<small>Agreement</small>
-	</div>
+<div>
+	<div class="fw-bold text-secondary">{{ $stats['pipeline']['agreement_pending'] }}</div>
+	<small>Agreement</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-primary">{{ $stats['pipeline']['unsigned_uploaded'] }}</div>
-		<small>Unsigned</small>
-	</div>
+<div>
+	<div class="fw-bold text-primary">{{ $stats['pipeline']['unsigned_uploaded'] }}</div>
+	<small>Unsigned</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-success">{{ $stats['pipeline']['signed_uploaded'] }}</div>
-		<small>Signed</small>
-	</div>
+<div>
+	<div class="fw-bold text-success">{{ $stats['pipeline']['signed_uploaded'] }}</div>
+	<small>Signed</small>
+</div>
 
-	<i class="ri-arrow-right-line"></i>
+<i class="ri-arrow-right-line"></i>
 
-	<div>
-		<div class="fw-bold text-dark">{{ $stats['pipeline']['completed'] }}</div>
-		<small>Completed</small>
-	</div>
+<div>
+	<div class="fw-bold text-dark">{{ $stats['pipeline']['completed'] }}</div>
+	<small>Completed</small>
+</div>
 
 </div>--}}
 
@@ -373,21 +373,21 @@
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
+								href="{{ url()->current() }}?req_tab=active">
 								Active
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
+								href="{{ url()->current() }}?req_tab=inactive">
 								Inactive
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='rejected'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected']) }}">
+								href="{{ url()->current() }}?req_tab=rejected">
 								Rejected
 							</a>
 						</li>
