@@ -425,7 +425,7 @@ class SalaryController extends Controller
     {
         $salary = SalaryProcessing::with('candidate')->findOrFail($id);
 
-        if ($salary->status !== 'release') {
+        if ($salary->payment_instruction !== 'release') {
             abort(403, 'Payslip available after payout release.');
         }
 
@@ -924,33 +924,62 @@ class SalaryController extends Controller
             'remark'    => 'required|string|max:500'
         ]);
 
-        $salary = SalaryProcessing::findOrFail($request->salary_id);
+        DB::beginTransaction();
 
-        if ($salary->status !== 'processed') {
+        try {
+
+            $salary = SalaryProcessing::findOrFail($request->salary_id);
+
+            if ($salary->status !== 'processed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Salary must be processed first.'
+                ], 400);
+            }
+
+            if ($request->action === 'hold') {
+
+                $salary->payment_instruction = 'hold';
+                $salary->hr_hold_remark = $request->remark;
+                $salary->held_at = now();
+            }
+
+            if ($request->action === 'release') {
+
+                $batchId = DB::table('payout_batches')->insertGetId([
+                    'month'         => $salary->month,
+                    'year'          => $salary->year,
+                    'batch_no'      => 'BATCH-' . date('dmY'),
+                    'total_records' => 1,
+                    'total_amount'  => $salary->net_pay,
+                    'created_by'    => auth()->id(),
+                    'created_at'    => now()
+                ]);
+
+                $salary->payment_instruction = 'release';
+                $salary->hr_release_remark   = $request->remark;
+                $salary->released_at         = now();
+                $salary->batch_id            = $batchId;
+            }
+
+            $salary->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment status updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Salary must be processed first.'
-            ], 400);
+                'message' => $e->getMessage()
+            ]);
         }
-
-        if ($request->action === 'hold') {
-            $salary->payment_instruction = 'hold';
-            $salary->hr_hold_remark = $request->remark;
-            $salary->held_at = now();
-        } else {
-            $salary->payment_instruction = 'release';
-            $salary->hr_release_remark = $request->remark;
-            $salary->released_at = now();
-        }
-
-        $salary->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment status updated successfully.'
-        ]);
     }
-
     public function hrReview()
     {
         return view('hr.salary.hr-review');
@@ -974,5 +1003,57 @@ class SalaryController extends Controller
         }
 
         return response()->json($query->get());
+    }
+
+    public function releaseBatch(Request $request)
+    {
+
+        $request->validate([
+            'salary_ids' => 'required|array'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $salaries = SalaryProcessing::whereIn('id', $request->salary_ids)->get();
+
+            $totalAmount = $salaries->sum('net_pay');
+
+            $batch = DB::table('payout_batches')->insertGetId([
+
+                'month' => $request->month,
+                'year' => $request->year,
+                'batch_no' => 'BATCH-' . date('dmY'),
+                'total_records' => count($request->salary_ids),
+                'total_amount' => $totalAmount,
+                'created_by' => auth()->id(),
+                'created_at' => now()
+
+            ]);
+
+            foreach ($salaries as $salary) {
+
+                $salary->payment_instruction = 'release';
+                $salary->batch_id = $batch;
+                $salary->released_at = now();
+                $salary->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Batch released successfully'
+            ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }

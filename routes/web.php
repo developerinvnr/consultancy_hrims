@@ -281,14 +281,13 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
     // Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
     //     ->name('salary.toggle.payment');
 
-    Route::get('/hr-review', [SalaryController::class, 'hrReview'])
-        ->name('salary.hr.review');
+    Route::get('/hr-review', [SalaryController::class, 'hrReview'])->name('salary.hr.review');
 
-    Route::post('/hr-review/hrReviewList', [SalaryController::class, 'hrReviewList'])
-        ->name('salary.hr.review.list');
+    Route::post('/hr-review/hrReviewList', [SalaryController::class, 'hrReviewList'])->name('salary.hr.review.list');
 
-    Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])
-        ->name('salary.toggle.payment');
+    Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])->name('salary.toggle.payment');
+
+    Route::post('/release-batch',[SalaryController::class,'releaseBatch'])->name('salary.release.batch');
 });
 
 
