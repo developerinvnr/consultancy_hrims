@@ -360,7 +360,7 @@
 
     };
 </script>
-<script src="{{ asset('assets/js/hr-common.js') }}"></script>
+<script src="{{ asset('assets/js/hr-common.js') }}?v={{ time() }}"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
