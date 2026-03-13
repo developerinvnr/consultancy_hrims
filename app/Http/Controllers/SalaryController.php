@@ -148,12 +148,14 @@ class SalaryController extends Controller
                     $panData = \App\Services\PanVerificationService::verify($candidate->pan_no);
                     if ($panData) {
 
-                        $panStatus = $panData['individual_tax_compliance_status'] ?? null;
+                    $panStatus = $panData['individual_tax_compliance_status'] ?? null;
+                        $isValid = $panData['is_valid'] ?? false;
                         $aadhaarStatus = $panData['aadhaar_seeding_status'] ?? null;
 
                         if ($panStatus === 'Operative') {
 
                             $candidate->update([
+                                'pan_verification_status' => $isValid ? 'Valid' : 'Invalid',
                                 'pan_status_2' => 'Operative',
                                 'pan_aadhaar_link_status' => $aadhaarStatus
                             ]);
