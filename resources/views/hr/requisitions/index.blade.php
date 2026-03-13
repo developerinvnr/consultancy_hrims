@@ -137,7 +137,7 @@
                                         $status = $requisition->status;
 
                                         // change only display text
-                                        $displayStatus = $status === 'Unsigned Agreement Uploaded'
+                                        $displayStatus = $status === 'Unsigned Agreement Created'
                                         ? 'Unsigned Agreement Created'
                                         : $status;
 
@@ -150,7 +150,7 @@
                                         'Processed' => 'primary',
                                         'Agreement Pending' => 'secondary',
                                         'Completed' => 'success',
-                                        'Unsigned Agreement Uploaded' => 'info'
+                                        'Unsigned Agreement Created' => 'info'
                                         ];
 
                                         $color = $statusColors[$status] ?? 'secondary';
@@ -183,13 +183,13 @@
 
                                         $status = $candidate->candidate_status;
 
-                                        $displayStatus = $status == 'Unsigned Agreement Uploaded'
+                                        $displayStatus = $status == 'Unsigned Agreement Created'
                                         ? 'Unsigned Agreement Created'
                                         : $status;
 
                                         $colors = [
                                         'Agreement Pending'=>'warning',
-                                        'Unsigned Agreement Uploaded'=>'info',
+                                        'Unsigned Agreement Created'=>'info',
                                         'Signed Agreement Uploaded'=>'primary',
                                         'Active'=>'success',
                                         'Inactive'=>'danger'

@@ -422,7 +422,7 @@
 										'Processed' => 'secondary',
 										'Rejected' => 'dark',
 										'Hr Verified' => 'success',
-										'Unsigned Agreement Uploaded' => 'primary',
+										'Unsigned Agreement Created' => 'primary',
 										'Agreement Completed' => 'success'
 										];
 										@endphp
@@ -443,7 +443,7 @@
 
 											<!-- ADD THIS - Agreement View Button for submitters -->
 											@if(Auth::user()->id == $req->submitted_by_user_id &&
-											in_array($req->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
+											in_array($req->status, ['Unsigned Agreement Created', 'Signed Agreement Uploaded', 'Agreement Completed']))
 											<a href="{{ route('submitter.agreement.view', $req) }}"
 												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
 												title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">

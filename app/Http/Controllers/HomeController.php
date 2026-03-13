@@ -40,7 +40,7 @@ class HomeController extends Controller
     private function hrAdminDashboard(Request $request)
     {
         $reqTab = $request->get('req_tab', 'status');
-         $expTab = $request->get('exp_tab', 'exp30');
+        $expTab = $request->get('exp_tab', 'exp30');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy']);
@@ -132,7 +132,7 @@ class HomeController extends Controller
 
                 case 'upload_signed':
                     $query->whereHas('candidate', function ($q) {
-                        $q->where('candidate_status', 'Unsigned Agreement Uploaded');
+                        $q->where('candidate_status', 'Unsigned Agreement Created');
                     });
                     break;
 
@@ -163,7 +163,7 @@ class HomeController extends Controller
             'approved' => ManpowerRequisition::where(function ($query) {
                 $query->where('status', 'Approved')
                     ->orWhere('status', 'Agreement Pending')
-                    ->orWhere('status', 'Unsigned Agreement Uploaded')
+                    ->orWhere('status', 'Unsigned Agreement Created')
                     ->orWhere('status', 'Agreement Completed');
             })->count(),
             'rejected' => ManpowerRequisition::where('status', 'Rejected')->count(),
@@ -172,7 +172,7 @@ class HomeController extends Controller
 
             // Agreement Workflow Stats
             'agreement_pending' => ManpowerRequisition::where('status', 'Agreement Pending')->count(),
-            'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Uploaded')->count(),
+            'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Created')->count(),
             'agreement_completed' => ManpowerRequisition::where('status', 'Agreement Completed')->count(),
 
             // Candidate Master Stats
@@ -294,6 +294,47 @@ class HomeController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
+        // Active candidates bifurcation by requisition type
+        $stats['active_by_type'] = CandidateMaster::select(
+            'requisition_type',
+            DB::raw('count(*) as count')
+        )->where('candidate_status', 'Active')
+            ->groupBy('requisition_type')
+            ->pluck('count', 'requisition_type')
+            ->toArray();
+
+        // $stats['pipeline'] = [
+
+        //     'submission' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
+
+        //     'hr_verification' => ManpowerRequisition::whereIn('status', [
+        //         'Hr Verified',
+        //         'Correction Required'
+        //     ])->count(),
+
+        //     'approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
+
+        //     'agreement_pending' => ManpowerRequisition::whereIn('status', [
+        //         'Approved',
+        //         'Agreement Pending'
+        //     ])->count(),
+
+        //     'unsigned_uploaded' => CandidateMaster::where(
+        //         'candidate_status',
+        //         'Unsigned Agreement Created'
+        //     )->count(),
+
+        //     'signed_uploaded' => CandidateMaster::where(
+        //         'candidate_status',
+        //         'Signed Agreement Uploaded'
+        //     )->count(),
+
+        //     'completed' => ManpowerRequisition::whereIn('status', [
+        //         'Agreement Completed',
+        //         'Completed'
+        //     ])->count(),
+        // ];
+
         $today = Carbon::today();
 
         $expiry = [
@@ -315,7 +356,7 @@ class HomeController extends Controller
 
         ];
 
-        return view('dashboard.hr-admin',compact('stats','recent_requisitions','expiry'))->with(['req_tab' => $reqTab,'exp_tab' => $expTab]);
+        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
@@ -377,7 +418,7 @@ class HomeController extends Controller
         }
 
         $tab = $request->get('req_tab', 'status');
-        $expTab = $request->get('exp_tab', 'exp30');          
+        $expTab = $request->get('exp_tab', 'exp30');
         $query = ManpowerRequisition::with(['submittedBy', 'candidate'])
             ->where(function ($q) use ($user, $isApprover) {
 
@@ -480,7 +521,7 @@ class HomeController extends Controller
                 ->where(function ($query) {
                     $query->where('status', 'Approved')
                         ->orWhere('status', 'Agreement Pending')
-                        ->orWhere('status', 'Unsigned Agreement Uploaded')
+                        ->orWhere('status', 'Unsigned Agreement Created')
                         ->orWhere('status', 'Agreement Completed')
                         ->orWhere('status', 'Completed');
                 })->count(),
@@ -491,7 +532,7 @@ class HomeController extends Controller
             'agreement_pending' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
                 ->where('status', 'Agreement Pending')->count(),
             'unsigned_uploaded' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
-                ->where('status', 'Unsigned Agreement Uploaded')->count(),
+                ->where('status', 'Unsigned Agreement Created')->count(),
             'agreement_completed' => ManpowerRequisition::where('submitted_by_user_id', $user->id)
                 ->where('status', 'Agreement Completed')->count(),
             'processed' => ManpowerRequisition::where('submitted_by_user_id', $user->id)

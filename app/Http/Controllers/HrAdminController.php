@@ -1132,19 +1132,19 @@ class HrAdminController extends Controller
 
 			// Update candidate (ONLY agreement_id)
 			$candidate->update([
-				'candidate_status' => 'Unsigned Agreement Uploaded',
+				'candidate_status' => 'Unsigned Agreement Created',
 				'final_status'     => 'A',
 			]);
 
 			// Update requisition
 			$requisition->update([
-				'status' => 'Unsigned Agreement Uploaded',
+				'status' => 'Unsigned Agreement Created',
 				'processing_date' => now(),
 			]);
 
 			// Update candidate status
 			$candidate->update([
-				'candidate_status' => 'Unsigned Agreement Uploaded',
+				'candidate_status' => 'Unsigned Agreement Created',
 			]);
 
 			DB::commit();
@@ -1527,7 +1527,7 @@ class HrAdminController extends Controller
 	 */
 	public function showVerifySigned(CandidateMaster $candidate)
 	{
-		if ($candidate->candidate_status !== 'Unsigned Agreement Uploaded') {
+		if ($candidate->candidate_status !== 'Unsigned Agreement Created') {
 			return redirect()->route('hr-admin.applications.approved')
 				->with('error', 'Cannot verify agreement for this employee');
 		}
@@ -1626,7 +1626,7 @@ class HrAdminController extends Controller
 		$candidates = $query->paginate(20);
 		$statusOptions = [
 			'Agreement Pending' => 'Agreement Pending',
-			'Unsigned Agreement Uploaded' => 'Unsigned Agreement Uploaded',
+			'Unsigned Agreement Created' => 'Unsigned Agreement Created',
 			'Agreement Completed' => 'Agreement Completed'
 		];
 
@@ -2558,7 +2558,7 @@ class HrAdminController extends Controller
 
 				$changes['unsigned_agreement_uploaded'] = [
 					'old' => 'Previous/None',
-					'new' => 'New unsigned agreement uploaded'
+					'new' => 'New unsigned agreement created'
 				];
 			}
 
@@ -2796,7 +2796,7 @@ class HrAdminController extends Controller
 			// 		// Update candidate with new agreement number
 			// 		$candidate->update([
 			// 			'agreement_number' => $agreementId,
-			// 			'candidate_status' => 'Unsigned Agreement Uploaded',
+			// 			'candidate_status' => 'Unsigned Agreement Created',
 			// 		]);
 
 			// 		// Log agreement generation in history

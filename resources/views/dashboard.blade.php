@@ -138,7 +138,7 @@
                                                     'Processed' => 'secondary',
                                                     'Rejected' => 'dark',
                                                     'Hr Verified' => 'success',
-                                                    'Unsigned Agreement Uploaded' => 'primary',
+                                                    'Unsigned Agreement Created' => 'primary',
                                                     'Signed Agreement Uploaded' => 'info',
                                                     'Agreement Completed' => 'success'
                                                 ];
@@ -200,7 +200,7 @@
             </a>
             
             <!-- View/Download Unsigned Agreement -->
-            @if($req->status == 'Unsigned Agreement Uploaded')
+            @if($req->status == 'Unsigned Agreement Created')
                 <a href="{{ route('submitter.agreement.view', $req) }}" 
                    class="btn btn-sm btn-outline-primary" title="View Agreement">
                     <i class="ri-file-text-line"></i>
@@ -249,7 +249,7 @@
                                                     @endif
                                                     
                                                     <!-- Upload Signed Agreement Button -->
-                                                    @if($req->status == 'Unsigned Agreement Uploaded')
+                                                    @if($req->status == 'Unsigned Agreement Created')
                                                         <a href="{{ route('hr-admin.agreement.upload-signed', $req) }}" 
                                                         class="btn btn-sm btn-outline-info" title="Upload Signed Agreement">
                                                             <i class="ri-file-signature-line"></i>
@@ -257,7 +257,7 @@
                                                     @endif
                                                     
                                                     <!-- Manage Agreement Button -->
-                                                    @if(in_array($req->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
+                                                    @if(in_array($req->status, ['Unsigned Agreement Created', 'Signed Agreement Uploaded', 'Agreement Completed']))
                                                         <a href="{{ route('hr-admin.agreement.management', $req) }}" 
                                                         class="btn btn-sm btn-outline-warning" title="Manage Agreement">
                                                             <i class="ri-file-settings-line"></i>
@@ -276,7 +276,7 @@
                                                 @endif
                                                 
                                                 <!-- Submitter Upload Button -->
-                                                @if(Auth::user()->id == $req->submitted_by_user_id && $req->status == 'Unsigned Agreement Uploaded')
+                                                @if(Auth::user()->id == $req->submitted_by_user_id && $req->status == 'Unsigned Agreement Created')
                                                     <a href="{{ route('submitter.agreement.upload-signed', $req) }}" 
                                                     class="btn btn-sm btn-outline-success" title="Upload Signed Agreement">
                                                         <i class="ri-file-upload-line"></i>

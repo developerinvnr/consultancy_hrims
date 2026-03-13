@@ -159,7 +159,7 @@
                                             @endif
 
                                             <!-- View/Download Unsigned Agreement -->
-                                            @if(in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed']))
+                                            @if(in_array($requisition->status, ['Unsigned Agreement Created', 'Signed Agreement Uploaded', 'Agreement Completed']))
                                             <a href="{{ route('submitter.agreement.view', $requisition) }}"
                                                 class="btn btn-sm btn-{{ $requisition->status == 'Agreement Completed' ? 'success' : 'primary' }}"
                                                 title="{{ $requisition->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">

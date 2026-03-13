@@ -26,7 +26,7 @@ class SubmitterController extends Controller
 		}
 
 
-		if (!in_array($requisition->status, ['Unsigned Agreement Uploaded', 'Signed Agreement Uploaded', 'Agreement Completed'])) {
+		if (!in_array($requisition->status, ['Unsigned Agreement Created', 'Signed Agreement Uploaded', 'Agreement Completed'])) {
 			return redirect()->route('dashboard')->with('error', 'No agreement available.');
 		}
 
@@ -128,7 +128,7 @@ class SubmitterController extends Controller
 		}
 
 		/* ---------------- STATUS CHECK ---------------- */
-		if ($requisition->status !== 'Unsigned Agreement Uploaded') {
+		if ($requisition->status !== 'Unsigned Agreement Created') {
 			return response()->json([
 				'success' => false,
 				'message' => 'Cannot upload signed agreement at this stage.'
