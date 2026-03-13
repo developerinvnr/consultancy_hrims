@@ -9,13 +9,33 @@ class SalaryProcessing extends Model
     protected $table = 'salary_processings';
 
     protected $fillable = [
-        'candidate_id', 'month', 'year',
-        'monthly_salary', 'per_day_salary','total_days',
-        'paid_days', 'cl_days', 'absent_days',
+        'candidate_id',
+        'month',
+        'year',
+        'monthly_salary',
+        'per_day_salary',
+        'total_days',
+        'paid_days',
+        'cl_days',
+        'absent_days',
         'approved_sundays',
-        'deduction_amount', 'extra_amount', 'net_pay',
-        'arrear_amount', 'arrear_days', 'arrear_remarks',
-        'status', 'processed_by', 'processed_at'
+        'deduction_amount',
+        'extra_amount',
+        'net_pay',
+        'arrear_amount',
+        'arrear_days',
+        'arrear_remarks',
+        'status',
+        'payment_instruction',
+        'batch_id',
+
+        'hr_hold_remark',
+        'held_at',
+
+        'hr_release_remark',
+        'released_at',
+        'processed_by',
+        'processed_at'
     ];
 
     protected $casts = [

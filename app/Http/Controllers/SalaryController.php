@@ -130,6 +130,20 @@ class SalaryController extends Controller
                 ->where('year', $year)
                 ->pluck('candidate_id')
                 ->flip();
+
+            $agreementSignedMap = DB::table('agreement_documents')
+                ->where('document_type', 'agreement')
+                ->where('sign_status', 'SIGNED')
+                ->pluck('candidate_id')
+                ->flip();
+            $courierReceivedMap = DB::table('agreement_couriers as ac')
+                ->join('agreement_documents as ad', 'ac.agreement_document_id', '=', 'ad.id')
+                ->whereNotNull('ac.received_date')
+                ->pluck('ad.candidate_id')
+                ->flip();
+
+
+
             foreach ($candidates as $candidate) {
 
                 if (isset($existingProcessed[$candidate->id])) {
@@ -158,6 +172,42 @@ class SalaryController extends Controller
                         $arrearsIncluded++;
                     }
 
+                    $agreementSigned = isset($agreementSignedMap[$candidate->id]);
+                    $courierReceived = isset($courierReceivedMap[$candidate->id]);
+                    $fileCreated = !empty($candidate->file_created_date);
+
+                    $agreementSigned = isset($agreementSignedMap[$candidate->id]);
+                    $courierReceived = isset($courierReceivedMap[$candidate->id]);
+                    $fileCreated = !empty($candidate->file_created_date);
+
+                    // \Log::info('Salary Processing Debug', [
+                    //     'candidate_id' => $candidate->id,
+                    //     'candidate_code' => $candidate->candidate_code,
+                    //     'agreementSigned' => $agreementSigned,
+                    //     'courierReceived' => $courierReceived,
+                    //     'fileCreated' => $fileCreated
+                    // ]);
+
+                    $autoHold = false;
+                    $holdReason = null;
+
+                    if (!$agreementSigned) {
+                        $autoHold = true;
+                        $holdReason = 'Agreement not signed';
+                    } elseif (!$courierReceived) {
+                        $autoHold = true;
+                        $holdReason = 'Courier not received';
+                    } elseif (!$fileCreated) {
+                        $autoHold = true;
+                        $holdReason = 'File not created yet';
+                    }
+
+                    // \Log::info('Salary Hold Decision', [
+                    //     'candidate_id' => $candidate->id,
+                    //     'autoHold' => $autoHold,
+                    //     'holdReason' => $holdReason
+                    // ]);
+
                     SalaryProcessing::create(array_merge($salaryData, [
                         'candidate_id' => $candidate->id,
                         'month'        => $month,
@@ -168,7 +218,9 @@ class SalaryController extends Controller
                         'arrear_remarks' => $arrearRemarks,
 
                         'status'         => 'processed',
-                        'payment_instruction' => 'pending',
+                        'payment_instruction' => $autoHold ? 'hold' : 'pending',
+                        'hr_hold_remark' => $autoHold ? $holdReason : null,
+                        'held_at' => $autoHold ? now() : null,
                         'processed_by'   => auth()->id(),
                         'processed_at'   => now(),
                     ]));
@@ -525,18 +577,18 @@ class SalaryController extends Controller
         $candidates = $query->orderBy('candidate_code')->get();
 
         // Debug: Check what data is loaded
-        foreach ($candidates as $candidate) {
-            \Log::info('Candidate Data:', [
-                'id' => $candidate->id,
-                'code' => $candidate->candidate_code,
-                'function_id' => $candidate->function_id,
-                'function_relation' => $candidate->function,
-                'vertical_id' => $candidate->vertical_id,
-                'vertical_relation' => $candidate->vertical,
-                'department_id' => $candidate->department_id,
-                'department_relation' => $candidate->department,
-            ]);
-        }
+        // foreach ($candidates as $candidate) {
+        //     \Log::info('Candidate Data:', [
+        //         'id' => $candidate->id,
+        //         'code' => $candidate->candidate_code,
+        //         'function_id' => $candidate->function_id,
+        //         'function_relation' => $candidate->function,
+        //         'vertical_id' => $candidate->vertical_id,
+        //         'vertical_relation' => $candidate->vertical,
+        //         'department_id' => $candidate->department_id,
+        //         'department_relation' => $candidate->department,
+        //     ]);
+        // }
 
         $result = [];
 
@@ -550,12 +602,12 @@ class SalaryController extends Controller
             $territoryName = $candidate->territoryRef?->territory_name ?? '';
 
 
-            \Log::info('BU-Zone-Region-Territory', [
-                'bu' => $candidate->businessUnit,
-                'zone' => $candidate->zone,
-                'region' => $candidate->region,
-                'territory' => $candidate->territory,
-            ]);
+            // \Log::info('BU-Zone-Region-Territory', [
+            //     'bu' => $candidate->businessUnit,
+            //     'zone' => $candidate->zone,
+            //     'region' => $candidate->region,
+            //     'territory' => $candidate->territory,
+            // ]);
 
             //dd($buName);
             // Debug the relationships

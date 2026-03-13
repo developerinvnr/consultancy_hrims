@@ -44,6 +44,7 @@ class CandidateMaster extends Model
         'reporting_manager_address',
         'contract_start_date',
         'contract_duration',
+        'file_created_date',
         'contract_end_date',
         'last_working_date',
         'remuneration_per_month',

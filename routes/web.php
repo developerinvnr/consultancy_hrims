@@ -153,6 +153,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/party/{candidate}/edit', [HrAdminController::class, 'editParty'])->name('edit-party');
         Route::put('/party/{candidate}/update', [HrAdminController::class, 'updateParty'])->name('update-party');
         Route::post('/party/{candidate}/add-document', [HrAdminController::class, 'addPartyDocument'])->name('add-document');
+        
+        Route::post('/candidate/file-created',[HrAdminController::class, 'markFileCreated'])->name('candidate.file-created');
     });
 
     Route::prefix('approver')->name('approver.')->group(function () {
@@ -224,8 +226,7 @@ Route::prefix('hr-admin/agreement')->name('hr-admin.agreement.')->middleware(['a
     Route::post(
         '/{requisition}/courier-received/{agreement}',
         [SubmitterController::class, 'markCourierReceived']
-    )
-        ->name('courier-received');
+    )->name('courier-received');
 });
 
 // Attendance Routes

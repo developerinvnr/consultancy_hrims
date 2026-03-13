@@ -143,11 +143,9 @@ class HrAdminController extends Controller
 
 					if ($doc->document_type === 'agreement' && $doc->stamp_type === 'NONE') {
 						$label = 'Generated Agreement';
-					}
-					elseif ($doc->document_type === 'agreement' && $doc->stamp_type === 'E_STAMP') {
+					} elseif ($doc->document_type === 'agreement' && $doc->stamp_type === 'E_STAMP') {
 						$label = 'Generated Agreement (E-Stamp Format)';
-					}
-					elseif ($doc->document_type === 'estamp') {
+					} elseif ($doc->document_type === 'estamp') {
 						$label = 'Uploaded E-Stamp Page';
 					}
 
@@ -3017,6 +3015,28 @@ class HrAdminController extends Controller
 		return response()->json([
 			'success' => true,
 			'message' => 'Estamp uploaded successfully'
+		]);
+	}
+
+	public function markFileCreated(Request $request)
+	{
+		if (!auth()->user()->hasRole('hr_admin')) {
+			abort(403);
+		}
+
+		$request->validate([
+			'candidate_id' => 'required|exists:candidate_master,id'
+		]);
+
+		$candidate = CandidateMaster::findOrFail($request->candidate_id);
+
+		$candidate->update([
+			'file_created_date' => now()
+		]);
+
+		return response()->json([
+			'success' => true,
+			'message' => 'File created successfully'
 		]);
 	}
 }

@@ -284,9 +284,6 @@ class DocumentController extends Controller
 	/**
 	 * Process Aadhaar card document (optional)
 	 */
-	/**
-	 * Process Aadhaar card document (optional)
-	 */
 	public function processAadhaarCard(Request $request, S3Service $s3Service)
 	{
 		$filePath = null;

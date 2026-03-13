@@ -573,6 +573,16 @@
 											</button>
 											@endif
 
+											@if($courierDetails && $courierDetails->received_date && !$candidate->file_created_date)
+
+											<button
+												class="btn btn-sm btn-success create-file-btn"
+												data-candidate-id="{{ $candidate->id }}">
+												<i class="ri-folder-add-line"></i>
+											</button>
+
+											@endif
+
 											@if($candidate)
 											@php
 											$hasUnsigned = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
@@ -591,22 +601,22 @@
 											->value('agreement_number');
 
 											$hasEstamp = $candidate->agreementDocuments
-                                            ->where('document_type','estamp')
-                                            ->count() > 0;
+											->where('document_type','estamp')
+											->count() > 0;
 											@endphp
 
 
-										@if(!$hasEstamp)
+											@if(!$hasEstamp)
 
-                                            <button type="button"
-                                                class="btn btn-sm btn-warning upload-estamp-btn"
-                                                data-candidate-id="{{ $candidate->id }}"
-                                                data-candidate-code="{{ $candidate->candidate_code }}"
-                                                data-candidate-name="{{ $candidate->candidate_name }}">
-                                                <i class="ri-file-upload-line"></i>
-                                            </button>
+											<button type="button"
+												class="btn btn-sm btn-warning upload-estamp-btn"
+												data-candidate-id="{{ $candidate->id }}"
+												data-candidate-code="{{ $candidate->candidate_code }}"
+												data-candidate-name="{{ $candidate->candidate_name }}">
+												<i class="ri-file-upload-line"></i>
+											</button>
 
-                                            @endif
+											@endif
 
 
 											@if($empStatus == "Active")
@@ -687,9 +697,10 @@
 @push('scripts')
 
 <script>
-window.routes = {
-    uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate'=>'CANDIDATE_ID']) }}"
-};
+	window.routes = {
+		uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate'=>'CANDIDATE_ID']) }}",
+		fileCreated: "{{ route('hr-admin.candidate.file-created') }}"
+	};
 </script>
 
 <script src="{{ asset('assets/js/hr-common.js') }}"></script>
@@ -709,17 +720,17 @@ window.routes = {
 			width: '100%'
 		});
 
-	
+
 
 		function loadSignedDocuments(candidateId) {
 			$('#signedDocumentsList').html(`
-        <div class="text-center">
-            <div class="spinner-border spinner-border-sm" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            Loading documents...
-        </div>
- 	   `);
+					<div class="text-center">
+						<div class="spinner-border spinner-border-sm" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+						Loading documents...
+					</div>
+				`);
 
 			$.ajax({
 				url: `/hr-admin/candidate/${candidateId}/signed-documents`,
@@ -775,7 +786,7 @@ window.routes = {
 			});
 		}
 
-	
+
 
 		$('#applyFilter').on('click', function() {
 
