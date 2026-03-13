@@ -357,10 +357,7 @@
     data-processed="${r.processed ? 1 : 0}"
 >
                 <td>
-                    ${r.can_process 
-                        ? `<input type="checkbox" class="row-check">`
-                        : `<span class="text-danger small">Blocked</span>`
-                    }
+                <input type="checkbox" class="row-check">
                 </td>
                 <td>${r.candidate?.candidate_code ?? '-'}</td>
                 <td>${r.candidate?.candidate_name ?? '-'}</td>

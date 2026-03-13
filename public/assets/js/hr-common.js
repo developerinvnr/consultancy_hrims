@@ -334,9 +334,7 @@ $(document).ready(function () {
 
         // AJAX call to load managers
         $.ajax({
-            url:
-                '{{ url("hr-admin/applications/get-reporting-managers") }}/' +
-                requisitionId,
+			url: window.routes.getManagers.replace('__ID__', requisitionId),
             type: "GET",
             success: function (response) {
                 if (!response.success) {
@@ -444,7 +442,7 @@ $(document).ready(function () {
             showLoaderOnConfirm: true,
             preConfirm: () => {
                 return $.ajax({
-                    url: '{{ route("hr-admin.applications.process-modal") }}',
+                    url: window.routes.processModal,
                     type: "POST",
                     data: formData,
                 });

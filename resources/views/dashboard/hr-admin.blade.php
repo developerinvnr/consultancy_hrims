@@ -795,7 +795,9 @@
 <script>
 	window.routes = {
 		uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate'=>'CANDIDATE_ID']) }}",
-		fileCreated: "{{ route('hr-admin.candidate.file-created') }}"
+		fileCreated: "{{ route('hr-admin.candidate.file-created') }}",
+		getManagers: "{{ route('hr-admin.applications.get-reporting-managers','__ID__') }}",
+		processModal: "{{ route('hr-admin.applications.process-modal') }}"
 	};
 </script>
 

@@ -62,7 +62,6 @@ class SalaryController extends Controller
             $salaryMonthEnd   = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
             // Build candidate query
             if (!empty($validated['candidate_ids'])) {
-
                 // Process only selected employees BUT still enforce eligibility rules
                 $query = CandidateMaster::whereIn('id', $validated['candidate_ids'])
                     ->whereNotIn('id', function ($q) use ($month, $year) {
@@ -72,7 +71,6 @@ class SalaryController extends Controller
                             ->where('year', $year);
                     })
                     ->whereIn('final_status', ['A', 'D'])
-                    ->where('pan_status_2', 'Operative')
                     ->whereDate('contract_start_date', '<=', $salaryMonthEnd)
                     ->where(function ($q) use ($salaryMonthStart) {
                         $q->whereNull('contract_end_date')
@@ -82,7 +80,6 @@ class SalaryController extends Controller
 
                 // Process all filtered employees
                 $query = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                    ->where('pan_status_2', 'Operative')
                     ->whereNotIn('id', function ($q) use ($month, $year) {
                         $q->select('candidate_id')
                             ->from('salary_processings')
@@ -146,6 +143,38 @@ class SalaryController extends Controller
 
             foreach ($candidates as $candidate) {
 
+                // Re-check PAN if previously inoperative
+                if ($candidate->pan_status_2 !== 'Operative' && !empty($candidate->pan_no)) {
+                    $panData = \App\Services\PanVerificationService::verify($candidate->pan_no);
+                    if ($panData) {
+
+                        $panStatus = $panData['individual_tax_compliance_status'] ?? null;
+                        $aadhaarStatus = $panData['aadhaar_seeding_status'] ?? null;
+
+                        if ($panStatus === 'Operative') {
+
+                            $candidate->update([
+                                'pan_status_2' => 'Operative',
+                                'pan_aadhaar_link_status' => $aadhaarStatus
+                            ]);
+
+                            $candidate->pan_status_2 = 'Operative';
+                        }
+                    }
+                }
+
+                if ($candidate->pan_status_2 !== 'Operative') {
+
+                    $skipped++;
+
+                    $errors[] = [
+                        'candidate_code' => $candidate->candidate_code,
+                        'candidate_name' => $candidate->candidate_name,
+                        'error' => 'PAN is Inoperative'
+                    ];
+
+                    continue;
+                }
                 if (isset($existingProcessed[$candidate->id])) {
                     $skipped++;
                     $skippedExisting++;
@@ -175,11 +204,6 @@ class SalaryController extends Controller
                     $agreementSigned = isset($agreementSignedMap[$candidate->id]);
                     $courierReceived = isset($courierReceivedMap[$candidate->id]);
                     $fileCreated = !empty($candidate->file_created_date);
-
-                    $agreementSigned = isset($agreementSignedMap[$candidate->id]);
-                    $courierReceived = isset($courierReceivedMap[$candidate->id]);
-                    $fileCreated = !empty($candidate->file_created_date);
-
                     // \Log::info('Salary Processing Debug', [
                     //     'candidate_id' => $candidate->id,
                     //     'candidate_code' => $candidate->candidate_code,

@@ -290,7 +290,7 @@
 
                                             @endif
 
-                                            <!-- Upload Signed Agreement Button (for Unsigned Agreement Uploaded status) -->
+                                            <!-- Upload Signed Agreement Button (for Unsigned Agreement Created status) -->
                                             @if($hasUnsigned && !$hasSigned)
                                             <button type="button"
                                                 class="btn btn-sm btn-info upload-signed-btn"
@@ -354,7 +354,10 @@
 @push('scripts')
 <script>
     window.routes = {
-        uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate' => 'CANDIDATE_ID']) }}"
+        uploadEstamp: "{{ route('hr-admin.master.upload-estamp', ['candidate' => 'CANDIDATE_ID']) }}",
+        getManagers: "{{ route('hr-admin.applications.get-reporting-managers','__ID__') }}",
+        processModal: "{{ route('hr-admin.applications.process-modal') }}"
+
     };
 </script>
 <script src="{{ asset('assets/js/hr-common.js') }}"></script>
