@@ -39,7 +39,7 @@ class HomeController extends Controller
 
     private function hrAdminDashboard(Request $request)
     {
-        $reqTab = $request->get('req_tab', 'status');
+        $reqTab = $request->get('req_tab', 'submission');
         $expTab = $request->get('exp_tab', 'exp30');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
