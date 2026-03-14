@@ -47,50 +47,94 @@ class HomeController extends Controller
 
         switch ($reqTab) {
 
-            case 'active':
-                $query->whereHas(
-                    'candidate',
-                    fn($q) =>
-                    $q->where('candidate_status', 'Active')
-                );
+            case 'submission':
+
+                $query->where('status', 'Pending HR Verification');
+
                 break;
+
+
+            case 'hr_verify':
+
+                $query->whereIn('status', [
+                    'Hr Verified',
+                    'Correction Required'
+                ]);
+
+                break;
+
+
+            case 'approval':
+
+                $query->where('status', 'Pending Approval');
+
+                break;
+
+
+            case 'agreement':
+
+                $query->where('status', 'Approved');
+
+                break;
+
+
+            case 'unsigned':
+
+                $query->whereHas('candidate', function ($q) {
+
+                    $q->where('candidate_status', 'Unsigned Agreement Created');
+                });
+
+                break;
+
+
+            case 'signed':
+
+                $query->whereHas('candidate', function ($q) {
+
+                    $q->where('candidate_status', 'Signed Agreement Uploaded');
+                });
+
+                break;
+
+
+            case 'active':
+
+                $query->whereHas('candidate', function ($q) {
+
+                    $q->where('candidate_status', 'Active');
+                });
+
+                break;
+
 
             case 'inactive':
-                $query->whereHas(
-                    'candidate',
-                    fn($q) =>
-                    $q->where('candidate_status', 'Inactive')
-                );
+
+                $query->whereHas('candidate', function ($q) {
+
+                    $q->where('candidate_status', 'Inactive');
+                });
+
                 break;
+
 
             case 'rejected':
+
                 $query->where(function ($q) {
+
                     $q->where('status', 'Rejected')
-                        ->orWhereHas(
-                            'candidate',
-                            fn($sub) =>
-                            $sub->where('candidate_status', 'Rejected')
-                        );
+                        ->orWhereHas('candidate', function ($sub) {
+
+                            $sub->where('candidate_status', 'Rejected');
+                        });
                 });
+
                 break;
 
-            case 'status':
             default:
-                $query->where(function ($q) {
 
-                    $q->whereDoesntHave('candidate')
+                $query->latest();
 
-                        ->orWhereHas(
-                            'candidate',
-                            fn($sub) =>
-                            $sub->whereNotIn('candidate_status', [
-                                'Active',
-                                'Inactive',
-                                'Rejected'
-                            ])
-                        );
-                })
-                    ->where('status', '!=', 'Rejected');
                 break;
         }
 

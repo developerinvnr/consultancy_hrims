@@ -222,71 +222,101 @@
 					<ul class="nav nav-tabs mb-3 sticky-tabs">
 
 						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='submission'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission']) }}">
-								Pending Hr Verification
-							</a>
-						</li>
-
-						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='hr_verify'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'hr_verify']) }}">
-								HR Verify
-							</a>
-						</li>
-
-						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='approval'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approval']) }}">
-								Approval
-							</a>
-						</li>
-
-						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='agreement'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'agreement']) }}">
-								Agreement
-							</a>
-						</li>
-
-						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='unsigned'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'unsigned']) }}">
-								Unsigned
-							</a>
-						</li>
-
-						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='signed'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'signed']) }}">
-								Signed
+							<a class="nav-link {{ $req_tab=='status'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'status']) }}">
+								Status Wise
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
+								href="{{ url()->current() }}?req_tab=active">
 								Active
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
+								href="{{ url()->current() }}?req_tab=inactive">
 								Inactive
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='rejected'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected']) }}">
+								href="{{ url()->current() }}?req_tab=rejected">
 								Rejected
 							</a>
 						</li>
-
 					</ul>
 
+					@if($req_tab == 'status')
+					<div class="row mb-3">
 
+						<div class="col-md-3">
+							<select id="statusFilter" class="form-select form-select-sm">
+
+								<option value="">All Status</option>
+
+								<option value="Pending HR Verification"
+									{{ request('status_filter') == 'Pending HR Verification' ? 'selected' : '' }}>
+									Pending HR Verification
+								</option>
+
+								<option value="Pending Approval"
+									{{ request('status_filter') == 'Pending Approval' ? 'selected' : '' }}>
+									Pending Approval
+								</option>
+
+								<option value="Agreement Pending"
+									{{ request('status_filter') == 'Agreement Pending' ? 'selected' : '' }}>
+									Agreement Pending
+								</option>
+
+								<option value="Unsigned Agreement Created"
+									{{ request('status_filter') == 'Unsigned Agreement Created' ? 'selected' : '' }}>
+									Unsigned Agreement Created
+								</option>
+
+								<option value="Signed Agreement Uploaded"
+									{{ request('status_filter') == 'Signed Agreement Uploaded' ? 'selected' : '' }}>
+									Signed Agreement Uploaded
+								</option>
+
+							</select>
+						</div>
+
+						<div class="col-md-3">
+							<select id="actionFilter" class="form-select form-select-sm">
+
+								<option value="">All Actions</option>
+
+								<option value="process"
+									{{ request('action_filter') == 'process' ? 'selected' : '' }}>
+									Process Button
+								</option>
+
+								<option value="upload_signed"
+									{{ request('action_filter') == 'upload_signed' ? 'selected' : '' }}>
+									Upload Signed Agreement
+								</option>
+
+								<option value="receive_courier"
+									{{ request('action_filter') == 'receive_courier' ? 'selected' : '' }}>
+									Receive Courier
+								</option>
+
+							</select>
+						</div>
+
+						<div class="col-md-2">
+							<button class="btn btn-sm btn-primary" id="applyFilter">
+								Apply
+							</button>
+						</div>
+
+					</div>
+					@endif
 					<table class="table table-sm table-hover mb-0">
 						<thead class="sticky-top bg-white">
 							<tr>
