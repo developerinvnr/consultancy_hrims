@@ -218,7 +218,7 @@
 		<div class="card border-0 shadow-sm">
 			<div class="card-body p-2">
 				<h6 class="mb-2 fs-6">Recent Requisitions</h6>
-				<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+				<div class="tabs-scroll">
 					<ul class="nav nav-tabs mb-3 sticky-tabs">
 
 						<li class="nav-item">
@@ -285,6 +285,13 @@
 						</li>
 
 						<li class="nav-item">
+							<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
+								Active
+							</a>
+						</li>
+
+						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
 								href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
 								Inactive
@@ -298,7 +305,11 @@
 							</a>
 						</li>
 
-					</ul>
+					</ul>					
+				</div>
+
+				<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+
 
 					<table class="table table-sm table-hover mb-0">
 						<thead class="sticky-top bg-white">
@@ -860,5 +871,44 @@
 	.bg-soft-success {
 		background-color: #e6f7f0 !important;
 	}
+
+.nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    color: #495057;
+    border: 1px solid transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+/* hover */
+.nav-tabs .nav-link:hover {
+    border-color: #dee2e6 #dee2e6 #dee2e6;
+    background: #f8f9fa;
+}
+
+/* ACTIVE TAB */
+.nav-tabs .nav-link.active {
+    color: #5e999d;
+    background: #ffffff;
+    border-color: #dee2e6 #dee2e6 #ffffff;
+    font-weight: 600;
+}
+
+.tabs-scroll{
+    overflow-x: auto;
+}
+
+.tabs-scroll .nav-tabs{
+    flex-wrap: nowrap;
+}
+
+.tabs-scroll .nav-item{
+    white-space: nowrap;
+}
 </style>
 @endpush

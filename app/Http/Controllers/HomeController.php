@@ -125,6 +125,14 @@ class HomeController extends Controller
 
                 break;
 
+                
+
+            case 'inactive':
+
+            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'active'));
+
+            break;
+
 
             case 'inactive':
 
