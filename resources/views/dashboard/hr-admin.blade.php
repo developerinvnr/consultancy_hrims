@@ -211,148 +211,62 @@
 </div>
 </div>
 
-{{--<div class="d-flex align-items-center justify-content-between text-center">
+<div class="card border-0 shadow-sm mb-3">
+	<div class="card-body p-2">
 
-	<div>
-		<div class="fw-bold text-primary">{{ $stats['pipeline']['submission'] }}</div>
-<small>Submitted</small>
-</div>
+		<div class="d-flex align-items-center justify-content-between text-center">
 
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-warning">{{ $stats['pipeline']['hr_verification'] }}</div>
-	<small>HR Verify</small>
-</div>
-
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-info">{{ $stats['pipeline']['approval'] }}</div>
-	<small>Approval</small>
-</div>
-
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-secondary">{{ $stats['pipeline']['agreement_pending'] }}</div>
-	<small>Agreement</small>
-</div>
-
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-primary">{{ $stats['pipeline']['unsigned_uploaded'] }}</div>
-	<small>Unsigned</small>
-</div>
-
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-success">{{ $stats['pipeline']['signed_uploaded'] }}</div>
-	<small>Signed</small>
-</div>
-
-<i class="ri-arrow-right-line"></i>
-
-<div>
-	<div class="fw-bold text-dark">{{ $stats['pipeline']['completed'] }}</div>
-	<small>Completed</small>
-</div>
-
-</div>--}}
-
-<!-- Top Submitters & Departments (Side by Side) -->
-<div class="row g-2 mb-2">
-	<div class="col-md-6">
-		<div class="card border-0 shadow-sm h-100">
-			<div class="card-body p-2">
-				<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
-				@forelse($stats['top_submitters'] as $submitter)
-				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
-					<span class="text-truncate fs-12">{{ $submitter->submitted_by_name }}</span>
-					<span class="badge bg-primary fs-10">{{ $submitter->count }}</span>
-				</div>
-				@empty
-				<p class="text-muted text-center mb-0 fs-12">No data</p>
-				@endforelse
+			<div>
+				<div class="fw-bold text-primary">{{ $stats['pipeline']['submission'] }}</div>
+				<small>Submitted</small>
 			</div>
-		</div>
-	</div>
 
-	<div class="col-md-6">
-		<div class="card border-0 shadow-sm h-100">
-			<div class="card-body p-2">
-				<h6 class="mb-2 fs-6">Top Departments</h6>
-				@forelse($stats['by_department'] as $dept)
-				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
-					<span class="text-truncate fs-12">{{ $dept->department->department_name ?? 'N/A' }}</span>
-					<span class="badge bg-info fs-10">{{ $dept->count }}</span>
-				</div>
-				@empty
-				<p class="text-muted text-center mb-0 fs-12">No data</p>
-				@endforelse
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-warning">{{ $stats['pipeline']['hr_verify'] }}</div>
+				<small>HR Verify</small>
 			</div>
+
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-info">{{ $stats['pipeline']['approval'] }}</div>
+				<small>Approval</small>
+			</div>
+
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-secondary">{{ $stats['pipeline']['agreement_pending'] }}</div>
+				<small>Agreement</small>
+			</div>
+
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-primary">{{ $stats['pipeline']['unsigned'] }}</div>
+				<small>Unsigned</small>
+			</div>
+
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-success">{{ $stats['pipeline']['signed'] }}</div>
+				<small>Signed</small>
+			</div>
+
+			<i class="ri-arrow-right-line"></i>
+
+			<div>
+				<div class="fw-bold text-dark">{{ $stats['pipeline']['active'] }}</div>
+				<small>Completed</small>
+			</div>
+
 		</div>
+
 	</div>
 </div>
-
-@if(isset($expiry))
-<div class="row mb-3">
-	<div class="col-12">
-		<div class="card border-0 shadow-sm">
-			<div class="card-body p-2">
-
-				<h6 class="mb-3 fs-6">
-					<i class="ri-calendar-event-line me-1"></i>
-					Contract Expiry
-				</h6>
-
-				<ul class="nav nav-tabs mb-3">
-
-					<li class="nav-item">
-						<a class="nav-link {{ request('exp_tab','exp30')=='exp30'?'active':'' }}"
-							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp30']) }}">
-							< 30 Days
-								</a>
-					</li>
-
-					<li class="nav-item">
-						<a class="nav-link {{ request('exp_tab')=='exp60'?'active':'' }}"
-							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp60']) }}">
-							30 - 60 Days
-						</a>
-					</li>
-
-					<li class="nav-item">
-						<a class="nav-link {{ request('exp_tab')=='exp90'?'active':'' }}"
-							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp90']) }}">
-							60 - 90 Days
-						</a>
-					</li>
-				</ul>
-
-				<div class="tab-content">
-
-					<div class="tab-pane fade {{ request('exp_tab','exp30')=='exp30' ? 'show active' : '' }}">
-						@include('dashboard.partials.expiry-table', ['list'=>$expiry['lt_30_days']])
-					</div>
-
-					<div class="tab-pane fade {{ request('exp_tab')=='exp60' ? 'show active' : '' }}">
-						@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_30_60']])
-					</div>
-
-					<div class="tab-pane fade {{ request('exp_tab')=='exp90' ? 'show active' : '' }}">
-						@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_60_90']])
-					</div>
-
-				</div>
-
-			</div>
-		</div>
-	</div>
-</div>
-@endif
 
 <!-- Recent Requisitions Table -->
 @if(isset($recent_requisitions))
@@ -768,6 +682,100 @@
 	</div>
 </div>
 @endif
+
+<!-- Top Submitters & Departments (Side by Side) -->
+<div class="row g-2 mb-2">
+	<div class="col-md-6">
+		<div class="card border-0 shadow-sm h-100">
+			<div class="card-body p-2">
+				<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
+				@forelse($stats['top_submitters'] as $submitter)
+				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+					<span class="text-truncate fs-12">{{ $submitter->submitted_by_name }}</span>
+					<span class="badge bg-primary fs-10">{{ $submitter->count }}</span>
+				</div>
+				@empty
+				<p class="text-muted text-center mb-0 fs-12">No data</p>
+				@endforelse
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6">
+		<div class="card border-0 shadow-sm h-100">
+			<div class="card-body p-2">
+				<h6 class="mb-2 fs-6">Top Departments</h6>
+				@forelse($stats['by_department'] as $dept)
+				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+					<span class="text-truncate fs-12">{{ $dept->department->department_name ?? 'N/A' }}</span>
+					<span class="badge bg-info fs-10">{{ $dept->count }}</span>
+				</div>
+				@empty
+				<p class="text-muted text-center mb-0 fs-12">No data</p>
+				@endforelse
+			</div>
+		</div>
+	</div>
+</div>
+
+@if(isset($expiry))
+<div class="row mb-3">
+	<div class="col-12">
+		<div class="card border-0 shadow-sm">
+			<div class="card-body p-2">
+
+				<h6 class="mb-3 fs-6">
+					<i class="ri-calendar-event-line me-1"></i>
+					Contract Expiry
+				</h6>
+
+				<ul class="nav nav-tabs mb-3">
+
+					<li class="nav-item">
+						<a class="nav-link {{ request('exp_tab','exp30')=='exp30'?'active':'' }}"
+							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp30']) }}">
+							< 30 Days
+								</a>
+					</li>
+
+					<li class="nav-item">
+						<a class="nav-link {{ request('exp_tab')=='exp60'?'active':'' }}"
+							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp60']) }}">
+							30 - 60 Days
+						</a>
+					</li>
+
+					<li class="nav-item">
+						<a class="nav-link {{ request('exp_tab')=='exp90'?'active':'' }}"
+							href="{{ request()->fullUrlWithQuery(['exp_tab'=>'exp90']) }}">
+							60 - 90 Days
+						</a>
+					</li>
+				</ul>
+
+				<div class="tab-content">
+
+					<div class="tab-pane fade {{ request('exp_tab','exp30')=='exp30' ? 'show active' : '' }}">
+						@include('dashboard.partials.expiry-table', ['list'=>$expiry['lt_30_days']])
+					</div>
+
+					<div class="tab-pane fade {{ request('exp_tab')=='exp60' ? 'show active' : '' }}">
+						@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_30_60']])
+					</div>
+
+					<div class="tab-pane fade {{ request('exp_tab')=='exp90' ? 'show active' : '' }}">
+						@include('dashboard.partials.expiry-table', ['list'=>$expiry['days_60_90']])
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+	</div>
+</div>
+@endif
+
+
 </div>
 
 <!-- Process Modal -->

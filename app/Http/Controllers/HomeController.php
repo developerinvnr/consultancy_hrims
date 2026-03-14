@@ -303,37 +303,28 @@ class HomeController extends Controller
             ->pluck('count', 'requisition_type')
             ->toArray();
 
-        // $stats['pipeline'] = [
+        $stats['pipeline'] = [
 
-        //     'submission' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
+            'submission' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
 
-        //     'hr_verification' => ManpowerRequisition::whereIn('status', [
-        //         'Hr Verified',
-        //         'Correction Required'
-        //     ])->count(),
+            'hr_verify' => ManpowerRequisition::whereIn('status', [
+                'Hr Verified',
+                'Correction Required'
+            ])->count(),
 
-        //     'approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
+            'approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
 
-        //     'agreement_pending' => ManpowerRequisition::whereIn('status', [
-        //         'Approved',
-        //         'Agreement Pending'
-        //     ])->count(),
+            'agreement_pending' => ManpowerRequisition::where('status', 'Approved')->count(),
 
-        //     'unsigned_uploaded' => CandidateMaster::where(
-        //         'candidate_status',
-        //         'Unsigned Agreement Created'
-        //     )->count(),
+            'unsigned' => CandidateMaster::where('candidate_status', 'Unsigned Agreement Created')->count(),
 
-        //     'signed_uploaded' => CandidateMaster::where(
-        //         'candidate_status',
-        //         'Signed Agreement Uploaded'
-        //     )->count(),
+            'signed' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
 
-        //     'completed' => ManpowerRequisition::whereIn('status', [
-        //         'Agreement Completed',
-        //         'Completed'
-        //     ])->count(),
-        // ];
+            'agreement_completed' => CandidateMaster::where('candidate_status', 'Agreement Completed')->count(),
+
+            'active' => CandidateMaster::where('candidate_status', 'Active')->count(),
+
+        ];
 
         $today = Carbon::today();
 
