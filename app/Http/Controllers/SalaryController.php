@@ -1165,6 +1165,8 @@ class SalaryController extends Controller
                 'month' => $request->month,
                 'year' => $request->year,
                 'batch_no' => 'BATCH-' . date('dmY'),
+                'payout_date' => now(),
+                'payment_status' => 'pending',
                 'total_records' => count($request->salary_ids),
                 'total_amount' => $totalAmount,
                 'created_by' => auth()->id(),

@@ -95,7 +95,7 @@
 		<div class="modal-content">
 
 			<div class="modal-header">
-				<h5 class="modal-title">Enter Remark1</h5>
+				<h5 class="modal-title">Enter Remark</h5>
 			</div>
 
 			<div class="modal-body">
@@ -320,20 +320,23 @@
 			return;
 		}
 
-		$.post("{{route('salary.release.batch')}}", {
-
-			_token: '{{csrf_token()}}',
-			salary_ids: ids,
-			month: currentMonth,
-			year: currentYear
-
-		}, function(res) {
-
-			toastr.success(res.message);
-			loadReview();
-
+		let form = $('<form>', {
+			method: 'POST',
+			action: "{{route('salary.release.batch')}}"
 		});
 
+		form.append('@csrf');
+
+		ids.forEach(id => {
+			form.append(`<input type="hidden" name="salary_ids[]" value="${id}">`);
+		});
+
+		form.append(`<input type="hidden" name="month" value="${currentMonth}">`);
+		form.append(`<input type="hidden" name="year" value="${currentYear}">`);
+
+		$('body').append(form);
+
+		form.submit();
 	}
 
 	function updatePayment(id, action) {

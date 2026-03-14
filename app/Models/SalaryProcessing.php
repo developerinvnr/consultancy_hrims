@@ -35,7 +35,11 @@ class SalaryProcessing extends Model
         'hr_release_remark',
         'released_at',
         'processed_by',
-        'processed_at'
+        'processed_at',
+        'payment_status',
+        'payment_date',
+        'utr_number',
+        'payment_mode'
     ];
 
     protected $casts = [
