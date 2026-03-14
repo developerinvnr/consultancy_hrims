@@ -121,9 +121,13 @@ class HrAdminController extends Controller
 		if ($candidate) {
 			try {
 				// Get agreement documents using candidate_code instead of candidate_id
-				$agreementDocs = \App\Models\AgreementDocument::where('candidate_code', $candidate->candidate_code)
-					->orderBy('created_at', 'desc')
-					->get();
+				// $agreementDocs = \App\Models\AgreementDocument::where('candidate_code', $candidate->candidate_code)
+				// 	->orderBy('created_at', 'desc')
+				// 	->get();
+				
+				$agreementDocs = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
+				->orderBy('created_at', 'desc')
+				->get();
 
 				foreach ($agreementDocs as $doc) {
 
