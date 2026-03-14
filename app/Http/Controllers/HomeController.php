@@ -127,9 +127,9 @@ class HomeController extends Controller
 
 
 
-            case 'inactive':
+            case 'active':
 
-                $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'active'));
+                $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Active'));
 
                 break;
 
@@ -230,7 +230,13 @@ class HomeController extends Controller
                     ->orWhere('status', 'Unsigned Agreement Created')
                     ->orWhere('status', 'Agreement Completed');
             })->count(),
-            'rejected' => ManpowerRequisition::where('status', 'Rejected')->count(),
+            'rejected' => ManpowerRequisition::where(function ($q) {
+
+                $q->where('status', 'Rejected')
+                    ->orWhereHas('candidate', function ($sub) {
+                        $sub->where('candidate_status', 'Rejected');
+                    });
+            })->count(),
             'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
             'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
 
@@ -399,17 +405,30 @@ class HomeController extends Controller
 
             'approved' => ManpowerRequisition::where('status', 'Approved')->count(),
 
-            'unsigned' => CandidateMaster::where('candidate_status', 'Unsigned Agreement Created')->count(),
+            'unsigned' => ManpowerRequisition::whereHas('candidate', function ($q) {
+                $q->where('candidate_status', 'Unsigned Agreement Created');
+            })->count(),
 
-            'dispatch_pending' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')
-                ->whereDoesntHave('signedAgreements.courierDetails')
-                ->count(),
+            'dispatch_pending' => ManpowerRequisition::whereHas('candidate', function ($q) {
+                $q->where('candidate_status', 'Signed Agreement Uploaded')
+                    ->whereHas('signedAgreements', function ($q2) {
+                        $q2->whereDoesntHave('courierDetails');
+                    });
+            })->count(),
+            'courier_pending' => ManpowerRequisition::whereHas(
+                'candidate.signedAgreements.courierDetails',
+                function ($q) {
+                    $q->whereNull('received_date');
+                }
+            )->count(),
 
-            'courier_pending' => AgreementCourier::whereNull('received_date')->count(),
-
-            'file_pending' => CandidateMaster::whereNull('file_created_date')
-                ->where('candidate_status', 'Signed Agreement Uploaded')
-                ->count(),
+            'file_pending' => ManpowerRequisition::whereHas('candidate', function ($q) {
+                $q->where('candidate_status', 'Signed Agreement Uploaded')
+                    ->whereNull('file_created_date')
+                    ->whereHas('signedAgreements.courierDetails', function ($q2) {
+                        $q2->whereNotNull('received_date');
+                    });
+            })->count(),
 
             'active' => CandidateMaster::where('candidate_status', 'Active')->count(),
 
