@@ -36,7 +36,7 @@
 				</li>
 
 				<li class="nav-item">
-					<a class="nav-link" data-type="hold">Held</a>
+					<a class="nav-link" data-type="hold">Hold</a>
 				</li>
 
 				<li class="nav-item">
@@ -60,6 +60,9 @@
 							<th>Code</th>
 							<th>Name</th>
 							<th>Net Pay</th>
+							<th>Agreement</th>
+							<th>Courier</th>
+							<th>File</th>
 							<th>Status</th>
 							<th>Remark</th>
 							<th>Action</th>
@@ -92,7 +95,7 @@
 		<div class="modal-content">
 
 			<div class="modal-header">
-				<h5 class="modal-title">Enter Remark</h5>
+				<h5 class="modal-title">Enter Remark1</h5>
 			</div>
 
 			<div class="modal-body">
@@ -100,9 +103,19 @@
 				<input type="hidden" id="modalSalaryId">
 				<input type="hidden" id="modalAction">
 
-				<textarea id="modalRemark"
-					class="form-control"
-					placeholder="Enter remark"></textarea>
+				<div class="mb-2">
+					<label class="form-label">Reason</label>
+					<select id="modalReason" class="form-control">
+						<option value="">Select reason</option>
+					</select>
+				</div>
+
+				<div class="mt-2">
+					<label class="form-label">Comment (optional)</label>
+					<textarea id="modalRemark"
+						class="form-control"
+						placeholder="Additional remark"></textarea>
+				</div>
 
 			</div>
 
@@ -210,8 +223,20 @@
 			let action = '';
 
 			if (currentTab == 'pending') {
-				action = `<button class="btn btn-danger btn-sm" onclick="updatePayment(${r.id},'hold')">
-				Hold</button>`;
+
+				if (r.agreement_signed && r.courier_received && r.file_created) {
+
+					action = `<span class="badge bg-success">Ready</span>`;
+
+				} else {
+
+					action = `<button class="btn btn-danger btn-sm"
+		onclick="updatePayment(${r.id},'hold')">
+		Put On Hold
+		</button>`;
+
+				}
+
 			}
 
 			if (currentTab == 'hold') {
@@ -222,13 +247,25 @@
 				action = `<a class="btn btn-primary btn-sm" href="/hr/salary/payslip/${r.id}">Payslip</a>`;
 			}
 
+			let agreement = r.agreement_signed ?
+				'<span class="badge bg-success">✔</span>' :
+				'<span class="badge bg-danger">✖</span>';
+
+			let courier = r.courier_received ?
+				'<span class="badge bg-success">✔</span>' :
+				'<span class="badge bg-danger">✖</span>';
+
+			let file = r.file_created ?
+				'<span class="badge bg-success">✔</span>' :
+				'<span class="badge bg-danger">✖</span>';
+
 			let remark = '';
 
-			if(currentTab == 'hold'){
+			if (currentTab == 'hold') {
 				remark = r.hr_hold_remark ?? '';
 			}
 
-			if(currentTab == 'release'){
+			if (currentTab == 'release') {
 				remark = r.hr_release_remark ?? '';
 			}
 
@@ -244,6 +281,9 @@
 				<td>${r.candidate.candidate_code}</td>
 				<td>${r.candidate.candidate_name}</td>
 				<td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
+				<td>${agreement}</td>
+				<td>${courier}</td>
+				<td>${file}</td>
 				<td>
 				<span class="badge ${badge}">
 				${r.payment_instruction}
@@ -298,25 +338,53 @@
 
 	function updatePayment(id, action) {
 
-
 		$('#modalSalaryId').val(id);
 		$('#modalAction').val(action);
 		$('#modalRemark').val('');
-		$('#remarkModal').modal('show');
 
+		let options = '';
+
+		if (action === 'hold') {
+			options = `
+		<option value="">Select reason</option>
+		<option value="Agreement not signed">Agreement not signed</option>
+		<option value="Courier not received">Courier not received</option>
+		<option value="File not created">File not created</option>
+		`;
+		}
+
+		if (action === 'release') {
+			options = `
+		<option value="">Select reason</option>
+		<option value="Agreement uploaded">Agreement uploaded</option>
+		<option value="Courier dispatched">Courier dispatched</option>
+		<option value="Courier received">Courier received</option>
+		<option value="File created">File created</option>
+		<option value="Verified by HR">Verified by HR</option>
+		`;
+		}
+
+		$('#modalReason').html(options);
+
+		$('#remarkModal').modal('show');
 	}
 
 	function submitRemark() {
 
 		let id = $('#modalSalaryId').val();
 		let action = $('#modalAction').val();
-		let remark = $('#modalRemark').val();
+		let reason = $('#modalReason').val();
+		let comment = $('#modalRemark').val();
 
-		if (!remark) {
-
-			toastr.error("Remark required");
+		if (!reason) {
+			toastr.error("Please select reason");
 			return;
+		}
 
+		let remark = reason;
+
+		if (comment) {
+			remark = reason + " - " + comment;
 		}
 
 		$.post("{{route('salary.toggle.payment')}}", {
@@ -329,9 +397,7 @@
 		}, function(res) {
 
 			toastr.success(res.message);
-
 			$('#remarkModal').modal('hide');
-
 			loadReview();
 
 		});

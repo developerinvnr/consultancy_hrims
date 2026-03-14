@@ -148,7 +148,7 @@ class SalaryController extends Controller
                     $panData = \App\Services\PanVerificationService::verify($candidate->pan_no);
                     if ($panData) {
 
-                    $panStatus = $panData['individual_tax_compliance_status'] ?? null;
+                        $panStatus = $panData['individual_tax_compliance_status'] ?? null;
                         $isValid = $panData['is_valid'] ?? false;
                         $aadhaarStatus = $panData['aadhaar_seeding_status'] ?? null;
 
@@ -1024,20 +1024,35 @@ class SalaryController extends Controller
 
             if ($request->action === 'release') {
 
-                $batchId = DB::table('payout_batches')->insertGetId([
-                    'month'         => $salary->month,
-                    'year'          => $salary->year,
-                    'batch_no'      => 'BATCH-' . date('dmY'),
-                    'total_records' => 1,
-                    'total_amount'  => $salary->net_pay,
-                    'created_by'    => auth()->id(),
-                    'created_at'    => now()
-                ]);
+                $candidate = CandidateMaster::find($salary->candidate_id);
 
-                $salary->payment_instruction = 'release';
-                $salary->hr_release_remark   = $request->remark;
-                $salary->released_at         = now();
-                $salary->batch_id            = $batchId;
+                $agreementSigned = DB::table('agreement_documents')
+                    ->where('candidate_id', $candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->exists();
+
+                $courierReceived = DB::table('agreement_couriers as ac')
+                    ->join('agreement_documents as ad', 'ac.agreement_document_id', '=', 'ad.id')
+                    ->where('ad.candidate_id', $candidate->id)
+                    ->whereNotNull('ac.received_date')
+                    ->exists();
+
+                $fileCreated = !empty($candidate->file_created_date);
+
+                if ($agreementSigned && $courierReceived && $fileCreated) {
+
+                    // READY → Send back to Pending
+                    $salary->payment_instruction = 'pending';
+
+                    $salary->hr_release_remark = $request->remark;
+                } else {
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Candidate documentation process not completed yet.'
+                    ], 422);
+                }
             }
 
             $salary->save();
@@ -1065,22 +1080,69 @@ class SalaryController extends Controller
 
     public function hrReviewList(Request $request)
     {
-        $request->validate([
-            'month' => 'required',
-            'year' => 'required',
-            'type' => 'required'
-        ]);
-
         $query = SalaryProcessing::with('candidate')
             ->where('month', $request->month)
             ->where('year', $request->year)
             ->where('status', 'processed');
 
-        if ($request->type != 'all') {
-            $query->where('payment_instruction', $request->type);
+        // Filter by tab
+        if ($request->type == 'pending') {
+            $query->where('payment_instruction', 'pending');
         }
 
-        return response()->json($query->get());
+        if ($request->type == 'hold') {
+            $query->where('payment_instruction', 'hold');
+        }
+
+        if ($request->type == 'release') {
+            $query->where('payment_instruction', 'release');
+        }
+
+        $records = $query->get();
+
+        foreach ($records as $r) {
+
+            $candidate = $r->candidate;
+
+            $agreementSigned = DB::table('agreement_documents')
+                ->where('candidate_id', $candidate->id)
+                ->where('sign_status', 'SIGNED')
+                ->exists();
+
+            $courierReceived = DB::table('agreement_couriers as ac')
+                ->join('agreement_documents as ad', 'ac.agreement_document_id', '=', 'ad.id')
+                ->where('ad.candidate_id', $candidate->id)
+                ->whereNotNull('ac.received_date')
+                ->exists();
+
+            $fileCreated = !empty($candidate->file_created_date);
+
+            $r->setAttribute('agreement_signed', $agreementSigned);
+            $r->setAttribute('courier_received', $courierReceived);
+            $r->setAttribute('file_created', $fileCreated);
+
+            // ⭐ AUTO RELEASE HOLD
+            if (
+                $r->payment_instruction === 'hold'
+                && $agreementSigned
+                && $courierReceived
+                && $fileCreated
+            ) {
+
+                // remove temporary attributes so Laravel doesn't try to save them
+                unset($r->agreement_signed);
+                unset($r->courier_received);
+                unset($r->file_created);
+
+                $r->payment_instruction = 'pending';
+                $r->hr_release_remark = 'Auto released (documents completed)';
+                $r->released_at = now();
+
+                $r->save();
+            }
+        }
+
+        return response()->json($records);
     }
 
     public function releaseBatch(Request $request)
