@@ -303,29 +303,6 @@ class HomeController extends Controller
             ->pluck('count', 'requisition_type')
             ->toArray();
 
-        $stats['pipeline'] = [
-
-            'submission' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
-
-            'hr_verify' => ManpowerRequisition::whereIn('status', [
-                'Hr Verified',
-                'Correction Required'
-            ])->count(),
-
-            'approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
-
-            'agreement_pending' => ManpowerRequisition::where('status', 'Approved')->count(),
-
-            'unsigned' => CandidateMaster::where('candidate_status', 'Unsigned Agreement Created')->count(),
-
-            'signed' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
-
-            'agreement_completed' => CandidateMaster::where('candidate_status', 'Agreement Completed')->count(),
-
-            'active' => CandidateMaster::where('candidate_status', 'Active')->count(),
-
-        ];
-
         $today = Carbon::today();
 
         $expiry = [

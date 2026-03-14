@@ -211,63 +211,6 @@
 </div>
 </div>
 
-<div class="card border-0 shadow-sm mb-3">
-	<div class="card-body p-2">
-
-		<div class="d-flex align-items-center justify-content-between text-center">
-
-			<div>
-				<div class="fw-bold text-primary">{{ $stats['pipeline']['submission'] }}</div>
-				<small>Submitted</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-warning">{{ $stats['pipeline']['hr_verify'] }}</div>
-				<small>HR Verify</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-info">{{ $stats['pipeline']['approval'] }}</div>
-				<small>Approval</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-secondary">{{ $stats['pipeline']['agreement_pending'] }}</div>
-				<small>Agreement</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-primary">{{ $stats['pipeline']['unsigned'] }}</div>
-				<small>Unsigned</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-success">{{ $stats['pipeline']['signed'] }}</div>
-				<small>Signed</small>
-			</div>
-
-			<i class="ri-arrow-right-line"></i>
-
-			<div>
-				<div class="fw-bold text-dark">{{ $stats['pipeline']['active'] }}</div>
-				<small>Completed</small>
-			</div>
-
-		</div>
-
-	</div>
-</div>
-
 <!-- Recent Requisitions Table -->
 @if(isset($recent_requisitions))
 <div class="row">
@@ -683,40 +626,7 @@
 </div>
 @endif
 
-<!-- Top Submitters & Departments (Side by Side) -->
-<div class="row g-2 mb-2">
-	<div class="col-md-6">
-		<div class="card border-0 shadow-sm h-100">
-			<div class="card-body p-2">
-				<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
-				@forelse($stats['top_submitters'] as $submitter)
-				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
-					<span class="text-truncate fs-12">{{ $submitter->submitted_by_name }}</span>
-					<span class="badge bg-primary fs-10">{{ $submitter->count }}</span>
-				</div>
-				@empty
-				<p class="text-muted text-center mb-0 fs-12">No data</p>
-				@endforelse
-			</div>
-		</div>
-	</div>
 
-	<div class="col-md-6">
-		<div class="card border-0 shadow-sm h-100">
-			<div class="card-body p-2">
-				<h6 class="mb-2 fs-6">Top Departments</h6>
-				@forelse($stats['by_department'] as $dept)
-				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
-					<span class="text-truncate fs-12">{{ $dept->department->department_name ?? 'N/A' }}</span>
-					<span class="badge bg-info fs-10">{{ $dept->count }}</span>
-				</div>
-				@empty
-				<p class="text-muted text-center mb-0 fs-12">No data</p>
-				@endforelse
-			</div>
-		</div>
-	</div>
-</div>
 
 @if(isset($expiry))
 <div class="row mb-3">
@@ -774,6 +684,42 @@
 	</div>
 </div>
 @endif
+
+
+<!-- Top Submitters & Departments (Side by Side) -->
+<div class="row g-2 mb-2">
+	<div class="col-md-6">
+		<div class="card border-0 shadow-sm h-100">
+			<div class="card-body p-2">
+				<h6 class="mb-2 fs-6">Top Submitters (30d)</h6>
+				@forelse($stats['top_submitters'] as $submitter)
+				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+					<span class="text-truncate fs-12">{{ $submitter->submitted_by_name }}</span>
+					<span class="badge bg-primary fs-10">{{ $submitter->count }}</span>
+				</div>
+				@empty
+				<p class="text-muted text-center mb-0 fs-12">No data</p>
+				@endforelse
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6">
+		<div class="card border-0 shadow-sm h-100">
+			<div class="card-body p-2">
+				<h6 class="mb-2 fs-6">Top Departments</h6>
+				@forelse($stats['by_department'] as $dept)
+				<div class="d-flex justify-content-between align-items-center mb-1 pb-1 {{ !$loop->last ? 'border-bottom' : '' }}">
+					<span class="text-truncate fs-12">{{ $dept->department->department_name ?? 'N/A' }}</span>
+					<span class="badge bg-info fs-10">{{ $dept->count }}</span>
+				</div>
+				@empty
+				<p class="text-muted text-center mb-0 fs-12">No data</p>
+				@endforelse
+			</div>
+		</div>
+	</div>
+</div>
 
 
 </div>
