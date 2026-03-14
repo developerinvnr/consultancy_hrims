@@ -5,7 +5,7 @@
 @section('content')
 <div class="container-fluid">
 	<!-- Page Header -->
-	<div class="row mb-2">
+	<div class="row mb-1">
 		<div class="col-12">
 			<div class="page-title-box d-sm-flex align-items-center justify-content-between">
 				<h4 class="mb-sm-0 fs-5">
@@ -16,7 +16,7 @@
 	</div>
 
 	<!-- Compact Metrics Grid - Right Aligned Numbers -->
-	<div class="row g-1 mb-3">
+	<div class="row g-1 mb-2">
 		<!-- Row 1 -->
 		<div class="col-xl-2 col-md-3 col-sm-4 col-6">
 			<div class="card border-0 shadow-sm h-100">
@@ -623,7 +623,7 @@
 
 
 @if(isset($expiry))
-<div class="row mb-3">
+<div class="row mb-1">
 	<div class="col-12">
 		<div class="card border-0 shadow-sm">
 			<div class="card-body p-2">
