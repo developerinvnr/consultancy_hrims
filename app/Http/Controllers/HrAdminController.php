@@ -151,7 +151,7 @@ class HrAdminController extends Controller
 
 					$agreementDocuments[] = [
 						'id' => $doc->id,
-						'type' => 'Agreement',
+						'type' => $label,
 						'stamp_type' => $this->formatDocumentType($doc->stamp_type),
 						'sign_status' => $this->formatDocumentType($doc->sign_status),
 						'agreement_number' => $doc->agreement_number,
@@ -160,7 +160,6 @@ class HrAdminController extends Controller
 						's3_url' => $s3Url,
 						'has_file' => $hasFile,
 						'document_category' => 'agreement',
-						'type' => $label,
 						'candidate_code' => $doc->candidate_code
 					];
 				}
