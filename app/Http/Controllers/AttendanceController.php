@@ -362,7 +362,7 @@ class AttendanceController extends Controller
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
 
-                $status = $attendanceData[$day] ?? null;
+                $status = $attendanceData[$day] ?? $attendance->{"A".$day};
                 $date = Carbon::create($year, $month, $day);
 
                 $joiningDate = Carbon::parse($candidate->contract_start_date);
