@@ -97,9 +97,9 @@ class HomeController extends Controller
                 $query->whereHas('candidate', function ($q) {
                     $q->where('candidate_status', 'Signed Agreement Uploaded');
                 })
-                ->whereHas('candidate.signedAgreements', function ($q) {
-                    $q->whereDoesntHave('courierDetails');
-                });
+                    ->whereHas('candidate.signedAgreements', function ($q) {
+                        $q->whereDoesntHave('courierDetails');
+                    });
 
                 break;
 
@@ -107,7 +107,7 @@ class HomeController extends Controller
             case 'courier_pending':
 
                 $query->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
-                        $q->whereNull('received_date');
+                    $q->whereNull('received_date');
                 });
 
                 break;
@@ -116,10 +116,12 @@ class HomeController extends Controller
             case 'file_pending':
 
                 $query->whereHas('candidate', function ($q) {
-
                     $q->where('candidate_status', 'Signed Agreement Uploaded')
                         ->whereNull('file_created_date');
-                });
+                })
+                    ->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
+                        $q->whereNotNull('received_date');
+                    });
 
                 break;
 
