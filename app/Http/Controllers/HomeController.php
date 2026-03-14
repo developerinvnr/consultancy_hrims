@@ -125,13 +125,13 @@ class HomeController extends Controller
 
                 break;
 
-                
+
 
             case 'inactive':
 
-            $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'active'));
+                $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'active'));
 
-            break;
+                break;
 
 
             case 'inactive':
@@ -388,7 +388,37 @@ class HomeController extends Controller
 
         ];
 
-        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
+        $tabCounts = [
+            'submission' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
+
+            'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
+
+            'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
+
+            'approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
+
+            'approved' => ManpowerRequisition::where('status', 'Approved')->count(),
+
+            'unsigned' => CandidateMaster::where('candidate_status', 'Unsigned Agreement Created')->count(),
+
+            'dispatch_pending' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')
+                ->whereDoesntHave('signedAgreements.courierDetails')
+                ->count(),
+
+            'courier_pending' => AgreementCourier::whereNull('received_date')->count(),
+
+            'file_pending' => CandidateMaster::whereNull('file_created_date')
+                ->where('candidate_status', 'Signed Agreement Uploaded')
+                ->count(),
+
+            'active' => CandidateMaster::where('candidate_status', 'Active')->count(),
+
+            'inactive' => CandidateMaster::where('candidate_status', 'Inactive')->count(),
+
+            'rejected' => ManpowerRequisition::where('status', 'Rejected')->count()
+        ];
+
+        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:

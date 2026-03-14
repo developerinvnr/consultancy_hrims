@@ -223,85 +223,101 @@
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='submission'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission']) }}">
+							href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission','page' => null]) }}">
 								Pending HR Verification
+								<span class="badge bg-warning ms-1">
+									{{ $tabCounts['submission'] ?? 0 }}
+								</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='correction_required'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'correction_required']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'correction_required','page' => null]) }}">
 								Correction Required
+								<span class="badge bg-danger">{{ $tabCounts['correction_required'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='hr_verified'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'hr_verified']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'hr_verified','page' => null]) }}">
 								HR Verified
+								<span class="badge bg-info">{{ $tabCounts['hr_verified'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='approval'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approval']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approval','page' => null]) }}">
 								Pending Approval
+								<span class="badge bg-info">{{ $tabCounts['approval'] }}</span>
+
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='approved'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approved']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approved','page' => null]) }}">
 								Approved Requisitions
+								<span class="badge bg-primary">{{ $tabCounts['approved'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='unsigned'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'unsigned']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'unsigned','page' => null]) }}">
 								Agreement Upload Pending
+								<span class="badge bg-success">{{ $tabCounts['unsigned'] }}</span>
+
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='dispatch_pending'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'dispatch_pending']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'dispatch_pending','page' => null]) }}">
 								Pending Dispatch
+								<span class="badge bg-success">{{ $tabCounts['dispatch_pending'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='courier_pending'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'courier_pending']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'courier_pending','page' => null]) }}">
 								Pending Courier Receipt
+								<span class="badge bg-success">{{ $tabCounts['courier_pending'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='file_pending'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'file_pending']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'file_pending','page' => null]) }}">
 								File Creation Pending
+								<span class="badge bg-success">{{ $tabCounts['file_pending'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active','page' => null]) }}">
 								Active
+								<span class="badge bg-success">{{ $tabCounts['active'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='inactive'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'inactive','page' => null]) }}">
 								Inactive
+								<span class="badge bg-success">{{ $tabCounts['inactive'] }}</span>
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='rejected'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected']) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'rejected','page' => null]) }}">
 								Rejected
+								<span class="badge bg-success">{{ $tabCounts['rejected'] }}</span>
 							</a>
 						</li>
 
@@ -899,6 +915,10 @@
     font-weight: 600;
 }
 
+.nav-tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+}
 .tabs-scroll{
     overflow-x: auto;
 }
