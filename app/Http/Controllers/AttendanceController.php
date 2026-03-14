@@ -236,11 +236,19 @@ class AttendanceController extends Controller
             $user = Auth::user();
             $today = Carbon::today();
 
+            // Log::info('Attendance update request', [
+            //     'candidate_id' => $candidateId,
+            //     'month' => $month,
+            //     'year' => $year,
+            //     'user_id' => $user->id,
+            //     'attendance_payload' => $attendanceData
+            // ]);
+
             $candidate = CandidateMaster::findOrFail($candidateId);
             $isContractual = $candidate->requisition_type === 'Contractual';
             $isHRAdmin = $user->hasRole('admin') || $user->hasRole('hr_admin');
             $isReportingManager = $user->emp_id &&
-                $candidate->reporting_manager_employee_id == $user->emp_id;
+            $candidate->reporting_manager_employee_id == $user->emp_id;
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
             $isCurrentMonth = ($today->month == $month && $today->year == $year);
@@ -270,6 +278,8 @@ class AttendanceController extends Controller
             //         }
             //     }
             // }
+
+           
 
             if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
 
@@ -360,10 +370,23 @@ class AttendanceController extends Controller
                 ? Carbon::parse($candidate->contract_end_date)
                 : null;
 
+                // Log::info('Existing attendance before update', [
+                //     'candidate_id' => $candidateId,
+                //     'month' => $month,
+                //     'year' => $year,
+                //     'existing' => $attendance->toArray()
+                // ]);
+
             for ($day = 1; $day <= $daysInMonth; $day++) {
 
                 $status = $attendanceData[$day] ?? $attendance->{"A".$day};
                 $date = Carbon::create($year, $month, $day);
+                // Log::info('Processing attendance day', [
+                //     'candidate_id' => $candidateId,
+                //     'day' => $day,
+                //     'incoming_status' => $attendanceData[$day] ?? null,
+                //     'final_status' => $status
+                // ]);
 
                 $joiningDate = Carbon::parse($candidate->contract_start_date);
 
@@ -452,6 +475,16 @@ class AttendanceController extends Controller
                 }
             }
 
+            // Log::info('Final attendance to save', [
+            //     'candidate_id' => $candidateId,
+            //     'month' => $month,
+            //     'year' => $year,
+            //     'total_present' => $totalPresent,
+            //     'total_absent' => $totalAbsent,
+            //     'total_cl' => $totalCL,
+            //     'total_od' => $totalOD
+            // ]);
+
             /* ---------------- SAVE ---------------- */
 
             $attendance->total_present = $totalPresent;
@@ -464,8 +497,13 @@ class AttendanceController extends Controller
             $attendance->save();
 
             if ($leaveBalance) {
+                // Log::info('Leave balance update', [
+                //     'candidate_id' => $candidateId,
+                //     'opening_cl' => $leaveBalance->opening_cl_balance,
+                //     'available_cl_after' => $availableCL
+                // ]);
                 $leaveBalance->cl_utilized =
-                    $leaveBalance->opening_cl_balance - $availableCL;
+                $leaveBalance->opening_cl_balance - $availableCL;
                 $leaveBalance->save();
             }
 
@@ -1230,14 +1268,14 @@ class AttendanceController extends Controller
             }
 
             // Log the export request
-            \Log::info('Attendance Export Request:', [
-                'user_id' => $user->id,
-                'user_emp_id' => $user->emp_id,
-                'user_roles' => $user->getRoleNames()->toArray(),
-                'month' => $request->month,
-                'year' => $request->year,
-                'employee_type' => $request->employee_type
-            ]);
+            // \Log::info('Attendance Export Request:', [
+            //     'user_id' => $user->id,
+            //     'user_emp_id' => $user->emp_id,
+            //     'user_roles' => $user->getRoleNames()->toArray(),
+            //     'month' => $request->month,
+            //     'year' => $request->year,
+            //     'employee_type' => $request->employee_type
+            // ]);
 
             $month = $request->month;
             $year = $request->year;
@@ -1377,7 +1415,7 @@ class AttendanceController extends Controller
 
     public function partyAttendanceUpdate(Request $request)
     {
-        Log::info('Attendance Update API Request', $request->all());
+        //Log::info('Attendance Update API Request', $request->all());
 
         $request->validate([
             'party_id' => 'required|integer',
@@ -1404,12 +1442,12 @@ class AttendanceController extends Controller
 
             if ($day > $daysInMonth) {
 
-                Log::warning('Invalid attendance day', [
-                    'candidate_id' => $candidateId,
-                    'day' => $day,
-                    'month' => $month,
-                    'year' => $year
-                ]);
+                // Log::warning('Invalid attendance day', [
+                //     'candidate_id' => $candidateId,
+                //     'day' => $day,
+                //     'month' => $month,
+                //     'year' => $year
+                // ]);
 
                 return response()->json([
                     'Code' => 400,
