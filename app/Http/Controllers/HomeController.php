@@ -54,12 +54,16 @@ class HomeController extends Controller
                 break;
 
 
-            case 'hr_verify':
+            case 'correction_required':
 
-                $query->whereIn('status', [
-                    'Hr Verified',
-                    'Correction Required'
-                ]);
+                $query->where('status', 'Correction Required');
+
+                break;
+
+
+            case 'hr_verified':
+
+                $query->where('status', 'Hr Verified');
 
                 break;
 
@@ -71,7 +75,7 @@ class HomeController extends Controller
                 break;
 
 
-            case 'agreement':
+            case 'approved':
 
                 $query->where('status', 'Approved');
 
@@ -88,21 +92,33 @@ class HomeController extends Controller
                 break;
 
 
-            case 'signed':
+            case 'dispatch_pending':
 
                 $query->whereHas('candidate', function ($q) {
-
                     $q->where('candidate_status', 'Signed Agreement Uploaded');
+                })
+                ->whereHas('candidate.signedAgreements', function ($q) {
+                    $q->whereDoesntHave('courierDetails');
                 });
 
                 break;
 
 
-            case 'active':
+            case 'courier_pending':
+
+                $query->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
+                        $q->whereNull('received_date');
+                });
+
+                break;
+
+
+            case 'file_pending':
 
                 $query->whereHas('candidate', function ($q) {
 
-                    $q->where('candidate_status', 'Active');
+                    $q->where('candidate_status', 'Signed Agreement Uploaded')
+                        ->whereNull('file_created_date');
                 });
 
                 break;
@@ -110,10 +126,7 @@ class HomeController extends Controller
 
             case 'inactive':
 
-                $query->whereHas('candidate', function ($q) {
-
-                    $q->where('candidate_status', 'Inactive');
-                });
+                $query->whereHas('candidate', fn($q) => $q->where('candidate_status', 'Inactive'));
 
                 break;
 
@@ -123,10 +136,7 @@ class HomeController extends Controller
                 $query->where(function ($q) {
 
                     $q->where('status', 'Rejected')
-                        ->orWhereHas('candidate', function ($sub) {
-
-                            $sub->where('candidate_status', 'Rejected');
-                        });
+                        ->orWhereHas('candidate', fn($sub) => $sub->where('candidate_status', 'Rejected'));
                 });
 
                 break;

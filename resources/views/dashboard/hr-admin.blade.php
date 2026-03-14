@@ -224,49 +224,63 @@
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='submission'?'active':'' }}"
 								href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission']) }}">
-								Pending Hr Verification
+								Pending HR Verification
 							</a>
 						</li>
 
 						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='hr_verify'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'hr_verify']) }}">
-								HR Verify
+							<a class="nav-link {{ $req_tab=='correction_required'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'correction_required']) }}">
+								Correction Required
+							</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link {{ $req_tab=='hr_verified'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'hr_verified']) }}">
+								HR Verified
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='approval'?'active':'' }}"
 								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approval']) }}">
-								Approval
+								Pending Approval
 							</a>
 						</li>
 
 						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='agreement'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'agreement']) }}">
-								Agreement
+							<a class="nav-link {{ $req_tab=='approved'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'approved']) }}">
+								Approved Requisitions
 							</a>
 						</li>
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='unsigned'?'active':'' }}"
 								href="{{ request()->fullUrlWithQuery(['req_tab'=>'unsigned']) }}">
-								Unsigned
+								Agreement Upload Pending
 							</a>
 						</li>
 
 						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='signed'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'signed']) }}">
-								Signed
+							<a class="nav-link {{ $req_tab=='dispatch_pending'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'dispatch_pending']) }}">
+								Pending Dispatch
 							</a>
 						</li>
 
 						<li class="nav-item">
-							<a class="nav-link {{ $req_tab=='active'?'active':'' }}"
-								href="{{ request()->fullUrlWithQuery(['req_tab'=>'active']) }}">
-								Active
+							<a class="nav-link {{ $req_tab=='courier_pending'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'courier_pending']) }}">
+								Pending Courier Receipt
+							</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link {{ $req_tab=='file_pending'?'active':'' }}"
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'file_pending']) }}">
+								File Creation Pending
 							</a>
 						</li>
 
@@ -285,7 +299,6 @@
 						</li>
 
 					</ul>
-
 
 					<table class="table table-sm table-hover mb-0">
 						<thead class="sticky-top bg-white">
