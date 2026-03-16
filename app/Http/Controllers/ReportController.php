@@ -124,7 +124,14 @@ class ReportController extends Controller
         }
 
         $candidates = $query
-            ->with('department')
+            ->with([
+                'department',
+                'zoneRef',
+                'regionRef',
+                'businessUnit',
+                'vertical',
+                'subDepartmentRef'
+            ])
             ->orderBy('candidate_code')
             ->paginate(20)
             ->withQueryString();

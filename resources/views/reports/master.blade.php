@@ -186,6 +186,7 @@
                             <th>Crop Vertical</th>
                             <th>Region</th>
                             <th>Business Unit</th>
+                            <th>Zone</th>
                             <th>Location/HQ</th>
                             <th>City</th>
                             <th>State Name</th>
@@ -248,6 +249,7 @@
                             <td>{{ $candidate->vertical?->vertical_name ?? '-' }}</td>
                             <td>{{ $candidate->regionRef?->region_name ?? '-' }}</td>
                             <td>{{ $candidate->businessUnit?->business_unit_name ?? '-' }}</td>
+                            <td> {{ $candidate->zoneRef?->zone_name ?? '-' }}</td>
                             <td>{{ $candidate->work_location_hq ?? '-' }}</td>
                             <td>{{ $candidate->cityMaster?->city_village_name ?? '-' }}</td>
                             <td>{{ $candidate->workState?->state_name ?? '-' }}</td>

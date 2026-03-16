@@ -127,6 +127,7 @@ class MasterReportExport implements
             'Crop Vertical',
             'Region',
             'Business Unit',
+            'Zone',
             'Location/HQ',
             'City',
             'State Name',
@@ -172,6 +173,7 @@ class MasterReportExport implements
             optional($candidate->vertical)->vertical_name ?? 'N/A',
             optional($candidate->regionRef)->region_name ?? 'N/A',
             optional($candidate->businessUnit)->business_unit_name ?? 'N/A',
+            optional($candidate->zoneRef)->zone_name  ?? 'N/A',
 
             $candidate->work_location_hq ?? 'N/A',
             optional($candidate->cityMaster)->city_village_name ?? 'N/A',
