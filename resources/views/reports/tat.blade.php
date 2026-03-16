@@ -108,104 +108,161 @@
 
 			<div class="table-responsive">
 
-				<table class="table table-bordered table-hover table-sm mb-0">
+<table class="table table-bordered table-hover table-sm mb-0">
 
-					<thead class="table-light">
-						<tr>
+<thead class="table-light">
+<tr>
 
-							<th>#</th>
-							<th>Req ID</th>
-							<th>Candidate</th>
+<th>#</th>
+<th>Req ID</th>
+<th>Candidate</th>
 
-							<th>Submission</th>
-							<th>HR Verified</th>
-							<th>Approval</th>
-							<th>Processing</th>
+<th>Submission</th>
+<th>HR Verified</th>
+<th>Approval</th>
+<th>Processing</th>
 
-							<th class="text-center">HR TAT</th>
-							<th class="text-center">Approval TAT</th>
-							<th class="text-center">Processing TAT</th>
+<th class="text-center">HR TAT</th>
+<th class="text-center">Approval TAT</th>
+<th class="text-center">Processing TAT</th>
+<th class="text-center">Total TAT</th>
 
-						</tr>
-					</thead>
+</tr>
+</thead>
 
-					<tbody>
+<tbody>
 
-						@foreach($records as $index => $row)
+@foreach($records as $index => $row)
 
-						@php
+@php
 
-						$hrTat = ($row->submission_date && $row->hr_verification_date)
-						? ceil(
-						\Carbon\Carbon::parse($row->submission_date)
-						->diffInSeconds(\Carbon\Carbon::parse($row->hr_verification_date)) / 86400
-						)
-						: null;
+$hrTat = ($row->submission_date && $row->hr_verification_date)
+? ceil(
+\Carbon\Carbon::parse($row->submission_date)
+->diffInSeconds(\Carbon\Carbon::parse($row->hr_verification_date)) / 86400
+)
+: null;
 
-						$approvalTat = ($row->hr_verification_date && $row->approval_date)
-						? ceil(
-						\Carbon\Carbon::parse($row->hr_verification_date)
-						->diffInSeconds(\Carbon\Carbon::parse($row->approval_date)) / 86400
-						)
-						: null;
+$approvalTat = ($row->hr_verification_date && $row->approval_date)
+? ceil(
+\Carbon\Carbon::parse($row->hr_verification_date)
+->diffInSeconds(\Carbon\Carbon::parse($row->approval_date)) / 86400
+)
+: null;
 
-						$processTat = ($row->approval_date && $row->processing_date)
-						? ceil(
-						\Carbon\Carbon::parse($row->approval_date)
-						->diffInSeconds(\Carbon\Carbon::parse($row->processing_date)) / 86400
-						)
-						: null;
+$processTat = ($row->approval_date && $row->processing_date)
+? ceil(
+\Carbon\Carbon::parse($row->approval_date)
+->diffInSeconds(\Carbon\Carbon::parse($row->processing_date)) / 86400
+)
+: null;
 
-						@endphp
+$totalTat = ($row->submission_date && $row->processing_date)
+? ceil(
+\Carbon\Carbon::parse($row->submission_date)
+->diffInSeconds(\Carbon\Carbon::parse($row->processing_date)) / 86400
+)
+: null;
 
-						<tr>
+@endphp
 
-							<td>{{ $records->firstItem() + $index }}</td>
+<tr>
 
-							<td>
-								<span class="badge bg-secondary">
-									{{ $row->requisition_id }}
-								</span>
-							</td>
+<td>{{ $records->firstItem() + $index }}</td>
 
-							<td>{{ $row->candidate_name }}</td>
+<td>
+<span class="badge bg-secondary">
+{{ $row->requisition_id }}
+</span>
+</td>
 
-							<td>{{ $row->submission_date ? \Carbon\Carbon::parse($row->submission_date)->format('d-M-Y') : '-' }}</td>
+<td>{{ $row->candidate_name }}</td>
 
-							<td>{{ $row->hr_verification_date ? \Carbon\Carbon::parse($row->hr_verification_date)->format('d-M-Y') : '-' }}</td>
+<td>{{ $row->submission_date ? \Carbon\Carbon::parse($row->submission_date)->format('d-M-Y') : '-' }}</td>
+<td>{{ $row->hr_verification_date ? \Carbon\Carbon::parse($row->hr_verification_date)->format('d-M-Y') : '-' }}</td>
+<td>{{ $row->approval_date ? \Carbon\Carbon::parse($row->approval_date)->format('d-M-Y') : '-' }}</td>
+<td>{{ $row->processing_date ? \Carbon\Carbon::parse($row->processing_date)->format('d-M-Y') : '-' }}</td>
 
-							<td>{{ $row->approval_date ? \Carbon\Carbon::parse($row->approval_date)->format('d-M-Y') : '-' }}</td>
+<td class="text-center">
 
-							<td>{{ $row->processing_date ? \Carbon\Carbon::parse($row->processing_date)->format('d-M-Y') : '-' }}</td>
+@if($hrTat)
 
-							<td class="text-center">
-								@if($hrTat !== null)
-								{{ $hrTat }} {{ $hrTat == 1 ? 'Day' : 'Days' }}
-								@else
-								-
-								@endif
-							</td>
+<span class="badge 
+@if($hrTat <= 1) bg-success
+@elseif($hrTat <= 3) bg-warning
+@else bg-danger
+@endif
+">
+{{ $hrTat }} Days
+</span>
 
-							<td class="text-center">
-@if($approvalTat !== null)
-{{ $approvalTat }} {{ $approvalTat == 1 ? 'Day' : 'Days' }}
 @else
 -
 @endif
+
 </td>
 
 <td class="text-center">
-@if($processTat !== null)
-{{ $processTat }} {{ $processTat == 1 ? 'Day' : 'Days' }}
+
+@if($approvalTat)
+
+<span class="badge 
+@if($approvalTat <= 1) bg-success
+@elseif($approvalTat <= 3) bg-warning
+@else bg-danger
+@endif
+">
+{{ $approvalTat }} Days
+</span>
+
 @else
 -
 @endif
+
 </td>
-						</tr>
-						@endforeach
-					</tbody>
-				</table>
-			</div>
+
+<td class="text-center">
+
+@if($processTat)
+
+<span class="badge 
+@if($processTat <= 1) bg-success
+@elseif($processTat <= 3) bg-warning
+@else bg-danger
+@endif
+">
+{{ $processTat }} Days
+</span>
+
+@else
+-
+@endif
+
+</td>
+
+<td class="text-center">
+
+@if($totalTat)
+
+<span class="badge bg-secondary">
+{{ $totalTat }} Days
+</span>
+
+@else
+-
+@endif
+
+</td>
+
+</tr>
+
+@endforeach
+
+</tbody>
+
+</table>
+
+</div>
 		</div>
 		<div class="card-footer d-flex justify-content-end">
 			{{ $records->links('pagination::bootstrap-5') }}

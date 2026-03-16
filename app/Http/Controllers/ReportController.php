@@ -667,6 +667,7 @@ class ReportController extends Controller
 
         // Default financial year
         if (!$financialYear) {
+
             $currentMonth = date('n');
             $currentYear = date('Y');
 
@@ -681,7 +682,7 @@ class ReportController extends Controller
 
         $query = ManpowerRequisition::query();
 
-        // Financial year filter
+        // Month filter
         if ($month) {
 
             $year = ($month >= 4) ? $startYear : $endYear;
@@ -698,18 +699,15 @@ class ReportController extends Controller
             ]);
         }
 
-        // Department filter
-        if (!empty($departmentId)) {
+        if ($departmentId) {
             $query->where('department_id', $departmentId);
         }
 
-        // Requisition type
-        if (!empty($requisitionType)) {
+        if ($requisitionType) {
             $query->where('requisition_type', $requisitionType);
         }
 
-        // Status
-        if (!empty($status)) {
+        if ($status) {
             $query->where('status', $status);
         }
 

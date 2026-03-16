@@ -92,6 +92,13 @@ class TatReportExport implements
                 )
                 : null;
 
+            $totalTat = ($row->submission_date && $row->processing_date)
+                ? ceil(
+                    Carbon::parse($row->submission_date)
+                        ->diffInSeconds(Carbon::parse($row->processing_date)) / 86400
+                )
+                : null;
+
             return [
                 $row->requisition_id,
                 $row->candidate_name,
@@ -101,7 +108,8 @@ class TatReportExport implements
                 $row->processing_date,
                 $hrTat,
                 $approvalTat,
-                $processTat
+                $processTat,
+                $totalTat
             ];
         });
     }
@@ -116,7 +124,8 @@ class TatReportExport implements
             'Processing Date',
             'HR TAT (Days)',
             'Approval TAT (Days)',
-            'Processing TAT (Days)'
+            'Processing TAT (Days)',
+            'Total TAT (Days)'
         ];
     }
 
