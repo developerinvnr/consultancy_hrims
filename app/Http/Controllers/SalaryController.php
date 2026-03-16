@@ -590,6 +590,7 @@ class SalaryController extends Controller
                 'residenceState',
                 'workState',
                 'qualification',
+                'reportingManager',
                 'salaryProcessings' => function ($q) use ($month, $year) {
                     $q->where('month', $month)
                         ->where('year', $year);
@@ -659,6 +660,7 @@ class SalaryController extends Controller
                 'id' => $candidate->id,
                 'code' => $candidate->candidate_code,
                 'name' => $candidate->candidate_name,
+                'reporting_manager' => $candidate->reportingManager?->emp_name ?? $candidate->reportingManager?->employee_name ?? '',
                 'function' => $functionName,
                 'vertical' => $verticalName,
                 'department' => $departmentName,

@@ -57,6 +57,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                 'zoneRef',
                 'regionRef',
                 'territoryRef',
+                'reportingManager',
                 'salaryProcessings' => function ($q) {
                     $q->where('month', $this->month)
                         ->where('year', $this->year)
@@ -83,6 +84,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
             'S no.',
             'Code',
             'Name of Party',
+            'Reporting Manager',
             'Function',
             'Vertical',
             'Department',
@@ -124,16 +126,17 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
             $index,
             $candidate->candidate_code,
             $candidate->candidate_name,
-            $candidate->function->function_name ?? ($candidate->function_id ?? ''),  // Updated
-            $candidate->vertical->vertical_name ?? ($candidate->vertical_id ?? ''),  // Updated
-            $candidate->department->department_name ?? ($candidate->department_id ?? ''),  // Updated
-            $candidate->subDepartmentRef->sub_department_name ?? '',  // Updated
-            '', // Section - you may need to add this field
+            $candidate->reportingManager ? $candidate->reportingManager->emp_name : '',
+            $candidate->function->function_name ?? ($candidate->function_id ?? ''),  
+            $candidate->vertical->vertical_name ?? ($candidate->vertical_id ?? ''), 
+            $candidate->department->department_name ?? ($candidate->department_id ?? ''), 
+            $candidate->subDepartmentRef->sub_department_name ?? '',  
+            '', 
             $candidate->state_work_location,
-            $candidate->businessUnit->business_unit_name ?? ($candidate->business_unit ?? ''),  // Updated
-            $candidate->zoneRef->zone_name ?? ($candidate->zone ?? ''),  // Updated
-            $candidate->regionRef->region_name ?? ($candidate->region ?? ''),  // Updated
-            $candidate->territoryRef->territory_name ?? ($candidate->territory ?? ''),  // Updated
+            $candidate->businessUnit->business_unit_name ?? ($candidate->business_unit ?? ''),
+            $candidate->zoneRef->zone_name ?? ($candidate->zone ?? ''),  
+            $candidate->regionRef->region_name ?? ($candidate->region ?? ''), 
+            $candidate->territoryRef->territory_name ?? ($candidate->territory ?? ''), 
             $candidate->work_location_hq,
             $candidate->contract_start_date ? $candidate->contract_start_date->format('d-m-Y') : '',
             $candidate->contract_end_date ? $candidate->contract_end_date->format('d-m-Y') : '',
@@ -163,7 +166,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 // Auto-size columns
-                $columns = range('A', 'W'); // A to W for 23 columns
+                $columns = range('A', 'X'); // A to X for 24 columns
                 foreach ($columns as $column) {
                     $event->sheet->getDelegate()->getColumnDimension($column)->setAutoSize(true);
                 }
@@ -182,15 +185,15 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                 $event->sheet->getDelegate()->getColumnDimension('P')->setWidth(15); // Date of separation
 
                 // Format number columns
-                $event->sheet->getStyle('S2:W1000')->getNumberFormat()->setFormatCode('#,##0.00');
+                $event->sheet->getStyle('S2:X1000')->getNumberFormat()->setFormatCode('#,##0.00');
 
                 // Center align columns
                 $event->sheet->getStyle('A2:A1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $event->sheet->getStyle('S2:S1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Paid days
-                $event->sheet->getStyle('T2:W1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT); // Amount columns
+                $event->sheet->getStyle('T2:X1000')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT); // Amount columns
 
                 // Add borders
-                $event->sheet->getStyle('A1:W1000')
+                $event->sheet->getStyle('A1:X1000')
                     ->getBorders()
                     ->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN);
@@ -199,7 +202,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                 $event->sheet->getDelegate()->freezePane('A2');
 
                 // Add filter
-                $event->sheet->getDelegate()->setAutoFilter('A1:W1');
+                $event->sheet->getDelegate()->setAutoFilter('A1:X1');
 
                 // Add title
                 $monthName = date('F', mktime(0, 0, 0, $this->month, 1));
@@ -209,7 +212,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                 }
 
                 $event->sheet->getDelegate()->insertNewRowBefore(1, 2);
-                $event->sheet->getDelegate()->mergeCells('A1:W1');
+                $event->sheet->getDelegate()->mergeCells('A1:X1');
                 $event->sheet->setCellValue('A1', $title);
                 $event->sheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 16],
@@ -221,7 +224,7 @@ class DetailedSalaryReportExport implements FromCollection, WithHeadings, WithMa
                 $event->sheet->getDelegate()->fromArray($this->headings(), null, 'A3', true);
 
                 // Style the new header row
-                $event->sheet->getStyle('A3:W3')->applyFromArray([
+                $event->sheet->getStyle('A3:X3')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2c3e50']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true]

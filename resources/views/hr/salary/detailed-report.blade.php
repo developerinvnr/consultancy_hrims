@@ -78,6 +78,7 @@
                             <th>S no.</th>
                             <th>Party Code</th>
                             <th>Name of Party</th>
+                            <th>Reporting Manager</th>
                             <th>Function</th>
                             <th>Vertical</th>
                             <th>Department</th>
@@ -230,6 +231,7 @@
                     <td class="text-center">${index + 1}</td>
                     <td>${item.code}${statusBadge}</td>
                     <td>${item.name}</td>
+                    <td>${item.reporting_manager || '-'}</td>
                     <td>${item.function || '-'}</td>
                     <td>${item.vertical || '-'}</td>
                     <td>${item.department || '-'}</td>

@@ -223,7 +223,7 @@
 
 						<li class="nav-item">
 							<a class="nav-link {{ $req_tab=='submission'?'active':'' }}"
-							href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission','page' => null]) }}">
+								href="{{ request()->fullUrlWithQuery(['req_tab'=>'submission','page' => null]) }}">
 								Pending HR Verification
 								<span class="badge bg-warning ms-1">
 									{{ $tabCounts['submission'] ?? 0 }}
@@ -321,7 +321,7 @@
 							</a>
 						</li>
 
-					</ul>					
+					</ul>
 				</div>
 
 				<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -334,6 +334,7 @@
 								<th class="fs-11">Candidate</th>
 								<th class="fs-11">Email</th>
 								<th class="fs-11">Type</th>
+								<th class="fs-11">Reporting Manager</th>
 								<th class="fs-11">Status</th>
 								<th class="fs-11">Remark</th>
 								<th class="fs-11">Courier Status</th>
@@ -368,6 +369,13 @@
 									<span class="badge bg-{{ $req->requisition_type == 'Contractual' ? 'primary' : ($req->requisition_type == 'TFA' ? 'success' : 'info') }} fs-10">
 										{{ $req->requisition_type }}
 									</span>
+								</td>
+								<td class="fs-11">
+									@if($candidate && $candidate->reportingManager)
+									{{ $candidate->reportingManager->emp_name ?? 'N/A' }}
+									@else
+									<span class="text-muted fs-9">Not Assigned</span>
+									@endif
 								</td>
 								<td class="fs-11">
 									@if($candidate && $candidate->candidate_status)
@@ -888,47 +896,48 @@
 		background-color: #e6f7f0 !important;
 	}
 
-.nav-tabs {
-    border-bottom: 1px solid #dee2e6;
-}
+	.nav-tabs {
+		border-bottom: 1px solid #dee2e6;
+	}
 
-.nav-tabs .nav-link {
-    font-size: 13px;
-    padding: 6px 14px;
-    color: #495057;
-    border: 1px solid transparent;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
+	.nav-tabs .nav-link {
+		font-size: 13px;
+		padding: 6px 14px;
+		color: #495057;
+		border: 1px solid transparent;
+		border-top-left-radius: 6px;
+		border-top-right-radius: 6px;
+	}
 
-/* hover */
-.nav-tabs .nav-link:hover {
-    border-color: #dee2e6 #dee2e6 #dee2e6;
-    background: #f8f9fa;
-}
+	/* hover */
+	.nav-tabs .nav-link:hover {
+		border-color: #dee2e6 #dee2e6 #dee2e6;
+		background: #f8f9fa;
+	}
 
-/* ACTIVE TAB */
-.nav-tabs .nav-link.active {
-    color: #5e999d;
-    background: #ffffff;
-    border-color: #dee2e6 #dee2e6 #ffffff;
-    font-weight: 600;
-}
+	/* ACTIVE TAB */
+	.nav-tabs .nav-link.active {
+		color: #5e999d;
+		background: #ffffff;
+		border-color: #dee2e6 #dee2e6 #ffffff;
+		font-weight: 600;
+	}
 
-.nav-tabs {
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.tabs-scroll{
-    overflow-x: auto;
-}
+	.nav-tabs {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
 
-.tabs-scroll .nav-tabs{
-    flex-wrap: nowrap;
-}
+	.tabs-scroll {
+		overflow-x: auto;
+	}
 
-.tabs-scroll .nav-item{
-    white-space: nowrap;
-}
+	.tabs-scroll .nav-tabs {
+		flex-wrap: nowrap;
+	}
+
+	.tabs-scroll .nav-item {
+		white-space: nowrap;
+	}
 </style>
 @endpush

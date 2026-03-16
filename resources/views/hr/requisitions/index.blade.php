@@ -95,6 +95,7 @@
                                     <th width="8%">Type</th>
                                     <th width="15%">Candidate</th>
                                     <th width="15%">Submitted By</th>
+                                    <th width="15%">Reporting Manager</th>
                                     <th width="8%">Date</th>
                                     <th width="12%">Req Status</th>
                                     <th width="12%">Party Code</th>
@@ -130,6 +131,13 @@
                                     <td>
                                         <div>{{ $requisition->submitted_by_name }}</div>
                                         <small class="text-muted">ID: {{ $requisition->submitted_by_employee_id }}</small>
+                                    </td>
+                                    <td>
+                                    	@if($candidate && $candidate->reportingManager)
+                                        {{ $candidate->reportingManager->emp_name ?? 'N/A' }}
+                                        @else
+                                        <span class="text-muted fs-9">Not Assigned</span>
+                                        @endif
                                     </td>
                                     <td>{{ $requisition->created_at->format('d-m-Y') }}</td>
                                     <td>
@@ -210,7 +218,6 @@
                                         @endif
 
                                     </td>
-                                    <!-- Actions column -->
                                     <!-- Actions column -->
                                     <td>
                                         <div class="d-flex gap-1">
