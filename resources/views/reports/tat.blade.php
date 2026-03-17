@@ -84,6 +84,52 @@
 				</div>
 			</div>
 
+			<div class="row mb-3">
+
+    <!-- HR Stage -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-success border-3">
+            <div class="card-body p-2">
+                <h6 class="text-success mb-1">HR Verification</h6>
+                <small>Total: {{ $hrSummary['total'] }}</small><br>
+                <small>Avg: {{ $hrSummary['avg'] }} Days</small><br>
+                <small>≤1 Day: {{ $hrSummary['within_1'] }}</small><br>
+                <small>1-3 Days: {{ $hrSummary['within_3'] }}</small><br>
+                <small>>3 Days: {{ $hrSummary['above_3'] }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Stage -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-warning border-3">
+            <div class="card-body p-2">
+                <h6 class="text-warning mb-1">Approval</h6>
+                <small>Total: {{ $approvalSummary['total'] }}</small><br>
+                <small>Avg: {{ $approvalSummary['avg'] }} Days</small><br>
+                <small>≤1 Day: {{ $approvalSummary['within_1'] }}</small><br>
+                <small>1-3 Days: {{ $approvalSummary['within_3'] }}</small><br>
+                <small>>3 Days: {{ $approvalSummary['above_3'] }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Stage -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-danger border-3">
+            <div class="card-body p-2">
+                <h6 class="text-danger mb-1">Processing</h6>
+                <small>Total: {{ $processingSummary['total'] }}</small><br>
+                <small>Avg: {{ $processingSummary['avg'] }} Days</small><br>
+                <small>≤1 Day: {{ $processingSummary['within_1'] }}</small><br>
+                <small>1-3 Days: {{ $processingSummary['within_3'] }}</small><br>
+                <small>>3 Days: {{ $processingSummary['above_3'] }}</small>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 			<div class="table-responsive">
 				<table class="table table-bordered table-hover table-sm mb-0">
 					<thead class="table-light">

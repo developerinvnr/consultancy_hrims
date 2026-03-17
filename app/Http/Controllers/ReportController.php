@@ -665,9 +665,8 @@ class ReportController extends Controller
         $requisitionType = $request->get('requisition_type');
         $status = $request->get('status');
 
-        // Default financial year
+        // Default FY
         if (!$financialYear) {
-
             $currentMonth = date('n');
             $currentYear = date('Y');
 
@@ -684,15 +683,13 @@ class ReportController extends Controller
 
         // Month filter
         if ($month) {
-
             $year = ($month >= 4) ? $startYear : $endYear;
 
             $startDate = "{$year}-{$month}-01";
-            $endDate = Carbon::parse($startDate)->endOfMonth();
+            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth();
 
             $query->whereBetween('submission_date', [$startDate, $endDate]);
         } else {
-
             $query->whereBetween('submission_date', [
                 $startYear . '-04-01',
                 $endYear . '-03-31'
@@ -711,10 +708,50 @@ class ReportController extends Controller
             $query->where('status', $status);
         }
 
-        $records = $query
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
+        // 🔹 Get all records for stage-wise calculation
+        $allRecords = $query->get();
+
+        $stageData = [
+            'hr' => [],
+            'approval' => [],
+            'processing' => []
+        ];
+
+        foreach ($allRecords as $row) {
+
+            if ($row->submission_date && $row->hr_verification_date) {
+                $stageData['hr'][] = \Carbon\Carbon::parse($row->submission_date)
+                    ->diffInDays($row->hr_verification_date);
+            }
+
+            if ($row->hr_verification_date && $row->approval_date) {
+                $stageData['approval'][] = \Carbon\Carbon::parse($row->hr_verification_date)
+                    ->diffInDays($row->approval_date);
+            }
+
+            if ($row->approval_date && $row->processing_date) {
+                $stageData['processing'][] = \Carbon\Carbon::parse($row->approval_date)
+                    ->diffInDays($row->processing_date);
+            }
+        }
+
+        // 🔹 Summary function
+        $getSummary = function ($data) {
+            return [
+                'total' => count($data),
+                'avg' => count($data) ? round(array_sum($data) / count($data), 2) : 0,
+                'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
+                'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
+                'above_3' => count(array_filter($data, fn($d) => $d > 3)),
+            ];
+        };
+
+        $hrSummary = $getSummary($stageData['hr']);
+        $approvalSummary = $getSummary($stageData['approval']);
+        $processingSummary = $getSummary($stageData['processing']);
+
+        // 🔹 Paginated records (your existing table)
+        $records = $query->latest()->paginate(20)->withQueryString();
 
         $departments = CoreDepartment::orderBy('department_name')->get();
 
@@ -725,10 +762,12 @@ class ReportController extends Controller
             'departmentId',
             'requisitionType',
             'status',
-            'departments'
+            'departments',
+            'hrSummary',
+            'approvalSummary',
+            'processingSummary'
         ));
     }
-
     public function tatExport(Request $request)
     {
         return Excel::download(
