@@ -14,7 +14,8 @@ class SendPanInoperativeAlert extends Command
 
     public function handle()
     {
-        $hrEmail = 'hr@test.com';
+        \Log::info('PAN alert command STARTED at ' . now());
+        $hrEmail = 'opsv@vnrseeds.com';
 
         $candidates = CandidateMaster::with('reportingManager')
             ->where('pan_status_2', '!=', 'Operative')
@@ -26,8 +27,11 @@ class SendPanInoperativeAlert extends Command
             $managerEmail = $candidate->reportingManager->emp_email ?? null;
 
             if (!$managerEmail) {
+                $this->warn("❌ No manager email for: {$candidate->candidate_name}");
                 continue;
             }
+
+            $this->info("📧 Sending email to: {$managerEmail}");
 
             Mail::send('emails.requisition.pan-inoperative-alert', [
                 'candidate' => $candidate
@@ -37,9 +41,8 @@ class SendPanInoperativeAlert extends Command
                     ->cc($hrEmail)
                     ->subject("PAN Inoperative Alert - {$candidate->candidate_name}");
             });
-
         }
-
+         \Log::info('PAN alert command COMPLETED at ' . now());
         $this->info('PAN Inoperative alert emails sent successfully.');
     }
 }

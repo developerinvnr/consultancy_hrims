@@ -7,14 +7,6 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    protected $commands = [
-        \App\Console\Commands\ProcessApprovalReminders::class,
-    ];
-
-    protected function schedule(Schedule $schedule): void
-    {
-        $schedule->command('approval:reminders')->hourly();
-    }
 
     protected function commands(): void
     {
