@@ -6,6 +6,7 @@ use App\Models\CandidateMaster;
 use App\Models\SalaryProcessing;
 use App\Models\CoreDepartment;
 use App\Models\ManpowerRequisition;
+use App\Models\AgreementCourier;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MasterReportExport;
 use App\Exports\RemunerationReportExport;
@@ -661,81 +662,124 @@ class ReportController extends Controller
     {
         $financialYear = $request->get('financial_year');
         $month = $request->get('month');
+
         $departmentId = $request->get('department_id');
         $requisitionType = $request->get('requisition_type');
         $status = $request->get('status');
 
-        // Default FY
         if (!$financialYear) {
             $currentMonth = date('n');
             $currentYear = date('Y');
 
-            if ($currentMonth >= 4) {
-                $financialYear = $currentYear . '-' . ($currentYear + 1);
-            } else {
-                $financialYear = ($currentYear - 1) . '-' . $currentYear;
-            }
+            $financialYear = ($currentMonth >= 4)
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
         }
 
         [$startYear, $endYear] = explode('-', $financialYear);
 
-        $query = ManpowerRequisition::query();
+        // ✅ ROOT QUERY (Candidate आधारित)
+        $query = CandidateMaster::query()
+            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
 
-        // Month filter
+            // ✅ Latest Agreement (fix duplicate)
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->groupBy('candidate_id'),
+                'latest_ad',
+                'latest_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as ad', 'ad.id', '=', 'latest_ad.id')
+
+            // ✅ Latest Courier (fix duplicate)
+            ->leftJoinSub(
+                DB::table('agreement_couriers')
+                    ->select('agreement_document_id', DB::raw('MAX(id) as id'))
+                    ->groupBy('agreement_document_id'),
+                'latest_ac',
+                'latest_ac.agreement_document_id',
+                '=',
+                'ad.id'
+            )
+            ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
+
+            ->select(
+                'candidate_master.*',
+
+                // Manpower
+                'mr.submission_date',
+                'mr.hr_verification_date',
+                'mr.approval_date',
+
+                // Agreement
+                'ad.created_at as agreement_created_date',
+                'ad.updated_at as agreement_uploaded_date',
+
+                // Courier
+                'ac.dispatch_date',
+                'ac.received_date'
+            );
+
+        if ($departmentId) {
+            $query->where('candidate_master.department_id', $departmentId);
+        }
+
+        if ($requisitionType) {
+            $query->where('candidate_master.requisition_type', $requisitionType);
+        }
+
+        if ($status) {
+            $query->where('mr.status', $status);
+        }
+        // ✅ Date Filter (based on submission OR candidate created)
         if ($month) {
             $year = ($month >= 4) ? $startYear : $endYear;
-
             $startDate = "{$year}-{$month}-01";
             $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth();
 
-            $query->whereBetween('submission_date', [$startDate, $endDate]);
+            $query->whereBetween('mr.submission_date', [$startDate, $endDate]);
         } else {
-            $query->whereBetween('submission_date', [
+            $query->whereBetween('mr.submission_date', [
                 $startYear . '-04-01',
                 $endYear . '-03-31'
             ]);
         }
 
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($requisitionType) {
-            $query->where('requisition_type', $requisitionType);
-        }
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        // 🔹 Get all records for stage-wise calculation
         $allRecords = $query->get();
 
-        $stageData = [
-            'hr' => [],
-            'approval' => [],
-            'processing' => []
+        // ✅ STAGE CONFIG (Dynamic 🔥)
+        $stages = [
+            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
         ];
 
+        $stageData = [];
+        foreach ($stages as $key => $s) {
+            $stageData[$key] = [];
+        }
+
         foreach ($allRecords as $row) {
+            foreach ($stages as $key => $s) {
+                if ($row->{$s['from']} && $row->{$s['to']}) {
+                    $days = max(0, ceil(
+                        \Carbon\Carbon::parse($row->{$s['from']})
+                            ->diffInDays($row->{$s['to']})
+                    ));
 
-            if ($row->submission_date && $row->hr_verification_date) {
-                $stageData['hr'][] = \Carbon\Carbon::parse($row->submission_date)
-                    ->diffInDays($row->hr_verification_date);
-            }
-
-            if ($row->hr_verification_date && $row->approval_date) {
-                $stageData['approval'][] = \Carbon\Carbon::parse($row->hr_verification_date)
-                    ->diffInDays($row->approval_date);
-            }
-
-            if ($row->approval_date && $row->processing_date) {
-                $stageData['processing'][] = \Carbon\Carbon::parse($row->approval_date)
-                    ->diffInDays($row->processing_date);
+                    $days = ceil($days);
+                    $stageData[$key][] = $days;
+                }
             }
         }
 
-        // 🔹 Summary function
         $getSummary = function ($data) {
             return [
                 'total' => count($data),
@@ -746,28 +790,26 @@ class ReportController extends Controller
             ];
         };
 
-        $hrSummary = $getSummary($stageData['hr']);
-        $approvalSummary = $getSummary($stageData['approval']);
-        $processingSummary = $getSummary($stageData['processing']);
+        $summaries = [];
+        foreach ($stageData as $key => $data) {
+            $summaries[$key] = $getSummary($data);
+        }
 
-        // 🔹 Paginated records (your existing table)
-        $records = $query->latest()->paginate(20)->withQueryString();
-
+        $records = $query->latest()->paginate(20);
         $departments = CoreDepartment::orderBy('department_name')->get();
-
         return view('reports.tat', compact(
             'records',
+            'summaries',
+            'stages',
             'financialYear',
             'month',
+            'departments',
             'departmentId',
             'requisitionType',
-            'status',
-            'departments',
-            'hrSummary',
-            'approvalSummary',
-            'processingSummary'
+            'status'
         ));
     }
+
     public function tatExport(Request $request)
     {
         return Excel::download(
