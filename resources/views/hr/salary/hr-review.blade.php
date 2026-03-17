@@ -59,6 +59,10 @@
 							<th><input type="checkbox" id="selectAll"></th>
 							<th>Code</th>
 							<th>Name</th>
+							<th>Paid Days</th>
+							<th>Extra</th>
+							<th>Deduction</th>
+							<th>Arrear</th>
 							<th>Net Pay</th>
 							<th>Agreement</th>
 							<th>Courier</th>
@@ -207,7 +211,7 @@
 		$('#selectAll').prop('checked', false);
 
 		if (records.length == 0) {
-			$('#reviewTable').html(`<tr><td colspan="6" class="text-center">No records</td></tr>`);
+			$('#reviewTable').html(`<tr><td colspan="14" class="text-center">No records</td></tr>`);
 			return;
 		}
 
@@ -219,6 +223,11 @@
 			if (currentTab == 'pending') {
 				checkbox = `<input type="checkbox" class="salaryCheck" value="${r.id}">`;
 			}
+
+			let paidDays = r.paid_days ?? 0;
+			let extra = r.extra_amount ?? 0;
+			let deduction = r.deduction_amount ?? 0;
+			let arrear = r.arrear_amount ?? 0;
 
 			let action = '';
 
@@ -280,11 +289,21 @@
 			if (r.payment_instruction === 'hold') badge = 'bg-danger';
 			if (r.payment_instruction === 'release') badge = 'bg-success';
 			let finalPay = Number(r.total_payable ?? r.net_pay ?? 0);
+
+			let extraClass = extra > 0 ? 'text-success fw-bold' : '';
+			let deductionClass = deduction > 0 ? 'text-danger fw-bold' : '';
+			let arrearClass = arrear > 0 ? 'text-primary fw-bold' : '';
 			html += `
 				<tr>
 				<td>${checkbox}</td>
 				<td>${r.candidate.candidate_code}</td>
 				<td>${r.candidate.candidate_name}</td>
+
+				<td>${paidDays}</td>
+				<td class="${extraClass}">₹ ${Number(extra).toLocaleString('en-IN')}</td>
+<td class="${deductionClass}">₹ ${Number(deduction).toLocaleString('en-IN')}</td>
+<td class="${arrearClass}">₹ ${Number(arrear).toLocaleString('en-IN')}</td>
+
 				<td>₹ ${finalPay.toLocaleString('en-IN')}</td>
 				<td>${agreement}</td>
 				<td>${courier}</td>
