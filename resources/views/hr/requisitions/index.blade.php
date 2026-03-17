@@ -91,16 +91,16 @@
                         <table class="table table-bordered table-hover w-100">
                             <thead>
                                 <tr>
-                                    <th width="8%">Req ID</th>
-                                    <th width="8%">Type</th>
-                                    <th width="15%">Candidate</th>
-                                    <th width="15%">Submitted By</th>
-                                    <th width="15%">Reporting Manager</th>
-                                    <th width="8%">Date</th>
-                                    <th width="12%">Req Status</th>
-                                    <th width="12%">Party Code</th>
-                                    <th width="12%">Party Status</th>
-                                    <th width="10%">Actions</th>
+                                    <th width="6%">Req ID</th>
+                                    <th width="5%">Type</th>
+                                    <th width="18%">Candidate</th>
+                                    <th width="12%">Submitted By</th>
+                                    <th width="12%">Reporting Manager</th>
+                                    <th width="6%">Date</th>
+                                    <th width="9%">Req Status</th>
+                                    <th width="8%">Party Code</th>
+                                    <th width="8%">Party Status</th>
+                                    <th width="16%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -109,6 +109,7 @@
                                     @php
                                     $candidate = $requisition->candidate;
                                     $isProcessed = !is_null($candidate);
+                                    $empStatus = $candidate->candidate_status ?? null;
                                     @endphp
                                     <td>
                                         <strong>{{ $requisition->id }}</strong>
@@ -133,7 +134,7 @@
                                         <small class="text-muted">ID: {{ $requisition->submitted_by_employee_id }}</small>
                                     </td>
                                     <td>
-                                    	@if($candidate && $candidate->reportingManager)
+                                        @if($candidate && $candidate->reportingManager)
                                         {{ $candidate->reportingManager->emp_name ?? 'N/A' }}
                                         @else
                                         <span class="text-muted fs-9">Not Assigned</span>
@@ -158,7 +159,9 @@
                                         'Processed' => 'primary',
                                         'Agreement Pending' => 'secondary',
                                         'Completed' => 'success',
-                                        'Unsigned Agreement Created' => 'info'
+                                        'Unsigned Agreement Created' => 'info',
+                                        'Active'=>'success',
+                                        'Inactive'=>'danger'
                                         ];
 
                                         $color = $statusColors[$status] ?? 'secondary';
@@ -220,7 +223,7 @@
                                     </td>
                                     <!-- Actions column -->
                                     <td>
-                                        <div class="d-flex gap-1">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <!-- View Button -->
                                             <a href="{{ route('hr-admin.applications.view', $requisition->id) }}"
                                                 class="btn btn-sm btn-info" title="View" target="_blank">
@@ -297,6 +300,20 @@
 
                                             @endif
 
+
+                                            @if($empStatus == "Active")
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-danger action-btn end-contract-btn"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#endContractModal"
+                                                data-candidate-id="{{ $candidate->id }}"
+                                                data-candidate-name="{{ $candidate->candidate_name }}"
+                                                title="End Contract">
+                                                <i class="ri-user-unfollow-line"></i>
+                                            </button>
+                                            @endif
+
                                             <!-- Upload Signed Agreement Button (for Unsigned Agreement Created status) -->
                                             @if($hasUnsigned && !$hasSigned)
                                             <button type="button"
@@ -351,6 +368,9 @@
 <!-- upload estamp Modal -->
 @include('hr.modals.upload-estamp-modal')
 
+<!-- End Contract Modal -->
+@include('hr.modals.end-contract-modal')
+
 <!-- Toast Container -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
     <div class="toast-container"></div>
@@ -388,49 +408,19 @@
     });
 </script>
 <style>
-    .select2-container {
-        z-index: 1065 !important;
-        /* Higher than Bootstrap modal */
-    }
+  .action-btn {
+    width: 30px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
 
-    .table {
-        font-size: 0.85rem;
-    }
-
-    .table th {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        background-color: #f3f6f9;
-        font-weight: 600;
-    }
-
-    .badge {
-        font-size: 0.7rem;
-        padding: 0.3em 0.6em;
-        font-weight: 500;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-    }
-
-    .requisition-table-wrapper {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-
-    /* Sticky Header */
-    .requisition-table-wrapper thead th {
-        position: sticky;
-        top: 0;
-        z-index: 5;
-        background-color: #f3f6f9;
-        /* Same as your current header */
-    }
+.action-btn:hover {
+    transform: translateY(-1px);
+}
 </style>
 @endpush
