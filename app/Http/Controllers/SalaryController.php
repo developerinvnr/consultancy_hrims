@@ -233,7 +233,7 @@ class SalaryController extends Controller
                     //     'autoHold' => $autoHold,
                     //     'holdReason' => $holdReason
                     // ]);
-
+                    $totalPayable = $salaryData['net_pay'] + $arrearAmount;
                     SalaryProcessing::create(array_merge($salaryData, [
                         'candidate_id' => $candidate->id,
                         'month'        => $month,
@@ -242,6 +242,8 @@ class SalaryController extends Controller
                         'arrear_amount'  => $arrearAmount,
                         'arrear_days'    => $arrearDays,
                         'arrear_remarks' => $arrearRemarks,
+
+                        'total_payable' => $totalPayable,
 
                         'status'         => 'processed',
                         'payment_instruction' => $autoHold ? 'hold' : 'pending',
@@ -312,8 +314,11 @@ class SalaryController extends Controller
             'arrear_remarks' => 'nullable|string|max:500',
         ]);
 
+        DB::beginTransaction();
+
         try {
 
+            // 1️⃣ Save in arrear table
             DB::table('salary_arrears')->updateOrInsert(
                 [
                     'candidate_id' => $request->candidate_id,
@@ -330,11 +335,32 @@ class SalaryController extends Controller
                 ]
             );
 
+            // 2️⃣ 🔥 If salary already processed → update total_payable
+            $salary = SalaryProcessing::where('candidate_id', $request->candidate_id)
+                ->where('month', $request->month)
+                ->where('year', $request->year)
+                ->first();
+
+            if ($salary) {
+                $salary->arrear_days = $request->arrear_days;
+                $salary->arrear_amount = $request->arrear_amount;
+                $salary->arrear_remarks = $request->arrear_remarks;
+
+                // ✅ update total payable
+                $salary->total_payable = $salary->net_pay + $request->arrear_amount;
+
+                $salary->save();
+            }
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Arrear saved successfully'
             ]);
         } catch (\Exception $e) {
+
+            DB::rollBack();
 
             \Log::error("Arrear save error: " . $e->getMessage());
 
@@ -374,6 +400,7 @@ class SalaryController extends Controller
             $salary->arrear_days = $request->arrear_days;
             $salary->arrear_amount = $request->arrear_amount;
             $salary->arrear_remarks = $request->arrear_remarks;
+            $salary->total_payable = $salary->net_pay + $request->arrear_amount;
             $salary->save();
 
             return response()->json([
@@ -407,6 +434,7 @@ class SalaryController extends Controller
         $month = $request->month;
         $year  = $request->year;
         $requisitionType = $request->requisition_type;
+        $type = $request->type ?? 'pending';
 
         // Build query
         //$query = CandidateMaster::where('final_status', 'A');
@@ -419,6 +447,53 @@ class SalaryController extends Controller
                 $q->whereNull('contract_end_date')
                     ->orWhereDate('contract_end_date', '>=', $salaryMonthStart);
             });
+
+        if ($type === 'processed') {
+
+            $records = SalaryProcessing::with(['candidate' => function ($q) use ($request, $requisitionType) {
+
+                if ($request->filled('department_id')) {
+                    $q->where('department_id', $request->department_id);
+                }
+
+                if ($requisitionType && $requisitionType !== 'All') {
+                    $q->where('requisition_type', $requisitionType);
+                }
+            }])
+                ->where('month', $month)
+                ->where('year', $year)
+                ->where('status', 'processed') // ✅ ADD
+                ->where('payment_instruction', '!=', 'release') // ✅ ADD
+                ->get()
+                ->filter(fn($r) => $r->candidate != null)
+                ->values()
+                ->map(function ($r) {
+                    return [
+                        'id' => $r->id,
+                        'candidate_id' => $r->candidate_id,
+                        'candidate' => $r->candidate,
+
+                        'paid_days' => $r->paid_days,
+                        'monthly_salary' => $r->monthly_salary,
+                        'per_day_salary' => $r->per_day_salary,
+
+                        'extra_amount' => $r->extra_amount,
+                        'deduction_amount' => $r->deduction_amount,
+
+                        'net_pay' => $r->net_pay,
+                        'total_payable' => $r->total_payable, // ✅ ADD THIS
+
+                        'arrear_amount' => $r->arrear_amount,
+                        'arrear_days' => $r->arrear_days,
+
+                        'processed' => true,
+
+                        'pan_status_2' => $r->candidate->pan_status_2 ?? null,
+                        'can_process' => true,
+                    ];
+                });
+            return response()->json($records);
+        }
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
@@ -1160,7 +1235,7 @@ class SalaryController extends Controller
 
             $salaries = SalaryProcessing::whereIn('id', $request->salary_ids)->get();
 
-            $totalAmount = $salaries->sum('net_pay');
+            $totalAmount = $salaries->sum('total_payable');
 
             $batch = DB::table('payout_batches')->insertGetId([
 

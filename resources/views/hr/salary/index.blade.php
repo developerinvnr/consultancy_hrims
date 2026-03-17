@@ -50,10 +50,10 @@
                 </div>
 
                 <div class="col-md-5 ms-auto d-flex gap-2 flex-wrap justify-content-end">
-                    <button class="btn btn-sm btn-primary" onclick="processSelected()">
+                    <button class="btn btn-sm btn-primary process-btn" onclick="processSelected()">
                         <i class="ri-play-circle-line"></i> Process Selected
                     </button>
-                    <button class="btn btn-sm btn-success" onclick="processAll()">
+                    <button class="btn btn-sm btn-success process-btn" onclick="processAll()">
                         <i class="ri-check-double-line"></i> Process All Filtered
                     </button>
                     {{--<button class="btn btn-sm btn-info" onclick="exportExcel()">
@@ -63,6 +63,19 @@
             </div>
         </div>
     </div>
+
+    <ul class="nav nav-tabs mb-2" id="salaryTabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-tab="pending" onclick="switchTab('pending')">
+                Pending Processing
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-tab="processed" onclick="switchTab('processed')">
+                Processed
+            </button>
+        </li>
+    </ul>
 
     <!-- Salary Table -->
     <div class="card shadow-sm">
@@ -83,7 +96,6 @@
                             <th>Arrear</th>
                             <th>Net Pay</th>
                             <th>Status</th>
-                            <th width="140">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -234,6 +246,25 @@
 @push('scripts')
 
 <script>
+    function switchTab(tab) {
+
+        currentTab = tab;
+
+        if (tab === 'processed') {
+            $('#selectAll').hide();
+            $('.process-btn').hide();
+        } else {
+            $('#selectAll').show();
+            $('.process-btn').show();
+        }
+
+        $('#salaryTabs .nav-link').removeClass('active');
+        $('#salaryTabs .nav-link[data-tab="' + tab + '"]').addClass('active');
+
+        loadSalaryList();
+    }
+
+    let currentTab = 'pending';
     let currentMonth = null;
     let currentYear = null;
     let currentRequisitionType = 'All';
@@ -272,7 +303,8 @@
             _token: '{{ csrf_token() }}',
             month: currentMonth,
             year: currentYear,
-            requisition_type: currentRequisitionType
+            requisition_type: currentRequisitionType,
+            type: currentTab
         };
 
         if (department) {
@@ -286,20 +318,29 @@
 
 
     function renderTable(records) {
+
+        const isProcessedTab = currentTab === 'processed';
+
+
         if (!records || records.length === 0) {
             $('#salaryTable tbody').html(`
-                <tr><td colspan="11" class="text-center py-4 text-muted">
-                    No active candidates found for ${currentRequisitionType !== 'All' ? currentRequisitionType + ' ' : ''}this period
-                </td></tr>
-            `);
+            <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                    No records found
+                </td>
+            </tr>
+        `);
             return;
         }
 
         let html = '';
+
         records.forEach(r => {
+
             const panBadge = r.pan_status_2 === 'Operative' ?
                 `<span class="badge bg-success">Operative</span>` :
                 `<span class="badge bg-danger">Inoperative</span>`;
+
             let statusClass = 'warning';
             let statusText = 'Pending';
 
@@ -313,83 +354,123 @@
                 statusClass = 'success';
                 statusText = 'Processed';
             }
-            const requisitionType = r.candidate?.requisition_type || r.requisition_type || '-';
+
+            let payoutStatus = 'Pending Payout';
+
+            if (r.payment_instruction === 'hold') {
+                payoutStatus = 'Hold';
+            }
+
+            if (r.payment_instruction === 'release') {
+                payoutStatus = 'Released';
+            }
+
+            const requisitionType = r.candidate?.requisition_type || '-';
+
             const monthlySalary = Number(r.monthly_salary || 0);
             const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));
 
-            // Use saved arrear if processed, otherwise use local arrear
             const arrearAmount = Number(r.arrear_amount || 0);
             const arrearDays = Number(r.arrear_days || 0);
 
-            // Calculate net pay
             const baseNetPay = Number(r.net_pay || 0);
-            const netPay = baseNetPay + arrearAmount;
-
-            // Calculate arrear text
-            let arrearText = '<span class="text-muted">₹ 0</span>';
+            const netPay = baseNetPay;
+            const totalPayable = baseNetPay + arrearAmount;
+            let arrearText = `<span class="text-muted">₹ 0</span>`;
             let arrearLinkText = 'Add Arrear';
-            let arrearLinkClass = 'arrear-link';
 
             if (arrearAmount > 0) {
                 arrearText = `<span class="text-success fw-bold">+ ₹ ${arrearAmount.toLocaleString('en-IN')}</span>`;
                 arrearLinkText = 'Edit Arrear';
             }
 
-            // Show arrear link for ALL rows (processed or pending)
-            const arrearAction = r.processed ?
-                // For processed: save to DB
-                `<a href="javascript:void(0)" 
-                   onclick="openArrearModal(${r.id || 'null'}, ${r.candidate_id}, ${monthlySalary}, ${perDaySalary}, '${r.candidate?.candidate_code || ''}', '${r.candidate?.candidate_name || ''}', '${requisitionType}', ${arrearAmount}, ${arrearDays})" 
-                   class="${arrearLinkClass}">
-                    ${arrearLinkText}
-                </a>` :
-                // For pending: local calculation only
-                `<a href="javascript:void(0)" 
-                   onclick="openArrearModal(null, ${r.candidate_id}, ${monthlySalary}, ${perDaySalary}, '${r.candidate?.candidate_code || ''}', '${r.candidate?.candidate_name || ''}', '${requisitionType}', ${arrearAmount}, ${arrearDays})" 
-                   class="${arrearLinkClass}">
-                    ${arrearLinkText}
-                </a>`;
+            const arrearAction = `
+            <a href="javascript:void(0)" 
+            onclick="openArrearModal(${r.id || 'null'}, ${r.candidate_id}, ${monthlySalary}, ${perDaySalary}, '${r.candidate?.candidate_code || ''}', '${r.candidate?.candidate_name || ''}', '${requisitionType}', ${arrearAmount}, ${arrearDays})" 
+            class="arrear-link">
+            ${arrearLinkText}
+            </a>
+            `;
 
-            html += `
-            <tr 
-    data-id="${r.id || ''}" 
-    data-candidate-id="${r.candidate_id}"
-    data-processed="${r.processed ? 1 : 0}"
->
-                <td>
-                <input type="checkbox" class="row-check">
-                </td>
-                <td>${r.candidate?.candidate_code ?? '-'}</td>
-                <td>${r.candidate?.candidate_name ?? '-'}</td>
-                <td>${panBadge}</td>
-                <td><span class="badge bg-secondary">${requisitionType}</span></td>
-                <td>${Number(r.paid_days || 0)}</td>
-                <td>₹ ${monthlySalary.toLocaleString('en-IN')}</td>
-                <td class="text-success">+ ₹ ${Number(r.extra_amount || 0).toLocaleString('en-IN')}</td>
-                <td class="text-danger">- ₹ ${Number(r.deduction_amount || 0).toLocaleString('en-IN')}</td>
-                <td>
-                    ${arrearText}<br>
-                    <small>${arrearAction}</small>
-                </td>
-                <td><strong>₹ ${netPay.toLocaleString('en-IN')}</strong></td>
-                <td>
-                    <span class="badge bg-${statusClass}">${statusText}</span>
-                </td>
-               <td>
-${r.processed ? `
-<div class="d-flex gap-1 flex-wrap">
+            if (!isProcessedTab) {
 
-<span class="badge bg-info">
-Awaiting Payout
-</span>
+                html += `
+                            <tr data-candidate-id="${r.candidate_id}">
 
-</div>
+                            <td>
+                            <input type="checkbox" class="row-check">
+                            </td>
 
-` : `
-<span class="text-muted small">Not processed</span>
-`}
-</td>
-            </tr>`;
+                            <td>${r.candidate?.candidate_code ?? '-'}</td>
+                            <td>${r.candidate?.candidate_name ?? '-'}</td>
+                            <td>${panBadge}</td>
+                            <td><span class="badge bg-secondary">${requisitionType}</span></td>
+
+                            <td>${Number(r.paid_days || 0)}</td>
+
+                            <td>₹ ${monthlySalary.toLocaleString('en-IN')}</td>
+
+                            <td class="text-success">
+                            + ₹ ${Number(r.extra_amount || 0).toLocaleString('en-IN')}
+                            </td>
+
+                            <td class="text-danger">
+                            - ₹ ${Number(r.deduction_amount || 0).toLocaleString('en-IN')}
+                            </td>
+
+                            <td>
+                            ${arrearText}
+                            <span class="ms-1">${arrearAction}</span>
+                            </td>
+
+                            <td><strong>₹ ${totalPayable.toLocaleString('en-IN')}</strong></td>
+
+                            <td>
+                            <span class="badge bg-${statusClass}">
+                            ${statusText}
+                            </span>
+                            </td>
+
+                            </tr>`;
+            } else {
+
+                html += `
+                    <tr data-id="${r.id}" data-candidate-id="${r.candidate_id}">
+
+                    <td></td>
+
+                    <td>${r.candidate?.candidate_code ?? '-'}</td>
+                    <td>${r.candidate?.candidate_name ?? '-'}</td>
+                    <td>${panBadge}</td>
+                    <td><span class="badge bg-secondary">${requisitionType}</span></td>
+
+                    <td>${Number(r.paid_days || 0)}</td>
+
+                    <td>₹ ${monthlySalary.toLocaleString('en-IN')}</td>
+
+                    <td class="text-success">
+                    + ₹ ${Number(r.extra_amount || 0).toLocaleString('en-IN')}
+                    </td>
+
+                    <td class="text-danger">
+                    - ₹ ${Number(r.deduction_amount || 0).toLocaleString('en-IN')}
+                    </td>
+
+                    <td>
+                    ${arrearText}
+                    <span class="ms-1">${arrearAction}</span>
+                    </td>
+
+                    <td><strong>₹ ${totalPayable.toLocaleString('en-IN')}</strong></td>
+
+                    <td>
+                    <span class="badge bg-success">Processed</span>
+                    <span class="badge bg-info ms-1">${payoutStatus}</span>
+                    </td>
+
+                    </tr>`;
+
+            }
         });
 
         $('#salaryTable tbody').html(html);

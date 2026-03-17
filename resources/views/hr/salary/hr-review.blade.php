@@ -274,13 +274,13 @@
 			if (r.payment_instruction === 'pending') badge = 'bg-warning';
 			if (r.payment_instruction === 'hold') badge = 'bg-danger';
 			if (r.payment_instruction === 'release') badge = 'bg-success';
-
+			let finalPay = Number(r.total_payable ?? r.net_pay ?? 0);
 			html += `
 				<tr>
 				<td>${checkbox}</td>
 				<td>${r.candidate.candidate_code}</td>
 				<td>${r.candidate.candidate_name}</td>
-				<td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
+				<td>₹ ${finalPay.toLocaleString('en-IN')}</td>
 				<td>${agreement}</td>
 				<td>${courier}</td>
 				<td>${file}</td>
