@@ -223,17 +223,22 @@
 			let action = '';
 
 			if (currentTab == 'pending') {
-
 				if (r.agreement_signed && r.courier_received && r.file_created) {
 
-					action = `<span class="badge bg-success">Ready</span>`;
+					action = `
+									<button class="btn btn-warning btn-sm"
+										onclick="updatePayment(${r.id},'hold')">
+										Hold
+									</button>
+									<span class="badge bg-success ms-1">Ready</span>
+								`;
 
 				} else {
 
 					action = `<button class="btn btn-danger btn-sm"
-		onclick="updatePayment(${r.id},'hold')">
-		Put On Hold
-		</button>`;
+									onclick="updatePayment(${r.id},'hold')">
+									Put On Hold
+								</button>`;
 
 				}
 
@@ -320,23 +325,36 @@
 			return;
 		}
 
-		let form = $('<form>', {
-			method: 'POST',
-			action: "{{route('salary.release.batch')}}"
+		// 🔥 DISABLE BUTTON HERE
+		$('#releaseBtn').prop('disabled', true).text('Processing...');
+
+		$.ajax({
+			url: "{{route('salary.release.batch')}}",
+			method: "POST",
+			data: {
+				_token: '{{csrf_token()}}',
+				salary_ids: ids,
+				month: currentMonth,
+				year: currentYear
+			},
+			success: function(res) {
+				toastr.success(res.message);
+				loadReview();
+			},
+			error: function(xhr) {
+				let msg = "Something went wrong";
+
+				if (xhr.responseJSON && xhr.responseJSON.message) {
+					msg = xhr.responseJSON.message;
+				}
+
+				toastr.error(msg);
+			},
+			complete: function() {
+				// 🔥 RE-ENABLE BUTTON ALWAYS (success OR error)
+				$('#releaseBtn').prop('disabled', false).text('Release Selected');
+			}
 		});
-
-		form.append('@csrf');
-
-		ids.forEach(id => {
-			form.append(`<input type="hidden" name="salary_ids[]" value="${id}">`);
-		});
-
-		form.append(`<input type="hidden" name="month" value="${currentMonth}">`);
-		form.append(`<input type="hidden" name="year" value="${currentYear}">`);
-
-		$('body').append(form);
-
-		form.submit();
 	}
 
 	function updatePayment(id, action) {
@@ -390,21 +408,30 @@
 			remark = reason + " - " + comment;
 		}
 
-		$.post("{{route('salary.toggle.payment')}}", {
+		$.ajax({
+			url: "{{route('salary.toggle.payment')}}",
+			method: "POST",
+			data: {
+				_token: '{{csrf_token()}}',
+				salary_id: id,
+				action: action,
+				remark: remark
+			},
+			success: function(res) {
+				toastr.success(res.message);
+				$('#remarkModal').modal('hide');
+				loadReview();
+			},
+			error: function(xhr) {
+				let msg = "Something went wrong";
 
-			_token: '{{csrf_token()}}',
-			salary_id: id,
-			action: action,
-			remark: remark
+				if (xhr.responseJSON && xhr.responseJSON.message) {
+					msg = xhr.responseJSON.message;
+				}
 
-		}, function(res) {
-
-			toastr.success(res.message);
-			$('#remarkModal').modal('hide');
-			loadReview();
-
+				toastr.error(msg);
+			}
 		});
-
 	}
 </script>
 @endpush

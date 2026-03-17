@@ -1125,9 +1125,23 @@ class SalaryController extends Controller
                     $salary->hr_release_remark = $request->remark;
                 } else {
 
+                    $missing = [];
+
+                    if (!$agreementSigned) {
+                        $missing[] = 'Agreement not signed';
+                    }
+
+                    if (!$courierReceived) {
+                        $missing[] = 'Courier not received';
+                    }
+
+                    if (!$fileCreated) {
+                        $missing[] = 'File not created';
+                    }
+
                     return response()->json([
                         'success' => false,
-                        'message' => 'Candidate documentation process not completed yet.'
+                        'message' => implode(', ', $missing)
                     ], 422);
                 }
             }
