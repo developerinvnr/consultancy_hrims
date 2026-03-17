@@ -38,21 +38,21 @@
 
             @php
             $rpm = $record->candidate->remuneration_per_month ?? 0;
-$contractAmount = $record->candidate->contract_amount ?? 0;
+            $contractAmount = $record->candidate->contract_amount ?? 0;
 
-$paidDays = $record->paid_days ?? 0;
-$extra = $record->extra_amount ?? 0;
-$deduction = $record->deduction_amount ?? 0;
+            $paidDays = $record->paid_days ?? 0;
+            $extra = $record->extra_amount ?? 0;
+            $deduction = $record->deduction_amount ?? 0;
 
-$basedOnPaidDays = $record->net_pay ?? 0;
+            $finalPayable = $record->total_payable ?? ($record->net_pay + ($record->arrear_amount ?? 0));
 
             // TDS 2%
-            $tds = $basedOnPaidDays > 0 ? ($basedOnPaidDays / 98) * 2 : 0;
+            $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
 
             // Gross Up
-            $grossUp = $basedOnPaidDays + $tds;
+            $grossUp = $finalPayable + $tds;
 
-            $totalBased += $basedOnPaidDays;
+            $totalBased += $finalPayable;
             @endphp
 
             <tr>
@@ -74,9 +74,9 @@ $basedOnPaidDays = $record->net_pay ?? 0;
                 <td>{{ $paidDays + ($record->approved_sundays ?? 0) }}</td>
                 <td>{{ number_format(round($rpm)) }}</td>
                 <td>{{ number_format(round($contractAmount)) }}</td>
-                <td>{{ number_format(round($extra)) }}</td>
+                <td>{{ number_format(round($record->arrear_amount ?? 0)) }}</td>
                 <td>{{ number_format(round($deduction)) }}</td>
-                <td>{{ number_format(round($basedOnPaidDays)) }}</td>
+                <td>{{ number_format(round($finalPayable)) }}</td>
 
                 <td>
                     @php

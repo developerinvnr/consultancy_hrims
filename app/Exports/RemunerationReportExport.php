@@ -82,7 +82,7 @@ class RemunerationReportExport implements
             $deduction = $record->deduction_amount ?? 0;
 
             // Final Payable from SalaryCalculator
-            $final = $record->net_pay ?? 0;
+            $final = $record->total_payable ?? ($record->net_pay + ($record->arrear_amount ?? 0));
 
             // TDS 2%
             $tds = $final > 0 ? round(($final / 98) * 2) : 0;
@@ -109,7 +109,7 @@ class RemunerationReportExport implements
                 $totalPaidDays,
                 round($rpm),
                 round($contractAmount),
-                round($extra),
+                round($record->arrear_amount ?? 0),
                 round($deduction),
                 $final,
                 ucfirst($record->payment_instruction ?? 'Pending'),
