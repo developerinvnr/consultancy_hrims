@@ -917,11 +917,19 @@
 						$('#pan_no').val(data.panNumber).prop('readonly', true);
 
 						// Autofill father name
-						if (data.fatherName && !$('#father_name').val()) {
+						if (data.fatherName) {
+
 							$('#father_name')
 								.val(data.fatherName.toUpperCase().trim())
-								.prop('readonly', true); // 🔒 lock field
+								.prop('readonly', true); // 🔒 lock only if extracted
+
+						} else {
+
+							$('#father_name')
+								.val('')
+								.prop('readonly', false); // ✅ allow manual entry
 						}
+
 
 						// Autofill DOB
 						if (data.dateOfBirth) {
@@ -1004,6 +1012,8 @@
 					}
 				},
 				error: function(xhr) {
+					$('#date_of_birth').prop('readonly', false); // ✅ unlock
+					$('#father_name').prop('readonly', false);
 					let errorMessage = 'Failed to extract PAN. Please enter manually.';
 
 					// Handle specific error cases
@@ -1029,6 +1039,14 @@
 				complete: function() {
 					if (!$('#pan_no').val()) {
 						$('#pan_no').prop('readonly', false);
+					}
+
+					if (!$('#date_of_birth').val()) {
+						$('#date_of_birth').prop('readonly', false); // ✅ fallback safety
+					}
+
+					if (!$('#father_name').val()) {
+						$('#father_name').prop('readonly', false); // ✅ safety reset
 					}
 				}
 			});
