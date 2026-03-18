@@ -23,6 +23,8 @@ use App\Http\Controllers\HrRequisitionController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\HierarchyController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\LedgerController;
+
 
 
 
@@ -383,6 +385,14 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 
     Route::get('/tat', [ReportController::class, 'tat'])->name('tat');
     Route::get('/tat/export', [ReportController::class, 'tatExport'])->name('tat.export');
+});
+
+Route::middleware(['auth'])->prefix('ledger')->name('ledger.')->group(function () {
+
+    Route::get('/', [LedgerController::class, 'index'])->name('index');
+    Route::post('/mark-created', [LedgerController::class, 'markCreated'])->name('markCreated');
+    Route::get('/ledger/export', [LedgerController::class, 'export'])->name('export');
+
 });
 
 

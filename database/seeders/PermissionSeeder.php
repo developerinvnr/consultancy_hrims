@@ -67,6 +67,8 @@ class PermissionSeeder extends Seeder
             // Settings
             ['name' => 'settings.full-access', 'group_name' => 'settings'],
             ['name' => 'audit.view', 'group_name' => 'audit_logs'],
+            // Ledger
+            ['name' => 'ledger.manage', 'group_name' => 'ledger'],
         ];
 
         foreach ($permissions as $permission) {

@@ -197,12 +197,16 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </a>
                 </li>--}}
 
-                <a href="{{ route('reports.index') }}" class="nav-link">
+                <a href="{{ route('ledger.index') }}" class="nav-link">
                     <i class="ri-file-chart-line"></i>
                     <span>Reports</span>
                 </a>
 
-
+                @can('ledger.manage')
+                <a href="{{ route('ledger.index') }}" class="nav-link">
+                    <i class="ri-file-list-3-line"></i> <span>Ledger Management</span>
+                </a>
+                @endcan
             </ul>
         </div>
     </div>
