@@ -75,6 +75,8 @@ class CandidateMaster extends Model
         'dl_valid_to',
         'dl_verification_status',
         'aadhaar_verification_status',
+        'ledger_created',
+        'ledger_created_at',
     ];
 
     protected $casts = [
@@ -84,6 +86,8 @@ class CandidateMaster extends Model
         'remuneration_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
         'last_working_date' => 'date',
+        'ledger_created' => 'boolean',
+        'ledger_created_at' => 'datetime',
     ];
 
     // ADD THIS RELATIONSHIP
