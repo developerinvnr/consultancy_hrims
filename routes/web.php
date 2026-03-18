@@ -120,7 +120,7 @@ Route::middleware('auth')->group(function () {
 
             // Approved Applications
             Route::post('/new/{requisition}/verify-application', [HrAdminController::class, 'verifyApplication'])->name('verify-application');
-            Route::get('/approved', [HrAdminController::class, 'approvedApplications'])->name('approved');
+    
             Route::get('get-reporting-managers/{requisition}', [HrAdminController::class, 'getReportingManagers'])->name('get-reporting-managers');
             Route::post('process-modal', [HrAdminController::class, 'processApplicationModal'])
                 ->name('process-modal');

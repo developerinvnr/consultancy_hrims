@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\ManpowerRequisition;
 use App\Models\RequisitionDocument;
 use App\Models\CandidateMaster;
-use App\Models\AgreementTemp;
 use App\Models\AgreementDocument;
 use App\Models\Employee;
 use App\Models\LeaveBalance;
@@ -21,7 +20,6 @@ use App\Mail\RequisitionApprovalRequest;
 use App\Mail\PartyCodeGenerated;
 use App\Mail\RequisitionRejectedMail;
 use App\Mail\CorrectionRequested;
-use App\Services\AgriSamvidaService;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\PartyEditHistory;
@@ -838,28 +836,6 @@ class HrAdminController extends Controller
 		}
 	}
 
-	/**
-	 * Approved Applications Tab
-	 */
-	public function approvedApplications(Request $request)
-	{
-		$query = ManpowerRequisition::with(['function', 'department', 'vertical', 'submittedBy'])
-			->where('status', 'Approved')
-			->orderBy('approval_date', 'desc');
-
-		if ($request->has('search')) {
-			$search = $request->get('search');
-			$query->where(function ($q) use ($search) {
-				$q->where('requisition_id', 'like', "%{$search}%")
-					->orWhere('candidate_name', 'like', "%{$search}%")
-					->orWhere('candidate_email', 'like', "%{$search}%");
-			});
-		}
-
-		$requisitions = $query->paginate(15);
-
-		return view('hr-admin.approved-applications.index', compact('requisitions'));
-	}
 
 	/**
 	 * Show reporting manager selection modal data
@@ -1201,40 +1177,6 @@ class HrAdminController extends Controller
 		return $dob ? Carbon::parse($dob)->age : null;
 	}
 
-	// private function generateMockResponse($apiData, $candidateCode)
-	// {
-	// 	// For testing purposes only
-	// 	$agreementNumber = 'MOCK-' . date('Ymd-His') . '-' . $candidateCode;
-
-	// 	// Create a mock file in storage
-	// 	$filePath = 'mock_agreements/' . $agreementNumber . '.pdf';
-
-	// 	// Create directory if not exists
-	// 	if (!Storage::disk('public')->exists('mock_agreements')) {
-	// 		Storage::disk('public')->makeDirectory('mock_agreements');
-	// 	}
-
-	// 	// Create mock PDF content (simple text for testing)
-	// 	$content = "MOCK AGREEMENT DOCUMENT\n\n";
-	// 	$content .= "Agreement Number: {$agreementNumber}\n";
-	// 	$content .= "Generated: " . now()->toDateTimeString() . "\n\n";
-	// 	$content .= "Candidate Details:\n";
-	// 	foreach ($apiData as $key => $value) {
-	// 		$content .= "  " . str_pad($key . ':', 15) . " {$value}\n";
-	// 	}
-
-	// 	Storage::disk('public')->put($filePath, $content);
-
-	// 	return [
-	// 		'success' => true,
-	// 		'agreement_number' => $agreementNumber,
-	// 		'file_path' => $filePath,
-	// 		'file_url' => Storage::disk('public')->url($filePath),
-	// 		'message' => 'Mock agreement generated successfully (DEBUG MODE)',
-	// 		'debug_data' => $apiData
-	// 	];
-	// }
-
 	// New method to handle API call for agreement generation
 	private function generateAgreementViaAPI($requisition, $candidateCode)
 	{
@@ -1448,46 +1390,6 @@ class HrAdminController extends Controller
 			return 'CAN' . time();
 		});
 	}
-
-
-
-	/**
-	 * Store data in agreement_temp table with document paths
-	 */
-	// private function storeAgreementTempData($requisition, $candidateCode)
-	// {
-	// 	// Calculate age from date of birth
-	// 	$dateOfBirth = new \DateTime($requisition->date_of_birth);
-	// 	$today = new \DateTime();
-	// 	$age = $today->diff($dateOfBirth)->y;
-
-	// 	// Fetch document paths from requisition_documents table
-	// 	$documentPaths = $this->getDocumentPaths($requisition->id);
-
-	// 	// Store in agreement_temp table
-	// 	AgreementTemp::create([
-	// 		'candidate_code' => $candidateCode,
-	// 		'requisition_id' => $requisition->id,
-	// 		'candidate_name' => $requisition->candidate_name,
-	// 		'contract_start_date' => $requisition->contract_start_date,
-	// 		'emp_type' => $requisition->requisition_type, // Store the employee type (Contractual/TFA/CB)
-	// 		'contact_number' => $requisition->mobile_no,
-	// 		'father_name' => $requisition->father_name,
-	// 		'address_line_1' => $requisition->address_line_1,
-	// 		'country' => 'India', // Default country
-	// 		'state' => $requisition->state_residence,
-	// 		'district' => $requisition->district ?? $requisition->city,
-	// 		'pin_code' => $requisition->pin_code,
-	// 		'date_of_birth' => $requisition->date_of_birth,
-	// 		'age' => $age,
-	// 		'aadhaar_number' => $requisition->aadhaar_no,
-	// 		'id_proof_path' => $documentPaths['id_proof'] ?? null,
-	// 		'address_proof_path' => $documentPaths['address_proof'] ?? null,
-	// 		'agreement_generated' => 'No',
-	// 		'agreement_generated_at' => null,
-	// 		'agreement_response' => null
-	// 	]);
-	// }
 
 	/**
 	 * Get document paths from requisition_documents table
@@ -1798,11 +1700,6 @@ class HrAdminController extends Controller
 			], 500);
 		}
 	}
-
-
-	/**
-	 * Update agreement (if HR uploaded wrong)
-	 */
 
 	/**
 	 * Update agreement (API endpoint for modal updates)
@@ -2515,8 +2412,8 @@ class HrAdminController extends Controller
 			}
 
 			// ===============================
-// HANDLE DOCUMENT UPLOADS
-// ===============================
+			// HANDLE DOCUMENT UPLOADS
+			// ===============================
 
 			/** @var \App\Services\S3Service $s3Service */
 			$s3Service = app(S3Service::class);
