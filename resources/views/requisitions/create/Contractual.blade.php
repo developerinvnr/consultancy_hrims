@@ -847,16 +847,21 @@
                         }
 
                         // Autofill DOB
-                        if (data.dateOfBirth && !$('#date_of_birth').val()) {
+                        if (data.dateOfBirth) {
 
                             const parts = data.dateOfBirth.split('/'); // DD/MM/YYYY
                             const formattedDOB = `${parts[2]}-${parts[1]}-${parts[0]}`;
 
                             $('#date_of_birth')
                                 .val(formattedDOB)
-                                .prop('readonly', true); // 🔒 lock field
-                        }
+                                .prop('readonly', true); // 🔒 lock ONLY if extracted
 
+                        } else {
+                            // ✅ If NOT extracted → allow manual entry
+                            $('#date_of_birth')
+                                .val('')
+                                .prop('readonly', false);
+                        }
                         // Map verification data to form fields
                         if (data.verificationData) {
                             const vData = data.verificationData;
