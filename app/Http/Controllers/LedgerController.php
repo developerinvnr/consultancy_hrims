@@ -88,7 +88,8 @@ class LedgerController extends Controller
 				'unsignedAgreements.courierDetails',
 				'signedAgreements.courierDetails'
 			])
-			->paginate(20);
+			->paginate(20)
+			->appends($request->all());
 		$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
 
 		return view('ledger.index', compact('candidates', 'tab','departments'));
