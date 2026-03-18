@@ -237,7 +237,7 @@
 		</div>
 
 		<div class="card-footer">
-			{{ $candidates->links() }}
+			{{ $candidates->links('pagination::bootstrap-5') }}
 		</div>
 	</div>
 	@endsection

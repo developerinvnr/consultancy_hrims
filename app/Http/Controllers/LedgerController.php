@@ -69,12 +69,11 @@ class LedgerController extends Controller
 		}
 
 		// ✅ PAN GROUPING
-		$panIds = $query->select('pan_no', DB::raw('MAX(id) as id'))
+		$subQuery = $query->select(DB::raw('MAX(id) as id'))
 			->whereNotNull('pan_no')
-			->groupBy('pan_no')
-			->pluck('id');
+			->groupBy('pan_no');
 
-		$candidates = CandidateMaster::whereIn('id', $panIds)
+		$candidates = CandidateMaster::whereIn('id', $subQuery)
 			->with([
 				'department',
 				'zoneRef',
