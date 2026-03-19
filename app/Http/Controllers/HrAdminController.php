@@ -2262,7 +2262,8 @@ class HrAdminController extends Controller
 
 
 		// Validate only the rules for the active tab
-		$validated = $request->validate($rules);
+		$validator = Validator::make($request->only(array_keys($rules)), $rules);
+		//$validated = $request->validate($rules);
 		//dd('validation passed');
 
 		DB::beginTransaction();
