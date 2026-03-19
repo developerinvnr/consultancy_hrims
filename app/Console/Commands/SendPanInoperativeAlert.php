@@ -15,13 +15,12 @@ class SendPanInoperativeAlert extends Command
     public function handle()
     {
         \Log::info('PAN alert command STARTED at ' . now());
-        $hrEmail = 'shivendrashukla.vspl@gmail.com';
+        $hrEmail = 'hrsupport@vnrseeds.com';
 
         $candidates = CandidateMaster::with('reportingManager')
             ->where('pan_status_2', '!=', 'Operative')
             ->whereNotNull('pan_no')
             ->get();
-        \Log::info('Candidates count: ' . $candidates->count());
         foreach ($candidates as $candidate) {
 
             $managerEmail = $candidate->reportingManager->emp_email ?? null;

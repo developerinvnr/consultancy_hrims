@@ -9,8 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // ✅ PAN Alert (every minute)
-//Schedule::command('alert:pan-inoperative')->dailyAt('14:00');
-Schedule::command('alert:pan-inoperative')->everyMinute();
+Schedule::command('alert:pan-inoperative')->dailyAt('14:00');
 
 // ✅ Approval Reminder (daily at 10 AM)
 Schedule::command('approval:reminders')->dailyAt('10:00');
