@@ -526,6 +526,7 @@
 										@elseif($req->status === 'Pending Approval')
 										<span class="badge bg-info fs-9">Awaiting Approval</span>
 										@endif
+										@if($empStatus !== 'Inactive')
 
 										<a href="{{ route('submitter.agreement.view', $req) }}"
 												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
@@ -535,7 +536,7 @@
 												<span class="badge bg-warning text-dark ms-1">Courier</span>
 												@endif
 										</a>
-
+										@endif
 										<!-- COURIER RECEIVE BUTTON -->
 										@if($courierDetails && !$courierDetails->received_date)
 										<button type="button"
