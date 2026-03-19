@@ -22,7 +22,7 @@ class PartyCodeGenerated extends Mailable
 
     public function build()
     {
-        return $this->subject('Peepal Bonsai Portal: Requisition Approved | ID: ' . $this->requisition->requisition_id)
+        return $this->subject('Peepal Bonsai Portal: Requisition Approved | ID: ' . $this->requisition->request_code)
             ->view('emails.requisition.party-code-generated');
     }
 }

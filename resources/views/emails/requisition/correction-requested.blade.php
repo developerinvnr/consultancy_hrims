@@ -8,7 +8,7 @@ During HR verification, discrepancies have been identified in the requisition su
 
 ### Details
 
-• **Requisition ID:** {{ $requisition->requisition_id }}  
+• **Requisition ID:** {{ $requisition->request_code }}  
 • **Name:** {{ $requisition->candidate_name }}  
 • **Engagement Type:** {{ $requisition->requisition_type }}  
 • **Duration:** {{ $requisition->contract_start_date }} – {{ $requisition->contract_end_date }}

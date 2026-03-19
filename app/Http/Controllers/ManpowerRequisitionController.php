@@ -51,7 +51,7 @@ class ManpowerRequisitionController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('requisition_id', 'like', "%{$search}%")
+                $q->where('request_code', 'like', "%{$search}%")
                     ->orWhere('candidate_name', 'like', "%{$search}%")
                     ->orWhere('candidate_email', 'like', "%{$search}%");
             });
@@ -216,7 +216,7 @@ class ManpowerRequisitionController extends Controller
             //dd($validatedData);
 
             // Generate requisition ID
-            $requisitionId = ManpowerRequisition::generateRequisitionId($request->requisition_type);
+            $requisitionId = ManpowerRequisition::generateRequestCode($request->requisition_type);
 
             // Get user details for reporting information
             $user = Auth::user();
@@ -227,7 +227,7 @@ class ManpowerRequisitionController extends Controller
 
             // Create requisition
             $requisition = ManpowerRequisition::create([
-                'requisition_id' => $requisitionId,
+                'request_code' => $requisitionId,
                 'requisition_type' => $request->requisition_type,
                 'submitted_by_user_id' => Auth::id(),
                 'submitted_by_name' => $employeeDetails->emp_name ?? $user->name,

@@ -22,7 +22,7 @@ class RequisitionApprovedMail extends Mailable
     {
         return $this->subject(
             'Peepal Bonsai Portal: Requisition Approved | ID: '
-            . $this->requisition->requisition_id
+            . $this->requisition->request_code
         )
         ->markdown('emails.requisition.approved');
     }

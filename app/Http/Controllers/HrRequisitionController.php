@@ -49,7 +49,7 @@ class HrRequisitionController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 // Search in requisition table
-                $q->where('requisition_id', 'like', "%{$search}%")
+                $q->where('request_code', 'like', "%{$search}%")
                     ->orWhere('candidate_name', 'like', "%{$search}%")
                     ->orWhere('candidate_email', 'like', "%{$search}%")
                     ->orWhere('submitted_by_name', 'like', "%{$search}%")
@@ -160,14 +160,14 @@ class HrRequisitionController extends Controller
             $validatedData = $this->validateHrRequisition($request);
 
             // Generate requisition ID
-            $requisitionId = ManpowerRequisition::generateRequisitionId($request->requisition_type);
+            $requisitionId = ManpowerRequisition::generateRequestCode($request->requisition_type);
 
             // HR user details
             $user = Auth::user();
 
             // Create requisition with Approved status
             $data = [
-                'requisition_id' => $requisitionId,
+                'request_code' => $requisitionId,
                 'requisition_type' => $request->requisition_type,
                 'submitted_by_user_id' => $user->id,
                 'submitted_by_name' => $user->name,
@@ -246,7 +246,7 @@ class HrRequisitionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Requisition created and approved successfully!',
-                'requisition_id' => $requisition->requisition_id,
+                'request_code' => $requisition->request_code,
                 'redirect' => route('hr_requisitions.index')
             ]);
         } catch (ValidationException $e) {

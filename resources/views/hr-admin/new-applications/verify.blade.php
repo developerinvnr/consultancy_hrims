@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h5 class="card-title mb-0">Verify Requisition: {{ $requisition->requisition_id }}</h5>
+        <h5 class="card-title mb-0">Verify Requisition: {{ $requisition->request_code }}</h5>
     </div>
     
     <div class="card-body">

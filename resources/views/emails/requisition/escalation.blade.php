@@ -8,7 +8,7 @@ The following requisition approval is **still pending** in the Peepal Bonsai Por
 
 ### Requisition Details
 
-- **Requisition ID:** {{ $requisition->requisition_id }}
+- **Requisition ID:** {{ $requisition->request_code }}
 - **Candidate Name:** {{ $requisition->candidate_name }}
 - **Engagement Type:** {{ $requisition->requisition_type }}
 - **Department:** {{ $requisition->department->department_name ?? 'N/A' }}

@@ -46,7 +46,7 @@
                 <table class="table table-sm table-borderless mb-0">
                     <tr>
                         <td width="40%" class="text-muted small">Requisition ID:</td>
-                        <td class="small fw-medium">{{ $requisition->requisition_id }}</td>
+                        <td class="small fw-medium">{{ $requisition->request_code }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted small">Type:</td>

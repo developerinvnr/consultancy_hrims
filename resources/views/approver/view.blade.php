@@ -25,7 +25,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="card-title mb-0">
-                                <span class="badge bg-secondary">{{ $requisition->requisition_id }}</span>
+                                <span class="badge bg-secondary">{{ $requisition->request_code }}</span>
                                 <span class="ms-2">{{ $requisition->candidate_name }}</span>
                                 <small class="text-muted d-block mt-1">
                                     {{ $requisition->requisition_type }} | 
@@ -139,7 +139,7 @@
                 <div class="modal-body">
                     <div class="alert alert-success">
                         <i class="ri-check-line me-1"></i>
-                        Confirm approval of requisition <strong>{{ $requisition->requisition_id }}</strong>
+                        Confirm approval of requisition <strong>{{ $requisition->request_code }}</strong>
                     </div>
                     
                     <!-- Self-approval warning in modal -->
@@ -183,7 +183,7 @@
                 <div class="modal-body">
                     <div class="alert alert-danger">
                         <i class="ri-alert-line me-1"></i>
-                        Confirm rejection of requisition <strong>{{ $requisition->requisition_id }}</strong>
+                        Confirm rejection of requisition <strong>{{ $requisition->request_code }}</strong>
                     </div>
                     
                     <!-- Self-rejection warning in modal -->

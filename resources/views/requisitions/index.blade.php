@@ -122,7 +122,7 @@
                             <tbody>
                                 @forelse($requisitions as $requisition)
                                 <tr>
-                                    <td>{{ $requisition->requisition_id }}</td>
+                                    <td>{{ $requisition->request_code }}</td>
                                     <td>
                                         <span class="badge bg-primary" style="color:#000;">{{ $requisition->requisition_type }}</span>
                                     </td>

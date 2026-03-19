@@ -58,7 +58,7 @@ class ProcessApprovalReminders extends Command
                 $req->reminder_level = 1;
                 $req->save();
 
-                $this->info("24h reminder sent for requisition {$req->requisition_id}");
+                $this->info("24h reminder sent for requisition {$req->request_code}");
             }
 
             /* 3 DAY ESCALATION */
@@ -71,7 +71,7 @@ class ProcessApprovalReminders extends Command
                 $req->reminder_level = 2;
                 $req->save();
 
-                $this->info("3 day escalation sent for requisition {$req->requisition_id}");
+                $this->info("3 day escalation sent for requisition {$req->request_code}");
             }
 
             /* 5 DAY ESCALATION */
@@ -84,7 +84,7 @@ class ProcessApprovalReminders extends Command
                 $req->reminder_level = 3;
                 $req->save();
 
-                $this->info("5 day escalation sent for requisition {$req->requisition_id}");
+                $this->info("5 day escalation sent for requisition {$req->request_code}");
             }
 
             /* 7 DAY FINAL ESCALATION */
@@ -97,7 +97,7 @@ class ProcessApprovalReminders extends Command
                 $req->reminder_level = 4;
                 $req->save();
 
-                $this->info("7 day final escalation sent for requisition {$req->requisition_id}");
+                $this->info("7 day final escalation sent for requisition {$req->request_code}");
             }
         }
 

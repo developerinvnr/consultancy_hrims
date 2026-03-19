@@ -8,7 +8,7 @@ This is a **friendly reminder** that the following requisition is still pending 
 
 ### Requisition Details
 
-- **Requisition ID:** {{ $requisition->requisition_id }}
+- **Requisition ID:** {{ $requisition->request_code }}
 - **Candidate Name:** {{ $requisition->candidate_name }}
 - **Engagement Type:** {{ $requisition->requisition_type }}
 - **Department:** {{ $requisition->department->department_name ?? 'N/A' }}

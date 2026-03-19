@@ -126,7 +126,7 @@
 									</td>
 									<td>
 										@if($candidate->requisition)
-										<span class="badge bg-dark">{{ $candidate->requisition->requisition_id }}</span>
+										<span class="badge bg-dark">{{ $candidate->requisition->request_code }}</span>
 										@else
 										<span class="badge bg-secondary">N/A</span>
 										@endif

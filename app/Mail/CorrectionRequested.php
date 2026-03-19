@@ -27,7 +27,7 @@ class CorrectionRequested extends Mailable
     {
         return $this->subject(
             'Peepal Bonsai Portal: Action Required – Requisition Correction | ' 
-            . $this->requisition->requisition_id
+            . $this->requisition->request_code
         )
         ->markdown('emails.requisition.correction-requested');
     }

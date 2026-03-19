@@ -24,7 +24,7 @@ class RequisitionRejectedMail extends Mailable
     {
         return $this->subject(
             'Peepal Bonsai Portal: Requisition Not Approved at HR Verification | '
-            . $this->requisition->requisition_id
+            . $this->requisition->request_code
         )
         ->markdown('emails.requisition.rejected');
     }

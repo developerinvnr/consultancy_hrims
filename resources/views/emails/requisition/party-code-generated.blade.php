@@ -10,7 +10,7 @@ and the corresponding <strong>Party Code</strong> has been successfully created.
 <table border="1" cellpadding="6" cellspacing="0">
 <tr>
 <td><strong>Requisition ID</strong></td>
-<td>{{ $requisition->requisition_id }}</td>
+<td>{{ $requisition->request_code }}</td>
 </tr>
 
 <tr>

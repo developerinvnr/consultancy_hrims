@@ -333,7 +333,7 @@ class ImportController extends Controller
 			$query->where(function ($q) use ($search) {
 				$q->where('candidate_name', 'LIKE', "%{$search}%")
 					->orWhere('candidate_email', 'LIKE', "%{$search}%")
-					->orWhere('requisition_id', 'LIKE', "%{$search}%")
+					->orWhere('request_code', 'LIKE', "%{$search}%")
 					->orWhere('mobile_no', 'LIKE', "%{$search}%");
 			});
 		}
@@ -448,7 +448,7 @@ class ImportController extends Controller
 			'documents' => $documentTypes,
 			'requisition' => [
 				'id' => $requisition->id,
-				'requisition_id' => $requisition->requisition_id,
+				'request_code' => $requisition->request_code,
 				'requisition_type' => $requisition->requisition_type,
 				'candidate_name' => $requisition->candidate_name ?? $requisition->candidate->candidate_name ?? '',
 				'candidate_id' => $requisition->candidate->id ?? null,
@@ -616,7 +616,7 @@ class ImportController extends Controller
 			throw new \Exception('Party Code missing in Excel');
 		}
 
-		if (ManpowerRequisition::where('requisition_id', $partyCode)->exists()) {
+		if (ManpowerRequisition::where('request_code', $partyCode)->exists()) {
 			throw new \Exception("Party Code {$partyCode} already exists in system.");
 		}
 
@@ -627,7 +627,7 @@ class ImportController extends Controller
 		// Create Manpower Requisition
 		\Log::info('Creating manpower requisition...');
 		$requisitionData = $this->prepareManpowerRequisitionData($data, $lookupIds, $user, $requisitionType);
-		$requisitionData['requisition_id'] = $requisitionId;
+		$requisitionData['request_code'] = $requisitionId;
 
 		try {
 			$manpowerRequisition = ManpowerRequisition::create($requisitionData);
@@ -672,7 +672,8 @@ class ImportController extends Controller
 			'candidate_code' => $candidate->candidate_code,
 			'candidate_name' => $candidate->candidate_name,
 			'candidate_email' => $candidate->candidate_email, // This will be NULL
-			'requisition_id' => $manpowerRequisition->requisition_id,
+			'requisition_id' => $manpowerRequisition->id,
+			'request_code' => $manpowerRequisition->request_code,
 			'candidate_id' => $candidate->id
 		];
 	}

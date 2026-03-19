@@ -27,7 +27,7 @@ class RequisitionEscalationMail extends Mailable
     public function build()
     {
         return $this->subject(
-            'Escalation: Approval Pending – Requisition ID ' . $this->requisition->requisition_id
+            'Escalation: Approval Pending – Requisition ID ' . $this->requisition->request_code
         )
         ->markdown('emails.requisition.escalation');
     }

@@ -117,7 +117,7 @@
                                     @foreach($recent_requisitions as $req)
                                     <tr>
                                         <td>
-                                            <span class="badge bg-secondary">{{ $req->requisition_id }}</span>
+                                            <span class="badge bg-secondary">{{ $req->request_code }}</span>
                                         </td>
                                         <td>
                                             <div>{{ $req->candidate_name }}</div>

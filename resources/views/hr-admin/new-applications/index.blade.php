@@ -51,7 +51,7 @@
                     @forelse($requisitions as $requisition)
                     <tr>
                         <td>
-                            <strong>{{ $requisition->requisition_id }}</strong>
+                            <strong>{{ $requisition->request_code }}</strong>
                         </td>
                         <td>{{ $requisition->submission_date->format('d-M-Y') }}</td>
                         <td>

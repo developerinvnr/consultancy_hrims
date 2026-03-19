@@ -11,7 +11,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h5 class="mb-1">
-                        <span class="badge bg-secondary fs-6">{{ $requisition->requisition_id }}</span>
+                        <span class="badge bg-secondary fs-6">{{ $requisition->request_code }}</span>
                         <span class="ms-2 fs-6">{{ $requisition->candidate_name }}</span>
                     </h5>
                     <p class="text-muted mb-0 small">
@@ -76,7 +76,7 @@
                         <table class="table table-sm table-borderless mb-0">
                             <tr>
                                 <td width="40%" class="text-muted small">Requisition ID:</td>
-                                <td class="fw-medium small">{{ $requisition->requisition_id }}</td>
+                                <td class="fw-medium small">{{ $requisition->request_code }}</td>
                             </tr>
                             <tr>
                                 <td class="text-muted small">Type:</td>

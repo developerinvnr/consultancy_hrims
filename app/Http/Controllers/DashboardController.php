@@ -188,7 +188,7 @@ class DashboardController extends Controller
 		$totalActive = $activeQuery->count();
 
 		// Deactivated parties
-		$deactivatedQuery = CandidateMaster::where('candidate_status', 'Deactivated');
+		$deactivatedQuery = CandidateMaster::where('candidate_status', 'Inactive');
 		if ($month) {
 			$deactivatedQuery->whereYear('contract_end_date', $year)
 				->whereMonth('contract_end_date', $month);
@@ -232,7 +232,7 @@ class DashboardController extends Controller
         // Deactivated this month
         $deactivatedQuery = CandidateMaster::whereYear('contract_end_date', $year)
                                           ->whereMonth('contract_end_date', $i)
-                                          ->where('candidate_status', 'Deactivated');
+                                          ->where('candidate_status', 'Inactive');
         $deactivatedQuery = $applyFilters($deactivatedQuery);
         
         $data[] = [
@@ -446,7 +446,7 @@ class DashboardController extends Controller
         }
         
         $totalSalary = $query->sum('net_pay');
-        $avgMonthly = $totalSalary / 12;
+        $avgMonthly = $totalSalary ? $totalSalary / 12 : 0;
         
         return [
             'period' => "Year {$year}",

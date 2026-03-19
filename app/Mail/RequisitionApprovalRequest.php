@@ -27,7 +27,7 @@ class RequisitionApprovalRequest extends Mailable
     public function build()
     {
         return $this->subject(
-            'Peepal Bonsai Portal: Approval Required – Requisition ID ' . $this->requisition->id
+            'Peepal Bonsai Portal: Approval Required – Requisition ID ' . $this->requisition->request_code
         )->markdown('emails.requisition.approval-request');
     }
 }

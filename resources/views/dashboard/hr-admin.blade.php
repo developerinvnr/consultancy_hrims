@@ -357,7 +357,7 @@
 							@endphp
 							<tr>
 								<td class="fs-11">
-									<span class="badge bg-secondary fs-10">{{ $req->requisition_id }}</span>
+									<span class="badge bg-secondary fs-10">{{ $req->request_code }}</span>
 								</td>
 								<td class="fs-11">
 									{{ $req->candidate_name }}

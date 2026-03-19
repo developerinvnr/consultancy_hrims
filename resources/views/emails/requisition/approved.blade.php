@@ -8,7 +8,7 @@ The requisition submitted via the **Peepal Bonsai Portal** has been approved and
 
 ### Details
 
-• **Requisition ID:** {{ $requisition->requisition_id }}  
+• **Requisition ID:** {{ $requisition->request_code }}  
 • **Name:** {{ $requisition->candidate_name }}  
 • **Engagement Type:** {{ $requisition->requisition_type }}  
 • **Party Code:** {{ $requisition->candidate->emp_code ?? 'N/A' }}  

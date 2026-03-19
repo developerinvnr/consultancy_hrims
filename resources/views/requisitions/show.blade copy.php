@@ -25,7 +25,7 @@
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h5 class="card-title mb-0">
-                                Requisition: <span class="text-primary">{{ $requisition->requisition_id }}</span>
+                                Requisition: <span class="text-primary">{{ $requisition->request_code }}</span>
                                 <span class="badge bg-primary ms-2">{{ $requisition->requisition_type }}</span>
                             </h5>
                         </div>

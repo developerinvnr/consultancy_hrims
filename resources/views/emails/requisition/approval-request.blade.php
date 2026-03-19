@@ -2,7 +2,7 @@
 
 # Requisition Sent for Approval
 
-Subject: **Peepal Bonsai Portal: Approval Required – Requisition ID {{ $requisition->requisition_id }}**
+Subject: **Peepal Bonsai Portal: Approval Required – Requisition ID {{ $requisition->request_code }}**
 
 Dear {{ $approver->emp_name }},
 
@@ -10,7 +10,7 @@ A requisition has been submitted in the **Peepal Bonsai Portal** and requires yo
 
 ### Details
 
-- **Requisition ID:** {{ $requisition->requisition_id }}
+- **Requisition ID:** {{ $requisition->request_code }}
 - **Name:** {{ $requisition->candidate_name }}
 - **Engagement Type:** {{ $requisition->requisition_type }}
 - **Duration:** {{ optional($requisition->contract_start_date)->format('d M Y') ?? 'N/A' }}

@@ -26,7 +26,7 @@ class RequisitionApprovalReminder extends Mailable
     public function build()
     {
         return $this->subject(
-            'Reminder: Approval Pending – Requisition ID ' . $this->requisition->requisition_id
+            'Reminder: Approval Pending – Requisition ID ' . $this->requisition->request_code
         )->markdown('emails.requisition.reminder');
     }
 }

@@ -77,7 +77,7 @@ class HrAdminController extends Controller
 		if ($request->has('search')) {
 			$search = $request->get('search');
 			$query->where(function ($q) use ($search) {
-				$q->where('requisition_id', 'like', "%{$search}%")
+				$q->where('request_code', 'like', "%{$search}%")
 					->orWhere('candidate_name', 'like', "%{$search}%")
 					->orWhere('candidate_email', 'like', "%{$search}%")
 					->orWhereHas('submittedBy', function ($q) use ($search) {
@@ -713,7 +713,7 @@ class HrAdminController extends Controller
 
 					// Log email sent
 					Log::info('Approval email sent', [
-						'requisition_id' => $requisition->id,
+						'request_code' => $requisition->id,
 						'approver_id' => $approver->id,
 						'approver_email' => $approver->emp_email,
 						'sent_at' => now()
@@ -723,7 +723,7 @@ class HrAdminController extends Controller
 				} catch (\Exception $emailException) {
 					// Log email error but don't fail the transaction
 					Log::error('Failed to send approval email: ' . $emailException->getMessage(), [
-						'requisition_id' => $requisition->id,
+						'request_code' => $requisition->id,
 						'approver_email' => $approver->emp_email
 					]);
 
@@ -732,7 +732,7 @@ class HrAdminController extends Controller
 			} else {
 				// Log that email was skipped due to communication controls
 				Log::info('Approval email skipped - communication control disabled', [
-					'requisition_id' => $requisition->id,
+					'request_code' => $requisition->id,
 					'approval_reminders' => $this->communicationService->isEnabled('approval_reminders')
 				]);
 
@@ -747,7 +747,7 @@ class HrAdminController extends Controller
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error sending for approval: ' . $e->getMessage(), [
-				'requisition_id' => $requisition->id,
+				'request_code' => $requisition->id,
 				'approver_id' => $request->approver_id,
 				'user_id' => auth()->id()
 			]);
@@ -805,7 +805,7 @@ class HrAdminController extends Controller
 					}
 
 					Log::info('Correction request email sent', [
-						'requisition_id' => $requisition->id,
+						'request_code' => $requisition->id,
 						'email' => $reportingManager->emp_email
 					]);
 
@@ -816,7 +816,7 @@ class HrAdminController extends Controller
 				}
 			} else {
 				Log::info('Correction email skipped by communication control', [
-					'requisition_id' => $requisition->id
+					'request_code' => $requisition->id
 				]);
 
 				$emailStatus = "Correction email skipped (disabled by admin).";

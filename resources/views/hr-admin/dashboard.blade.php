@@ -167,7 +167,7 @@
 								<tr>
 									<td>
 										<a href="{{ route('hr-admin.applications.view', $req) }}" class="text-primary">
-											{{ $req->requisition_id }}
+											{{ $req->request_code }}
 										</a>
 									</td>
 									<td>

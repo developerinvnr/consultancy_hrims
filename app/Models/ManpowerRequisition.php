@@ -13,7 +13,7 @@ class ManpowerRequisition extends Model
     protected $table = 'manpower_requisitions';
 
     protected $fillable = [
-        'requisition_id',
+        'request_code',
         'requisition_type',
         'submitted_by_user_id',
         'submitted_by_name',
@@ -139,7 +139,7 @@ class ManpowerRequisition extends Model
     }
 
     // Generate Requisition ID
-    public static function generateRequisitionId($type)
+    public static function generateRequestCode($type)
     {
         // Define prefixes
         $prefix = match ($type) {
@@ -156,7 +156,7 @@ class ManpowerRequisition extends Model
 
         if ($lastRecord) {
             // Extract numeric part
-            preg_match('/(\d+)$/', $lastRecord->requisition_id, $matches);
+            preg_match('/(\d+)$/', $lastRecord->request_code, $matches);
             $nextNumber = isset($matches[1]) ? ((int)$matches[1] + 1) : 1;
         } else {
             $nextNumber = 1;
