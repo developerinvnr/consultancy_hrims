@@ -21,7 +21,7 @@ class SendPanInoperativeAlert extends Command
             ->where('pan_status_2', '!=', 'Operative')
             ->whereNotNull('pan_no')
             ->get();
-
+        \Log::info('Candidates count: ' . $candidates->count());
         foreach ($candidates as $candidate) {
 
             $managerEmail = $candidate->reportingManager->emp_email ?? null;
