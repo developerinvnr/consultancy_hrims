@@ -527,6 +527,15 @@
 										<span class="badge bg-info fs-9">Awaiting Approval</span>
 										@endif
 
+										<a href="{{ route('submitter.agreement.view', $req) }}"
+												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
+												title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
+												<i class="ri-file-text-line"></i>
+												@if($req->status == 'Signed Agreement Uploaded')
+												<span class="badge bg-warning text-dark ms-1">Courier</span>
+												@endif
+										</a>
+
 										<!-- COURIER RECEIVE BUTTON -->
 										@if($courierDetails && !$courierDetails->received_date)
 										<button type="button"

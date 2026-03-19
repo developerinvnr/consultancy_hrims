@@ -184,17 +184,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/agreement/{requisition}/upload-signed', [SubmitterController::class, 'uploadSignedAgreement'])->name('agreement.upload-signed');
 
         // Courier details routes
-        Route::get(
-            '/agreement/{requisition}/courier-details/{agreement}',
-            [SubmitterController::class, 'showCourierForm']
-        )
-            ->name('agreement.courier-details');
+        Route::get('/agreement/{requisition}/courier-details/{agreement}',[SubmitterController::class, 'showCourierForm'])->name('agreement.courier-details');
 
-        Route::post(
-            '/agreement/{requisition}/courier-details/{agreement}',
-            [SubmitterController::class, 'saveCourierDetails']
-        )
-            ->name('agreement.save-courier-details');
+        Route::post('/agreement/{requisition}/courier-details/{agreement}',[SubmitterController::class, 'saveCourierDetails'])->name('agreement.save-courier-details');
     });
 });
 

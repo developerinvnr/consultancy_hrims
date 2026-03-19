@@ -122,10 +122,10 @@ class HrAdminController extends Controller
 				// $agreementDocs = \App\Models\AgreementDocument::where('candidate_code', $candidate->candidate_code)
 				// 	->orderBy('created_at', 'desc')
 				// 	->get();
-				
+
 				$agreementDocs = \App\Models\AgreementDocument::where('candidate_id', $candidate->id)
-				->orderBy('created_at', 'desc')
-				->get();
+					->orderBy('created_at', 'desc')
+					->get();
 
 				foreach ($agreementDocs as $doc) {
 
@@ -393,7 +393,7 @@ class HrAdminController extends Controller
 					'date_of_birth' => 'required|date|before:today',
 					'address_line_1' => 'required|string|max:500',
 					'city' => 'required|string|max:100',
-					'state_residence' => 'required|string|max:100',
+					'state_residence' => 'nullable|integer',
 					'pin_code' => 'required|string|max:10'
 				];
 				$data = $request->only([
@@ -2188,7 +2188,7 @@ class HrAdminController extends Controller
 				'highest_qualification' => 'required|integer',
 				'address_line_1' => 'required|string|max:500',
 				'city' => 'required|integer',
-				'state_residence' => 'required|integer',
+				'state_residence' => 'nullable|integer',
 				'pin_code' => 'required|string|max:6',
 			]);
 		}
@@ -2373,7 +2373,14 @@ class HrAdminController extends Controller
 		| Fill model but don't save yet
 		|--------------------------------------------------------------------------
 		*/
-			$candidate->fill($request->only($fieldsToCheck));
+			$input = array_filter(
+				$request->only($fieldsToCheck),
+				function ($value) {
+					return !is_null($value);
+				}
+			);
+
+			$candidate->fill($input);
 
 			/*
 		|--------------------------------------------------------------------------
@@ -2406,10 +2413,10 @@ class HrAdminController extends Controller
 			// 	$candidate->save();
 			// }
 
-			if ($candidate->isDirty()) {
-				$candidate->save();
-				$this->syncManpowerTable($candidate);
-			}
+			// if ($candidate->isDirty()) {
+			// 	$candidate->save();
+			// 	$this->syncManpowerTable($candidate);
+			// }
 
 			// ===============================
 			// HANDLE DOCUMENT UPLOADS
@@ -2507,86 +2514,133 @@ class HrAdminController extends Controller
 			}
 
 			// Handle PAN DOCUMENT - goes to requisition_documents
-			if ($request->hasFile('pan_document')) {
-				$file = $request->file('pan_document');
-				$documentNumber = $request->pan_document_number;
+			if ($request->hasFile('pan_document') || $request->filled('pan_document_number')) {
 
-				// Upload using S3Service
-				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'pan_card');
-
-				if ($upload['success']) {
-					// Store in requisition_documents
-					DB::table('requisition_documents')->insert([
-						'requisition_id' => $candidate->requisition_id,
-						'document_type' => 'pan_card',
-						'file_name' => $upload['filename'],
-						'file_path' => $upload['key'],
-						'uploaded_by_user_id' => Auth::id(),
-						'created_at' => now(),
-						'updated_at' => now(),
-					]);
-
-					$changes['pan_document_uploaded'] = [
-						'old' => 'Missing',
-						'new' => 'PAN document uploaded'
-					];
+				// ✅ Update candidate PAN number
+				if ($request->filled('pan_document_number')) {
+					$candidate->pan_no = $request->pan_document_number;
 				}
+
+				if ($request->hasFile('pan_document')) {
+
+					$file = $request->file('pan_document');
+
+					// 🔴 Delete old PAN
+					$oldPan = DB::table('requisition_documents')
+						->where('requisition_id', $candidate->requisition_id)
+						->where('document_type', 'pan_card')
+						->first();
+
+					if ($oldPan) {
+						Storage::disk('s3')->delete($oldPan->file_path);
+						DB::table('requisition_documents')->where('id', $oldPan->id)->delete();
+					}
+
+					// Upload new file
+					$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'pan_card');
+
+					if ($upload['success']) {
+						DB::table('requisition_documents')->insert([
+							'requisition_id' => $candidate->requisition_id,
+							'document_type' => 'pan_card',
+							'file_name' => $upload['filename'],
+							'file_path' => $upload['key'],
+							'uploaded_by_user_id' => Auth::id(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				}
+
+				$changes['pan_updated'] = [
+					'old' => 'Previous',
+					'new' => 'PAN updated'
+				];
 			}
 
 			// Handle AADHAAR DOCUMENT - goes to requisition_documents
-			if ($request->hasFile('aadhaar_document')) {
-				$file = $request->file('aadhaar_document');
-				$documentNumber = $request->aadhaar_document_number;
+			if ($request->hasFile('aadhaar_document') || $request->filled('aadhaar_document_number')) {
 
-				// Upload using S3Service
-				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'aadhaar_card');
-
-				if ($upload['success']) {
-					// Store in requisition_documents
-					DB::table('requisition_documents')->insert([
-						'requisition_id' => $candidate->requisition_id,
-						'document_type' => 'aadhaar_card',
-						'file_name' => $upload['filename'],
-						'file_path' => $upload['key'],
-						'uploaded_by_user_id' => Auth::id(),
-						'created_at' => now(),
-						'updated_at' => now(),
-					]);
-
-					$changes['aadhaar_document_uploaded'] = [
-						'old' => 'Missing',
-						'new' => 'Aadhaar document uploaded'
-					];
+				if ($request->filled('aadhaar_document_number')) {
+					$candidate->aadhaar_no = $request->aadhaar_document_number;
 				}
+
+				if ($request->hasFile('aadhaar_document')) {
+
+					$file = $request->file('aadhaar_document');
+
+					$old = DB::table('requisition_documents')
+						->where('requisition_id', $candidate->requisition_id)
+						->where('document_type', 'aadhaar_card')
+						->first();
+
+					if ($old) {
+						Storage::disk('s3')->delete($old->file_path);
+						DB::table('requisition_documents')->where('id', $old->id)->delete();
+					}
+
+					$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'aadhaar_card');
+
+					if ($upload['success']) {
+						DB::table('requisition_documents')->insert([
+							'requisition_id' => $candidate->requisition_id,
+							'document_type' => 'aadhaar_card',
+							'file_name' => $upload['filename'],
+							'file_path' => $upload['key'],
+							'uploaded_by_user_id' => Auth::id(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				}
+
+				$changes['aadhaar_updated'] = [
+					'old' => 'Previous',
+					'new' => 'Aadhaar updated'
+				];
 			}
 
 			// Handle BANK DOCUMENT - goes to requisition_documents
-			if ($request->hasFile('bank_document')) {
-				$file = $request->file('bank_document');
-				$documentNumber = $request->bank_document_number;
+			if ($request->hasFile('bank_document') || $request->filled('bank_account_no')) {
 
-				// Upload using S3Service
-				$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'bank_document');
-
-				if ($upload['success']) {
-					// Store in requisition_documents
-					DB::table('requisition_documents')->insert([
-						'requisition_id' => $candidate->requisition_id,
-						'document_type' => 'bank_document',
-						'file_name' => $upload['filename'],
-						'file_path' => $upload['key'],
-						'uploaded_by_user_id' => Auth::id(),
-						'created_at' => now(),
-						'updated_at' => now(),
-					]);
-
-					$changes['bank_document_uploaded'] = [
-						'old' => 'Missing',
-						'new' => 'Bank document uploaded'
-					];
+				if ($request->filled('bank_account_no')) {
+					$candidate->bank_account_no = $request->bank_account_no;
 				}
-			}
 
+				if ($request->hasFile('bank_document')) {
+
+					$file = $request->file('bank_document');
+
+					$old = DB::table('requisition_documents')
+						->where('requisition_id', $candidate->requisition_id)
+						->where('document_type', 'bank_document')
+						->first();
+
+					if ($old) {
+						Storage::disk('s3')->delete($old->file_path);
+						DB::table('requisition_documents')->where('id', $old->id)->delete();
+					}
+
+					$upload = $this->uploadDocumentToS3($file, $candidate->requisition_type, 'bank_document');
+
+					if ($upload['success']) {
+						DB::table('requisition_documents')->insert([
+							'requisition_id' => $candidate->requisition_id,
+							'document_type' => 'bank_document',
+							'file_name' => $upload['filename'],
+							'file_path' => $upload['key'],
+							'uploaded_by_user_id' => Auth::id(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				}
+
+				$changes['bank_updated'] = [
+					'old' => 'Previous',
+					'new' => 'Bank updated'
+				];
+			}
 			// Handle OTHER DOCUMENT - goes to requisition_documents
 			if ($request->hasFile('other_document') && $request->filled('other_document_type')) {
 				$file = $request->file('other_document');
@@ -2729,6 +2783,19 @@ class HrAdminController extends Controller
 			// 		// ]);
 			// 	}
 			// }
+			if ($candidate->isDirty()) {
+
+				$dirtyFields = $candidate->getDirty();
+
+				$candidate->save();
+
+				$this->syncManpowerTable($candidate);
+
+				Log::info('Candidate updated', [
+					'candidate_id' => $candidate->id,
+					'changes' => $dirtyFields
+				]);
+			}
 
 			DB::commit();
 

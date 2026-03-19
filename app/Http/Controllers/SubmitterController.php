@@ -21,12 +21,18 @@ class SubmitterController extends Controller
 	 */
 	public function viewAgreement(ManpowerRequisition $requisition)
 	{
-		if ($requisition->submitted_by_user_id !== Auth::id()) {
+		$user = Auth::user();
+		 if ($requisition->submitted_by_user_id !== $user->id && !$user->hasAnyRole(['hr_admin']))  
+		{
 			abort(403, 'Unauthorized access.');
 		}
+		$candidate = CandidateMaster::where('requisition_id', $requisition->id)->firstOrFail();
 
+		$hasAgreement = AgreementDocument::where('candidate_id', $candidate->id)
+			->where('document_type', 'agreement')
+			->exists();
 
-		if (!in_array($requisition->status, ['Unsigned Agreement Created', 'Signed Agreement Uploaded', 'Agreement Completed'])) {
+		if (!$hasAgreement) {
 			return redirect()->route('dashboard')->with('error', 'No agreement available.');
 		}
 
@@ -302,7 +308,9 @@ class SubmitterController extends Controller
 	public function saveCourierDetails(Request $request, ManpowerRequisition $requisition, AgreementDocument $agreement)
 	{
 		// Auth check
-		if ($requisition->submitted_by_user_id !== Auth::id()) {
+		$user = Auth::user();
+
+		if ($requisition->submitted_by_user_id !== $user->id && !$user->hasAnyRole(['hr_admin'])) {
 			return response()->json([
 				'success' => false,
 				'message' => 'Unauthorized access.'
