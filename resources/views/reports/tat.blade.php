@@ -158,12 +158,23 @@
 
                             {{-- ✅ Stage TAT --}}
                             @foreach($stages as $key => $s)
-                            @php
-                            $tat = ($row->{$s['from']} && $row->{$s['to']})
-                            ? \Carbon\Carbon::parse($row->{$s['from']})
-                            ->diffInDays($row->{$s['to']})
-                            : null;
-                            @endphp
+                           @php
+if($key === 'file_creation'){
+    $fromDate = $row->received_date
+        ?? $row->agreement_uploaded_date
+        ?? $row->agreement_created_date
+        ?? $row->approval_date;
+
+    $toDate = $row->file_created_date;
+} else {
+    $fromDate = $row->{$s['from']} ?? null;
+    $toDate = $row->{$s['to']} ?? null;
+}
+
+$tat = ($fromDate && $toDate)
+    ? \Carbon\Carbon::parse($fromDate)->diffInDays($toDate)
+    : null;
+@endphp
 
                             <td class="text-center">
                                 @if($tat !== null)

@@ -52,13 +52,27 @@ class TatReportExport implements
                 DB::table('agreement_documents')
                     ->select('candidate_id', DB::raw('MAX(id) as id'))
                     ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED') // 👈 created
                     ->groupBy('candidate_id'),
-                'latest_ad',
-                'latest_ad.candidate_id',
+                'created_ad',
+                'created_ad.candidate_id',
                 '=',
                 'candidate_master.id'
             )
-            ->leftJoin('agreement_documents as ad', 'ad.id', '=', 'latest_ad.id')
+            ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED') // 👈 signed
+                    ->groupBy('candidate_id'),
+                'signed_ad',
+                'signed_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
             // Latest Courier
             ->leftJoinSub(
@@ -68,7 +82,7 @@ class TatReportExport implements
                 'latest_ac',
                 'latest_ac.agreement_document_id',
                 '=',
-                'ad.id'
+                'ads.id'
             )
             ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
 
@@ -78,8 +92,8 @@ class TatReportExport implements
                 'mr.hr_verification_date',
                 'mr.approval_date',
                 'candidate_master.file_created_date',
-                'ad.created_at as agreement_created_date',
-                'ad.updated_at as agreement_uploaded_date',
+                'adc.created_at as agreement_created_date',
+                'ads.created_at as agreement_uploaded_date',
                 'ac.dispatch_date',
                 'ac.received_date'
             );
@@ -115,8 +129,12 @@ class TatReportExport implements
         $stages = [
             'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
             'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+
             'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+
+            // 🔥 rename properly
             'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+
             'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
             'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
             'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
@@ -143,7 +161,8 @@ class TatReportExport implements
                 if ($key === 'file_creation') {
                     $fromDate = $row->received_date
                         ?? $row->agreement_uploaded_date
-                        ?? $row->approval_date; // fallback 🔥
+                        ?? $row->agreement_created_date
+                        ?? $row->approval_date;
 
                     $toDate = $row->file_created_date;
                 } else {

@@ -684,16 +684,30 @@ class ReportController extends Controller
 
             // ✅ Latest Agreement (fix duplicate)
             ->leftJoinSub(
-                DB::table('agreement_documents')
-                    ->select('candidate_id', DB::raw('MAX(id) as id'))
-                    ->where('document_type', 'agreement')
-                    ->groupBy('candidate_id'),
-                'latest_ad',
-                'latest_ad.candidate_id',
-                '=',
-                'candidate_master.id'
-            )
-            ->leftJoin('agreement_documents as ad', 'ad.id', '=', 'latest_ad.id')
+    DB::table('agreement_documents')
+        ->select('candidate_id', DB::raw('MAX(id) as id'))
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'UNSIGNED')
+        ->groupBy('candidate_id'),
+    'created_ad',
+    'created_ad.candidate_id',
+    '=',
+    'candidate_master.id'
+)
+->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+
+->leftJoinSub(
+    DB::table('agreement_documents')
+        ->select('candidate_id', DB::raw('MAX(id) as id'))
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'SIGNED')
+        ->groupBy('candidate_id'),
+    'signed_ad',
+    'signed_ad.candidate_id',
+    '=',
+    'candidate_master.id'
+)
+->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
             // ✅ Latest Courier (fix duplicate)
             ->leftJoinSub(
@@ -703,7 +717,7 @@ class ReportController extends Controller
                 'latest_ac',
                 'latest_ac.agreement_document_id',
                 '=',
-                'ad.id'
+                'ads.id'
             )
             ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
 
@@ -718,8 +732,8 @@ class ReportController extends Controller
                 'candidate_master.file_created_date',
 
                 // Agreement
-                'ad.created_at as agreement_created_date',
-                'ad.updated_at as agreement_uploaded_date',
+    'adc.created_at as agreement_created_date',
+    'ads.created_at as agreement_uploaded_date',
 
                 // Courier
                 'ac.dispatch_date',
@@ -755,14 +769,16 @@ class ReportController extends Controller
 
         // ✅ STAGE CONFIG (Dynamic 🔥)
         $stages = [
-            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
-            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
-            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
-            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
-            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
-            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
-            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
-        ];
+    'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+    'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+
+    'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+    'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+
+    'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+    'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+    'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
+];
 
         $stageData = [];
         foreach ($stages as $key => $s) {
@@ -770,18 +786,30 @@ class ReportController extends Controller
         }
 
         foreach ($allRecords as $row) {
-            foreach ($stages as $key => $s) {
-                if ($row->{$s['from']} && $row->{$s['to']}) {
-                    $days = max(0, ceil(
-                        \Carbon\Carbon::parse($row->{$s['from']})
-                            ->diffInDays($row->{$s['to']})
-                    ));
+    foreach ($stages as $key => $s) {
 
-                    $days = ceil($days);
-                    $stageData[$key][] = $days;
-                }
-            }
+        if ($key === 'file_creation') {
+            $fromDate = $row->received_date
+                ?? $row->agreement_uploaded_date
+                ?? $row->agreement_created_date
+                ?? $row->approval_date;
+
+            $toDate = $row->file_created_date;
+        } else {
+            $fromDate = $row->{$s['from']} ?? null;
+            $toDate = $row->{$s['to']} ?? null;
         }
+
+        if ($fromDate && $toDate) {
+            $days = max(0, ceil(
+                \Carbon\Carbon::parse($fromDate)
+                    ->diffInDays($toDate)
+            ));
+
+            $stageData[$key][] = $days;
+        }
+    }
+}
 
         $getSummary = function ($data) {
             return [
