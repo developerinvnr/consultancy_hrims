@@ -715,6 +715,8 @@ class ReportController extends Controller
                 'mr.hr_verification_date',
                 'mr.approval_date',
 
+                'candidate_master.file_created_date',
+
                 // Agreement
                 'ad.created_at as agreement_created_date',
                 'ad.updated_at as agreement_uploaded_date',
@@ -759,6 +761,7 @@ class ReportController extends Controller
             'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
             'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
             'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
         ];
 
         $stageData = [];

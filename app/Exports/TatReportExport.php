@@ -13,11 +13,11 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class TatReportExport implements 
-    FromCollection, 
-    WithHeadings, 
-    ShouldAutoSize, 
-    WithStyles, 
+class TatReportExport implements
+    FromCollection,
+    WithHeadings,
+    ShouldAutoSize,
+    WithStyles,
     WithEvents
 {
     private $financialYear, $month, $departmentId, $requisitionType, $status;
@@ -33,6 +33,14 @@ class TatReportExport implements
 
     public function collection()
     {
+        if (!$this->financialYear) {
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+
+            $this->financialYear = ($currentMonth >= 4)
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
+        }
         [$startYear, $endYear] = explode('-', $this->financialYear);
 
         // ✅ MAIN QUERY (NO GROUP BY ISSUE)
@@ -65,11 +73,11 @@ class TatReportExport implements
             ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
 
             ->select(
-                'candidate_master.candidate_name',
-                'candidate_master.requisition_id',
+                'candidate_master.*',
                 'mr.submission_date',
                 'mr.hr_verification_date',
                 'mr.approval_date',
+                'candidate_master.file_created_date',
                 'ad.created_at as agreement_created_date',
                 'ad.updated_at as agreement_uploaded_date',
                 'ac.dispatch_date',
@@ -111,9 +119,10 @@ class TatReportExport implements
             'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
             'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
             'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
         ];
 
-        return $query->get()->map(function ($row) use ($stages) {
+        return $query->orderByDesc('mr.submission_date')->get()->map(function ($row) use ($stages) {
 
             $data = [
                 $row->requisition_id,
@@ -129,16 +138,27 @@ class TatReportExport implements
             }
 
             // ✅ TAT
-            foreach ($stages as $s) {
-                if ($row->{$s['from']} && $row->{$s['to']}) {
+            foreach ($stages as $key => $s) {
+
+                if ($key === 'file_creation') {
+                    $fromDate = $row->received_date
+                        ?? $row->agreement_uploaded_date
+                        ?? $row->approval_date; // fallback 🔥
+
+                    $toDate = $row->file_created_date;
+                } else {
+                    $fromDate = $row->{$s['from']} ?? null;
+                    $toDate = $row->{$s['to']} ?? null;
+                }
+
+                if (!empty($fromDate) && !empty($toDate)) {
 
                     $days = max(0, ceil(
-                        Carbon::parse($row->{$s['from']})
-                            ->diffInDays($row->{$s['to']})
+                        \Carbon\Carbon::parse($fromDate)
+                            ->diffInDays($toDate)
                     ));
 
-                    $data[] = $days == 0 ? 'Within 1 Day' : $days . ' Days';
-
+                    $data[] = $days <= 1 ? 'Within 1 Day' : $days . ' Days';
                 } else {
                     $data[] = '-';
                 }
@@ -157,7 +177,8 @@ class TatReportExport implements
             'Agreement Create',
             'Agreement Upload',
             'Courier Dispatch',
-            'Courier Delivery'
+            'Courier Delivery',
+            'File Creation'
         ];
 
         $headers = ['Req ID', 'Candidate', 'Submission'];
