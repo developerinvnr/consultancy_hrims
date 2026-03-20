@@ -125,7 +125,7 @@ class ManpowerRequisition extends Model
 
     public function currentApprover()
     {
-        return $this->belongsTo(User::class, 'approver_id');
+        return $this->belongsTo(User::class, 'approver_id','emp_id');
     }
 
     // public function employeeGeneral()
