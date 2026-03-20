@@ -383,7 +383,7 @@
 									{{-- Approver (only for Pending Approval tab) --}}
 									@if($req_tab == 'approval')
 									<div class="text-danger fs-9">
-										⏳ Approver: {{ $req->currentApprover->emp_name ?? 'Not Assigned' }}
+										⏳ Approver: {{ $req->currentApprover->name ?? 'Not Assigned' }}
 									</div>
 									@endif
 								</td>
