@@ -388,7 +388,7 @@
 									@if($req->status == 'Pending Approval')
 									<span class="{{ $days > 2 ? 'text-danger' : 'text-warning' }}">
 										⏳ {{ $req->currentApprover->name }}
-										<small>({{ $days }}d)</small>
+										<small>({{ floor($days) }}d)</small>
 									</span>
 
 									@elseif($req->status == 'Approved')
