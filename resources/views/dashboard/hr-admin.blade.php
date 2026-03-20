@@ -335,6 +335,7 @@
 								<th class="fs-11">Email</th>
 								<th class="fs-11">Type</th>
 								<th class="fs-11">Reporting Manager</th>
+								<th class="fs-11">Approver</th>
 								<th class="fs-11">Status</th>
 								<th class="fs-11">Remark</th>
 								<th class="fs-11">Courier Status</th>
@@ -371,20 +372,38 @@
 									</span>
 								</td>
 								<td class="fs-11">
-									{{-- Reporting Manager --}}
 									@if($candidate && $candidate->reportingManager)
-									<div>
-										{{ $candidate->reportingManager->emp_name }}
-									</div>
+									{{ $candidate->reportingManager->emp_name ?? 'N/A' }}
 									@else
-									<div class="text-muted fs-9">Not Assigned</div>
+									<span class="text-muted fs-9">Not Assigned</span>
+									@endif
+								</td>
+								<td class="fs-11">
+									@if($req->currentApprover)
+
+									@php
+									$days = \Carbon\Carbon::parse($req->created_at)->diffInDays(now());
+									@endphp
+
+									@if($req->status == 'Pending Approval')
+									<span class="{{ $days > 2 ? 'text-danger' : 'text-warning' }}">
+										⏳ {{ $req->currentApprover->name }}
+										<small>({{ $days }}d)</small>
+									</span>
+
+									@elseif($req->status == 'Approved')
+									<span class="text-success">
+										✔ {{ $req->currentApprover->name }}
+									</span>
+
+									@else
+									<span class="text-muted">
+										{{ $req->currentApprover->name }}
+									</span>
 									@endif
 
-									{{-- Approver (only for Pending Approval tab) --}}
-									@if($req_tab == 'approval')
-									<div class="text-danger fs-9">
-										⏳ Approver: {{ $req->currentApprover->name ?? 'Not Assigned' }}
-									</div>
+									@else
+									<span class="text-muted">Not Assigned</span>
 									@endif
 								</td>
 								<td class="fs-11">
