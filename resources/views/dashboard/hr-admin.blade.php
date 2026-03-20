@@ -371,10 +371,20 @@
 									</span>
 								</td>
 								<td class="fs-11">
+									{{-- Reporting Manager --}}
 									@if($candidate && $candidate->reportingManager)
-									{{ $candidate->reportingManager->emp_name ?? 'N/A' }}
+									<div>
+										{{ $candidate->reportingManager->emp_name }}
+									</div>
 									@else
-									<span class="text-muted fs-9">Not Assigned</span>
+									<div class="text-muted fs-9">Not Assigned</div>
+									@endif
+
+									{{-- Approver (only for Pending Approval tab) --}}
+									@if($req_tab == 'approval')
+									<div class="text-danger fs-9">
+										⏳ Approver: {{ $req->currentApprover->emp_name ?? 'Not Assigned' }}
+									</div>
 									@endif
 								</td>
 								<td class="fs-11">
@@ -529,12 +539,12 @@
 										@if($empStatus !== 'Inactive')
 
 										<a href="{{ route('submitter.agreement.view', $req) }}"
-												class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
-												title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
-												<i class="ri-file-text-line"></i>
-												@if($req->status == 'Signed Agreement Uploaded')
-												<span class="badge bg-warning text-dark ms-1">Courier</span>
-												@endif
+											class="btn btn-sm btn-outline-{{ $req->status == 'Agreement Completed' ? 'success' : 'primary' }}"
+											title="{{ $req->status == 'Agreement Completed' ? 'View Completed Agreement' : 'View Agreement Details' }}">
+											<i class="ri-file-text-line"></i>
+											@if($req->status == 'Signed Agreement Uploaded')
+											<span class="badge bg-warning text-dark ms-1">Courier</span>
+											@endif
 										</a>
 										@endif
 										<!-- COURIER RECEIVE BUTTON -->

@@ -43,7 +43,7 @@ class HomeController extends Controller
         $expTab = $request->get('exp_tab', 'exp30');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
-        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy']);
+        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy','currentApprover']);
 
         switch ($reqTab) {
 

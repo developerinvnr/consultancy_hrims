@@ -103,9 +103,9 @@
 </div>
 
                     <div class="kpi-footer">
-                        <span class="badge-success">≤1: {{ $s['within_1'] }}</span>
-                        <span class="badge-warning">1-3: {{ $s['within_3'] }}</span>
-                        <span class="badge-danger">>3: {{ $s['above_3'] }}</span>
+                        <span class="badge-success">≤1 day: {{ $s['within_1'] }}</span>
+                        <span class="badge-warning">1–3 days: {{ $s['within_3'] }}</span>
+                        <span class="badge-danger">>3 days: {{ $s['above_3'] }}</span>
                     </div>
 
                 </div>
