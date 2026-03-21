@@ -203,12 +203,12 @@ class SubmitterController extends Controller
 
 			/* ---------------- UPDATE CANDIDATE & REQUISITION ---------------- */
 			$candidate->update([
-				 'candidate_status' => 'Active',
-                 'final_status' => 'A'
+				'candidate_status' => 'Signed Agreement Uploaded',
+				'final_status' => 'A'
 			]);
 
 			$requisition->update([
-				'status' => 'Agreement Completed',
+				'status' => 'Signed Agreement Uploaded',
 			]);
 
 			DB::commit();

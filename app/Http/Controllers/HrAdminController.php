@@ -1630,7 +1630,7 @@ class HrAdminController extends Controller
 			/* ---------------- UPDATE CANDIDATE ---------------- */
 
 			$candidate->update([
-				'candidate_status' => 'Active',
+				'candidate_status' => 'Signed Agreement Uploaded',
 				'final_status'     => 'A',
 			]);
 
@@ -1638,7 +1638,7 @@ class HrAdminController extends Controller
 
 			if ($candidate->requisition) {
 				$candidate->requisition->update([
-					'status' => 'Agreement Completed',
+					'status' => 'Signed Agreement Uploaded',
 				]);
 			}
 
@@ -2996,15 +2996,65 @@ class HrAdminController extends Controller
 			'candidate_id' => 'required|exists:candidate_master,id'
 		]);
 
-		$candidate = CandidateMaster::findOrFail($request->candidate_id);
+		DB::beginTransaction();
 
-		$candidate->update([
-			'file_created_date' => now()
-		]);
+		try {
 
-		return response()->json([
-			'success' => true,
-			'message' => 'File created successfully'
-		]);
+			$candidate = CandidateMaster::findOrFail($request->candidate_id);
+
+			/* ---------------- UPDATE FILE CREATED DATE ---------------- */
+
+			$candidate->update([
+				'file_created_date' => now()
+			]);
+
+			/* ---------------- CHECK AGREEMENT SIGNED ---------------- */
+
+			$agreementSigned = DB::table('agreement_documents')
+				->where('candidate_id', $candidate->id)
+				->where('document_type', 'agreement')
+				->where('sign_status', 'SIGNED')
+				->exists();
+
+			/* ---------------- CHECK COURIER RECEIVED ---------------- */
+
+			$courierReceived = DB::table('agreement_couriers as ac')
+				->join('agreement_documents as ad', 'ac.agreement_document_id', '=', 'ad.id')
+				->where('ad.candidate_id', $candidate->id)
+				->whereNotNull('ac.received_date')
+				->exists();
+
+			/* ---------------- FINAL ACTIVATION CHECK ---------------- */
+
+			if ($agreementSigned && $courierReceived) {
+
+				$candidate->update([
+					'candidate_status' => 'Active',
+					'final_status' => 'A'
+				]);
+
+				if ($candidate->requisition) {
+
+					$candidate->requisition->update([
+						'status' => 'Active'
+					]);
+				}
+			}
+
+			DB::commit();
+
+			return response()->json([
+				'success' => true,
+				'message' => 'File created successfully'
+			]);
+		} catch (\Exception $e) {
+
+			DB::rollBack();
+
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage()
+			]);
+		}
 	}
 }
