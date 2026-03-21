@@ -42,16 +42,67 @@
                                         <option value="TFA" {{ request('type') == 'TFA' ? 'selected' : '' }}>TFA</option>
                                         <option value="CB" {{ request('type') == 'CB' ? 'selected' : '' }}>CB</option>
                                     </select>
-                                    <select name="status" class="form-select form-select-sm me-2" style="width: auto;">
+                                    <select name="status" class="form-select form-select-sm me-2" style="width:auto;">
+
                                         <option value="">All Status</option>
-                                        <option value="Pending HR Verification" {{ request('status') == 'Pending HR Verification' ? 'selected' : '' }}>Pending HR Verification</option>
-                                        <option value="Correction Required" {{ request('status') == 'Correction Required' ? 'selected' : '' }}>Correction Required</option>
-                                        <option value="Verified" {{ request('status') == 'Verified' ? 'selected' : '' }}>Verified</option>
-                                        <option value="Approved" {{ request('status') == 'Approved' ? 'selected' : '' }}>Approved</option>
-                                        <option value="Rejected" {{ request('status') == 'Rejected' ? 'selected' : '' }}>Rejected</option>
-                                        <option value="Processed" {{ request('status') == 'Processed' ? 'selected' : '' }}>Processed</option>
-                                        <option value="Agreement Pending" {{ request('status') == 'Agreement Pending' ? 'selected' : '' }}>Agreement Pending</option>
-                                        <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+
+                                        <!-- Requisition workflow -->
+                                        <option value="Pending HR Verification"
+                                            {{ request('status') == 'Pending HR Verification' ? 'selected' : '' }}>
+                                            Pending HR Verification
+                                        </option>
+
+                                        <option value="Correction Required"
+                                            {{ request('status') == 'Correction Required' ? 'selected' : '' }}>
+                                            Correction Required
+                                        </option>
+
+                                        <option value="Pending Approval"
+                                            {{ request('status') == 'Pending Approval' ? 'selected' : '' }}>
+                                            Pending Approval
+                                        </option>
+
+                                        <option value="Approved"
+                                            {{ request('status') == 'Approved' ? 'selected' : '' }}>
+                                            Approved
+                                        </option>
+
+                                        <option value="Rejected"
+                                            {{ request('status') == 'Rejected' ? 'selected' : '' }}>
+                                            Rejected
+                                        </option>
+
+                                        <hr>
+
+                                        <!-- Agreement workflow -->
+                                        <option value="dispatch_pending"
+                                            {{ request('status') == 'dispatch_pending' ? 'selected' : '' }}>
+                                            Pending Dispatch
+                                        </option>
+
+                                        <option value="courier_pending"
+                                            {{ request('status') == 'courier_pending' ? 'selected' : '' }}>
+                                            Courier Pending
+                                        </option>
+
+                                        <option value="file_pending"
+                                            {{ request('status') == 'file_pending' ? 'selected' : '' }}>
+                                            File Creation Pending
+                                        </option>
+
+                                        <hr>
+
+                                        <!-- Employee lifecycle -->
+                                        <option value="active"
+                                            {{ request('status') == 'active' ? 'selected' : '' }}>
+                                            Active
+                                        </option>
+
+                                        <option value="inactive"
+                                            {{ request('status') == 'inactive' ? 'selected' : '' }}>
+                                            Inactive
+                                        </option>
+
                                     </select>
                                     <select name="employee_status" class="form-select form-select-sm me-2" style="width: auto;">
                                         <option value="">All Party Status</option>
@@ -143,7 +194,7 @@
                                     <td>{{ $requisition->created_at->format('d-m-Y') }}</td>
                                     <td>
                                         @php
-                                        $status = $requisition->status;
+                                        $status = $requisition->workflow_status;
 
                                         // change only display text
                                         $displayStatus = $status === 'Unsigned Agreement Created'
@@ -151,17 +202,21 @@
                                         : $status;
 
                                         $statusColors = [
+
                                         'Pending HR Verification' => 'warning',
                                         'Correction Required' => 'danger',
                                         'Pending Approval' => 'info',
-                                        'Approved' => 'success',
-                                        'Rejected' => 'dark',
-                                        'Processed' => 'primary',
-                                        'Agreement Pending' => 'secondary',
-                                        'Completed' => 'success',
-                                        'Unsigned Agreement Created' => 'info',
-                                        'Active'=>'success',
-                                        'Inactive'=>'danger'
+                                        'Approved' => 'primary',
+
+                                        'Agreement Upload Pending' => 'secondary',
+                                        'Pending Dispatch' => 'info',
+                                        'Courier Pending' => 'warning',
+                                        'File Creation Pending' => 'primary',
+
+                                        'Active' => 'success',
+                                        'Inactive' => 'danger',
+                                        'Rejected' => 'dark'
+
                                         ];
 
                                         $color = $statusColors[$status] ?? 'secondary';
@@ -408,19 +463,19 @@
     });
 </script>
 <style>
-  .action-btn {
-    width: 30px;
-    height: 24px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
+    .action-btn {
+        width: 30px;
+        height: 24px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
 
-.action-btn:hover {
-    transform: translateY(-1px);
-}
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
 </style>
 @endpush

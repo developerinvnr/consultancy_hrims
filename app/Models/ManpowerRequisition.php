@@ -125,7 +125,7 @@ class ManpowerRequisition extends Model
 
     public function currentApprover()
     {
-        return $this->belongsTo(User::class, 'approver_id','emp_id');
+        return $this->belongsTo(User::class, 'approver_id', 'emp_id');
     }
 
     // public function employeeGeneral()
@@ -204,5 +204,52 @@ class ManpowerRequisition extends Model
     public function rejectedBy()
     {
         return $this->belongsTo(User::class, 'rejected_by_user_id');
+    }
+
+    public function getWorkflowStatusAttribute()
+    {
+        if (!$this->candidate) {
+            return $this->status;
+        }
+
+        $candidate = $this->candidate;
+
+        // normalize short codes
+        if ($candidate->candidate_status == 'A') {
+            return 'Active';
+        }
+
+        if ($candidate->candidate_status == 'D') {
+            return 'Inactive';
+        }
+
+        if ($candidate->candidate_status == 'Unsigned Agreement Created') {
+            return 'Agreement Upload Pending';
+        }
+
+        $signedAgreement = $candidate->signedAgreements()->latest()->first();
+
+        if ($signedAgreement && !$signedAgreement->courierDetails) {
+            return 'Pending Dispatch';
+        }
+
+        if (
+            $signedAgreement &&
+            $signedAgreement->courierDetails &&
+            !$signedAgreement->courierDetails->received_date
+        ) {
+            return 'Courier Pending';
+        }
+
+        if (
+            $signedAgreement &&
+            $signedAgreement->courierDetails &&
+            $signedAgreement->courierDetails->received_date &&
+            !$candidate->file_created_date
+        ) {
+            return 'File Creation Pending';
+        }
+
+        return $candidate->candidate_status;
     }
 }

@@ -42,7 +42,68 @@ class HrRequisitionController extends Controller
         }
 
         if ($status) {
-            $query->where('status', $status);
+
+            switch ($status) {
+
+                case 'dispatch_pending':
+
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Signed Agreement Uploaded');
+                    })
+                        ->whereHas('candidate.signedAgreements', function ($q) {
+                            $q->whereDoesntHave('courierDetails');
+                        });
+
+                    break;
+
+
+                case 'courier_pending':
+
+                    $query->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
+                        $q->whereNull('received_date');
+                    });
+
+                    break;
+
+
+                case 'file_pending':
+
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Signed Agreement Uploaded')
+                            ->whereNull('file_created_date');
+                    })
+                        ->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
+                            $q->whereNotNull('received_date');
+                        });
+
+                    break;
+
+
+                case 'active':
+
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Active');
+                    });
+
+                    break;
+
+
+                case 'inactive':
+
+                    $query->whereHas('candidate', function ($q) {
+                        $q->where('candidate_status', 'Inactive');
+                    });
+
+                    break;
+
+
+                default:
+
+                    // fallback → real DB status
+                    $query->where('status', $status);
+
+                    break;
+            }
         }
 
         // Enhanced search functionality
