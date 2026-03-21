@@ -40,6 +40,13 @@ class LedgerController extends Controller
 			$query->where('work_location_hq', $request->work_location);
 		}
 
+
+		if ($request->requisition_type) {
+
+			$query->where('requisition_type', $request->requisition_type);
+
+		}
+
 		if ($request->search) {
 			$search = $request->search;
 			$query->where(function ($q) use ($search) {
@@ -67,6 +74,10 @@ class LedgerController extends Controller
 
 		if ($tab == 'created') {
 			$query->where('ledger_created', 1);
+		}
+
+		if ($request->requisition_type) {
+			$query->where('requisition_type', $request->requisition_type);
 		}
 
 		// ✅ PAN GROUPING
@@ -210,6 +221,10 @@ class LedgerController extends Controller
 
 		if ($request->work_location) {
 			$query->where('work_location_hq', $request->work_location);
+		}
+
+		if ($request->requisition_type) {
+			$query->where('requisition_type', $request->requisition_type);
 		}
 
 		if ($request->search) {

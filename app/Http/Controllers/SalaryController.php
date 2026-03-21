@@ -1143,16 +1143,7 @@ class SalaryController extends Controller
                         'success' => false,
                         'message' => implode(', ', $missing)
                     ], 422);
-                }
-            }
-
-            $salary->save();
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment status updated successfully.'
+                    'message' => 'Payment status updated successfully.'
             ]);
         } catch (\Exception $e) {
 
@@ -1187,6 +1178,11 @@ class SalaryController extends Controller
 
         if ($request->type == 'release') {
             $query->where('payment_instruction', 'release');
+        }
+
+        if ($request->type == 'payment') {
+            $query->where('payment_instruction', 'release')
+                ->where('payment_status', 'pending');
         }
 
         $records = $query->get();

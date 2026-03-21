@@ -52,6 +52,33 @@
 						placeholder="Name / Code">
 				</div>
 
+				<div class="col-md-3">
+
+					<label class="form-label form-label-sm">Requisition Type</label>
+
+					<select name="requisition_type" class="form-select form-select-sm">
+
+<option value="">All</option>
+
+<option value="Contractual"
+{{ request('requisition_type')=='Contractual'?'selected':'' }}>
+Contractual
+</option>
+
+<option value="CB"
+{{ request('requisition_type')=='CB'?'selected':'' }}>
+CB
+</option>
+
+<option value="TFA"
+{{ request('requisition_type')=='TFA'?'selected':'' }}>
+TFA
+</option>
+
+</select>
+
+				</div>
+
 				<div class="col-md-2">
 					<button class="btn btn-sm btn-primary w-100">
 						<i class="ri-filter-line"></i> Filter
@@ -66,21 +93,21 @@
 	<ul class="nav nav-tabs mb-3">
 		<li class="nav-item">
 			<a class="nav-link {{ $tab == 'inoperative' ? 'active' : '' }}"
-				href="{{ route('ledger.index', ['tab' => 'inoperative']) }}">
+href="{{ route('ledger.index', array_merge(request()->query(), ['tab' => 'inoperative'])) }}">
 				PAN Inoperative
 			</a>
 		</li>
 
 		<li class="nav-item">
 			<a class="nav-link {{ $tab == 'operative' ? 'active' : '' }}"
-				href="{{ route('ledger.index', ['tab' => 'operative']) }}">
+href="{{ route('ledger.index', array_merge(request()->query(), ['tab' => 'operative'])) }}">
 				PAN Operative
 			</a>
 		</li>
 
 		<li class="nav-item">
 			<a class="nav-link {{ $tab == 'created' ? 'active' : '' }}"
-				href="{{ route('ledger.index', ['tab' => 'created']) }}">
+href="{{ route('ledger.index', array_merge(request()->query(), ['tab' => 'created'])) }}">
 				Ledger Created
 			</a>
 		</li>
@@ -254,8 +281,13 @@
 
 			iframe.style.display = 'none';
 
+			let params = new URLSearchParams(window.location.search);
+
 			iframe.src =
-				"{{ route('ledger.exportOperative') }}?ids=" + ids.join(',');
+			"{{ route('ledger.exportOperative') }}?ids=" +
+			ids.join(',') +
+			"&" +
+			params.toString();
 
 			document.body.appendChild(iframe);
 
