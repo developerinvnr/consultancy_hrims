@@ -166,17 +166,15 @@ class AttendanceController extends Controller
 
                 if ($candidate->requisition_type === 'Contractual') {
 
-                    if ($leaveBalance) {
+                    $openingCL = $leaveBalance
+                        ? $leaveBalance->opening_cl_balance
+                        : ($candidate->leave_credited ?? 0);
 
-                        $clRemaining = max(
-                            0,
-                            ($leaveBalance->opening_cl_balance ?? 0) -
-                                ($leaveBalance->cl_utilized ?? 0)
-                        );
-                    } else {
+                    $usedCL = Attendance::where('candidate_id', $candidate->candidate_id)
+                        ->where('year', $year)
+                        ->sum('total_cl');
 
-                        $clRemaining = max(0, $candidate->leave_credited ?? 0);
-                    }
+                    $clRemaining = max(0, $openingCL - $usedCL);
                 }
 
                 // dd($candidate->candidate_code, $leaveBalance);
@@ -195,7 +193,7 @@ class AttendanceController extends Controller
                     'attendance' => $dayAttendance,
                     'total_present' => $totalPresent,
                     'total_absent' => $totalAbsent,
-                    'cl_used' => $totalCL,
+                    'cl_used' => Attendance::where('candidate_id', $candidate->candidate_id)->where('year', $year)->sum('total_cl'),
                     'lwp_days' => $totalLWP,
                     'od_days' => $totalOD,
                     'cl_remaining' => $clRemaining,
@@ -352,11 +350,16 @@ class AttendanceController extends Controller
                     ]
                 );
             }
+            $usedCLTillNow = Attendance::where('candidate_id', $candidateId)
+                            ->where('year', $year)
+                            ->where('month', '<', $month)
+                            ->sum('total_cl');
 
+            // ✅ Remaining CL for this month
             $availableCL = $leaveBalance
-                ? $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized
-                : 0;
-
+                            ? ($leaveBalance->opening_cl_balance - $usedCLTillNow)
+                            : 0;
+    
             /* ---------------- TOTALS ---------------- */
 
             $totalPresent = 0;
@@ -502,8 +505,9 @@ class AttendanceController extends Controller
                 //     'opening_cl' => $leaveBalance->opening_cl_balance,
                 //     'available_cl_after' => $availableCL
                 // ]);
-                $leaveBalance->cl_utilized =
-                $leaveBalance->opening_cl_balance - $availableCL;
+                $totalCLUsed = $usedCLTillNow + $totalCL;
+                 //dd($totalCLUsed);
+                $leaveBalance->cl_utilized = $totalCLUsed;
                 $leaveBalance->save();
             }
 
@@ -513,6 +517,7 @@ class AttendanceController extends Controller
                 'success' => true,
                 'message' => 'Attendance updated successfully',
                 'cl_remaining' => $availableCL,
+                'cl_used' => $totalCL,
                 'od_days' => $totalOD,
             ]);
         } catch (\Exception $e) {

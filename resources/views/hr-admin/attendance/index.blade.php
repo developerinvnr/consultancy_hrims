@@ -388,7 +388,9 @@
 
                 const beforeJoining = date < joiningDate;
                 const afterEnd = contractEndDate && date > contractEndDate;
-                const canEdit = !(beforeJoining || afterEnd);
+                const isFutureDate = date > today;
+
+                const canEdit = !(beforeJoining || afterEnd || isFutureDate);
 
                 /* ===== SUNDAY (LOCKED FOREVER) ===== */
                 if (isSunday) {
@@ -428,25 +430,39 @@
 
 
                 bodyHtml += `
-        <td class="text-center ${canEdit ? '' : 'readonly-cell'}"
-            data-day="${day}"
-            data-can-edit="${canEdit}">
-            <select class="edit-select compact-select"
-                    data-day="${day}"
-                    ${canEdit ? '' : 'disabled'}>
-                ${optionsHtml}
-            </select>
-        </td>
-    `;
+                    <td class="text-center ${canEdit ? '' : 'readonly-cell'}"
+                        data-day="${day}"
+                        data-can-edit="${canEdit}">
+                        <select class="edit-select compact-select"
+                            data-day="${day}"
+                            onchange="recalculateTotals(${candidate.candidate_id})"
+                            ${canEdit ? '' : 'disabled'}>
+                            ${optionsHtml}
+                        </select>
+                    </td>
+                `;
             }
 
 
             bodyHtml += `
-            <td>${candidate.total_present || 0}</td>
-            <td>${candidate.total_absent || 0}</td>
-            <td>${candidate.cl_used || 0}</td>
-            <td>${candidate.od_days || 0}</td>
-            <td>${isContractual ? candidate.cl_remaining : 'N/A'}</td>
+            <td id="present-${candidate.candidate_id}">
+    ${candidate.total_present || 0}
+</td>
+
+<td id="absent-${candidate.candidate_id}">
+    ${candidate.total_absent || 0}
+</td>
+
+<td id="cl-${candidate.candidate_id}">
+    ${candidate.cl_used || 0}
+</td>
+
+<td id="od-${candidate.candidate_id}">
+    ${candidate.od_days || 0}
+</td>
+            <td id="cl-balance-${candidate.candidate_id}">
+    ${isContractual ? candidate.cl_remaining : 'N/A'}
+</td>
             <td>
                 <button class="btn btn-sm btn-outline-primary"
                         onclick="toggleEdit(${candidate.candidate_id})"
@@ -527,7 +543,9 @@
         row.find('.edit-select:enabled').each(function() {
             const day = $(this).data('day');
             const status = $(this).val() || '';
-            attendanceData[day] = status;
+            if (status !== '') {
+                attendanceData[day] = status;
+            }
         });
 
         // Collect Sunday attendance - ONLY from enabled selects
@@ -862,7 +880,16 @@
 
                 // 🔥 PAST MONTH → full edit allowed
                 else if (!isHrAdmin && !isCurrentMonth && canEditBase) {
-                    allowEdit = true;
+
+                    const selectedDate = new Date(selectedYear, selectedMonth - 1, day);
+
+                    selectedDate.setHours(0, 0, 0, 0);
+
+                    if (selectedDate <= today) {
+                        allowEdit = true;
+                    } else {
+                        allowEdit = false;
+                    }
                 }
 
                 if (allowEdit) {
