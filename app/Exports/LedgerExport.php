@@ -7,146 +7,165 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class LedgerExport implements FromCollection, WithHeadings, WithEvents
 {
-	protected $records;
+    protected $records;
 
-	public function __construct($records)
-	{
-		$this->records = $records;
-	}
+    public function __construct($records)
+    {
+        $this->records = $records;
+    }
 
-	public function registerEvents(): array
-	{
-		return [
-			AfterSheet::class => function (AfterSheet $event) {
+    public function collection()
+    {
+        return $this->records->map(function ($c) {
 
-				$sheet = $event->sheet->getDelegate();
+            return [
 
-				$highestRow = $sheet->getHighestRow();
-				$highestColumn = $sheet->getHighestColumn();
+                $c->candidate_name,
+                $c->candidate_code,
+                'Vendor',
+                'FALSE',
+                $c->requisition_type ?? '-',
+                $c->requisition_type ?? '-',
+                '120',
+                $c->vertical->vertical_code ?? 'NA',
+                $c->regionRef->focus_code ?? 'NA',
+                $c->address_line_1 ?? '-',
+                $c->cityMaster->city_village_name ?? '-',
+                $c->pin_code ?? '-',
+                $c->candidate_email ?? '-',
+                $c->mobile_no ?? '-',
+                $c->account_holder_name.' '.$c->candidate_code,
+                $c->bank_account_no ?? '-',
+                $c->bank_ifsc ?? '-',
+                $c->mobile_no ?? '-',
+                $c->cityMaster->city_village_name ?? '-',
+                'N/A',
+                'NO',
+                $c->workState->state_code ?? '-',
+                'IND',
+                $c->businessUnit->business_unit_code ?? 'NA',
+                $c->pan_no ?? '-',
+                $c->department->department_code ?? '-',
+                $c->requisition_type ?? '-',
+                $c->requisition_type ?? '-',
+                $c->reportingManager->emp_name ?? '-',
+                $c->aadhaar_no ?? '-',
+                $c->function->function_name ?? 'NA',
+                $c->subDepartmentRef->focus_code ?? 'NA',
+                $c->zoneRef->zone_code ?? 'NA',
+                optional($c->contract_start_date)->format('d/m/Y'),
+                $c->reportingManager->emp_designation ?? '-',
+                $c->reportingManager->emp_email ?? '',
+                $c->reportingManager->emp_contact ?? '-',
+                $c->bank_account_no ?? '-',
+                $c->bank_ifsc ?? '-',
+                $c->account_holder_name.' '.$c->candidate_code,
+                $c->work_location_hq ?? '-',
+                'All Crop',
+                'NEFT',
 
-				$range = "A1:{$highestColumn}{$highestRow}";
+            ];
+        });
+    }
 
-				// ✅ Apply border to ALL cells
-				$sheet->getStyle($range)->applyFromArray([
-					'borders' => [
-						'allBorders' => [
-							'borderStyle' => Border::BORDER_THIN,
-						],
-					],
-				]);
+    public function headings(): array
+    {
+        return [
 
-				// ✅ Bold header
-				$sheet->getStyle("A1:{$highestColumn}1")->getFont()->setBold(true);
+            'Name',
+            'Code',
+            'Account Type',
+            'Group',
+            'Parent Code',
+            'Parent Name',
+            'Business Entity',
+            'Crop Vertical',
+            'Region',
+            'Address',
+            'City',
+            'Pin',
+            'Email',
+            'Tel No',
+            'Bank Account Name',
+            'Bank Account No',
+            'IFSC',
+            'Mobile',
+            'City Name',
+            'MSME No',
+            'MSME',
+            'State',
+            'Country',
+            'Business Unit',
+            'PAN',
+            'Department',
+            'Designation',
+            'Grade',
+            'Reporting To',
+            'AADHAR',
+            'Function',
+            'Sub Department',
+            'Zone',
+            'DOJ',
+            'Reporting Designation',
+            'Reporting Email',
+            'Reporting Contact',
+            'Emp Bank Acc No',
+            'Emp IFSC',
+            'Emp Bank Name',
+            'Location/HQ',
+            'Crop',
+            'Transaction Type'
 
-				// ✅ Header background
-				$sheet->getStyle("A1:{$highestColumn}1")->applyFromArray([
-					'fill' => [
-						'fillType' => 'solid',
-						'startColor' => ['argb' => 'FFE9ECEF'],
-					],
-				]);
+        ];
+    }
 
-				// ✅ Auto column width
-				foreach (range('A', $highestColumn) as $col) {
-					$sheet->getColumnDimension($col)->setAutoSize(true);
-				}
-			},
-		];
-	}
+    public function registerEvents(): array
+    {
+        return [
 
-	public function collection()
-	{
-		return $this->records->map(function ($c, $index) {
+            AfterSheet::class => function (AfterSheet $event) {
 
-			$unsigned = $c->unsignedAgreements->first();
-			$signed = $c->signedAgreements->first();
+                $sheet = $event->sheet->getDelegate();
 
-			return [
-				$index + 1,
-				$c->candidate_name,
-				$signed?->agreement_number ?? $unsigned?->agreement_number ?? '-',
-				$c->candidate_code,
-				$c->function?->function_name,
-				$c->department?->department_name,
-				$c->subDepartmentRef?->sub_department_name,
-				$c->vertical?->vertical_name,
-				$c->regionRef?->region_name,
-				$c->businessUnit?->business_unit_name,
-				$c->zoneRef?->zone_name,
-				$c->work_location_hq,
-				$c->cityMaster?->city_village_name,
-				$c->workState?->state_name,
-				$c->address_line_1,
-				$c->pin_code,
-				$c->candidate_email,
-				$c->mobile_no,
-				$c->account_holder_name,
-				$c->bank_account_no,
-				$c->bank_ifsc,
-				$c->pan_no,
-				$c->requisition_type,
-				$c->requisition_type,
-				$c->reporting_to,
-				$c->reportingManager?->emp_email,
-				$c->aadhaar_no,
-				optional($c->contract_start_date)->format('d-M-Y'),
-				optional($c->contract_end_date)->format('d-M-Y'),
-				$c->final_status == 'A' ? 'Active' : 'Deactive',
-				$c->remuneration_per_month,
-				$c->remarks,
-				optional($unsigned?->created_at)->format('d-M-Y'),
-				optional($unsigned?->courierDetails?->dispatch_date)->format('d-M-Y'),
-				optional($signed?->created_at)->format('d-M-Y'),
-				optional($signed?->courierDetails?->dispatch_date)->format('d-M-Y'),
-				$c->ledger_created ? 'Created' : 'Pending',
-			];
-		});
-	}
+                $highestRow = $sheet->getHighestRow();
+                $highestColumn = $sheet->getHighestColumn();
 
-	public function headings(): array
-	{
-		return [
-			'S.No',
-			'Name',
-			'Agreement ID',
-			'Code',
-			'Function',
-			'Department',
-			'Sub-Dept',
-			'Crop Vertical',
-			'Region',
-			'Business Unit',
-			'Zone',
-			'Location/HQ',
-			'City',
-			'State Name',
-			'Address',
-			'Pin',
-			'E Mail',
-			'Tel No',
-			'Bank Account Name',
-			'Bank Account Number',
-			'IFSC Code',
-			'Pan No',
-			'Emp Designation',
-			'Emp Grade',
-			'Emp Reporting To',
-			'RM Email',
-			'Aadhaar No',
-			'DOJ',
-			'DOS',
-			'Active/Deactive',
-			'Remuneration',
-			'Remarks',
-			'Contract generate date',
-			'Contract dispatch date',
-			'Signed Contract Upload date',
-			'Signed Contract dispatch date',
-			'Ledger Status'
-		];
-	}
+                $range = "A1:{$highestColumn}{$highestRow}";
+
+                // Borders
+                $sheet->getStyle($range)->applyFromArray([
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                    ],
+                ]);
+
+                // Header bold
+                $sheet->getStyle("A1:{$highestColumn}1")
+                    ->getFont()
+                    ->setBold(true);
+
+                // Header background
+                $sheet->getStyle("A1:{$highestColumn}1")
+                    ->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FFE9ECEF'],
+                        ],
+                    ]);
+
+                // Auto width FIXED VERSION
+                foreach ($sheet->getColumnIterator() as $column) {
+                    $sheet->getColumnDimension($column->getColumnIndex())
+                        ->setAutoSize(true);
+                }
+            },
+
+        ];
+    }
 }
