@@ -12,20 +12,30 @@
 
 				<div class="col-md-3">
 
-					<label>Select Month</label>
+					<label class="form-label form-label-sm">Select Month</label>
 
 					<input type="month"
 						id="monthYear"
-						class="form-control">
+						class="form-control form-control-sm">
 
+				</div>
+
+				<div class="col-md-3">
+					<label class="form-label form-label-sm">Requisition Type</label>
+					<select id="requisitionFilter" class="form-control form-control-sm">
+						<option value="">All</option>
+						<option value="Contractual">Contractual</option>
+						<option value="CB">CB</option>
+						<option value="TFA">TFA</option>
+					</select>
 				</div>
 
 				<div class="col-md-3" id="exportFilterBlock" style="display:none">
 
-					<label>Export Status</label>
+					<label class="form-label form-label-sm">Export Status</label>
 
 					<select id="exportFilter"
-						class="form-control">
+						class="form-select form-select-sm">
 
 						<option value="">All</option>
 						<option value="exported">Exported</option>
@@ -122,6 +132,8 @@
 
 						<th>Name</th>
 
+						<th>Type</th>
+
 						<th>Month</th>
 
 						<th>Net Pay</th>
@@ -187,7 +199,7 @@
 
 	});
 
-	$('#exportFilter').change(function(){
+	$('#exportFilter').change(function() {
 
 		loadWorkflow();
 
@@ -224,7 +236,7 @@
 			$('#exportBtn').hide();
 			$('#syncBtn').hide();
 			$('#exportFilterBlock').hide();
-
+			 $('#exportFilter').val('');
 		}
 
 		loadWorkflow();
@@ -250,32 +262,35 @@
 
 	});
 
+	$('#requisitionFilter').change(function() {
+
+		loadWorkflow();
+
+	});
+
 
 
 	function loadWorkflow() {
 
-		if (!currentMonth) return;
+    if (!currentMonth) return;
 
+    $('#selectAll').prop('checked', false);
 
-		$.get("{{ route('payment.workflow.list') }}", {
+    $.get("{{ route('payment.workflow.list') }}", {
 
-				tab: currentTab,
+        tab: currentTab,
+        month: currentMonth,
+        year: currentYear,
+        export_status: $('#exportFilter').val(),
+        requisition_type: $('#requisitionFilter').val()
 
-				month: currentMonth,
+    }, function(data) {
 
-				year: currentYear,
+        renderTable(data);
 
-				export_status: $('#exportFilter').val()
+    });
 
-			},
-
-			function(data) {
-
-				renderTable(data);
-
-			});
-
-	}
+}
 
 
 
@@ -285,7 +300,7 @@
 
 			$('#workflowTable').html(
 
-					`<tr>
+				`<tr>
 
 					<td colspan="6"
 
@@ -297,9 +312,9 @@
 
 					</tr>`);
 
-				return;
+			return;
 
-			}
+		}
 
 
 
@@ -328,7 +343,7 @@
 			<td>${r.candidate_code}</td>
 
 			<td>${r.candidate_name}</td>
-
+			<td>${r.requisition_type ?? '-'}</td>
 			<td>${r.month}</td>
 
 			<td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
@@ -377,38 +392,38 @@
 
 	});
 
-	
 
 
-	$('#exportBtn').click(function(){
 
-let ids=[];
+	$('#exportBtn').click(function() {
 
-$('.rowCheck:checked').each(function(){
+		let ids = [];
 
-ids.push($(this).val());
+		$('.rowCheck:checked').each(function() {
 
-});
+			ids.push($(this).val());
 
-
-let form=$('<form method="POST" action="{{ route('payment.workflow.export') }}"></form>');
-
-form.append('@csrf');
-
-ids.forEach(id=>{
-
-form.append(`<input type="hidden" name="ids[]" value="${id}">`);
-
-});
+		});
 
 
-$('body').append(form);
+		let form=$('<form method="POST" action="{{ route('payment.workflow.export') }}"></form>');
 
-form.submit();
+		form.append('@csrf');
+		form.append(`<input type="hidden" name="requisition_type" value="${$('#requisitionFilter').val()}">`);
+		ids.forEach(id => {
 
-setTimeout(loadWorkflow,1500);
+			form.append(`<input type="hidden" name="ids[]" value="${id}">`);
 
-});
+		});
+
+
+		$('body').append(form);
+
+		form.submit();
+
+		setTimeout(loadWorkflow, 800);
+
+	});
 </script>
 
 @endpush

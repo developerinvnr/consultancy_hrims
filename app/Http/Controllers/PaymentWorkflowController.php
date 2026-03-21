@@ -26,22 +26,31 @@ class PaymentWorkflowController extends Controller
 		$month = $request->month ?? now()->format('m');
 		$year  = $request->year ?? now()->format('Y');
 		$exportStatus = $request->export_status;
+		$requisitionType = $request->requisition_type;
 
 		$query = DB::table('salary_processings as sp')
 
-			->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
+    ->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
 
-			->where('sp.payment_instruction', 'release')
+    ->where('sp.payment_instruction', 'release')
 
-			->where('sp.month', $month)
+    ->where('sp.month', $month)
 
-			->where('sp.year', $year)
+    ->where('sp.year', $year)
 
-			->select(
-				'sp.*',
-				'c.candidate_code',
-				'c.candidate_name'
-			);
+    ->select(
+        'sp.*',
+        'c.candidate_code',
+        'c.candidate_name',
+        'c.requisition_type'
+    );
+
+
+if ($requisitionType) {
+
+    $query->where('c.requisition_type', $requisitionType);
+
+}
 
 
 		if ($tab == 'pending') {
@@ -131,17 +140,19 @@ class PaymentWorkflowController extends Controller
 			return back()->with('error', 'Please select records first');
 		}
 
-		$records = DB::table('salary_processings as sp')
+		$query = DB::table('salary_processings as sp')
+				->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
+				->select('sp.*', 'c.candidate_code','c.requisition_type')
+				->whereIn('sp.id', $request->ids)
+				->where('sp.payment_status', 'approved');
 
-			->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
-
-			->select('sp.*', 'c.candidate_code')
-
-			->whereIn('sp.id', $request->ids)
-
-			->where('sp.payment_status', 'approved')
-
-			->get();
+			if ($request->requisition_type) {
+				$query->where(
+				'c.requisition_type',
+				$request->requisition_type
+				);
+			}
+		$records = $query->get();
 
 		$batchNo = 'PAYINST' . time();
 
