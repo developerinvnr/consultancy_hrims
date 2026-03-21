@@ -167,6 +167,16 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
+                @can('payment_workflow.view')
+                    <li class="nav-item">
+                        <a href="{{ route('payment.workflow.index') }}" class="nav-link">
+                            <i class="mdi mdi-cash"></i>
+                            <span>Payment Workflow</span>
+                        </a>
+                    </li>
+                @endcan
+
+
                 {{--<li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
                 <i class="ri-database-2-line"></i>

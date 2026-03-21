@@ -24,6 +24,8 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\HierarchyController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\LedgerController;
+use App\Http\Controllers\PaymentWorkflowController;
+
 
 
 
@@ -383,7 +385,25 @@ Route::middleware(['auth'])->prefix('ledger')->name('ledger.')->group(function (
 
     Route::get('/', [LedgerController::class, 'index'])->name('index');
     Route::post('/mark-created', [LedgerController::class, 'markCreated'])->name('markCreated');
+    Route::get('ledger/export-operative',[LedgerController::class,'exportOperative'])->name('exportOperative');
     Route::get('/ledger/export', [LedgerController::class, 'export'])->name('export');
+
+});
+
+
+Route::middleware(['auth'])->prefix('payment-workflow')->group(function () {
+
+    Route::get('/',[PaymentWorkflowController::class, 'index'])->name('payment.workflow.index');
+
+    Route::get('/list',[PaymentWorkflowController::class, 'list'])->name('payment.workflow.list');
+
+    Route::post('/approve',[PaymentWorkflowController::class, 'approve'])->name('payment.workflow.approve');
+
+    Route::post('/export',[PaymentWorkflowController::class, 'export'])->name('payment.workflow.export');
+
+    Route::post('/confirm',[PaymentWorkflowController::class, 'confirm'])->name('payment.workflow.confirm');
+
+    Route::post('/sync',[PaymentWorkflowController::class,'syncPayments'])->name('payment.workflow.sync');
 
 });
 

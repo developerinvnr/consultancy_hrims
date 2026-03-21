@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CandidateMaster;
 use DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LedgerController extends Controller
 {
@@ -92,7 +93,7 @@ class LedgerController extends Controller
 			->appends($request->all());
 		$departments = \App\Models\CoreDepartment::orderBy('department_name')->get();
 
-		return view('ledger.index', compact('candidates', 'tab','departments'));
+		return view('ledger.index', compact('candidates', 'tab', 'departments'));
 	}
 
 	// 🔴 PAN INOPERATIVE
@@ -152,6 +153,40 @@ class LedgerController extends Controller
 			]);
 
 		return response()->json(['success' => true]);
+	}
+
+	public function exportOperative(Request $request)
+	{
+		$ids = explode(',', $request->ids);
+
+		$records = CandidateMaster::whereIn('id', $ids)
+			->with([
+				'department',
+				'zoneRef',
+				'regionRef',
+				'businessUnit',
+				'vertical',
+				'subDepartmentRef',
+				'function',
+				'cityMaster',
+				'workState',
+				'reportingManager'
+			])
+			->get();
+
+		// ✅ Update ledger_created
+		$pans = $records->pluck('pan_no');
+
+		CandidateMaster::whereIn('pan_no', $pans)
+			->update([
+				'ledger_created' => 1,
+				'ledger_created_at' => now()
+			]);
+
+		return Excel::download(
+			new \App\Exports\LedgerOperativeExport($records),
+			'ledger_export.xlsx'
+		);
 	}
 
 	public function export(Request $request)

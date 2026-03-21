@@ -11,8 +11,8 @@
 
 				<div class="d-flex gap-2">
 					@if($tab == 'operative')
-					<button class="btn btn-sm btn-primary" onclick="markLedgerCreated()">
-						<i class="ri-check-line"></i> Move to Ledger Created
+					<button class="btn btn-sm btn-success" onclick="exportAndMoveLedger()">
+						<i class="ri-file-excel-2-line"></i> Export & Move to Ledger Created
 					</button>
 					@endif
 
@@ -101,53 +101,56 @@
 								</th>
 								@endif
 
-								<th>S.No</th>
 								<th>Name</th>
-								<th>Agreement ID</th>
 								<th>Code</th>
-								<th>Function</th>
-								<th>Department</th>
-								<th>Sub-Dept</th>
+								<th>Account Type</th>
+								<th>Group</th>
+								<th>Parent Code</th>
+								<th>Parent Name</th>
+								<th>Business Entity</th>
 								<th>Crop Vertical</th>
 								<th>Region</th>
-								<th>Business Unit</th>
-								<th>Zone</th>
-								<th>Location/HQ</th>
-								<th>City</th>
-								<th>State Name</th>
 								<th>Address</th>
+								<th>City</th>
 								<th>Pin</th>
-								<th>E Mail</th>
+								<th>Email</th>
 								<th>Tel No</th>
 								<th>Bank Account Name</th>
-								<th>Bank Account Number</th>
-								<th>IFSC Code</th>
-								<th>Pan No</th>
-								<th>Emp Designation</th>
-								<th>Emp Grade</th>
-								<th>Emp Reporting To</th>
-								<th>RM Email</th>
-								<th>Aadhaar No</th>
+								<th>Bank Account No</th>
+								<th>IFSC</th>
+								<th>Mobile</th>
+								<th>City Name</th>
+								<th>MSME No</th>
+								<th>MSME</th>
+								<th>State</th>
+								<th>Country</th>
+								<th>Business Unit</th>
+								<th>PAN</th>
+								<th>Department</th>
+								<th>Designation</th>
+								<th>Grade</th>
+								<th>Reporting To</th>
+								<th>AADHAR</th>
+								<th>Function</th>
+								<th>Sub Department</th>
+								<th>Zone</th>
 								<th>DOJ</th>
-								<th>DOS</th>
-								<th>Active/Deactive</th>
-								<th>Remuneration</th>
-								<th>Remarks</th>
-								<th>Contract generate date</th>
-								<th>Contract dispatch date</th>
-								<th>Signed Contract Upload date</th>
-								<th>Signed Contract dispatch date</th>
-								<th>Ledger Status</th>
+								<th>Reporting Designation</th>
+								<th>Reporting Email</th>
+								<th>Reporting Contact</th>
+								<th>Emp Bank Acc No</th>
+								<th>Emp IFSC</th>
+								<th>Emp Bank Name</th>
+								<th>Location/HQ</th>
+								<th>Crop</th>
+								<th>Transaction Type</th>
+
 							</tr>
 						</thead>
 
 						<tbody>
-							@forelse($candidates as $index => $candidate)
 
-							@php
-							$unsignedAgreement = $candidate->unsignedAgreements->first();
-							$signedAgreement = $candidate->signedAgreements->first();
-							@endphp
+							@forelse($candidates as $candidate)
 
 							<tr>
 
@@ -157,78 +160,60 @@
 								</td>
 								@endif
 
-								<td>{{ $candidates->firstItem() + $index }}</td>
 								<td>{{ $candidate->candidate_name }}</td>
-
-								<td>
-									@if($signedAgreement && $signedAgreement->agreement_number)
-									{{ $signedAgreement->agreement_number }}
-									@elseif($unsignedAgreement && $unsignedAgreement->agreement_number)
-									{{ $unsignedAgreement->agreement_number }}
-									@else
-									-
-									@endif
-								</td>
-
 								<td>{{ $candidate->candidate_code }}</td>
-								<td>{{ $candidate->function?->function_name ?? '-' }}</td>
-								<td>{{ $candidate->department?->department_name ?? '-' }}</td>
-								<td>{{ $candidate->subDepartmentRef?->sub_department_name ?? '-' }}</td>
-								<td>{{ $candidate->vertical?->vertical_name ?? '-' }}</td>
-								<td>{{ $candidate->regionRef?->region_name ?? '-' }}</td>
-								<td>{{ $candidate->businessUnit?->business_unit_name ?? '-' }}</td>
-								<td>{{ $candidate->zoneRef?->zone_name ?? '-' }}</td>
-								<td>{{ $candidate->work_location_hq ?? '-' }}</td>
-								<td>{{ $candidate->cityMaster?->city_village_name ?? '-' }}</td>
-								<td>{{ $candidate->workState?->state_name ?? '-' }}</td>
+								<td>Vendor</td>
+								<td>FALSE</td>
+								<td>{{ $candidate->requisition_type ?? '-' }}</td>
+								<td>{{ $candidate->requisition_type ?? '-' }}</td>
+								<td>120</td>
+								<td>{{ $candidate->vertical->vertical_code ?? 'NA' }}</td>
+								<td>{{ $candidate->regionRef->focus_code ?? 'NA' }}</td>
 								<td>{{ $candidate->address_line_1 ?? '-' }}</td>
+								<td>{{ $candidate->cityMaster->city_village_name ?? '-' }}</td>
 								<td>{{ $candidate->pin_code ?? '-' }}</td>
 								<td>{{ $candidate->candidate_email ?? '-' }}</td>
 								<td>{{ $candidate->mobile_no ?? '-' }}</td>
-								<td>{{ $candidate->account_holder_name ?? '-' }}</td>
+								<td>{{ $candidate->account_holder_name }} {{ $candidate->candidate_code }}</td>
 								<td>{{ $candidate->bank_account_no ?? '-' }}</td>
 								<td>{{ $candidate->bank_ifsc ?? '-' }}</td>
+								<td>{{ $candidate->mobile_no ?? '-' }}</td>
+								<td>{{ $candidate->cityMaster->city_village_name ?? '-' }}</td>
+								<td>N/A</td>
+								<td>NO</td>
+								<td>{{ $candidate->workState->state_code ?? '-' }}</td>
+								<td>IND</td>
+								<td>{{ $candidate->businessUnit->business_unit_code ?? 'NA' }}</td>
 								<td>{{ $candidate->pan_no ?? '-' }}</td>
+								<td>{{ $candidate->department->department_code ?? '-' }}</td>
 								<td>{{ $candidate->requisition_type ?? '-' }}</td>
 								<td>{{ $candidate->requisition_type ?? '-' }}</td>
-								<td>{{ $candidate->reporting_to ?? '-' }}</td>
-								<td>{{ $candidate->reportingManager?->emp_email ?? '-' }}</td>
+								<td>{{ $candidate->reportingManager->emp_name ?? '-' }}</td>
 								<td>{{ $candidate->aadhaar_no ?? '-' }}</td>
-								<td>{{ $candidate->contract_start_date ? \Carbon\Carbon::parse($candidate->contract_start_date)->format('d-M-Y') : '-' }}</td>
-								<td>{{ $candidate->contract_end_date ? \Carbon\Carbon::parse($candidate->contract_end_date)->format('d-M-Y') : '-' }}</td>
-
-								<td>
-									@if($candidate->final_status == 'A')
-									<span class="badge bg-success">Active</span>
-									@else
-									<span class="badge bg-danger">Deactive</span>
-									@endif
-								</td>
-
-								<td>₹ {{ number_format($candidate->remuneration_per_month ?? 0, 2) }}</td>
-								<td>{{ $candidate->remarks ?? '-' }}</td>
-
-								<td>{{ $unsignedAgreement?->created_at ? \Carbon\Carbon::parse($unsignedAgreement->created_at)->format('d-M-Y') : '-' }}</td>
-								<td>{{ $unsignedAgreement?->courierDetails?->dispatch_date ? \Carbon\Carbon::parse($unsignedAgreement->courierDetails->dispatch_date)->format('d-M-Y') : '-' }}</td>
-								<td>{{ $signedAgreement?->created_at ? \Carbon\Carbon::parse($signedAgreement->created_at)->format('d-M-Y') : '-' }}</td>
-								<td>{{ $signedAgreement?->courierDetails?->dispatch_date ? \Carbon\Carbon::parse($signedAgreement->courierDetails->dispatch_date)->format('d-M-Y') : '-' }}</td>
-
-								<!-- ✅ NEW COLUMN -->
-								<td>
-									@if($candidate->ledger_created)
-									<span class="badge bg-success">Created</span>
-									@else
-									<span class="badge bg-warning text-dark">Pending</span>
-									@endif
-								</td>
+								<td>{{ $candidate->function->function_name ?? 'NA' }}</td>
+								<td>{{ $candidate->subDepartmentRef->focus_code ?? 'NA' }}</td>
+								<td>{{ $candidate->zoneRef->zone_code ?? 'NA' }}</td>
+								<td>{{ optional($candidate->contract_start_date)->format('d/m/Y') }}</td>
+								<td>{{ $candidate->reportingManager->emp_designation ?? '-' }}</td>
+								<td>{{ $candidate->reportingManager->emp_email ?? '' }}</td>
+								<td>{{ $candidate->reportingManager->emp_contact ?? '-' }}</td>
+								<td>{{ $candidate->bank_account_no ?? '-' }}</td>
+								<td>{{ $candidate->bank_ifsc ?? '-' }}</td>
+								<td>{{ $candidate->account_holder_name }} {{ $candidate->candidate_code }}</td>
+								<td>{{ $candidate->work_location_hq ?? '-' }}</td>
+								<td>All Crop</td>
+								<td>NEFT</td>
 
 							</tr>
 
 							@empty
+
 							<tr>
-								<td colspan="40" class="text-center">No data found</td>
+								<td colspan="44" class="text-center">No records found</td>
 							</tr>
+
 							@endforelse
+
 						</tbody>
 
 					</table>
@@ -252,7 +237,7 @@
 		});
 
 		// Move to Ledger Created
-		function markLedgerCreated() {
+		function exportAndMoveLedger() {
 
 			let ids = [];
 
@@ -260,22 +245,26 @@
 				.forEach(el => ids.push(el.value));
 
 			if (ids.length === 0) {
-				alert('Select at least one');
+				alert('Select at least one record');
 				return;
 			}
 
-			fetch("{{ route('ledger.markCreated') }}", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						"X-CSRF-TOKEN": "{{ csrf_token() }}"
-					},
-					body: JSON.stringify({
-						ids: ids
-					})
-				})
-				.then(res => res.json())
-				.then(() => location.reload());
+			// trigger download in background
+			let iframe = document.createElement('iframe');
+
+			iframe.style.display = 'none';
+
+			iframe.src =
+				"{{ route('ledger.exportOperative') }}?ids=" + ids.join(',');
+
+			document.body.appendChild(iframe);
+
+			// reload page after export
+			setTimeout(() => {
+
+				window.location.reload();
+
+			}, 1500);
 		}
 
 		function exportLedger() {
