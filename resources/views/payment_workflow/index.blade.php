@@ -250,10 +250,16 @@
 	$('#syncBtn').click(function() {
 		 $('#tableLoader').show();
 		$.post(
-			"{{ route('payment.workflow.sync') }}", {
-				_token: '{{csrf_token()}}'
-			},
-			loadWorkflow
+			"{{ route('payment.workflow.sync') }}",
+			{ _token: '{{csrf_token()}}' },
+			function(res){
+
+				$('#tableLoader').hide();
+
+				alert(res.message);
+
+				loadWorkflow();
+			}
 		);
 
 	});

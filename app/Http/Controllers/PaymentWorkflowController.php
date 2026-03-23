@@ -232,7 +232,10 @@ class PaymentWorkflowController extends Controller
 
 		if ($records->isEmpty()) {
 
-			return back()->with('info', 'No exported records pending sync');
+			return response()->json([
+				'success' => false,
+				'message' => 'No exported records pending sync'
+			]);
 		}
 
 
