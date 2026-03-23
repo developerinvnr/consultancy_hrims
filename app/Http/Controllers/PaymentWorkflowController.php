@@ -279,7 +279,6 @@ class PaymentWorkflowController extends Controller
 			) {
 				$transaction = $result['transaction'];
 
-				// FIXED: Use $transaction instead of $nearest
 				$account = $transaction['beneficiary_account_number'] ?? null;
 				$amount  = $transaction['amount'] ?? null;
 
@@ -299,21 +298,34 @@ class PaymentWorkflowController extends Controller
 							'payment_date' => $transaction['value_date'],
 							'verification_remark' => null
 						]);
+
+					Log::info('Payment marked as paid', [
+						'id' => $matchedRow->id,
+						'candidate_code' => $matchedRow->candidate_code,
+						'utr' => $transaction['utr_number']
+					]);
+				} else {
+					Log::warning('Could not find matching record for transaction', [
+						'account' => $account,
+						'amount' => $amount,
+						'utr' => $transaction['utr_number'] ?? null
+					]);
 				}
 
 				continue;
 			}
 
 			/*
-        CASE 2: ALREADY VERIFIED (optional handling)
+        CASE 2: ALREADY VERIFIED
         */
 			if (
 				in_array('already_verified', $result['mismatch_reasons'] ?? [])
 				&& !empty($result['nearest_match'])
-				&& ($result['nearest_match']['is_verified'] ?? false)
 			) {
 				$nearest = $result['nearest_match'];
 
+				// CRITICAL: Only match by exact account and amount
+				// Do NOT fall back to index matching for already_verified payments
 				$matchedRow = $records->first(function ($r) use ($nearest) {
 					return $r->bank_account_no == ($nearest['beneficiary_account_number'] ?? null)
 						&& $r->net_pay == ($nearest['amount'] ?? null);
@@ -328,6 +340,18 @@ class PaymentWorkflowController extends Controller
 							'payment_date' => $nearest['value_date'],
 							'verification_remark' => 'already_verified'
 						]);
+
+					Log::info('Payment marked as already_verified', [
+						'id' => $matchedRow->id,
+						'candidate_code' => $matchedRow->candidate_code,
+						'utr' => $nearest['utr_number']
+					]);
+				} else {
+					Log::warning('Already verified - could not match by account and amount', [
+						'nearest_account' => $nearest['beneficiary_account_number'] ?? null,
+						'nearest_amount' => $nearest['amount'] ?? null,
+						'utr' => $nearest['utr_number'] ?? null
+					]);
 				}
 
 				continue;
@@ -338,56 +362,48 @@ class PaymentWorkflowController extends Controller
         */
 			if (!empty($result['mismatch_reasons'])) {
 				$reason = implode(', ', $result['mismatch_reasons']);
+				$matchedRow = null;
 
 				if (!empty($result['nearest_match'])) {
 					$nearest = $result['nearest_match'];
 					$reason .= " | Nearest Match - UTR: {$nearest['utr_number']}, Amount: {$nearest['amount']}, Date: {$nearest['value_date']}";
 
-					// Match using account + amount if nearest_match exists
+					// Try exact match first
 					$matchedRow = $records->first(function ($r) use ($nearest) {
 						return $r->bank_account_no == ($nearest['beneficiary_account_number'] ?? null)
 							&& $r->net_pay == ($nearest['amount'] ?? null);
 					});
+				}
 
-					if ($matchedRow) {
-						DB::table('salary_processings')
-							->where('id', $matchedRow->id)
-							->update([
-								'payment_status' => 'failed',
-								'verification_remark' => $reason
-							]);
-					} else {
-						// Try fallback by index if exact match not found
-						if (isset($result['index']) && isset($records[$result['index']])) {
-							DB::table('salary_processings')
-								->where('id', $records[$result['index']]->id)
-								->update([
-									'payment_status' => 'failed',
-									'verification_remark' => $reason
-								]);
-						} else {
-							Log::warning('Could not match failed payment', [
-								'index' => $result['index'] ?? null,
-								'mismatch_reasons' => $result['mismatch_reasons'],
-								'has_nearest_match' => !empty($result['nearest_match'])
-							]);
-						}
-					}
-				} else {
-					// No nearest_match, try to use index
-					if (isset($result['index']) && isset($records[$result['index']])) {
-						DB::table('salary_processings')
-							->where('id', $records[$result['index']]->id)
-							->update([
-								'payment_status' => 'failed',
-								'verification_remark' => $reason
-							]);
-					} else {
-						Log::warning('Mismatch without nearest match and invalid index', [
-							'reason' => $reason,
-							'index' => $result['index'] ?? null
+				// If no exact match found, try by index as last resort
+				if (!$matchedRow && isset($result['index']) && isset($records[$result['index']])) {
+					$matchedRow = $records[$result['index']];
+					Log::warning('Using index fallback for mismatch', [
+						'index' => $result['index'],
+						'id' => $matchedRow->id,
+						'candidate_code' => $matchedRow->candidate_code
+					]);
+				}
+
+				if ($matchedRow) {
+					DB::table('salary_processings')
+						->where('id', $matchedRow->id)
+						->update([
+							'payment_status' => 'failed',
+							'verification_remark' => $reason
 						]);
-					}
+
+					Log::info('Payment marked as failed', [
+						'id' => $matchedRow->id,
+						'candidate_code' => $matchedRow->candidate_code,
+						'reason' => $reason
+					]);
+				} else {
+					Log::warning('Could not match failed payment', [
+						'index' => $result['index'] ?? null,
+						'mismatch_reasons' => $result['mismatch_reasons'],
+						'has_nearest_match' => !empty($result['nearest_match'])
+					]);
 				}
 			}
 		}
