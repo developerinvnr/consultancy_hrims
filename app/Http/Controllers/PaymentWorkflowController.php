@@ -245,7 +245,7 @@ class PaymentWorkflowController extends Controller
 				'amount' => (float)$row->net_pay,
 				'date' => date('Y-m-d', strtotime($row->exported_at)),
 				'source' => 'Peepal Bonsai',
-                'source_reference' => $row->candidate_code  
+				'source_reference' => $row->candidate_code
 			];
 		}
 
@@ -284,22 +284,22 @@ class PaymentWorkflowController extends Controller
 			$matchedRow = null;
 
 			/*
-  	  CASE 1: MATCHED TRANSACTION
-  	  */
+    CASE 1: MATCHED TRANSACTION
+    */
 
-			if (
-				($result['match_status'] ?? null) === 'matched'
-				&& !empty($result['transaction'])
-			) {
+			if (!empty($result['transaction'])) {
 
-				$account = $result['transaction']['beneficiary_account_number'];
-				$amount  = $result['transaction']['amount'];
+				$account = $result['transaction']['beneficiary_account_number'] ?? null;
+				$amount  = $result['transaction']['amount'] ?? null;
 
-				$matchedRow = $records->first(function ($r) use ($account, $amount) {
+				if ($account && $amount) {
 
-					return $r->bank_account_no == $account
-						&& $r->net_pay == $amount;
-				});
+					$matchedRow = $records->first(function ($r) use ($account, $amount) {
+
+						return $r->bank_account_no == $account
+							&& $r->net_pay == $amount;
+					});
+				}
 
 				if ($matchedRow) {
 
@@ -318,8 +318,8 @@ class PaymentWorkflowController extends Controller
 
 
 			/*
- 	   CASE 2: ALREADY VERIFIED
- 	   */
+    CASE 2: ALREADY VERIFIED
+    */
 
 			if (
 				in_array('already_verified', $result['mismatch_reasons'] ?? [])
@@ -327,13 +327,22 @@ class PaymentWorkflowController extends Controller
 			) {
 
 				$account = $result['nearest_match']['beneficiary_account_number'] ?? null;
-				$amount  = $result['nearest_match']['amount'];
+				$amount  = $result['nearest_match']['amount'] ?? null;
 
-				$matchedRow = $records->first(function ($r) use ($account, $amount) {
+				if ($account && $amount) {
 
-					return $r->bank_account_no == $account
-						&& $r->net_pay == $amount;
-				});
+					$matchedRow = $records->first(function ($r) use ($account, $amount) {
+
+						return $r->bank_account_no == $account
+							&& $r->net_pay == $amount;
+					});
+				}
+
+				// fallback if account missing
+				if (!$matchedRow) {
+
+					$matchedRow = $records[$result['index']] ?? null;
+				}
 
 				if ($matchedRow) {
 
@@ -352,17 +361,15 @@ class PaymentWorkflowController extends Controller
 
 
 			/*
-  	  CASE 3: FAILED / MISMATCH
- 	   */
+    CASE 3: FAILED / MISMATCH
+    */
 
 			if (!empty($result['mismatch_reasons'])) {
 
-				$reason = implode(',', $result['mismatch_reasons']);
+				$account = $result['nearest_match']['beneficiary_account_number'] ?? null;
+				$amount  = $result['nearest_match']['amount'] ?? null;
 
-				if (!empty($result['nearest_match'])) {
-
-					$account = $result['nearest_match']['beneficiary_account_number'];
-					$amount  = $result['nearest_match']['amount'];
+				if ($account && $amount) {
 
 					$matchedRow = $records->first(function ($r) use ($account, $amount) {
 
@@ -371,18 +378,23 @@ class PaymentWorkflowController extends Controller
 					});
 				}
 
+				// fallback using index if account missing
+				if (!$matchedRow && isset($result['index'])) {
+
+					$matchedRow = $records[$result['index']] ?? null;
+				}
+
 				if ($matchedRow) {
 
 					DB::table('salary_processings')
 						->where('id', $matchedRow->id)
 						->update([
 							'payment_status' => 'failed',
-							'verification_remark' => $reason
+							'verification_remark' => implode(',', $result['mismatch_reasons'])
 						]);
 				}
 			}
 		}
-
 		return response()->json([
 			'success' => true,
 			'message' => 'Payment sync completed successfully'
