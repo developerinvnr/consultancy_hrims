@@ -235,14 +235,21 @@ class PaymentWorkflowController extends Controller
 
 		foreach ($records as $row) {
 
-			$payload['payments'][] = [
+			if ($row->net_pay <= 0) {
 
+				Log::warning('Skipping zero amount payment', [
+					'salary_processing_id' => $row->id
+				]);
+
+				continue;
+			}
+
+			$payload['payments'][] = [
 				'beneficiary_account_number' => $row->bank_account_no,
 				'amount' => (float)$row->net_pay,
 				'date' => date('Y-m-d', strtotime($row->exported_at)),
 				'source' => config('app.name'),
 				'source_reference' => (string)$row->id
-
 			];
 		}
 
