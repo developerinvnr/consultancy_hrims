@@ -279,6 +279,8 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
+            // ✅ show only released parties
+            ->where('payment_instruction', 'release')
             ->whereHas('candidate', function ($q) use ($departmentId, $requisitionType) {
                 $q->whereIn('final_status', ['A', 'D']);
 
@@ -552,6 +554,7 @@ class ReportController extends Controller
         $query = SalaryProcessing::with('candidate')
             ->where('month', $month)
             ->where('year', $year)
+            ->where('payment_instruction', 'release')
             ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
@@ -684,30 +687,30 @@ class ReportController extends Controller
 
             // ✅ Latest Agreement (fix duplicate)
             ->leftJoinSub(
-    DB::table('agreement_documents')
+        DB::table('agreement_documents')
         ->select('candidate_id', DB::raw('MAX(id) as id'))
         ->where('document_type', 'agreement')
         ->where('sign_status', 'UNSIGNED')
         ->groupBy('candidate_id'),
-    'created_ad',
-    'created_ad.candidate_id',
-    '=',
-    'candidate_master.id'
-)
-->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+            'created_ad',
+                'created_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
 
-->leftJoinSub(
-    DB::table('agreement_documents')
-        ->select('candidate_id', DB::raw('MAX(id) as id'))
-        ->where('document_type', 'agreement')
-        ->where('sign_status', 'SIGNED')
-        ->groupBy('candidate_id'),
-    'signed_ad',
-    'signed_ad.candidate_id',
-    '=',
-    'candidate_master.id'
-)
-->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->groupBy('candidate_id'),
+                'signed_ad',
+                'signed_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
             // ✅ Latest Courier (fix duplicate)
             ->leftJoinSub(
@@ -732,11 +735,11 @@ class ReportController extends Controller
                 'candidate_master.file_created_date',
 
                 // Agreement
-    'adc.created_at as agreement_created_date',
-    'ads.created_at as agreement_uploaded_date',
+        'adc.created_at as agreement_created_date',
+        'ads.created_at as agreement_uploaded_date',
 
                 // Courier
-                'ac.dispatch_date',
+                 'ac.dispatch_date',
                 'ac.received_date'
             );
 
@@ -769,16 +772,16 @@ class ReportController extends Controller
 
         // ✅ STAGE CONFIG (Dynamic 🔥)
         $stages = [
-    'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
-    'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+        'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+        'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
 
-    'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
-    'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+        'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+        'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
 
-    'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
-    'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
-    'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
-];
+        'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+        'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+        'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
+     ];
 
         $stageData = [];
         foreach ($stages as $key => $s) {
@@ -786,7 +789,7 @@ class ReportController extends Controller
         }
 
         foreach ($allRecords as $row) {
-    foreach ($stages as $key => $s) {
+        foreach ($stages as $key => $s) {
 
         if ($key === 'file_creation') {
             $fromDate = $row->received_date
@@ -808,8 +811,8 @@ class ReportController extends Controller
 
             $stageData[$key][] = $days;
         }
-    }
-}
+     }
+        }
 
         $getSummary = function ($data) {
             return [

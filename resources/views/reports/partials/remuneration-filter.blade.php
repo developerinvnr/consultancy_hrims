@@ -52,7 +52,7 @@
 				</select>
 			</div>
 
-			<div class="col-md-3">
+			{{--<div class="col-md-3">
 				<label class="form-label form-label-sm">Department</label>
 				<select name="department_id" class="form-select form-select-sm">
 					<option value="">All Departments</option>
@@ -62,7 +62,7 @@
 					</option>
 					@endforeach
 				</select>
-			</div>
+			</div>--}}
 
 			<div class="col-md-2">
 				<label class="form-label form-label-sm">Requisition Type</label>

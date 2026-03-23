@@ -49,6 +49,7 @@ class RemunerationReportExport implements
         ])
             ->where('month', $this->month)
             ->where('year', $this->year)
+            ->where('payment_instruction', 'release')
             ->whereHas('candidate', function ($q) {
                 $q->whereIn('final_status', ['A', 'D']);
 
@@ -96,13 +97,13 @@ class RemunerationReportExport implements
                 $index + 1,
                 $record->candidate->candidate_code ?? '-',
                 $record->candidate->candidate_name ?? '-',
-                $record->candidate->businessUnit->business_unit_code ?? '-',
-                $record->candidate->vertical->vertical_code ?? '-',
-                $record->candidate->zoneRef->zone_code ?? '-',
-                $record->candidate->regionRef->focus_code ?? '-',
-                $record->candidate->territoryRef->territory_code ?? '-',
-                $record->candidate->department->department_code ?? '-',
-                $record->candidate->subDepartmentRef->focus_code ?? '-',
+                $record->candidate->businessUnit->business_unit_code ?? 'NA',
+                $record->candidate->vertical->vertical_code ?? 'NA',
+                $record->candidate->zoneRef->zone_code ?? 'NA',
+                $record->candidate->regionRef->focus_code ?? 'NA',
+                $record->candidate->territoryRef->territory_code ?? 'NA',
+                $record->candidate->department->department_code ?? 'NA',
+                $record->candidate->subDepartmentRef->focus_code ?? 'NA',
                 $paidDays,
                 $workingDays,
                 $sunday,
@@ -112,8 +113,6 @@ class RemunerationReportExport implements
                 round($record->arrear_amount ?? 0),
                 round($deduction),
                 $final,
-                ucfirst($record->payment_instruction ?? 'Pending'),
-                $record->hr_hold_remark ?? '-',
                 $tds,
                 $gross,
             ]);
@@ -143,8 +142,6 @@ class RemunerationReportExport implements
             '',
             '',
             $totalFinal,
-            '',
-            '',
             $totalTds,
             $totalGross,
         ]);
@@ -174,8 +171,6 @@ class RemunerationReportExport implements
             'Arrear',
             'Deduction',
             'Final Payable',
-            'Payment Instruction',
-            'HR Remarks',
             'TDS 2%',
             'Gross Up 102%',
         ];

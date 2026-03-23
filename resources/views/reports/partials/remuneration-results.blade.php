@@ -22,8 +22,8 @@
                 <th>Arrear</th>
                 <th>Deduction</th>
                 <th>Final Payable</th>
-                <th>Payment Instruction</th>
-                <th>HR Remarks</th>
+                {{--<th>Payment Instruction</th>
+                <th>HR Remarks</th>--}}
                 <th>TDS 2%</th>
                 <th>Gross Up 102%</th>
             </tr>
@@ -60,13 +60,13 @@
                 <td>{{ $record->candidate->candidate_code ?? '-' }}</td>
                 <td>{{ $record->candidate->candidate_name ?? '-' }}</td>
 
-                <td>{{ $record->candidate->businessUnit->business_unit_code ?? '-' }}</td>
-                <td>{{ $record->candidate->vertical->vertical_code ?? '-' }}</td>
-                <td>{{ $record->candidate->zoneRef->zone_code ?? '-' }}</td>
-                <td>{{ $record->candidate->regionRef->focus_code ?? '-' }}</td>
-                <td>{{ $record->candidate->territoryRef->territory_code ?? '-' }}</td>
-                <td>{{ $record->candidate->department->department_code ?? '-' }}</td>
-                <td>{{ $record->candidate->subDepartmentRef->focus_code ?? '-' }}</td>
+                <td>{{ $record->candidate->businessUnit->business_unit_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->vertical->vertical_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->zoneRef->zone_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->regionRef->focus_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->territoryRef->territory_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->department->department_code ?? 'NA' }}</td>
+                <td>{{ $record->candidate->subDepartmentRef->focus_code ?? 'NA' }}</td>
 
                 <td>{{ $paidDays }}</td>
                 <td>{{ $record->total_days ?? 0 }}</td>
@@ -78,7 +78,7 @@
                 <td>{{ number_format(round($deduction)) }}</td>
                 <td>{{ number_format(round($finalPayable)) }}</td>
 
-                <td>
+                {{--<td>
                     @php
                     $instruction = strtolower($record->payment_instruction ?? '');
                     @endphp
@@ -92,7 +92,7 @@
                     @endif
                 </td>
 
-                <td>{{ $record->hr_hold_remark ?? '-' }}</td>
+                <td>{{ $record->hr_hold_remark ?? '-' }}</td>--}}
 
                 <td>{{ number_format(round($tds)) }}</td>
                 <td>{{ number_format(round($grossUp)) }}</td>
@@ -117,12 +117,6 @@
 
                 {{-- Final Payable --}}
                 <td>{{ number_format(round($totalBased), 2) }}</td>
-
-                {{-- Payment Instruction --}}
-                <td></td>
-
-                {{-- HR Remarks --}}
-                <td></td>
 
                 {{-- TDS --}}
                 <td>{{ number_format(round($totalTds), 2) }}</td>
