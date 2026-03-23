@@ -8,12 +8,13 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class SalaryPaymentExport implements
-FromCollection,
-WithHeadings,
-WithMapping,
-WithStyles
+    FromCollection,
+    WithHeadings,
+    WithMapping,
+    WithStyles
 {
 
     protected $records;
@@ -66,6 +67,7 @@ WithStyles
             'TDS Bill Amount',
             'TDS',
             'BRSUser'
+
         ];
     }
 
@@ -74,70 +76,39 @@ WithStyles
      */
     public function map($row): array
     {
-
         return [
 
-            '', // DocNo
-
+            '',
             now()->format('d-m-Y'),
-
-            '', // Time
-
+            '',
             'BANK-26',
-
-            '', // TDS JVNo
-
+            '',
             'Payment against salary for ' .
-            date('F-y', strtotime($row->year . '-' . $row->month . '-01')),
-
-            '', // Cheque No
-
+                date('F-y', strtotime($row->year . '-' . $row->month . '-01')),
+            '',
             'NEFT',
-
             'All Activity',
-
             'N/A',
-
             'N/A',
-
             'All Crop',
-
             'N/A',
-
             '120',
-
             'N/A',
-
             'FIN',
-
             'Payment to Other Creditors for exp.',
-
             'N/A',
-
             'RAIPUR',
-
             '22',
-
             'BSF',
-
             'CM',
-
             'SUB_DEPT_FIN_124',
-
             '',
-
             $row->candidate_code,
-
             $row->net_pay,
-
             '',
-
             '',
-
             '',
-
             '',
-
             ''
 
         ];
@@ -148,29 +119,19 @@ WithStyles
      */
     public function styles(Worksheet $sheet)
     {
-
         $lastRow = $sheet->getHighestRow();
         $lastColumn = $sheet->getHighestColumn();
 
-        // Bold Header
-        $sheet->getStyle('A1:' . $lastColumn . '1')
+        $sheet->getStyle("A1:{$lastColumn}1")
             ->getFont()
             ->setBold(true);
 
-        // Border entire table
-        $sheet->getStyle('A1:' . $lastColumn . $lastRow)
+        $sheet->getStyle("A1:{$lastColumn}{$lastRow}")
             ->getBorders()
             ->getAllBorders()
             ->setBorderStyle(
                 \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
             );
-
-        // Auto width columns
-        foreach (range('A', $lastColumn) as $col) {
-
-            $sheet->getColumnDimension($col)
-                ->setAutoSize(true);
-        }
 
         return [];
     }
