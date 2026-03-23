@@ -144,6 +144,10 @@
 
 						<th>Status</th>
 
+						<th>UTR No</th>
+						<th>Payment Date</th>
+						<th>Remark</th>
+
 					</tr>
 
 				</thead>
@@ -152,7 +156,7 @@
 
 					<tr>
 
-						<td colspan="6"
+						<td colspan="10"
 							class="text-center">
 
 							Select month
@@ -327,76 +331,74 @@
 		if (records.length == 0) {
 
 			$('#workflowTable').html(
-
 				`<tr>
-
-					<td colspan="6"
-
-					class="text-center">
-
-					No records
-
-					</td>
-
-					</tr>`);
+                <td colspan="10" class="text-center">
+                    No records
+                </td>
+            </tr>`
+			);
 
 			return;
-
 		}
-
-
 
 		let html = '';
 
-
-
 		records.forEach(r => {
 
-			html += `
+			let statusBadge = '';
 
-			<tr>
-
-			<td>
-
-			${(
-			(currentTab=='pending' && r.payment_status=='pending') ||
-			(currentTab=='instruction' && r.payment_status=='approved')
-			)
-			? `<input type="checkbox" class="rowCheck" value="${r.id}">`
-			: ''
+			if (r.payment_status == 'paid') {
+				statusBadge = 'bg-success';
+			} else if (r.payment_status == 'failed') {
+				statusBadge = 'bg-danger';
+			} else if (r.payment_status == 'exported') {
+				statusBadge = 'bg-info';
+			} else if (r.payment_status == 'approved') {
+				statusBadge = 'bg-primary';
+			} else {
+				statusBadge = 'bg-warning';
 			}
 
-			</td>
+			html += `
+        <tr>
 
-			<td>${r.candidate_code}</td>
+            <td>
+                ${
+                    (currentTab=='pending' && r.payment_status=='pending') ||
+                    (currentTab=='instruction' && r.payment_status=='approved')
+                    ? `<input type="checkbox" class="rowCheck" value="${r.id}">`
+                    : ''
+                }
+            </td>
 
-			<td>${r.candidate_name}</td>
-			<td>${r.requisition_type ?? '-'}</td>
-			<td>${r.month}</td>
+            <td>${r.candidate_code}</td>
 
-			<td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
+            <td>${r.candidate_name}</td>
 
-			<td>
+            <td>${r.requisition_type ?? '-'}</td>
 
-			<span class="badge bg-warning">
+            <td>${r.month}</td>
 
-			${r.payment_status}
+            <td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
 
-			</span>
+            <td>
+                <span class="badge ${statusBadge}">
+                    ${r.payment_status}
+                </span>
+            </td>
 
-			</td>
+            <td>${r.utr_number ?? '-'}</td>
 
-			</tr>
+            <td>${r.payment_date ?? '-'}</td>
 
-			`;
+            <td>${r.verification_remark ?? '-'}</td>
 
+        </tr>
+        `;
 		});
 
-
 		$('#workflowTable').html(html);
-
 	}
-
 
 
 	$('#approveBtn').click(function() {
