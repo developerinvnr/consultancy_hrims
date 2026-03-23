@@ -286,47 +286,30 @@ class PaymentWorkflowController extends Controller
 
 		foreach ($data['results'] as $result) {
 
-			$index = $result['index'];
-			$row = $records[$index];
-
-			$reason = implode(',', $result['mismatch_reasons'] ?? []);
-
-			// CASE 1: Exact match
-			if ($result['match_status'] == 'matched') {
-
-				DB::table('salary_processings')
-					->where('id', $row->id)
-					->update([
-						'payment_status' => 'paid',
-						'utr_number' => $result['transaction']['utr_number'],
-						'payment_date' => $result['transaction']['value_date'],
-						'verification_remark' => null
-					]);
+			if (!isset($result['transaction']['beneficiary_account_number'])) {
+				continue;
 			}
 
-			// CASE 2: Already verified
-			elseif (str_contains($reason, 'already_verified')) {
+			$account = $result['transaction']['beneficiary_account_number'];
+			$amount  = $result['transaction']['amount'];
 
-				DB::table('salary_processings')
-					->where('id', $row->id)
-					->update([
-						'payment_status' => 'paid',
-						'utr_number' => $result['nearest_match']['utr_number'] ?? null,
-						'payment_date' => $result['nearest_match']['value_date'] ?? null,
-						'verification_remark' => 'already_verified'
-					]);
+			$row = $records->first(function ($r) use ($account, $amount) {
+				return $r->bank_account_no == $account
+					&& $r->net_pay == $amount;
+			});
+
+			if (!$row) {
+				continue;
 			}
 
-			// CASE 3: Failed
-			else {
-
-				DB::table('salary_processings')
-					->where('id', $row->id)
-					->update([
-						'payment_status' => 'failed',
-						'verification_remark' => $reason
-					]);
-			}
+			DB::table('salary_processings')
+				->where('id', $row->id)
+				->update([
+					'payment_status' => 'paid',
+					'utr_number' => $result['transaction']['utr_number'],
+					'payment_date' => $result['transaction']['value_date'],
+					'verification_remark' => null
+				]);
 		}
 
 		return response()->json([
