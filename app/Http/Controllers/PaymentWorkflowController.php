@@ -173,7 +173,7 @@ if ($requisitionType) {
 		}
 
 		DB::table('salary_processings')
-			->whereIn('id', $request->ids)
+			->whereIn('sp.id', $request->ids)
 			->update([
 				'payment_status' => 'exported'
 			]);

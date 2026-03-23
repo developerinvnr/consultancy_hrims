@@ -114,6 +114,10 @@
 
 
 		<div class="card-body">
+			<div id="tableLoader" class="text-center py-4" style="display:none">
+				<div class="spinner-border text-primary"></div>
+				<div>Loading records...</div>
+			</div>
 
 			<table class="table table-bordered">
 
@@ -236,7 +240,7 @@
 			$('#exportBtn').hide();
 			$('#syncBtn').hide();
 			$('#exportFilterBlock').hide();
-			 $('#exportFilter').val('');
+			$('#exportFilter').val('');
 		}
 
 		loadWorkflow();
@@ -244,7 +248,7 @@
 	});
 
 	$('#syncBtn').click(function() {
-
+		 $('#tableLoader').show();
 		$.post(
 			"{{ route('payment.workflow.sync') }}", {
 				_token: '{{csrf_token()}}'
@@ -272,25 +276,31 @@
 
 	function loadWorkflow() {
 
-    if (!currentMonth) return;
+		if (!currentMonth) return;
 
-    $('#selectAll').prop('checked', false);
+		$('#selectAll').prop('checked', false);
 
-    $.get("{{ route('payment.workflow.list') }}", {
+		$('#tableLoader').show();
+		$('#workflowTable').html('');
 
-        tab: currentTab,
-        month: currentMonth,
-        year: currentYear,
-        export_status: $('#exportFilter').val(),
-        requisition_type: $('#requisitionFilter').val()
+		$.get("{{ route('payment.workflow.list') }}", {
 
-    }, function(data) {
+			tab: currentTab,
+			month: currentMonth,
+			year: currentYear,
+			export_status: $('#exportFilter').val(),
+			requisition_type: $('#requisitionFilter').val()
 
-        renderTable(data);
+		}, function(data) {
 
-    });
+			renderTable(data);
 
-}
+		}).always(function() {
+
+			$('#tableLoader').hide();
+
+		});
+	}
 
 
 
@@ -372,8 +382,8 @@
 
 
 	$('#approveBtn').click(function() {
-
-		let ids = [];
+		$('#tableLoader').show();
+		let ids = [];	
 
 		$('.rowCheck:checked').each(function() {
 
@@ -405,23 +415,49 @@
 
 		});
 
+		if (ids.length === 0) {
+			alert('Please select records first');
+			return;
+		}
 
-		let form=$('<form method="POST" action="{{ route('payment.workflow.export') }}"></form>');
-
-		form.append('@csrf');
-		form.append(`<input type="hidden" name="requisition_type" value="${$('#requisitionFilter').val()}">`);
-		ids.forEach(id => {
-
-			form.append(`<input type="hidden" name="ids[]" value="${id}">`);
-
+		let form = $('<form>', {
+			method: 'POST',
+			action: "{{ route('payment.workflow.export') }}"
 		});
 
+		form.append(
+			$('<input>', {
+				type: 'hidden',
+				name: '_token',
+				value: "{{ csrf_token() }}"
+			})
+		);
+
+		form.append(
+			$('<input>', {
+				type: 'hidden',
+				name: 'requisition_type',
+				value: $('#requisitionFilter').val()
+			})
+		);
+
+		ids.forEach(id => {
+
+			form.append(
+				$('<input>', {
+					type: 'hidden',
+					name: 'ids[]',
+					value: id
+				})
+			);
+
+		});
 
 		$('body').append(form);
 
 		form.submit();
 
-		setTimeout(loadWorkflow, 800);
+		setTimeout(loadWorkflow, 1000);
 
 	});
 </script>
