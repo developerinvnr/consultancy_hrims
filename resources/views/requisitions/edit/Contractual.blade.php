@@ -10,7 +10,7 @@
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('requisitions.index') }}">Requisitions</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('requisitions.show', $requisition->id) }}">#{{ $requisition->requisition_no }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('requisitions.show', $requisition->id) }}">#{{ $requisition->request_code }}</a></li>
                         <li class="breadcrumb-item active">Edit Contractual</li>
                     </ol>
                 </div>
@@ -55,12 +55,18 @@
                         @endphp
 
                         <input type="hidden" name="requisition_type" value="Contractual">
+                        
+                        <!-- Hidden fields for document tracking -->
                         <input type="hidden" name="pan_filename" id="pan_filename" value="{{ $panDoc->file_name ?? '' }}">
                         <input type="hidden" name="pan_filepath" id="pan_filepath" value="{{ $panDoc->file_path ?? '' }}">
                         <input type="hidden" name="bank_filename" id="bank_filename" value="{{ $bankDoc->file_name ?? '' }}">
                         <input type="hidden" name="bank_filepath" id="bank_filepath" value="{{ $bankDoc->file_path ?? '' }}">
                         <input type="hidden" name="aadhaar_filename" id="aadhaar_filename" value="{{ $aadhaarDoc->file_name ?? '' }}">
                         <input type="hidden" name="aadhaar_filepath" id="aadhaar_filepath" value="{{ $aadhaarDoc->file_path ?? '' }}">
+                        <input type="hidden" name="resume_filename" id="resume_filename" value="{{ $resumeDoc->file_name ?? '' }}">
+                        <input type="hidden" name="resume_filepath" id="resume_filepath" value="{{ $resumeDoc->file_path ?? '' }}">
+                        <input type="hidden" name="driving_filename" id="driving_filename" value="{{ $drivingDoc->file_name ?? '' }}">
+                        <input type="hidden" name="driving_filepath" id="driving_filepath" value="{{ $drivingDoc->file_path ?? '' }}">
 
                         <!-- Section 1: Personal Information -->
                         <div class="row mb-4">
@@ -181,8 +187,7 @@
                                             <div class="col-md-3 mb-3">
                                                 <label for="address_line_1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
                                                 <textarea class="form-control form-select-sm"
-                                                    id="address_line_1" name="address_line_1" rows="2" required>
-                                                {{ old('address_line_1', $requisition->address_line_1) }}</textarea>
+                                                    id="address_line_1" name="address_line_1" rows="2" required>{{ old('address_line_1', $requisition->address_line_1) }}</textarea>
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                             <div class="col-md-2 mb-3">
@@ -238,7 +243,7 @@
                                                     </option>
                                                     @endforeach
                                                 </select>
-                                                <input type="hidden" name="sub_department_id" value="{{ $requisition->sub_department_id }}">
+                                                <input type="hidden" name="sub_department_id" value="{{ $requisition->sub_department }}">
                                             </div>
                                             <div class="col-md-3 mb-3">
                                                 <label for="vertical_id" class="form-label">Vertical <span class="text-danger">*</span></label>
@@ -254,14 +259,7 @@
                                         </div>
 
                                         <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label for="work_location_hq" class="form-label">Work Location/HQ <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-select-sm"
-                                                    id="work_location_hq" name="work_location_hq"
-                                                    value="{{ old('work_location_hq', $requisition->work_location_hq) }}" required>
-                                                <div class="invalid-feedback"></div>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
+                                            <div class="col-md-4 mb-3">
                                                 <label for="state_work_location" class="form-label">State (Work Location) <span class="text-danger">*</span></label>
                                                 <select class="form-select form-select-sm"
                                                     id="state_work_location"
@@ -275,6 +273,26 @@
                                                     </option>
                                                     @endforeach
                                                 </select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="district_id" class="form-label">District <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm"
+                                                    id="district_id"
+                                                    name="district_id" required>
+                                                    <option value="">Select District</option>
+                                                </select>
+                                                <input type="hidden" name="district" id="district_name">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="work_location_id" class="form-label">Work Location/HQ <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-sm"
+                                                    id="work_location_id"
+                                                    name="work_location_id" required>
+                                                    <option value="">Select Location</option>
+                                                </select>
+                                                <input type="hidden" name="work_location_hq" id="work_location_hq_name">
                                                 <div class="invalid-feedback"></div>
                                             </div>
                                         </div>
@@ -778,7 +796,11 @@
     $(document).ready(function() {
         const existingState = "{{ $requisition->state_residence }}";
         const existingCity = "{{ $requisition->city }}";
+        const existingWorkState = "{{ $requisition->state_work_location }}";
+        const existingDistrictId = "{{ $requisition->district_id }}";
+        const existingWorkLocationId = "{{ $requisition->work_location_id }}";
 
+        // Load residence city
         if (existingState) {
             $('#state_residence').val(existingState).trigger('change');
 
@@ -837,6 +859,100 @@
             });
         });
 
+        // Load districts for work location
+        if (existingWorkState) {
+            $('#state_work_location').val(existingWorkState);
+            
+            $.ajax({
+                url: '{{ url("/get-districts-by-state") }}',
+                type: 'GET',
+                data: {
+                    state_id: existingWorkState
+                },
+                success: function(response) {
+                    const districtSelect = $('#district_id');
+                    districtSelect.html('<option value="">Select District</option>');
+                    
+                    $.each(response, function(_, district) {
+                        districtSelect.append(
+                            `<option value="${district.id}">${district.district_name}</option>`
+                        );
+                    });
+                    
+                    if (existingDistrictId) {
+                        districtSelect.val(String(existingDistrictId)).trigger('change');
+                        
+                        // Set hidden district name
+                        const selectedText = districtSelect.find('option:selected').text();
+                        $('#district_name').val(selectedText);
+                    }
+                }
+            });
+        }
+        
+        $('#state_work_location').on('change', function() {
+            const stateId = $(this).val();
+            const districtSelect = $('#district_id');
+            const workLocationSelect = $('#work_location_id');
+            
+            districtSelect.html('<option value="">Loading...</option>');
+            workLocationSelect.html('<option value="">Select Location</option>');
+            
+            if (!stateId) return;
+            
+            $.ajax({
+                url: '{{ url("/get-districts-by-state") }}',
+                type: 'GET',
+                data: {
+                    state_id: stateId
+                },
+                success: function(response) {
+                    let options = '<option value="">Select District</option>';
+                    $.each(response, function(_, district) {
+                        options += `<option value="${district.id}">${district.district_name}</option>`;
+                    });
+                    districtSelect.html(options);
+                }
+            });
+        });
+        
+        $('#district_id').on('change', function() {
+            const districtId = $(this).val();
+            const selectedText = $(this).find('option:selected').text();
+            const workLocationSelect = $('#work_location_id');
+            
+            $('#district_name').val(selectedText);
+            workLocationSelect.html('<option value="">Loading...</option>');
+            
+            if (!districtId) return;
+            
+            $.ajax({
+                url: '{{ url("/get-cities-by-district") }}',
+                type: 'GET',
+                data: {
+                    district_id: districtId
+                },
+                success: function(response) {
+                    let options = '<option value="">Select Location</option>';
+                    $.each(response, function(_, city) {
+                        options += `<option value="${city.id}">${city.city_village_name}</option>`;
+                    });
+                    workLocationSelect.html(options);
+                    
+                    if (existingWorkLocationId) {
+                        workLocationSelect.val(String(existingWorkLocationId));
+                        const workLocationText = workLocationSelect.find('option:selected').text();
+                        $('#work_location_hq_name').val(workLocationText);
+                    }
+                }
+            });
+        });
+        
+        $('#work_location_id').on('change', function() {
+            const selectedText = $(this).find('option:selected').text();
+            $('#work_location_hq_name').val(selectedText);
+        });
+
         initContractDateValidation("#contract_start_date");
         const requisitionType = $('input[name="requisition_type"]').val();
 
@@ -863,9 +979,10 @@
                 },
                 success: function(response) {
                     if (response.status === 'SUCCESS' && response.data.panNumber) {
-                        panNoField.val(response.data.panNumber)
-                            .removeClass('is-invalid')
-                            .addClass(response.data.isVerified ? 'is-valid' : '');
+                        panNoField.val(response.data.panNumber);
+                        $('#pan_filename').val(response.data.filename);
+                        $('#pan_filepath').val(response.data.filePath);
+                        showToast('PAN extracted successfully!', 'success');
                     } else {
                         panNoField.val('');
                         showToast(response.message || 'PAN extraction failed. Enter manually.', 'warning');
@@ -918,6 +1035,10 @@
                         if (data.verificationData?.beneficiary_name) {
                             $('#account_holder_name').val(data.verificationData.beneficiary_name);
                         }
+                        
+                        $('#bank_filename').val(data.filename);
+                        $('#bank_filepath').val(data.filePath);
+                        showToast('Bank details extracted successfully!', 'success');
                     } else {
                         $('#account_holder_name, #bank_account_no, #bank_ifsc, #bank_name').val('');
                         showToast(response.message || 'Bank extraction failed. Enter manually.', 'warning');
@@ -956,6 +1077,8 @@
                 success: function(response) {
                     if (response.status === 'SUCCESS' && response.data.aadhaarNumber) {
                         aadhaarField.val(response.data.aadhaarNumber);
+                        $('#aadhaar_filename').val(response.data.filename);
+                        $('#aadhaar_filepath').val(response.data.filePath);
 
                         if (response.data.isVerified) {
                             updateAadhaarStatus('success', 'Aadhaar verified successfully!', true);
@@ -964,9 +1087,6 @@
                             updateAadhaarStatus('success', 'Aadhaar extracted but not verified', false);
                             showToast('Aadhaar extracted but not verified.', 'warning');
                         }
-
-                        $('#aadhaar_filename').val(response.data.filename);
-                        $('#aadhaar_filepath').val(response.data.filePath);
                     } else {
                         aadhaarField.val('');
                         updateAadhaarStatus('error', 'Extraction failed. Please enter Aadhaar manually.');
@@ -1004,8 +1124,6 @@
                 }
             } else if (status === 'error') {
                 aadhaarField.addClass('is-invalid');
-            } else if (status === 'loading') {
-                // Loading state - keep icons hidden
             }
 
             statusText.text(message);
@@ -1123,8 +1241,10 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        alert('Requisition updated successfully!');
-                        window.location.href = response.redirect;
+                        showToast('Requisition updated successfully!', 'success');
+                        setTimeout(() => {
+                            window.location.href = response.redirect;
+                        }, 1500);
                     }
                 },
                 error: function(xhr) {
@@ -1137,8 +1257,9 @@
                             input.addClass('is-invalid');
                             input.siblings('.invalid-feedback').text(messages[0]).show();
                         });
+                        showToast('Please correct the highlighted fields', 'error');
                     } else {
-                        alert('An error occurred. Please try again.');
+                        showToast('An error occurred. Please try again.', 'error');
                     }
                 }
             });
