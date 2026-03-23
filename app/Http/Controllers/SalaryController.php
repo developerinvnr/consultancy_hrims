@@ -1119,9 +1119,7 @@ class SalaryController extends Controller
 
                 if ($agreementSigned && $courierReceived && $fileCreated) {
 
-                    // READY → Send back to Pending
                     $salary->payment_instruction = 'pending';
-
                     $salary->hr_release_remark = $request->remark;
                 } else {
 
@@ -1143,7 +1141,16 @@ class SalaryController extends Controller
                         'success' => false,
                         'message' => implode(', ', $missing)
                     ], 422);
-                    'message' => 'Payment status updated successfully.'
+                }
+            }
+
+            $salary->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment status updated successfully.'
             ]);
         } catch (\Exception $e) {
 
