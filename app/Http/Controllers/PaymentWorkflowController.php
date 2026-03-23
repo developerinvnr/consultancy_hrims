@@ -251,13 +251,16 @@ class PaymentWorkflowController extends Controller
 		Log::info('Matrix Payment Sync Request', $payload);
 
 		$response = Http::withHeaders([
-			'x-api-key' => 'YOUR_API_KEY',
+
+			'x-api-key' => 'YizwA2jvt69eXKbLAhyF0gAeJCHOhmQFTx1efMcN',
 			'Content-Type' => 'application/json'
+
 		])->post(
+
 			'https://matrix.vnrin.in/api/v1/payment/verify-bulk',
 			$payload
-		);
 
+		);
 		if (!$response->successful()) {
 
 			Log::error('Matrix API connection failed', [
