@@ -234,9 +234,6 @@ class PaymentWorkflowController extends Controller
 		foreach ($records as $row) {
 
 			if ($row->net_pay <= 0) {
-				Log::warning('Skipping zero amount payment', [
-					'salary_processing_id' => $row->id
-				]);
 				continue;
 			}
 
@@ -252,16 +249,13 @@ class PaymentWorkflowController extends Controller
 		Log::info('Matrix Payment Sync Request', $payload);
 
 		$response = Http::withHeaders([
-
 			'x-api-key' => 'YizwA2jvt69eXKbLAhyF0gAeJCHOhmQFTx1efMcN',
 			'Content-Type' => 'application/json'
-
 		])->post(
-
 			'https://matrix.vnrin.in/api/v1/payment/verify-bulk',
 			$payload
-
 		);
+
 		if (!$response->successful()) {
 
 			Log::error('Matrix API connection failed', [
@@ -281,25 +275,21 @@ class PaymentWorkflowController extends Controller
 
 		foreach ($data['results'] as $result) {
 
-			$matchedRow = null;
-
 			/*
-    CASE 1: MATCHED TRANSACTION
-    */
+			CASE 1: MATCHED TRANSACTION
+			*/
 
-			if (!empty($result['transaction'])) {
+			if (($result['match_status'] ?? null) === 'matched'
+				&& !empty($result['transaction'])
+			) {
 
-				$account = $result['transaction']['beneficiary_account_number'] ?? null;
-				$amount  = $result['transaction']['amount'] ?? null;
+				$transaction = $result['transaction'];
 
-				if ($account && $amount) {
+				$matchedRow = $records->first(function ($r) use ($transaction) {
 
-					$matchedRow = $records->first(function ($r) use ($account, $amount) {
-
-						return $r->bank_account_no == $account
-							&& $r->net_pay == $amount;
-					});
-				}
+					return $r->bank_account_no == $transaction['beneficiary_account_number']
+						&& $r->net_pay == $transaction['amount'];
+				});
 
 				if ($matchedRow) {
 
@@ -307,8 +297,8 @@ class PaymentWorkflowController extends Controller
 						->where('id', $matchedRow->id)
 						->update([
 							'payment_status' => 'paid',
-							'utr_number' => $result['transaction']['utr_number'],
-							'payment_date' => $result['transaction']['value_date'],
+							'utr_number' => $transaction['utr_number'],
+							'payment_date' => $transaction['value_date'],
 							'verification_remark' => null
 						]);
 				}
@@ -316,33 +306,23 @@ class PaymentWorkflowController extends Controller
 				continue;
 			}
 
-
 			/*
-    CASE 2: ALREADY VERIFIED
-    */
+			CASE 2: ALREADY VERIFIED (optional handling)
+			*/
 
 			if (
 				in_array('already_verified', $result['mismatch_reasons'] ?? [])
 				&& !empty($result['nearest_match'])
+				&& ($result['nearest_match']['is_verified'] ?? false)
 			) {
 
-				$account = $result['nearest_match']['beneficiary_account_number'] ?? null;
-				$amount  = $result['nearest_match']['amount'] ?? null;
+				$nearest = $result['nearest_match'];
 
-				if ($account && $amount) {
+				$matchedRow = $records->first(function ($r) use ($nearest) {
 
-					$matchedRow = $records->first(function ($r) use ($account, $amount) {
-
-						return $r->bank_account_no == $account
-							&& $r->net_pay == $amount;
-					});
-				}
-
-				// fallback if account missing
-				if (!$matchedRow) {
-
-					$matchedRow = $records[$result['index']] ?? null;
-				}
+					return $r->bank_account_no == $nearest['beneficiary_account_number']
+						&& $r->net_pay == $nearest['amount'];
+				});
 
 				if ($matchedRow) {
 
@@ -350,8 +330,8 @@ class PaymentWorkflowController extends Controller
 						->where('id', $matchedRow->id)
 						->update([
 							'payment_status' => 'paid',
-							'utr_number' => $result['nearest_match']['utr_number'],
-							'payment_date' => $result['nearest_match']['value_date'],
+							'utr_number' => $nearest['utr_number'],
+							'payment_date' => $nearest['value_date'],
 							'verification_remark' => 'already_verified'
 						]);
 				}
@@ -359,42 +339,52 @@ class PaymentWorkflowController extends Controller
 				continue;
 			}
 
-
 			/*
-    CASE 3: FAILED / MISMATCH
-    */
+			CASE 3: NOT FOUND / MISMATCH
+			*/
 
 			if (!empty($result['mismatch_reasons'])) {
 
-				$account = $result['nearest_match']['beneficiary_account_number'] ?? null;
-				$amount  = $result['nearest_match']['amount'] ?? null;
+				$reason = implode(', ', $result['mismatch_reasons']);
 
-				if ($account && $amount) {
+				if (!empty($result['nearest_match'])) {
 
-					$matchedRow = $records->first(function ($r) use ($account, $amount) {
+					$nearest = $result['nearest_match'];
 
-						return $r->bank_account_no == $account
-							&& $r->net_pay == $amount;
+					$reason .= " | Nearest Match - UTR: {$nearest['utr_number']}, Amount: {$nearest['amount']}, Date: {$nearest['value_date']}";
+				}
+
+				/*
+    Match using account + amount if nearest_match exists
+    */
+
+				if (!empty($result['nearest_match'])) {
+
+					$nearest = $result['nearest_match'];
+
+					$matchedRow = $records->first(function ($r) use ($nearest) {
+
+						return $r->bank_account_no == $nearest['beneficiary_account_number']
+							&& $r->net_pay == $nearest['amount'];
 					});
-				}
 
-				// fallback using index if account missing
-				if (!$matchedRow && isset($result['index'])) {
+					if ($matchedRow) {
 
-					$matchedRow = $records[$result['index']] ?? null;
-				}
+						DB::table('salary_processings')
+							->where('id', $matchedRow->id)
+							->update([
+								'verification_remark' => $reason
+							]);
+					}
+				} else {
 
-				if ($matchedRow) {
-
-					DB::table('salary_processings')
-						->where('id', $matchedRow->id)
-						->update([
-							'payment_status' => 'failed',
-							'verification_remark' => implode(',', $result['mismatch_reasons'])
-						]);
+					Log::warning('Mismatch without nearest match', [
+						'reason' => $reason
+					]);
 				}
 			}
 		}
+
 		return response()->json([
 			'success' => true,
 			'message' => 'Payment sync completed successfully'
