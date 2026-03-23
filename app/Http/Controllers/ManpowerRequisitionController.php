@@ -359,73 +359,62 @@ class ManpowerRequisitionController extends Controller
     {
         $s3Service = app(S3Service::class);
 
-        // Save PAN document (extracted via AJAX)
-        if (in_array($request->requisition_type, ['Contractual', 'TFA']) && $request->filled('pan_filename') && $request->filled('pan_filepath')) {
-            // Check if path already includes Consultancy folder
-            $filePath = $request->pan_filepath;
-            if (!str_contains($filePath, 'Consultancy/')) {
-                // Generate new path with Consultancy folder
-                $filename = basename($filePath);
-                $filePath = $s3Service->generateRequisitionPath(
-                    $request->requisition_type,
-                    'pan_card',
-                    $filename
-                );
+        // Helper function to save documents without path manipulation
+        $saveDocument = function ($type, $filenameField, $pathField) use ($request, $requisitionId, $userId, $s3Service) {
+            if (!$request->filled($filenameField) || !$request->filled($pathField)) {
+                Log::info("Document $type not provided", [
+                    'requisition_id' => $requisitionId,
+                    'filename_field' => $filenameField,
+                    'path_field' => $pathField
+                ]);
+                return false;
             }
 
-            RequisitionDocument::create([
-                'requisition_id' => $requisitionId,
-                'document_type' => 'pan_card',
-                'file_name' => $request->pan_filename,
-                'file_path' => $filePath,
-                'uploaded_by_user_id' => $userId,
-            ]);
-        }
+            $filePath = $request->$pathField;
+            $fileName = $request->$filenameField;
 
-        // Save Bank document (extracted via AJAX)
-        if ($request->filled('bank_filename') && $request->filled('bank_filepath')) {
-            // Check if path already includes Consultancy folder
-            $filePath = $request->bank_filepath;
-            if (!str_contains($filePath, 'Consultancy/')) {
-                // Generate new path with Consultancy folder
-                $filename = basename($filePath);
-                $filePath = $s3Service->generateRequisitionPath(
-                    $request->requisition_type,
-                    'bank_document',
-                    $filename
-                );
+            // CRITICAL: Verify the file exists in S3 before saving
+            if (!$s3Service->fileExists($filePath)) {
+                Log::error("File does not exist in S3 for $type", [
+                    'requisition_id' => $requisitionId,
+                    'file_path' => $filePath,
+                    'file_name' => $fileName
+                ]);
+                return false;
             }
 
-            RequisitionDocument::create([
+            Log::info("Saving document to requisition", [
                 'requisition_id' => $requisitionId,
-                'document_type' => 'bank_document',
-                'file_name' => $request->bank_filename,
+                'document_type' => $type,
                 'file_path' => $filePath,
-                'uploaded_by_user_id' => $userId,
+                'file_name' => $fileName
             ]);
-        }
 
-        // Save Aadhaar document (extracted via AJAX)
-        if ($request->filled('aadhaar_filename') && $request->filled('aadhaar_filepath')) {
-            // Check if path already includes Consultancy folder
-            $filePath = $request->aadhaar_filepath;
-            if (!str_contains($filePath, 'Consultancy/')) {
-                // Generate new path with Consultancy folder
-                $filename = basename($filePath);
-                $filePath = $s3Service->generateRequisitionPath(
-                    $request->requisition_type,
-                    'aadhaar_card',
-                    $filename
-                );
-            }
+            // Use updateOrCreate to avoid duplicates
+            RequisitionDocument::updateOrCreate(
+                [
+                    'requisition_id' => $requisitionId,
+                    'document_type' => $type,
+                ],
+                [
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'uploaded_by_user_id' => $userId,
+                ]
+            );
 
-            RequisitionDocument::create([
-                'requisition_id' => $requisitionId,
-                'document_type' => 'aadhaar_card',
-                'file_name' => $request->aadhaar_filename,
-                'file_path' => $filePath,
-                'uploaded_by_user_id' => $userId,
-            ]);
+            return true;
+        };
+
+        // Save Aadhaar document - USE THE PATH AS IS FROM THE CONTROLLER
+        $saveDocument('aadhaar_card', 'aadhaar_filename', 'aadhaar_filepath');
+
+        // Save Bank document
+        $saveDocument('bank_document', 'bank_filename', 'bank_filepath');
+
+        // Save PAN document (only for Contractual and TFA)
+        if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
+            $saveDocument('pan_card', 'pan_filename', 'pan_filepath');
         }
     }
 
