@@ -45,7 +45,7 @@ class TDSJVExport implements
         $records = SalaryProcessing::with('candidate')
             ->where('month', $this->month)
             ->where('year', $this->year)
-            ->where('payment_instruction', 'release')
+            ->where('status', 'processed')
             ->whereHas('candidate', function ($q) {
                 if ($this->status !== 'All') {
                     $q->where('final_status', $this->status);

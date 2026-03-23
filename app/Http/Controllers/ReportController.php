@@ -484,6 +484,7 @@ class ReportController extends Controller
         ])
             ->where('month', $month)
             ->where('year', $year)
+            ->where('status', 'processed')
             ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
 
                 if ($status !== 'All') {
@@ -554,7 +555,7 @@ class ReportController extends Controller
         $query = SalaryProcessing::with('candidate')
             ->where('month', $month)
             ->where('year', $year)
-            ->where('payment_instruction', 'release')
+            ->where('status', 'processed')
             ->whereHas('candidate', function ($q) use ($status, $requisitionType) {
                 if ($status !== 'All') {
                     $q->where('final_status', $status);
