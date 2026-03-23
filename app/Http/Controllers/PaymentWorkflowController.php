@@ -271,7 +271,7 @@ class PaymentWorkflowController extends Controller
 
 		$data = $response->json();
 
-		Log::info('Matrix Payment Sync Response', $data);
+		Log::info('Payment Sync Response', $data);
 
 		foreach ($data['results'] as $result) {
 

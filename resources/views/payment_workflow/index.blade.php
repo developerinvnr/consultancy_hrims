@@ -255,27 +255,23 @@
 
 		$('#tableLoader').show();
 
-		$.post(
-			"{{ route('payment.workflow.sync') }}", {
-				_token: '{{ csrf_token() }}'
-			},
+		$.post("{{ route('payment.workflow.sync') }}", {
+			_token: '{{ csrf_token() }}'
+		}, function(response) {
 
-			function(response) {
-
-				$('#tableLoader').hide();
-
+			if (response.success) {
 				alert(response.message);
-
-				loadWorkflow();
+			} else {
+				alert('Sync failed: ' + response.message);
 			}
 
-		).fail(function(xhr) {
+			loadWorkflow();
 
-			$('#tableLoader').hide();
+		}).fail(function(xhr) {
 
-			alert('Sync failed. Please check logs.');
+			console.log(xhr.responseText); // VERY IMPORTANT
 
-			console.log(xhr.responseText);
+			alert('Sync failed. Check console.');
 		});
 
 	});
