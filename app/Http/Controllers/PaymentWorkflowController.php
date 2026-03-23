@@ -285,11 +285,17 @@ class PaymentWorkflowController extends Controller
 
 				$transaction = $result['transaction'];
 
-				$matchedRow = $records->first(function ($r) use ($transaction) {
+				$account = $nearest['beneficiary_account_number'] ?? null;
+				$amount  = $nearest['amount'] ?? null;
 
-					return $r->bank_account_no == $transaction['beneficiary_account_number']
-						&& $r->net_pay == $transaction['amount'];
-				});
+				if ($account && $amount) {
+
+					$matchedRow = $records->first(function ($r) use ($account, $amount) {
+
+						return $r->bank_account_no == $account
+							&& $r->net_pay == $amount;
+					});
+				}
 
 				if ($matchedRow) {
 
