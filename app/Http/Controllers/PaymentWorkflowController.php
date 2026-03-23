@@ -30,27 +30,26 @@ class PaymentWorkflowController extends Controller
 
 		$query = DB::table('salary_processings as sp')
 
-    ->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
+			->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
 
-    ->where('sp.payment_instruction', 'release')
+			->where('sp.payment_instruction', 'release')
 
-    ->where('sp.month', $month)
+			->where('sp.month', $month)
 
-    ->where('sp.year', $year)
+			->where('sp.year', $year)
 
-    ->select(
-        'sp.*',
-        'c.candidate_code',
-        'c.candidate_name',
-        'c.requisition_type'
-    );
+			->select(
+				'sp.*',
+				'c.candidate_code',
+				'c.candidate_name',
+				'c.requisition_type'
+			);
 
 
-if ($requisitionType) {
+		if ($requisitionType) {
 
-    $query->where('c.requisition_type', $requisitionType);
-
-}
+			$query->where('c.requisition_type', $requisitionType);
+		}
 
 
 		if ($tab == 'pending') {
@@ -134,46 +133,44 @@ if ($requisitionType) {
 
 	public function export(Request $request)
 	{
-
 		if (empty($request->ids)) {
-
 			return back()->with('error', 'Please select records first');
 		}
 
 		$query = DB::table('salary_processings as sp')
-				->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
-				->select('sp.*', 'c.candidate_code','c.requisition_type')
-				->whereIn('sp.id', $request->ids)
-				->where('sp.payment_status', 'approved');
+			->join('candidate_master as c', 'c.id', '=', 'sp.candidate_id')
+			->select('sp.*', 'c.candidate_code', 'c.requisition_type')
+			->whereIn('sp.id', $request->ids)
+			->where('sp.payment_status', 'approved');
 
-			if ($request->requisition_type) {
-				$query->where(
-				'c.requisition_type',
-				$request->requisition_type
-				);
-			}
+		if ($request->requisition_type) {
+			$query->where('c.requisition_type', $request->requisition_type);
+		}
+
 		$records = $query->get();
 
 		$batchNo = 'PAYINST' . time();
 
 		foreach ($records as $row) {
 
-			DB::table('report_exports')->insert([
-
-				'reference_id' => $row->id,
-				'reference_table' => 'salary_processings',
-				'report_type' => 'payment_instruction',
-				'batch_no' => $batchNo,
-				'exported_by' => auth()->id(),
-				'exported_at' => now(),
-				'created_at' => now(),
-				'updated_at' => now()
-
-			]);
+			DB::table('report_exports')->updateOrInsert(
+				[
+					'reference_id' => $row->id,
+					'report_type' => 'payment_instruction'
+				],
+				[
+					'reference_table' => 'salary_processings',
+					'batch_no' => $batchNo,
+					'exported_by' => auth()->id(),
+					'exported_at' => now(),
+					'updated_at' => now(),
+					'created_at' => now()
+				]
+			);
 		}
 
 		DB::table('salary_processings')
-			->whereIn('sp.id', $request->ids)
+			->whereIn('id', $request->ids)   // ✅ FIXED HERE
 			->update([
 				'payment_status' => 'exported'
 			]);
