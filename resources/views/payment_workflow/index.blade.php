@@ -252,28 +252,29 @@
 	});
 
 	$('#syncBtn').click(function() {
-
 		$('#tableLoader').show();
 
-		$.post("{{ route('payment.workflow.sync') }}", {
-			_token: '{{ csrf_token() }}'
-		}, function(response) {
+		// Get current month and year from the input
+		let monthYear = $('#monthYear').val();
+		let [year, month] = monthYear.split('-');
 
+		$.post("{{ route('payment.workflow.sync') }}", {
+			_token: '{{ csrf_token() }}',
+			month: month,
+			year: year
+		}, function(response) {
 			if (response.success) {
 				alert(response.message);
 			} else {
 				alert('Sync failed: ' + response.message);
 			}
-
 			loadWorkflow();
-
 		}).fail(function(xhr) {
-
-			console.log(xhr.responseText); // VERY IMPORTANT
-
+			console.log(xhr.responseText);
 			alert('Sync failed. Check console.');
+		}).always(function() {
+			$('#tableLoader').hide();
 		});
-
 	});
 
 
