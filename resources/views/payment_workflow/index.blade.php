@@ -248,19 +248,31 @@
 	});
 
 	$('#syncBtn').click(function() {
-		 $('#tableLoader').show();
+
+		$('#tableLoader').show();
+
 		$.post(
-			"{{ route('payment.workflow.sync') }}",
-			{ _token: '{{csrf_token()}}' },
-			function(res){
+			"{{ route('payment.workflow.sync') }}", {
+				_token: '{{ csrf_token() }}'
+			},
+
+			function(response) {
 
 				$('#tableLoader').hide();
 
-				alert(res.message);
+				alert(response.message);
 
 				loadWorkflow();
 			}
-		);
+
+		).fail(function(xhr) {
+
+			$('#tableLoader').hide();
+
+			alert('Sync failed. Please check logs.');
+
+			console.log(xhr.responseText);
+		});
 
 	});
 
@@ -389,7 +401,7 @@
 
 	$('#approveBtn').click(function() {
 		$('#tableLoader').show();
-		let ids = [];	
+		let ids = [];
 
 		$('.rowCheck:checked').each(function() {
 

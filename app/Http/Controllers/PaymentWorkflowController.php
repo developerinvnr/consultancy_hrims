@@ -206,28 +206,19 @@ class PaymentWorkflowController extends Controller
 
 	public function syncPayments()
 	{
-
 		$records = DB::table('salary_processings as sp')
-
 			->join('candidate_master as cm', 'cm.id', '=', 'sp.candidate_id')
-
 			->join('report_exports as re', 're.reference_id', '=', 'sp.id')
-
 			->where('re.report_type', 'payment_instruction')
-
 			->whereIn('sp.payment_status', ['exported', 'failed'])
-
 			->whereNull('sp.utr_number')
-
 			->select(
 				'sp.id',
 				'sp.net_pay',
 				're.exported_at',
 				'cm.bank_account_no'
 			)
-
 			->limit(1000)
-
 			->get();
 
 		if ($records->isEmpty()) {
@@ -238,27 +229,18 @@ class PaymentWorkflowController extends Controller
 			]);
 		}
 
-
 		$payload = [
-
 			'payments' => []
-
 		];
-
 
 		foreach ($records as $row) {
 
 			$payload['payments'][] = [
 
 				'beneficiary_account_number' => $row->bank_account_no,
-
 				'amount' => (float)$row->net_pay,
-
 				'date' => date('Y-m-d', strtotime($row->exported_at)),
-				//'date' => date('Y-m-d', strtotime($row->released_at ?? $row->exported_at)),
-
 				'source' => config('app.name'),
-
 				'source_reference' => (string)$row->id
 
 			];
@@ -266,31 +248,35 @@ class PaymentWorkflowController extends Controller
 
 		Log::info('Matrix Payment Sync Request', $payload);
 
-		//dd($payload);
 		$response = Http::withHeaders([
 
 			'x-api-key' => 'YizwA2jvt69eXKbLAhyF0gAeJCHOhmQFTx1efMcN',
-
 			'Content-Type' => 'application/json'
 
 		])->post(
 
 			'https://matrix.vnrin.in/api/v1/payment/verify-bulk',
-
 			$payload
 
 		);
 
-		//dd($response->status(), $response->body());
 		if (!$response->successful()) {
 
-			return back()->with('error', 'Matrix API connection failed');
-		}
+			Log::error('Matrix API connection failed', [
+				'status' => $response->status(),
+				'body' => $response->body()
+			]);
 
+			return response()->json([
+				'success' => false,
+				'message' => 'Matrix API connection failed'
+			]);
+		}
 
 		$data = $response->json();
 
 		Log::info('Matrix Payment Sync Response', $data);
+
 		foreach ($data['results'] as $result) {
 
 			$index = $result['index'];
@@ -311,7 +297,7 @@ class PaymentWorkflowController extends Controller
 					]);
 			}
 
-			// CASE 2: Already verified → treat as success
+			// CASE 2: Already verified
 			elseif (str_contains($reason, 'already_verified')) {
 
 				DB::table('salary_processings')
@@ -324,7 +310,7 @@ class PaymentWorkflowController extends Controller
 					]);
 			}
 
-			// CASE 3: Not found / mismatch
+			// CASE 3: Failed
 			else {
 
 				DB::table('salary_processings')
@@ -336,7 +322,9 @@ class PaymentWorkflowController extends Controller
 			}
 		}
 
-
-		return back()->with('success', 'Payment sync completed successfully');
+		return response()->json([
+			'success' => true,
+			'message' => 'Payment sync completed successfully'
+		]);
 	}
 }
