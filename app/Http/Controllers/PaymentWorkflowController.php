@@ -326,7 +326,7 @@ class PaymentWorkflowController extends Controller
 				&& !empty($result['nearest_match'])
 			) {
 
-				$account = $result['nearest_match']['beneficiary_account_number'];
+				$account = $result['nearest_match']['beneficiary_account_number'] ?? null;
 				$amount  = $result['nearest_match']['amount'];
 
 				$matchedRow = $records->first(function ($r) use ($account, $amount) {
