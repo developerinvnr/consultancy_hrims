@@ -204,14 +204,20 @@ class PaymentWorkflowController extends Controller
 		]);
 	}
 
-	public function syncPayments()
+	public function syncPayments(Request $request)
 	{
+		// Get month and year from request (sent from UI)
+		$month = $request->month ?? date('m');
+		$year = $request->year ?? date('Y');
+
 		$records = DB::table('salary_processings as sp')
 			->join('candidate_master as cm', 'cm.id', '=', 'sp.candidate_id')
 			->join('report_exports as re', 're.reference_id', '=', 'sp.id')
 			->where('re.report_type', 'payment_instruction')
 			->whereIn('sp.payment_status', ['exported', 'failed'])
 			->whereNull('sp.utr_number')
+			->where('sp.month', $month)  // Add month filter
+			->where('sp.year', $year)    // Add year filter
 			->select(
 				'sp.id',
 				'sp.net_pay',
@@ -225,7 +231,7 @@ class PaymentWorkflowController extends Controller
 		if ($records->isEmpty()) {
 			return response()->json([
 				'success' => false,
-				'message' => 'No exported records pending sync'
+				'message' => 'No exported records pending sync for ' . $month . '/' . $year
 			]);
 		}
 
@@ -245,7 +251,11 @@ class PaymentWorkflowController extends Controller
 			];
 		}
 
-		Log::info('Matrix Payment Sync Request', $payload);
+		Log::info('Matrix Payment Sync Request', [
+			'month' => $month,
+			'year' => $year,
+			'payments' => $payload
+		]);
 
 		$response = Http::withHeaders([
 			'x-api-key' => 'YizwA2jvt69eXKbLAhyF0gAeJCHOhmQFTx1efMcN',
@@ -317,9 +327,6 @@ class PaymentWorkflowController extends Controller
 
 			/*
         CASE 2: ALREADY VERIFIED
-        For already_verified, the nearest_match does NOT contain beneficiary_account_number
-        Therefore, we CANNOT match by account number and amount
-        These should NOT be auto-updated - they need manual verification
         */
 			if (
 				in_array('already_verified', $result['mismatch_reasons'] ?? [])
@@ -327,7 +334,6 @@ class PaymentWorkflowController extends Controller
 			) {
 				$nearest = $result['nearest_match'];
 
-				// Check if account number is available - if not, skip this update
 				if (empty($nearest['beneficiary_account_number'])) {
 					Log::warning('Already verified - cannot match (no account number in response), skipping', [
 						'index' => $result['index'] ?? null,
@@ -379,7 +385,6 @@ class PaymentWorkflowController extends Controller
 					$nearest = $result['nearest_match'];
 					$reason .= " | Nearest Match - UTR: {$nearest['utr_number']}, Amount: {$nearest['amount']}, Date: {$nearest['value_date']}";
 
-					// Only try exact match by account and amount if account is available
 					if (!empty($nearest['beneficiary_account_number'])) {
 						$matchedRow = $records->first(function ($r) use ($nearest) {
 							return $r->bank_account_no == $nearest['beneficiary_account_number']
@@ -402,7 +407,6 @@ class PaymentWorkflowController extends Controller
 						'reason' => $reason
 					]);
 				} else {
-					// Only log, don't update anything
 					Log::warning('Could not match failed payment (no account match)', [
 						'index' => $result['index'] ?? null,
 						'mismatch_reasons' => $result['mismatch_reasons'],
@@ -415,7 +419,7 @@ class PaymentWorkflowController extends Controller
 
 		return response()->json([
 			'success' => true,
-			'message' => 'Payment sync completed successfully'
+			'message' => 'Payment sync completed successfully for ' . $month . '/' . $year
 		]);
 	}
 }
