@@ -24,11 +24,11 @@
 
 				<div class="card-body">
 
-					<h6 class="text-danger mb-3">
+					<h6 class="text-danger mb-2">
 						⚠️ Attention Panel
 					</h6>
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						🔴 Delayed Cases
 
@@ -39,7 +39,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						🟡 About to be delayed
 
@@ -50,7 +50,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						📅 Expiring in 3 days
 
@@ -61,7 +61,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						📅 Expiring in 5 days
 
@@ -72,7 +72,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						📅 Expiring in 7 days
 
@@ -83,7 +83,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						📄 Agreement Not Signed
 
@@ -94,7 +94,7 @@
 					</div>
 
 
-					<div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center bg-light">
+					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
 
 						🚚 Courier Pending
 
@@ -115,7 +115,7 @@
 		<div class="col-lg-8">
 			<!-- KPI CARDS -->
 			<div class="card border-0 shadow-sm mb-2">
-				<div class="card-body px-3 py-2">
+				<div class="card-body px-2 py-1">
 					@include('dashboard.partials.kpi-cards')
 				</div>
 			</div>
@@ -127,10 +127,10 @@
 		<!-- JOININGS CHART -->
 			<div class="card border-0 shadow-sm mt-3">
 				<div class="card-body">
-					<h6 class="mb-3">
+					<h6 class="mb-2">
 						📊 Month-wise Joinings (Financial Year)
 					</h6>
-					<canvas id="joiningChart" height="60"></canvas>
+					<canvas id="joiningChart" height="30"></canvas>
 				</div>
 
 			</div>
@@ -144,7 +144,7 @@
 				<div class="card-body p-2">
 					<h6 class="mb-2 fs-6">Recent Requisitions</h6>
 					<div class="tabs-scroll">
-						<ul class="nav nav-tabs mb-3 sticky-tabs">
+						<ul class="nav nav-tabs mb-2 sticky-tabs">
 
 							<li class="nav-item">
 								<a class="nav-link {{ $req_tab=='submission'?'active':'' }}"
@@ -616,12 +616,12 @@
 			<div class="card border-0 shadow-sm">
 				<div class="card-body p-2">
 
-					<h6 class="mb-3 fs-6">
+					<h6 class="mb-2 fs-6">
 						<i class="ri-calendar-event-line me-1"></i>
 						Contract Expiry
 					</h6>
 
-					<ul class="nav nav-tabs mb-3">
+					<ul class="nav nav-tabs mb-2">
 
 						<li class="nav-item">
 							<a class="nav-link {{ request('exp_tab','exp30')=='exp30'?'active':'' }}"

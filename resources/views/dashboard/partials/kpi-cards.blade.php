@@ -2,11 +2,11 @@
 
 	<div class="col-md-6">
 		<div class="card shadow-sm border-0">
-			<div class="card-body text-center py-4 bg-light">
+			<div class="card-body text-center py-2 bg-light">
 				Active
-				<h3 class="fw-bold mb-0">
+				<h5 class="fw-bold mb-0">
 					{{ $attention['active'] }}
-				</h3>
+				</h5>
 			</div>
 		</div>
 	</div>
@@ -14,7 +14,7 @@
 
 	<div class="col-md-6">
 		<div class="card shadow-sm border-0">
-			<div class="card-body text-center py-4 bg-light">
+			<div class="card-body text-center py-2 bg-light">
 				In Process
 				<h3>
 					{{ $attention['in_process'] }}
@@ -31,30 +31,30 @@
 
 <div class="row g-2 mb-2">
 	<div class="col-md-4">
-		<div class="card border-0 shadow-sm text-center py-3 py-3 bg-light">
+		<div class="card border-0 shadow-sm text-center py-2 bg-light">
 			Contractual
-			<h5>
+			<h6>
 				{{ $stats['active_by_type']['Contractual'] ?? 0 }}
-			</h5>
+			</h7>
 		</div>
 	</div>
 
 	<div class="col-md-4">
-		<div class="card border-0 shadow-sm text-center py-3 py-3 bg-light">
+		<div class="card border-0 shadow-sm text-center py-2 bg-light">
 			TFA
-			<h5>
+			<h6>
 				{{ $stats['active_by_type']['TFA'] ?? 0 }}
-			</h5>
+			</h6>
 		</div>
 	</div>
 
 
 	<div class="col-md-4">
-		<div class="card border-0 shadow-sm text-center py-3 py-3 bg-light">
+		<div class="card border-0 shadow-sm text-center py-2 bg-light">
 			CB
-			<h5>
+			<h6>
 				{{ $stats['active_by_type']['CB'] ?? 0 }}
-			</h5>
+			</h6>
 		</div>
 	</div>
 </div>
