@@ -472,30 +472,61 @@ class HomeController extends Controller
 
 
         // Detect Bottleneck Stage
-        $bottleneckStage = DB::table('manpower_requisitions')
-            ->whereIn('status', [
-                'Pending HR Verification',
-                'Correction Required',
-                'Pending Approval',
-                'Agreement Pending',
-                'Unsigned Agreement Created',
-                'Signed Agreement Uploaded'
-            ])
-            ->whereNotNull('submission_date')
-            ->select(
-                'status',
-                DB::raw('AVG(DATEDIFF(NOW(), submission_date)) as avg_days')
-            )
-            ->groupBy('status')
-            ->orderByDesc('avg_days')
-            ->first();
+       $bottleneckStage = DB::selectOne("
+SELECT stage, AVG(days) avg_days
+FROM (
 
-        $attention['bottleneck_stage'] = $bottleneckStage->status ?? 'N/A';
+    SELECT 'Pending HR Verification' stage,
+    DATEDIFF(NOW(), submission_date) days
+    FROM manpower_requisitions
+    WHERE status='Pending HR Verification'
 
-        $attention['bottleneck_avg_days'] = round(
-            $bottleneckStage->avg_days ?? 0,
-            1
-        );
+    UNION ALL
+
+    SELECT 'Pending Approval',
+    DATEDIFF(NOW(), hr_verification_date)
+    FROM manpower_requisitions
+    WHERE status='Pending Approval'
+
+    UNION ALL
+
+    SELECT 'Agreement Pending',
+    DATEDIFF(NOW(), cm.created_at)
+    FROM candidate_master cm
+    WHERE cm.candidate_status='Agreement Pending'
+
+    UNION ALL
+
+    SELECT 'Unsigned Agreement Created',
+    DATEDIFF(NOW(), ad.created_at)
+    FROM agreement_documents ad
+    WHERE ad.sign_status='UNSIGNED'
+
+    UNION ALL
+
+    SELECT 'Signed Agreement Uploaded',
+    DATEDIFF(NOW(), ad.created_at)
+    FROM agreement_documents ad
+    WHERE ad.sign_status='SIGNED'
+
+    UNION ALL
+
+    SELECT 'Courier Pending',
+    DATEDIFF(NOW(), ac.dispatch_date)
+    FROM agreement_couriers ac
+    WHERE ac.received_date IS NULL
+
+) stage_times
+
+GROUP BY stage
+ORDER BY avg_days DESC
+LIMIT 1
+");
+
+        $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
+
+$attention['bottleneck_avg_days'] =
+    round($bottleneckStage->avg_days ?? 0, 1);
 
         $days = $attention['bottleneck_avg_days'];
 
