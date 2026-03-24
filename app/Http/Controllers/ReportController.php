@@ -443,7 +443,7 @@ class ReportController extends Controller
         // -------------------------------
         $financialYear = $request->get('financial_year');
         $status        = $request->get('status', 'All');
-
+        $exportStatus = $request->get('export_status', 'All');
         $currentMonth = date('n');
         $currentYear  = date('Y');
 
@@ -498,6 +498,32 @@ class ReportController extends Controller
                 }
             });
 
+            if ($exportStatus === 'exported') {
+
+                    $query->whereIn('id', function ($sub) {
+
+                        $sub->select('reference_id')
+                            ->from('report_exports')
+                            ->where('reference_table', 'salary_processings')
+                            ->where('report_type', 'jv');
+
+                    });
+
+                }
+
+                if ($exportStatus === 'not_exported') {
+
+                    $query->whereNotIn('id', function ($sub) {
+
+                        $sub->select('reference_id')
+                            ->from('report_exports')
+                            ->where('reference_table', 'salary_processings')
+                            ->where('report_type', 'jv');
+
+                    });
+
+                }
+
         // -------------------------------
         // 5️⃣ Pagination
         // -------------------------------
@@ -524,7 +550,8 @@ class ReportController extends Controller
                 $request->financial_year,
                 $request->month,
                 $request->status,
-                $request->requisition_type ?? ''
+                $request->requisition_type ?? '',
+                $request->export_status ?? 'All'
             ),
             'JV_Report.xlsx'
         );
@@ -534,6 +561,7 @@ class ReportController extends Controller
     {
         $financialYear = $request->get('financial_year');
         $status        = $request->get('status', 'All');
+        $exportStatus = $request->get('export_status', 'All');
 
         $currentMonth = date('n');
         $currentYear  = date('Y');
@@ -568,6 +596,25 @@ class ReportController extends Controller
                 }
             });
 
+        if ($exportStatus === 'exported') {
+                $query->whereIn('id', function ($sub) {
+                    $sub->select('reference_id')
+                        ->from('report_exports')
+                        ->where('reference_table', 'salary_processings')
+                        ->where('report_type', 'tds_jv');
+                });
+        }
+
+        if ($exportStatus === 'not_exported') {
+            $query->whereNotIn('id', function ($sub) {
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'tds_jv');
+            });
+
+        }
+
         $records = $query->paginate(20)->withQueryString();
 
         return view('reports.tds-jv', compact(
@@ -575,7 +622,8 @@ class ReportController extends Controller
             'financialYear',
             'month',
             'year',
-            'status'
+            'status',
+            'exportStatus'
         ));
     }
 
@@ -586,7 +634,8 @@ class ReportController extends Controller
                 $request->financial_year,
                 $request->month,
                 $request->status,
-                $request->requisition_type ?? ''
+                $request->requisition_type ?? '',
+                $request->export_status ?? 'All' 
             ),
             'TDS_JV_Report.xlsx'
         );

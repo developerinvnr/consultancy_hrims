@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\SalaryProcessing;
 use Maatwebsite\Excel\Concerns\{
     FromCollection,
@@ -27,13 +28,16 @@ class JVExport implements
     protected $status;
     protected $year;
     protected $requisitionType;
+    protected $exportStatus;
 
-    public function __construct($financialYear, $month, $status, $requisitionType)
+    public function __construct($financialYear, $month, $status, $requisitionType, $exportStatus)
     {
         $this->financialYear = $financialYear;
         $this->month = (int) $month;
         $this->status = $status ?? 'All';
         $this->requisitionType = $requisitionType;
+        $this->exportStatus    = $exportStatus;
+
 
 
         // 🔥 Calculate Year from Financial Year
@@ -43,7 +47,7 @@ class JVExport implements
 
     public function collection()
     {
-        $records = SalaryProcessing::with([
+        $query = SalaryProcessing::with([
             'candidate.department',
             'candidate.businessUnit',
             'candidate.vertical',
@@ -70,12 +74,60 @@ class JVExport implements
                     $q->where('requisition_type', $this->requisitionType);
                 }
             })
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
 
+        // ✅ Apply export status filter
+        if ($this->exportStatus === 'exported') {
+
+            $query->whereIn('id', function ($sub) {
+
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'jv');
+            });
+        }
+
+        if ($this->exportStatus === 'not_exported') {
+
+            $query->whereNotIn('id', function ($sub) {
+
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'jv');
+            });
+        }
+
+        $records = $query->get();
         $narration = "Being Contractual Expenses for the Month of "
             . Carbon::create()->month($this->month)->format('F')
             . " {$this->year}";
+
+        $batchNo = 'JV-' . date('dmY-His');
+
+        if ($this->exportStatus !== 'exported') {
+
+            foreach ($records as $rec) {
+
+                DB::table('report_exports')->updateOrInsert(
+
+                    [
+                        'reference_id'    => $rec->id,
+                        'reference_table' => 'salary_processings',
+                        'report_type'     => 'jv',
+                    ],
+
+                    [
+                        'batch_no'    => $batchNo,
+                        'exported_by' => auth()->id(),
+                        'exported_at' => now(),
+                        'updated_at'  => now(),
+                        'created_at'  => now(),
+                    ]
+                );
+            }
+        }
 
 
         $billDate = Carbon::create($this->year, $this->month, 1)

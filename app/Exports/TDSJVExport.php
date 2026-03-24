@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\SalaryProcessing;
 use Maatwebsite\Excel\Concerns\{
     FromCollection,
@@ -27,14 +28,15 @@ class TDSJVExport implements
     protected $status;
     protected $year;
     protected $requisitionType;
+    protected $exportStatus;
 
-    public function __construct($financialYear, $month, $status, $requisitionType)
+    public function __construct($financialYear, $month, $status, $requisitionType, $exportStatus)
     {
         $this->financialYear = $financialYear;
         $this->month = (int) $month;
         $this->status = $status ?? 'All';
         $this->requisitionType = $requisitionType;
-
+        $this->exportStatus = $exportStatus;
 
         [$startYear, $endYear] = explode('-', $financialYear);
         $this->year = ($this->month >= 4) ? $startYear : $endYear;
@@ -42,11 +44,12 @@ class TDSJVExport implements
 
     public function collection()
     {
-        $records = SalaryProcessing::with('candidate')
+        $query = SalaryProcessing::with('candidate')
             ->where('month', $this->month)
             ->where('year', $this->year)
             ->where('status', 'processed')
             ->whereHas('candidate', function ($q) {
+
                 if ($this->status !== 'All') {
                     $q->where('final_status', $this->status);
                 } else {
@@ -56,8 +59,57 @@ class TDSJVExport implements
                 if (!empty($this->requisitionType)) {
                     $q->where('requisition_type', $this->requisitionType);
                 }
-            })
-            ->get();
+            });
+
+        if ($this->exportStatus === 'exported') {
+            $query->whereIn('id', function ($sub) {
+
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'tds_jv');
+            });
+        }
+
+        if ($this->exportStatus === 'not_exported') {
+
+            $query->whereNotIn('id', function ($sub) {
+
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'tds_jv');
+            });
+        }
+
+        $records = $query->get();
+        // ✅ Generate batch number
+        $batchNo = 'TDSJV' . time();
+
+        // ✅ Save export history
+        if ($this->exportStatus !== 'exported') {
+
+            foreach ($records as $rec) {
+
+                DB::table('report_exports')->updateOrInsert(
+
+                    [
+                        'reference_id'    => $rec->id,
+                        'reference_table' => 'salary_processings',
+                        'report_type'     => 'tds_jv',
+                    ],
+
+                    [
+                        'batch_no'    => $batchNo,
+                        'exported_by' => auth()->id(),
+                        'exported_at' => now(),
+                        'updated_at'  => now(),
+                        'created_at'  => now(),
+                    ]
+                );
+            }
+        }
+
 
         return $records->map(function ($rec) {
 
@@ -70,15 +122,17 @@ class TDSJVExport implements
                 . " {$this->year}";
 
             return [
-                '', // DocNo
+
+                '',
                 Carbon::now()->format('d-m-Y'),
                 120,
                 $narration,
-                '', // TDSVoucherNo
-                $rec->candidate->candidate_code, // DrAccount
-                'STAT-DUES-TDS-15', // CrAccount
+                '',
+                $rec->candidate->candidate_code,
+                'STAT-DUES-TDS-15',
                 $tds,
-                '' // Reference
+                ''
+
             ];
         });
     }

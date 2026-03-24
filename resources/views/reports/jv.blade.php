@@ -57,7 +57,7 @@
 					</select>
 				</div>
 
-				<div class="col-md-3">
+				<div class="col-md-2">
 					<label class="form-label form-label-sm">Status</label>
 					<select name="status" class="form-select form-select-sm">
 						<option value="All" {{ $status=='All'?'selected':'' }}>All</option>
@@ -75,8 +75,22 @@
 						<option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
 					</select>
 				</div>
+				<div class="col-md-2">
+					<label class="form-label form-label-sm">Export Status</label>
+					<select name="export_status" class="form-select form-select-sm">
+						<option value="All">All</option>
+						<option value="exported"
+							{{ request('export_status')=='exported'?'selected':'' }}>
+							Exported
+						</option>
+						<option value="not_exported"
+							{{ request('export_status')=='not_exported'?'selected':'' }}>
+							Not Exported
+						</option>
+					</select>
+				</div>
 
-				<div class="col-md-3 d-flex gap-2">
+				<div class="col-md-2 d-flex gap-2">
 					<button type="submit"
 						class="btn btn-sm btn-primary w-50">
 						Generate
