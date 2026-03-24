@@ -358,7 +358,7 @@ class HomeController extends Controller
                 case 'Pending HR Verification':
 
                     $ageDays = $requisition->submission_date
-                        ? floor(now()->floatDiffInDays($requisition->submission_date, false))
+                        ? floor(now()->floatDiffInDays($requisition->submission_date))
                         : 0;
 
                     break;
@@ -367,7 +367,7 @@ class HomeController extends Controller
                 case 'Pending Approval':
 
                    $ageDays = $requisition->hr_verification_date
-                    ? floor(now()->floatDiffInDays($requisition->hr_verification_date, false))
+                    ? floor(now()->floatDiffInDays($requisition->hr_verification_date))
                     : 0;
 
                     break;
@@ -376,7 +376,7 @@ class HomeController extends Controller
                 case 'Approved':
 
                     $ageDays = $requisition->approval_date
-                        ? floor(now()->floatDiffInDays($requisition->approval_date, false))
+                        ? floor(now()->floatDiffInDays($requisition->approval_date))
                         : 0;
 
                     break;
