@@ -25,6 +25,8 @@ use App\Http\Controllers\HierarchyController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\PaymentWorkflowController;
+use App\Http\Controllers\EmailLogController;
+
 
 
 
@@ -329,6 +331,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/get-districts-by-state', [LocationController::class, 'getDistricts']);
     Route::get('/get-cities-by-district', [LocationController::class, 'getCities']);
+    Route::get('/email-logs', [EmailLogController::class, 'index'])->name('email.logs.index');
 });
 
 Route::prefix('focus')->name('focus.')->middleware('auth')->group(function () {

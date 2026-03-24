@@ -198,6 +198,14 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                         <span>Control</span>
                     </a>
                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('email.logs.*')"
+                    href="{{ route('email.logs.index') }}">
+                        <i class="ri-mail-line"></i>
+                        <span>Email Logs</span>
+                    </a>
+                </li>
                 @endif
 
                 {{--<li class="nav-item">
