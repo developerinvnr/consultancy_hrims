@@ -358,7 +358,7 @@ class HomeController extends Controller
                 case 'Pending HR Verification':
 
                     $ageDays = $requisition->submission_date
-                        ? floor(now()->floatDiffInDays($requisition->submission_date))
+                        ? max(0, floor(now()->floatDiffInDays($requisition->submission_date)))
                         : 0;
 
                     break;
@@ -367,7 +367,7 @@ class HomeController extends Controller
                 case 'Pending Approval':
 
                    $ageDays = $requisition->hr_verification_date
-                    ? floor(now()->floatDiffInDays($requisition->hr_verification_date))
+                    ? max(0,floor(now()->floatDiffInDays($requisition->hr_verification_date)))
                     : 0;
 
                     break;
@@ -376,7 +376,7 @@ class HomeController extends Controller
                 case 'Approved':
 
                     $ageDays = $requisition->approval_date
-                        ? floor(now()->floatDiffInDays($requisition->approval_date))
+                        ? max(0,floor(now()->floatDiffInDays($requisition->approval_date)))
                         : 0;
 
                     break;
@@ -390,9 +390,9 @@ class HomeController extends Controller
 
                             case 'Agreement Pending':
 
-                                $ageDays = floor(now()->floatDiffInDays(
+                                $ageDays = max(0,floor(now()->floatDiffInDays(
                                     $requisition->candidate->created_at
-                                ));
+                                )));
 
                                 break;
 
@@ -405,7 +405,7 @@ class HomeController extends Controller
                                     ->first();
 
                                 $ageDays = $unsignedDoc
-                                    ? floor(now()->floatDiffInDays($unsignedDoc->created_at))
+                                    ? max(0,floor(now()->floatDiffInDays($unsignedDoc->created_at)))
                                     : 0;
 
                                 break;
@@ -419,7 +419,7 @@ class HomeController extends Controller
                                     ->first();
 
                                 $ageDays = $signedDoc
-                                    ? floor(now()->floatDiffInDays($signedDoc->created_at))
+                                    ? max(0,floor(now()->floatDiffInDays($signedDoc->created_at)))
                                     : 0;
 
                                 break;
@@ -430,9 +430,9 @@ class HomeController extends Controller
             // courier stage ageing (override if applicable)
 
            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-                $ageDays = floor(now()->floatDiffInDays(
+                $ageDays = max(0,floor(now()->floatDiffInDays(
                     $requisition->courier_details->dispatch_date
-                ));
+                )));
             }
 
 
