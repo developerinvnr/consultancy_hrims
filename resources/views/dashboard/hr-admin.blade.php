@@ -256,12 +256,14 @@
 							<thead class="sticky-top bg-white">
 								<tr>
 									<th class="fs-11">ID</th>
+									<th>Priority</th>
 									<th class="fs-11">Candidate</th>
 									<th class="fs-11">Email</th>
 									<th class="fs-11">Type</th>
 									<th class="fs-11">Reporting Manager</th>
 									<th class="fs-11">Approver</th>
 									<th class="fs-11">Status</th>
+									<th>Ageing</th>
 									<th class="fs-11">Remark</th>
 									<th class="fs-11">Courier Status</th>
 									<th class="fs-11">Date</th>
@@ -284,6 +286,11 @@
 								<tr>
 									<td class="fs-11">
 										<span class="badge bg-secondary fs-10">{{ $req->request_code }}</span>
+									</td>
+									<td>
+										<span class="badge bg-{{ $req->priority_color }}">
+										{{ $req->priority_label }}
+										</span>
 									</td>
 									<td class="fs-11">
 										{{ $req->candidate_name }}
@@ -407,6 +414,12 @@
 										@endswitch
 
 										@endif
+									</td>
+
+									<td>
+											<span class="fw-bold text-{{ $req->priority_color }}">
+											{{ $req->ageing_days }}d
+											</span>
 									</td>
 
 									<!-- REMARK COLUMN -->

@@ -151,11 +151,6 @@ class HomeController extends Controller
 
                 break;
 
-            default:
-
-                $query->latest();
-
-                break;
         }
 
         // Apply status filter
@@ -335,7 +330,7 @@ class HomeController extends Controller
 
         // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
         foreach ($recent_requisitions as $requisition) {
-            if ($requisition->candidate) {
+              if ($requisition->candidate) {
                 // Get signed agreement
                 $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
                     ->where('document_type', 'agreement')
@@ -356,7 +351,121 @@ class HomeController extends Controller
                     $requisition->courier_details = null;
                 }
             }
+            $ageDays = 0;
+
+            switch ($requisition->status) {
+
+                case 'Pending HR Verification':
+
+                    $ageDays = $requisition->submission_date
+                        ? floor(now()->floatDiffInDays($requisition->submission_date, false))
+                        : 0;
+
+                    break;
+
+
+                case 'Pending Approval':
+
+                   $ageDays = $requisition->hr_verification_date
+                    ? floor(now()->floatDiffInDays($requisition->hr_verification_date, false))
+                    : 0;
+
+                    break;
+
+
+                case 'Approved':
+
+                    $ageDays = $requisition->approval_date
+                        ? floor(now()->floatDiffInDays($requisition->approval_date, false))
+                        : 0;
+
+                    break;
+
+
+                default:
+
+                    if ($requisition->candidate) {
+
+                        switch ($requisition->candidate->candidate_status) {
+
+                            case 'Agreement Pending':
+
+                                $ageDays = floor(now()->floatDiffInDays(
+                                    $requisition->candidate->created_at
+                                ));
+
+                                break;
+
+
+                            case 'Unsigned Agreement Created':
+
+                                $unsignedDoc = $requisition->candidate
+                                    ->unsignedAgreements()
+                                    ->latest()
+                                    ->first();
+
+                                $ageDays = $unsignedDoc
+                                    ? floor(now()->floatDiffInDays($unsignedDoc->created_at))
+                                    : 0;
+
+                                break;
+
+
+                            case 'Signed Agreement Uploaded':
+
+                                $signedDoc = $requisition->candidate
+                                    ->signedAgreements()
+                                    ->latest()
+                                    ->first();
+
+                                $ageDays = $signedDoc
+                                    ? floor(now()->floatDiffInDays($signedDoc->created_at))
+                                    : 0;
+
+                                break;
+                        }
+                    }
+            }
+
+            // courier stage ageing (override if applicable)
+
+           if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                $ageDays = floor(now()->floatDiffInDays(
+                    $requisition->courier_details->dispatch_date
+                ));
+            }
+
+
+            // attach ageing
+
+            $requisition->ageing_days = $ageDays;
+
+
+            // priority classification
+
+            if ($ageDays < 1) {
+
+                $requisition->priority_label = '🟢 Low';
+                $requisition->priority_color = 'success';
+            } elseif ($ageDays <= 2) {
+
+                $requisition->priority_label = '🟡 Medium';
+                $requisition->priority_color = 'warning';
+            } else {
+
+                $requisition->priority_label = '🔴 High';
+                $requisition->priority_color = 'danger';
+            }
+
+          
         }
+
+        $sortedCollection =
+            $recent_requisitions->getCollection()
+            ->sortByDesc('ageing_days')
+            ->values();
+
+            $recent_requisitions->setCollection($sortedCollection);
 
         // Status Distribution for Chart
         $stats['status_distribution'] = ManpowerRequisition::select('status', DB::raw('count(*) as count'))
@@ -392,9 +501,8 @@ class HomeController extends Controller
         ])->count();
 
         // Delayed Cases (> 3 days in same stage)
-        $attention['delayed_cases'] = DB::table('manpower_requisitions')
-            ->where('status', 'Pending Approval')
-            ->whereDate('submission_date', '<=', now()->subDays(2))
+        $attention['delayed_cases'] = collect($recent_requisitions)
+            ->where('ageing_days', '>', 2)
             ->count();
         $avgDelayDays = DB::table('manpower_requisitions')
             ->where('status', 'Pending Approval')
@@ -473,55 +581,58 @@ class HomeController extends Controller
 
         // Detect Bottleneck Stage
         $bottleneckStage = DB::selectOne("
-SELECT stage, AVG(days) avg_days
-FROM (
+            SELECT stage, AVG(days) avg_days
+            FROM (
 
-    SELECT 'Pending HR Verification' stage,
-    DATEDIFF(NOW(), submission_date) days
-    FROM manpower_requisitions
-    WHERE status='Pending HR Verification'
+                SELECT 'Pending HR Verification' stage,
+                DATEDIFF(NOW(), submission_date) days
+                FROM manpower_requisitions
+                WHERE status='Pending HR Verification'
 
-    UNION ALL
+                UNION ALL
 
-    SELECT 'Pending Approval',
-    DATEDIFF(NOW(), hr_verification_date)
-    FROM manpower_requisitions
-    WHERE status='Pending Approval'
+                SELECT 'Pending Approval',
+                DATEDIFF(NOW(), hr_verification_date)
+                FROM manpower_requisitions
+                WHERE status='Pending Approval'
 
-    UNION ALL
+                UNION ALL
 
-    SELECT 'Agreement Pending',
-    DATEDIFF(NOW(), cm.created_at)
-    FROM candidate_master cm
-    WHERE cm.candidate_status='Agreement Pending'
+                SELECT 'Agreement Pending',
+                DATEDIFF(NOW(), cm.created_at)
+                FROM candidate_master cm
+                WHERE cm.candidate_status='Agreement Pending'
 
-    UNION ALL
+                UNION ALL
 
-    SELECT 'Unsigned Agreement Created',
-    DATEDIFF(NOW(), ad.created_at)
-    FROM agreement_documents ad
-    WHERE ad.sign_status='UNSIGNED'
+                SELECT 'Unsigned Agreement Created',
+                DATEDIFF(NOW(), ad.created_at)
+                FROM agreement_documents ad
+                WHERE ad.sign_status='UNSIGNED'
 
-    UNION ALL
+                UNION ALL
 
-    SELECT 'Signed Agreement Uploaded',
-    DATEDIFF(NOW(), ad.created_at)
-    FROM agreement_documents ad
-    WHERE ad.sign_status='SIGNED'
+                SELECT 'Signed Agreement Uploaded',
+                DATEDIFF(NOW(), ad.created_at)
+                FROM agreement_documents ad
+                LEFT JOIN agreement_couriers ac
+                ON ac.agreement_document_id = ad.id
+                WHERE ad.sign_status='SIGNED'
+                AND ac.id IS NULL
 
-    UNION ALL
+                UNION ALL
 
-    SELECT 'Courier Pending',
-    DATEDIFF(NOW(), ac.dispatch_date)
-    FROM agreement_couriers ac
-    WHERE ac.received_date IS NULL
+                SELECT 'Courier Pending',
+                DATEDIFF(NOW(), ac.dispatch_date)
+                FROM agreement_couriers ac
+                WHERE ac.received_date IS NULL
 
-) stage_times
+            ) stage_times
 
-GROUP BY stage
-ORDER BY avg_days DESC
-LIMIT 1
-");
+            GROUP BY stage
+            ORDER BY avg_days DESC
+            LIMIT 1
+            ");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
