@@ -13,8 +13,9 @@ class LedgerController extends Controller
 	{
 		$tab = $request->get('tab', 'operative');
 
-		$query = CandidateMaster::query()->where('final_status', 'A');
-
+		$query = CandidateMaster::query()
+			->where('final_status', 'A')
+			->whereDate('contract_start_date', '>=', '2026-02-01');
 		// ✅ APPLY SAME FILTERS AS MASTER
 		if ($request->financial_year) {
 			[$startYear, $endYear] = explode('-', $request->financial_year);
@@ -204,8 +205,9 @@ class LedgerController extends Controller
 	{
 		$tab = $request->get('tab', 'created');
 
-		$query = CandidateMaster::query()->where('final_status', 'A');
-
+		$query = CandidateMaster::query()
+			->where('final_status', 'A')
+			->whereDate('contract_start_date', '>=', '2026-02-01');
 		// 🔹 SAME FILTERS
 		if ($request->financial_year) {
 			[$startYear, $endYear] = explode('-', $request->financial_year);
@@ -245,7 +247,7 @@ class LedgerController extends Controller
 			->groupBy('pan_no')
 			->pluck('id');
 
-		$records = CandidateMaster::whereIn('id', $panIds)
+		$records = CandidateMaster::whereIn('id', $panIds)->whereDate('contract_start_date', '>=', '2026-02-01')
 			->with([
 				'department',
 				'zoneRef',
