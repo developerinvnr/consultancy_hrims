@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+
 
 class CandidateMaster extends Model
 {
@@ -252,5 +254,35 @@ class CandidateMaster extends Model
     public function workLocation()
     {
         return $this->belongsTo(\App\Models\CoreCityVillage::class, 'work_location_id', 'id');
+    }
+
+    public function pendingAttendanceDates()
+    {
+        $attendance = \DB::table('attendance')
+            ->where('candidate_id', $this->id)
+            ->where('month', now()->month)
+            ->where('year', now()->year)
+            ->first();
+
+        if (!$attendance) {
+            return [];
+        }
+
+        $pendingDates = [];
+
+        for ($day = 1; $day <= now()->day; $day++) {
+
+            $column = 'A' . $day;
+
+            if (empty($attendance->$column)) {
+
+                $pendingDates[] = now()
+                    ->startOfMonth()
+                    ->addDays($day - 1)
+                    ->format('d M Y');
+            }
+        }
+
+        return $pendingDates;
     }
 }
