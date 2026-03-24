@@ -396,6 +396,27 @@ class HomeController extends Controller
             ->where('status', 'Pending Approval')
             ->whereDate('submission_date', '<=', now()->subDays(2))
             ->count();
+        $avgDelayDays = DB::table('manpower_requisitions')
+            ->where('status', 'Pending Approval')
+            ->whereNotNull('submission_date')
+            ->selectRaw('AVG(DATEDIFF(NOW(), submission_date)) as avg_days')
+            ->value('avg_days');
+
+        $avgDelayDays = round($avgDelayDays ?? 0, 1);
+
+        $attention['avg_delay_days'] = $avgDelayDays;
+
+        // Severity classification
+        if ($avgDelayDays < 1) {
+            $attention['delay_severity'] = '🟢 Low';
+            $attention['delay_color'] = 'success';
+        } elseif ($avgDelayDays <= 2) {
+            $attention['delay_severity'] = '🟡 Medium';
+            $attention['delay_color'] = 'warning';
+        } else {
+            $attention['delay_severity'] = '🔴 High';
+            $attention['delay_color'] = 'danger';
+        }
 
         // About to be delayed (2 days pending)
         $attention['about_to_delay'] = DB::table('manpower_requisitions')
@@ -451,19 +472,40 @@ class HomeController extends Controller
 
 
         // Detect Bottleneck Stage
-        $attention['bottleneck_stage'] = ManpowerRequisition::whereIn('status', [
-            'Pending HR Verification',
-            'Correction Required',
-            'Pending Approval',
-            'Agreement Pending',
-            'Unsigned Agreement Created',
-            'Signed Agreement Uploaded'
-        ])
-
-            ->select('status', DB::raw('count(*) as total'))
+        $bottleneckStage = DB::table('manpower_requisitions')
+            ->whereIn('status', [
+                'Pending HR Verification',
+                'Correction Required',
+                'Pending Approval',
+                'Agreement Pending',
+                'Unsigned Agreement Created',
+                'Signed Agreement Uploaded'
+            ])
+            ->whereNotNull('submission_date')
+            ->select(
+                'status',
+                DB::raw('AVG(DATEDIFF(NOW(), submission_date)) as avg_days')
+            )
             ->groupBy('status')
-            ->orderByDesc('total')
-            ->value('status') ?? 'N/A';
+            ->orderByDesc('avg_days')
+            ->first();
+
+        $attention['bottleneck_stage'] = $bottleneckStage->status ?? 'N/A';
+
+        $attention['bottleneck_avg_days'] = round(
+            $bottleneckStage->avg_days ?? 0,
+            1
+        );
+
+        $days = $attention['bottleneck_avg_days'];
+
+        if ($days < 1) {
+            $attention['bottleneck_color'] = 'success';
+        } elseif ($days <= 2) {
+            $attention['bottleneck_color'] = 'warning';
+        } else {
+            $attention['bottleneck_color'] = 'danger';
+        }
 
 
         $fyStart = now()->month >= 4
@@ -544,7 +586,7 @@ class HomeController extends Controller
             'rejected' => ManpowerRequisition::where('status', 'Rejected')->count()
         ];
 
-        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts', 'attention','joiningsChart'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
+        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts', 'attention', 'joiningsChart'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:

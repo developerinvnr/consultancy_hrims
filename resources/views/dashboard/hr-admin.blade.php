@@ -32,9 +32,9 @@
 
 						🔴 Delayed Cases
 
-						<span class="float-end fw-bold text-danger">
-							{{ $attention['delayed_cases'] }}
-						</span>
+						<small class="text-{{ $attention['delay_color'] }}">
+						({{ $attention['avg_delay_days'] }}d {{ $attention['delay_severity'] }})
+						</small>
 
 					</div>
 

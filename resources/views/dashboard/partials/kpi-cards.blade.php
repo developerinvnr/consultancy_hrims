@@ -1,4 +1,4 @@
-<div class="row g-3 mb-3">
+<div class="row g-2 mb-3">
 
 	<div class="col-md-6">
 		<div class="card shadow-sm border-0">
@@ -35,7 +35,7 @@
 			Contractual
 			<h6>
 				{{ $stats['active_by_type']['Contractual'] ?? 0 }}
-			</h7>
+				</h7>
 		</div>
 	</div>
 
@@ -71,8 +71,14 @@
 	<div class="col-md-6">
 		<div class="card border-0 shadow-sm text-center py-3 py-3 bg-light">
 			Bottleneck Stage
-			<span class="badge bg-danger">
+			<span class="badge bg-{{ $attention['bottleneck_color'] }}">
+
 				{{ $attention['bottleneck_stage'] }}
+
+				<small>
+					(Avg {{ $attention['bottleneck_avg_days'] }}d)
+				</small>
+
 			</span>
 		</div>
 	</div>
