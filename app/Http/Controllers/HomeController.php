@@ -150,7 +150,6 @@ class HomeController extends Controller
                 });
 
                 break;
-
         }
 
         // Apply status filter
@@ -330,7 +329,7 @@ class HomeController extends Controller
 
         // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
         foreach ($recent_requisitions as $requisition) {
-              if ($requisition->candidate) {
+            if ($requisition->candidate) {
                 // Get signed agreement
                 $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
                     ->where('document_type', 'agreement')
@@ -366,9 +365,9 @@ class HomeController extends Controller
 
                 case 'Pending Approval':
 
-                   $ageDays = $requisition->hr_verification_date
-                    ? max(0,floor(now()->floatDiffInDays($requisition->hr_verification_date)))
-                    : 0;
+                    $ageDays = $requisition->hr_verification_date
+                        ? max(0, floor(now()->floatDiffInDays($requisition->hr_verification_date)))
+                        : 0;
 
                     break;
 
@@ -376,7 +375,7 @@ class HomeController extends Controller
                 case 'Approved':
 
                     $ageDays = $requisition->approval_date
-                        ? max(0,floor(now()->floatDiffInDays($requisition->approval_date)))
+                        ? max(0, floor(now()->floatDiffInDays($requisition->approval_date)))
                         : 0;
 
                     break;
@@ -390,7 +389,7 @@ class HomeController extends Controller
 
                             case 'Agreement Pending':
 
-                                $ageDays = max(0,floor(now()->floatDiffInDays(
+                                $ageDays = max(0, floor(now()->floatDiffInDays(
                                     $requisition->candidate->created_at
                                 )));
 
@@ -405,7 +404,7 @@ class HomeController extends Controller
                                     ->first();
 
                                 $ageDays = $unsignedDoc
-                                    ? max(0,floor(now()->floatDiffInDays($unsignedDoc->created_at)))
+                                    ? max(0, floor(now()->floatDiffInDays($unsignedDoc->created_at)))
                                     : 0;
 
                                 break;
@@ -419,7 +418,7 @@ class HomeController extends Controller
                                     ->first();
 
                                 $ageDays = $signedDoc
-                                    ? max(0,floor(now()->floatDiffInDays($signedDoc->created_at)))
+                                    ? max(0, floor(now()->floatDiffInDays($signedDoc->created_at)))
                                     : 0;
 
                                 break;
@@ -429,8 +428,8 @@ class HomeController extends Controller
 
             // courier stage ageing (override if applicable)
 
-           if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-                $ageDays = max(0,floor(now()->floatDiffInDays(
+            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                $ageDays = max(0, floor(now()->floatDiffInDays(
                     $requisition->courier_details->dispatch_date
                 )));
             }
@@ -456,8 +455,6 @@ class HomeController extends Controller
                 $requisition->priority_label = '🔴 High';
                 $requisition->priority_color = 'danger';
             }
-
-          
         }
 
         $sortedCollection =
@@ -465,7 +462,7 @@ class HomeController extends Controller
             ->sortByDesc('ageing_days')
             ->values();
 
-            $recent_requisitions->setCollection($sortedCollection);
+        $recent_requisitions->setCollection($sortedCollection);
 
         // Status Distribution for Chart
         $stats['status_distribution'] = ManpowerRequisition::select('status', DB::raw('count(*) as count'))
@@ -573,6 +570,9 @@ class HomeController extends Controller
             ->whereNotNull('cm.contract_start_date')
             ->whereNotNull('mr.submission_date')
             ->whereRaw('cm.contract_start_date >= mr.submission_date')
+
+            ->where('mr.submission_date', '>=', '2025-03-01') // ✅ ADD THIS FILTER
+
             ->selectRaw('AVG(DATEDIFF(cm.contract_start_date, mr.submission_date)) as avg_days')
             ->value('avg_days');
 
@@ -581,58 +581,90 @@ class HomeController extends Controller
 
         // Detect Bottleneck Stage
         $bottleneckStage = DB::selectOne("
-            SELECT stage, AVG(days) avg_days
-            FROM (
+SELECT stage, AVG(days) avg_days
+FROM (
 
-                SELECT 'Pending HR Verification' stage,
-                DATEDIFF(NOW(), submission_date) days
-                FROM manpower_requisitions
-                WHERE status='Pending HR Verification'
+    SELECT 'Pending HR Verification' stage,
+    DATEDIFF(NOW(), submission_date) days
+    FROM manpower_requisitions
+    WHERE status = 'Pending HR Verification'
+    AND submission_date >= '2025-03-01'
 
-                UNION ALL
 
-                SELECT 'Pending Approval',
-                DATEDIFF(NOW(), hr_verification_date)
-                FROM manpower_requisitions
-                WHERE status='Pending Approval'
+    UNION ALL
 
-                UNION ALL
 
-                SELECT 'Agreement Pending',
-                DATEDIFF(NOW(), cm.created_at)
-                FROM candidate_master cm
-                WHERE cm.candidate_status='Agreement Pending'
+    SELECT 'Pending Approval',
+    DATEDIFF(NOW(), hr_verification_date)
+    FROM manpower_requisitions
+    WHERE status = 'Pending Approval'
+    AND submission_date >= '2025-03-01'
 
-                UNION ALL
 
-                SELECT 'Unsigned Agreement Created',
-                DATEDIFF(NOW(), ad.created_at)
-                FROM agreement_documents ad
-                WHERE ad.sign_status='UNSIGNED'
+    UNION ALL
 
-                UNION ALL
 
-                SELECT 'Signed Agreement Uploaded',
-                DATEDIFF(NOW(), ad.created_at)
-                FROM agreement_documents ad
-                LEFT JOIN agreement_couriers ac
-                ON ac.agreement_document_id = ad.id
-                WHERE ad.sign_status='SIGNED'
-                AND ac.id IS NULL
+    SELECT 'Agreement Pending',
+    DATEDIFF(NOW(), cm.created_at)
+    FROM candidate_master cm
+    JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+    WHERE cm.candidate_status = 'Agreement Pending'
+    AND mr.submission_date >= '2025-03-01'
 
-                UNION ALL
 
-                SELECT 'Courier Pending',
-                DATEDIFF(NOW(), ac.dispatch_date)
-                FROM agreement_couriers ac
-                WHERE ac.received_date IS NULL
+    UNION ALL
 
-            ) stage_times
 
-            GROUP BY stage
-            ORDER BY avg_days DESC
-            LIMIT 1
-            ");
+    SELECT 'Unsigned Agreement Created',
+    DATEDIFF(NOW(), ad.created_at)
+    FROM agreement_documents ad
+    JOIN candidate_master cm
+        ON cm.id = ad.candidate_id
+    JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+    WHERE ad.sign_status = 'UNSIGNED'
+    AND mr.submission_date >= '2025-03-01'
+
+
+    UNION ALL
+
+
+    SELECT 'Signed Agreement Uploaded',
+    DATEDIFF(NOW(), ad.created_at)
+    FROM agreement_documents ad
+    JOIN candidate_master cm
+        ON cm.id = ad.candidate_id
+    JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+    LEFT JOIN agreement_couriers ac
+        ON ac.agreement_document_id = ad.id
+    WHERE ad.sign_status = 'SIGNED'
+    AND ac.id IS NULL
+    AND mr.submission_date >= '2025-03-01'
+
+
+    UNION ALL
+
+
+    SELECT 'Courier Pending',
+    DATEDIFF(NOW(), ac.dispatch_date)
+    FROM agreement_couriers ac
+    JOIN agreement_documents ad
+        ON ad.id = ac.agreement_document_id
+    JOIN candidate_master cm
+        ON cm.id = ad.candidate_id
+    JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+    WHERE ac.received_date IS NULL
+    AND mr.submission_date >= '2025-03-01'
+
+) stage_times
+
+GROUP BY stage
+ORDER BY avg_days DESC
+LIMIT 1
+");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
