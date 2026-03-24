@@ -43,7 +43,7 @@ class HomeController extends Controller
         $expTab = $request->get('exp_tab', 'exp30');
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
-        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy','currentApprover']);
+        $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy', 'currentApprover']);
 
         switch ($reqTab) {
 
@@ -375,6 +375,113 @@ class HomeController extends Controller
 
         $today = Carbon::today();
 
+        // =============================
+        // ATTENTION PANEL STATS
+        // =============================
+
+        $attention = [];
+
+        // Active Candidates
+        $attention['active'] = CandidateMaster::where('candidate_status', 'Active')->count();
+
+        // In Process Candidates
+        $attention['in_process'] = CandidateMaster::whereIn('candidate_status', [
+            'Agreement Pending',
+            'Unsigned Agreement Created',
+            'Signed Agreement Uploaded'
+        ])->count();
+
+        // Delayed Cases (> 3 days in same stage)
+        $attention['delayed_cases'] = DB::table('manpower_requisitions')
+            ->where('status', 'Pending Approval')
+            ->whereDate('submission_date', '<=', now()->subDays(2))
+            ->count();
+
+        // About to be delayed (2 days pending)
+        $attention['about_to_delay'] = DB::table('manpower_requisitions')
+            ->where('status', 'Pending Approval')
+            ->whereBetween('submission_date', [
+                now()->subDays(2),
+                now()->subDay()
+            ])
+            ->count();
+
+
+        // Agreement Not Signed
+        $attention['agreement_not_signed'] = CandidateMaster::where(
+            'candidate_status',
+            'Unsigned Agreement Created'
+        )->count();
+
+
+        // Courier Pending
+        $attention['courier_pending'] = ManpowerRequisition::whereHas(
+            'candidate.signedAgreements.courierDetails',
+            fn($q) => $q->whereNull('received_date')
+        )->count();
+
+
+        // Contracts expiring soon
+        $attention['expiring_3_days'] = CandidateMaster::whereBetween(
+            'contract_end_date',
+            [now(), now()->addDays(3)]
+        )->count();
+
+        $attention['expiring_5_days'] = CandidateMaster::whereBetween(
+            'contract_end_date',
+            [now(), now()->addDays(5)]
+        )->count();
+
+        $attention['expiring_7_days'] = CandidateMaster::whereBetween(
+            'contract_end_date',
+            [now(), now()->addDays(7)]
+        )->count();
+
+
+        // Avg Req → Active Time
+        $avgActiveTime = DB::table('candidate_master as cm')
+            ->join('manpower_requisitions as mr', 'cm.requisition_id', '=', 'mr.id')
+            ->whereNotNull('cm.contract_start_date')
+            ->whereNotNull('mr.submission_date')
+            ->whereRaw('cm.contract_start_date >= mr.submission_date')
+            ->selectRaw('AVG(DATEDIFF(cm.contract_start_date, mr.submission_date)) as avg_days')
+            ->value('avg_days');
+
+        $attention['avg_req_to_active'] = round($avgActiveTime ?? 0, 1);
+
+
+        // Detect Bottleneck Stage
+        $attention['bottleneck_stage'] = ManpowerRequisition::whereIn('status', [
+            'Pending HR Verification',
+            'Correction Required',
+            'Pending Approval',
+            'Agreement Pending',
+            'Unsigned Agreement Created',
+            'Signed Agreement Uploaded'
+        ])
+
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->orderByDesc('total')
+            ->value('status') ?? 'N/A';
+
+
+        $fyStart = now()->month >= 4
+            ? now()->year . '-04-01'
+            : (now()->year - 1) . '-04-01';
+
+        $fyEnd = now()->month >= 4
+            ? (now()->year + 1) . '-03-31'
+            : now()->year . '-03-31';
+
+
+        $joiningsChart = DB::table('candidate_master')
+            ->selectRaw('MONTH(contract_start_date) as month, COUNT(*) as total')
+            ->whereNotNull('contract_start_date')
+            ->whereBetween('contract_start_date', [$fyStart, $fyEnd])
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
         $expiry = [
 
             'lt_30_days' => CandidateMaster::whereNotNull('contract_end_date')
@@ -437,7 +544,7 @@ class HomeController extends Controller
             'rejected' => ManpowerRequisition::where('status', 'Rejected')->count()
         ];
 
-        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
+        return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts', 'attention','joiningsChart'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
 
     // ADD THIS HELPER METHOD TO YOUR CONTROLLER:
