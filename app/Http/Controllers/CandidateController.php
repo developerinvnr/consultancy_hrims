@@ -60,25 +60,49 @@ class CandidateController extends Controller
         $panData = PanVerificationService::verify($request->pan_no);
 
         if (!$panData) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'PAN verification failed'
             ]);
         }
 
-        // Update candidate table
-        CandidateMaster::where('id', $request->candidate_id)
-            ->update([
-                'pan_status_2' => $panData['individual_tax_compliance_status'] ?? null,
-                'pan_verification_status' => $panData['is_valid'] ? 'Valid' : 'Invalid',
-                'pan_aadhaar_link_status' => $panData['aadhaar_seeding_status'] ?? null,
+        $panStatus = $panData['individual_tax_compliance_status'] ?? null;
+        $panValidStatus = ($panData['is_valid'] ?? false) ? 'Valid' : 'Invalid';
+        $aadhaarStatus = $panData['aadhaar_seeding_status'] ?? null;
+
+
+        // ✅ update candidate_master
+        $candidate = CandidateMaster::find($request->candidate_id);
+
+        if (!$candidate) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Candidate not found'
             ]);
+        }
+
+        $candidate->update([
+            'pan_status_2' => $panStatus,
+            'pan_verification_status' => $panValidStatus,
+            'pan_aadhaar_link_status' => $aadhaarStatus
+        ]);
+
+
+        // ✅ update manpower_requisitions using requisition_id
+        if ($candidate->requisition_id) {
+
+            ManpowerRequisition::where('id', $candidate->requisition_id)
+                ->update([
+                    'pan_status_2' => $panStatus,
+                    'pan_verification_status' => $panValidStatus,
+                    'pan_aadhaar_link_status' => $aadhaarStatus
+                ]);
+        }
 
         return response()->json([
             'success' => true,
-            'pan_status' => $panData['individual_tax_compliance_status'] ?? null,
-            'aadhaar_status' => $panData['aadhaar_seeding_status'] ?? null
+            'pan_status' => $panStatus,
+            'aadhaar_status' => $aadhaarStatus
         ]);
     }
 }
