@@ -15,7 +15,7 @@
 		</div>
 	</div>
 
-	<div class="row mb-2">
+	<div class="row mb-1">
 
 		<!-- LEFT SIDE ATTENTION PANEL (1/3 WIDTH) -->
 		<div class="col-lg-4">
@@ -125,7 +125,7 @@
 
 	<div class="row">
 		<!-- JOININGS CHART -->
-			<div class="card border-0 shadow-sm mt-3">
+			<div class="card border-0 shadow-sm mt-1">
 				<div class="card-body">
 					<h6 class="mb-2">
 						📊 Month-wise Joinings (Financial Year)
