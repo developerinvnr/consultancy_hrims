@@ -581,90 +581,117 @@ class HomeController extends Controller
 
         // Detect Bottleneck Stage
         $bottleneckStage = DB::selectOne("
-SELECT stage, AVG(days) avg_days
-FROM (
+            SELECT stage, AVG(days) avg_days
+            FROM (
 
-    SELECT 'Pending HR Verification' stage,
-    DATEDIFF(NOW(), submission_date) days
-    FROM manpower_requisitions
-    WHERE status = 'Pending HR Verification'
-    AND submission_date >= '2025-03-01'
+                /* Pending HR Verification */
 
-
-    UNION ALL
-
-
-    SELECT 'Pending Approval',
-    DATEDIFF(NOW(), hr_verification_date)
-    FROM manpower_requisitions
-    WHERE status = 'Pending Approval'
-    AND submission_date >= '2025-03-01'
+                SELECT 'Pending HR Verification' stage,
+                DATEDIFF(NOW(), submission_date) days
+                FROM manpower_requisitions
+                WHERE status = 'Pending HR Verification'
+                AND submission_date >= '2025-03-01'
 
 
-    UNION ALL
+                UNION ALL
 
 
-    SELECT 'Agreement Pending',
-    DATEDIFF(NOW(), cm.created_at)
-    FROM candidate_master cm
-    JOIN manpower_requisitions mr
-        ON mr.id = cm.requisition_id
-    WHERE cm.candidate_status = 'Agreement Pending'
-    AND mr.submission_date >= '2025-03-01'
+                /* Pending Approval */
+
+                SELECT 'Pending Approval',
+                DATEDIFF(NOW(), hr_verification_date)
+                FROM manpower_requisitions
+                WHERE status = 'Pending Approval'
+                AND submission_date >= '2025-03-01'
 
 
-    UNION ALL
+                UNION ALL
 
 
-    SELECT 'Unsigned Agreement Created',
-    DATEDIFF(NOW(), ad.created_at)
-    FROM agreement_documents ad
-    JOIN candidate_master cm
-        ON cm.id = ad.candidate_id
-    JOIN manpower_requisitions mr
-        ON mr.id = cm.requisition_id
-    WHERE ad.sign_status = 'UNSIGNED'
-    AND mr.submission_date >= '2025-03-01'
+                /* Agreement Pending */
+
+                SELECT 'Agreement Pending',
+                DATEDIFF(NOW(), cm.created_at)
+                FROM candidate_master cm
+                JOIN manpower_requisitions mr
+                    ON mr.id = cm.requisition_id
+                WHERE cm.candidate_status = 'Agreement Pending'
+                AND mr.submission_date >= '2025-03-01'
 
 
-    UNION ALL
+                UNION ALL
 
 
-    SELECT 'Signed Agreement Uploaded',
-    DATEDIFF(NOW(), ad.created_at)
-    FROM agreement_documents ad
-    JOIN candidate_master cm
-        ON cm.id = ad.candidate_id
-    JOIN manpower_requisitions mr
-        ON mr.id = cm.requisition_id
-    LEFT JOIN agreement_couriers ac
-        ON ac.agreement_document_id = ad.id
-    WHERE ad.sign_status = 'SIGNED'
-    AND ac.id IS NULL
-    AND mr.submission_date >= '2025-03-01'
+                /* Unsigned Agreement Created (latest agreement only per candidate) */
+
+                SELECT 'Unsigned Agreement Created',
+                DATEDIFF(NOW(), ad.created_at)
+                FROM (
+                    SELECT candidate_id, MAX(id) id
+                    FROM agreement_documents
+                    WHERE sign_status = 'UNSIGNED'
+                    GROUP BY candidate_id
+                ) latest_ad
+                JOIN agreement_documents ad
+                    ON ad.id = latest_ad.id
+                JOIN candidate_master cm
+                    ON cm.id = ad.candidate_id
+                JOIN manpower_requisitions mr
+                    ON mr.id = cm.requisition_id
+                WHERE cm.candidate_status = 'Unsigned Agreement Created'
+                AND mr.submission_date >= '2025-03-01'
 
 
-    UNION ALL
+                UNION ALL
 
 
-    SELECT 'Courier Pending',
-    DATEDIFF(NOW(), ac.dispatch_date)
-    FROM agreement_couriers ac
-    JOIN agreement_documents ad
-        ON ad.id = ac.agreement_document_id
-    JOIN candidate_master cm
-        ON cm.id = ad.candidate_id
-    JOIN manpower_requisitions mr
-        ON mr.id = cm.requisition_id
-    WHERE ac.received_date IS NULL
-    AND mr.submission_date >= '2025-03-01'
+                /* Signed Agreement Uploaded but courier not dispatched */
 
-) stage_times
+                SELECT 'Signed Agreement Uploaded',
+                DATEDIFF(NOW(), ad.created_at)
+                FROM (
+                    SELECT candidate_id, MAX(id) id
+                    FROM agreement_documents
+                    WHERE sign_status = 'SIGNED'
+                    GROUP BY candidate_id
+                ) latest_signed
+                JOIN agreement_documents ad
+                    ON ad.id = latest_signed.id
+                JOIN candidate_master cm
+                    ON cm.id = ad.candidate_id
+                JOIN manpower_requisitions mr
+                    ON mr.id = cm.requisition_id
+                LEFT JOIN agreement_couriers ac
+                    ON ac.agreement_document_id = ad.id
+                WHERE cm.candidate_status = 'Signed Agreement Uploaded'
+                AND ac.id IS NULL
+                AND mr.submission_date >= '2025-03-01'
 
-GROUP BY stage
-ORDER BY avg_days DESC
-LIMIT 1
-");
+
+                UNION ALL
+
+
+                /* Courier dispatched but not received */
+
+                SELECT 'Courier Pending',
+                DATEDIFF(NOW(), ac.dispatch_date)
+                FROM agreement_couriers ac
+                JOIN agreement_documents ad
+                    ON ad.id = ac.agreement_document_id
+                JOIN candidate_master cm
+                    ON cm.id = ad.candidate_id
+                JOIN manpower_requisitions mr
+                    ON mr.id = cm.requisition_id
+                WHERE ac.received_date IS NULL
+                AND mr.submission_date >= '2025-03-01'
+
+
+            ) stage_times
+
+            GROUP BY stage
+            ORDER BY avg_days DESC
+            LIMIT 1
+            ");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
