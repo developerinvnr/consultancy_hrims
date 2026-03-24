@@ -472,7 +472,7 @@ class HomeController extends Controller
 
 
         // Detect Bottleneck Stage
-       $bottleneckStage = DB::selectOne("
+        $bottleneckStage = DB::selectOne("
 SELECT stage, AVG(days) avg_days
 FROM (
 
@@ -525,8 +525,8 @@ LIMIT 1
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
-$attention['bottleneck_avg_days'] =
-    round($bottleneckStage->avg_days ?? 0, 1);
+        $attention['bottleneck_avg_days'] =
+            round($bottleneckStage->avg_days ?? 0, 1);
 
         $days = $attention['bottleneck_avg_days'];
 

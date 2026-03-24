@@ -16,14 +16,14 @@
 		<div class="card shadow-sm border-0">
 			<div class="card-body text-center py-2 bg-light">
 				In Process
-				<h3>
+				<h5>
 					{{ $attention['in_process'] }}
 					@if($attention['delayed_cases'])
 					<span class="text-danger">
 						(🔴 {{ $attention['delayed_cases'] }} Delayed)
 					</span>
 					@endif
-				</h3>
+				</h5>
 			</div>
 		</div>
 	</div>
@@ -35,7 +35,7 @@
 			Contractual
 			<h6>
 				{{ $stats['active_by_type']['Contractual'] ?? 0 }}
-				</h7>
+			</h6>
 		</div>
 	</div>
 
