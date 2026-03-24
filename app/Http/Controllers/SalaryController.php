@@ -1192,6 +1192,12 @@ class SalaryController extends Controller
                 ->where('payment_status', 'pending');
         }
 
+         if ($request->filled('requisition_type') && $request->requisition_type !== 'All') {
+            $query->whereHas('candidate', function ($q) use ($request) {
+                $q->where('requisition_type', $request->requisition_type);
+            });
+        }
+
         $records = $query->get();
 
         foreach ($records as $r) {

@@ -15,6 +15,16 @@
 				</div>
 
 				<div class="col-md-3">
+					<label class="form-label">Requisition Type</label>
+					<select id="requisitionType" class="form-control">
+						<option value="All">All</option>
+						<option value="Contractual">Contractual</option>
+						<option value="CB">CB</option>
+						<option value="TFA">TFA</option>
+					</select>
+				</div>
+
+				<div class="col-md-3">
 					<button id="releaseBtn" class="btn btn-success btn-sm" onclick="releaseSelected()">
 						Release Selected
 					</button>
@@ -161,6 +171,10 @@
 
 	});
 
+	$('#requisitionType').change(function() {
+		loadReview();
+	});
+
 
 	$('.nav-link').click(function() {
 
@@ -195,11 +209,13 @@
 			$('#selectAll').hide();
 		}
 		if (!currentMonth) return;
+		let requisitionType = $('#requisitionType').val(); 
 		$.post("{{route('salary.hr.review.list')}}", {
 			_token: '{{csrf_token()}}',
 			month: currentMonth,
 			year: currentYear,
-			type: currentTab
+			type: currentTab,
+			requisition_type: requisitionType
 		}, function(data) {
 			renderTable(data);
 		});
@@ -301,8 +317,8 @@
 
 				<td>${paidDays}</td>
 				<td class="${extraClass}">₹ ${Number(extra).toLocaleString('en-IN')}</td>
-<td class="${deductionClass}">₹ ${Number(deduction).toLocaleString('en-IN')}</td>
-<td class="${arrearClass}">₹ ${Number(arrear).toLocaleString('en-IN')}</td>
+				<td class="${deductionClass}">₹ ${Number(deduction).toLocaleString('en-IN')}</td>
+				<td class="${arrearClass}">₹ ${Number(arrear).toLocaleString('en-IN')}</td>
 
 				<td>₹ ${finalPay.toLocaleString('en-IN')}</td>
 				<td>${agreement}</td>
