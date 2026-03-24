@@ -191,6 +191,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/agreement/{requisition}/courier-details/{agreement}',[SubmitterController::class, 'showCourierForm'])->name('agreement.courier-details');
 
         Route::post('/agreement/{requisition}/courier-details/{agreement}',[SubmitterController::class, 'saveCourierDetails'])->name('agreement.save-courier-details');
+      
     });
 });
 
@@ -296,6 +297,7 @@ Route::middleware(['auth'])->group(function () {
         '/candidate/{candidate}/deactivate',
         [CandidateController::class, 'deactivate']
     )->name('candidate.deactivate');
+    Route::post('/hrverify-pan', [CandidateController::class, 'verifyPan'])->name('hrverify.pan');
 
     Route::post('/hierarchy/zone-by-bu', [HierarchyController::class, 'getZoneByBU'])->name('hierarchy.zone.by.bu');
     Route::post('/hierarchy/region-by-zone', [HierarchyController::class, 'getRegionByZone'])->name('hierarchy.region.by.zone');

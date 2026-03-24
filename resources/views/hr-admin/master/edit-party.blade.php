@@ -13,7 +13,7 @@
                         Edit Party: {{ $candidate->candidate_name }} ({{ $candidate->candidate_code }})
                     </h3>
                     <div class="card-tools">
-                        <a  href="{{ url()->previous() }}"
+                        <a href="{{ url()->previous() }}"
                             class="btn btn-sm btn-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Master
                         </a>
@@ -112,43 +112,130 @@
 @endsection
 @push('scripts')
 <script>
-$(document).ready(function () {
+    $(document).ready(function() {
 
-    console.log("Script Loaded");
+        console.log("Script Loaded");
 
-    // Get active tab inside THIS form only
-    let activePane = $('#editPartyForm .tab-pane.active');
+        // Get active tab inside THIS form only
+        let activePane = $('#editPartyForm .tab-pane.active');
 
-    if (activePane.length) {
-        $('#active_tab').val(activePane.attr('id'));
-        console.log("Initial tab:", activePane.attr('id'));
-    }
+        if (activePane.length) {
+            $('#active_tab').val(activePane.attr('id'));
+            console.log("Initial tab:", activePane.attr('id'));
+        }
 
-    // When tab changes (Bootstrap 5)
-    $('#editPartyTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-        let tabId = $(e.target).attr('href').replace('#', '');
-        $('#active_tab').val(tabId);
-        console.log("Tab switched to:", tabId);
+        // When tab changes (Bootstrap 5)
+        $('#editPartyTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            let tabId = $(e.target).attr('href').replace('#', '');
+            $('#active_tab').val(tabId);
+            console.log("Tab switched to:", tabId);
+        });
+
     });
+</script>
 
-});
+<script>
+    $(document).ready(function() {
+
+        let panStatus2 = "{{ $candidate->pan_status_2 }}";
+        let originalPan = "{{ $candidate->pan_no }}";
+        let candidateId = "{{ $candidate->id }}";
+
+        $('#pan_no').on('keyup', function() {
+
+            let pan = $(this).val().trim();
+
+            if (pan.length !== 10) {
+                return;
+            }
+
+            // Skip API if already Operative
+            if (pan === originalPan && panStatus2 === 'Operative') {
+                return;
+            }
+
+            $('#pan_status_badge').html(
+                '<span class="badge bg-info">Checking...</span>'
+            );
+
+
+            $.ajax({
+
+                url: "{{ route('hrverify.pan') }}",
+                type: "POST",
+
+                data: {
+                    pan_no: pan,
+                    candidate_id: candidateId,
+                    _token: "{{ csrf_token() }}"
+                },
+
+                success: function(response) {
+
+                    if (response.success) {
+
+                        panStatus2 = response.pan_status;
+                        originalPan = pan;
+
+                        $('#pan_status_2').val(response.pan_status);
+
+                        updatePanBadge(response.pan_status);
+
+                    } else {
+
+                        $('#pan_status_badge').html(
+                            '<span class="badge bg-danger">Verification Failed</span>'
+                        );
+
+                    }
+
+                }
+
+            });
+
+        });
+
+
+        function updatePanBadge(status) {
+
+            if (status === 'Operative') {
+
+                $('#pan_status_badge').html(
+                    '<span class="badge bg-success">✔ Operative</span>'
+                );
+
+            } else if (status === 'Inoperative') {
+
+                $('#pan_status_badge').html(
+                    '<span class="badge bg-danger">✖ Inoperative</span>'
+                );
+
+            } else {
+
+                $('#pan_status_badge').html(
+                    '<span class="badge bg-warning">' + status + '</span>'
+                );
+
+            }
+
+        }
+
+    });
 </script>
 
 @if ($errors->any())
 <script>
-document.addEventListener("DOMContentLoaded", function(){
-    var oldTab = "{{ old('active_tab') }}";
+    document.addEventListener("DOMContentLoaded", function() {
+        var oldTab = "{{ old('active_tab') }}";
 
-    if(oldTab){
-        var triggerEl = document.querySelector('#editPartyTabs a[href="#'+oldTab+'"]');
-        if(triggerEl){
-            var tab = new bootstrap.Tab(triggerEl);
-            tab.show();
+        if (oldTab) {
+            var triggerEl = document.querySelector('#editPartyTabs a[href="#' + oldTab + '"]');
+            if (triggerEl) {
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
         }
-    }
-});
+    });
 </script>
 @endif
 @endpush
-
-

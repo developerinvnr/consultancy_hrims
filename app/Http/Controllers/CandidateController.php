@@ -7,6 +7,7 @@ use App\Models\ManpowerRequisition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\PanVerificationService;
 
 class CandidateController extends Controller
 {
@@ -34,7 +35,7 @@ class CandidateController extends Controller
                 'last_working_date' => $request->last_working_date,
                 'candidate_status'  => 'Inactive',
                 'final_status'      => 'D',
-                'updated_by_user_id'=> Auth::id(),
+                'updated_by_user_id' => Auth::id(),
             ]);
 
             // Update requisition
@@ -47,5 +48,37 @@ class CandidateController extends Controller
         return redirect()
             ->route('dashboard')
             ->with('success', 'Team member deactivated successfully.');
+    }
+
+    public function verifyPan(Request $request)
+    {
+        $request->validate([
+            'pan_no' => 'required|string|max:10',
+            'candidate_id' => 'required'
+        ]);
+
+        $panData = PanVerificationService::verify($request->pan_no);
+
+        if (!$panData) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'PAN verification failed'
+            ]);
+        }
+
+        // Update candidate table
+        CandidateMaster::where('id', $request->candidate_id)
+            ->update([
+                'pan_status_2' => $panData['individual_tax_compliance_status'] ?? null,
+                'pan_verification_status' => $panData['is_valid'] ? 'Valid' : 'Invalid',
+                'pan_aadhaar_link_status' => $panData['aadhaar_seeding_status'] ?? null,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'pan_status' => $panData['individual_tax_compliance_status'] ?? null,
+            'aadhaar_status' => $panData['aadhaar_seeding_status'] ?? null
+        ]);
     }
 }

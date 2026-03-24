@@ -13,59 +13,59 @@
             </thead>
             <tbody>
                 @php
-                    // Get requisition documents if they exist
-                    $requisitionDocs = $candidate->requisition ? $candidate->requisition->documents : collect();
+                // Get requisition documents if they exist
+                $requisitionDocs = $candidate->requisition ? $candidate->requisition->documents : collect();
                 @endphp
-                
+
                 {{-- Show Agreement Documents --}}
                 @foreach($candidate->agreementDocuments as $doc)
                 <tr>
                     <td>
                         @if($doc->document_type == 'agreement')
-                            Agreement 
-                            @if($doc->stamp_type)
-                                ({{ $doc->stamp_type }})
-                            @endif
+                        Agreement
+                        @if($doc->stamp_type)
+                        ({{ $doc->stamp_type }})
+                        @endif
                         @else
-                            {{ ucfirst(str_replace('_', ' ', $doc->document_type)) }}
+                        {{ ucfirst(str_replace('_', ' ', $doc->document_type)) }}
                         @endif
                     </td>
                     <td>{{ $doc->agreement_number ?? 'N/A' }}</td>
                     <td>
                         @if($doc->sign_status == 'SIGNED')
-                            <span class="badge badge-success">Signed</span>
+                        <span class="badge badge-success">Signed</span>
                         @elseif($doc->sign_status == 'UNSIGNED')
-                            <span class="badge badge-warning">Unsigned</span>
+                        <span class="badge badge-warning">Unsigned</span>
                         @else
-                            <span class="badge badge-secondary">{{ $doc->sign_status ?? 'Uploaded' }}</span>
+                        <span class="badge badge-secondary">{{ $doc->sign_status ?? 'Uploaded' }}</span>
                         @endif
                     </td>
                     <td>
                         @if($doc->file_url)
-                            <a href="{{ $doc->file_url }}" target="_blank" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i> View
-                            </a>
+                        <a href="{{ $doc->file_url }}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> View
+                        </a>
                         @endif
                     </td>
                 </tr>
                 @endforeach
-                
+
                 {{-- Show Requisition Documents (PAN, Aadhaar, Bank, etc.) --}}
                 @foreach($requisitionDocs as $doc)
                 <tr>
                     <td>
                         @if($doc->document_type == 'pan_card')
-                            PAN Card
+                        PAN Card
                         @elseif($doc->document_type == 'aadhaar_card')
-                            Aadhaar Card
+                        Aadhaar Card
                         @elseif($doc->document_type == 'bank_document')
-                            Bank Document
+                        Bank Document
                         @elseif($doc->document_type == 'resume')
-                            Resume
+                        Resume
                         @elseif($doc->document_type == 'driving_licence')
-                            Driving Licence
+                        Driving Licence
                         @else
-                            {{ ucfirst(str_replace('_', ' ', $doc->document_type)) }}
+                        {{ ucfirst(str_replace('_', ' ', $doc->document_type)) }}
                         @endif
                     </td>
                     <td>{{ $doc->document_number ?? 'N/A' }}</td>
@@ -74,14 +74,14 @@
                     </td>
                     <td>
                         @if($doc->file_path)
-                            <a href="{{ Storage::disk('s3')->url($doc->file_path) }}" target="_blank" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i> View
-                            </a>
+                        <a href="{{ Storage::disk('s3')->url($doc->file_path) }}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> View
+                        </a>
                         @endif
                     </td>
                 </tr>
                 @endforeach
-                
+
                 @if($candidate->agreementDocuments->isEmpty() && $requisitionDocs->isEmpty())
                 <tr>
                     <td colspan="4" class="text-center">No documents found</td>
@@ -98,26 +98,26 @@
         <h5 class="border-bottom pb-2 mb-3">Upload Missing Documents</h5>
         <p class="text-muted"><i class="fas fa-info-circle"></i> You can upload any missing documents. All fields are optional.</p>
     </div>
-    
+
     @php
-        $requisitionDocs = $candidate->requisition ? $candidate->requisition->documents : collect();
+    $requisitionDocs = $candidate->requisition ? $candidate->requisition->documents : collect();
     @endphp
-    
+
     <!-- Unsigned Agreement Upload -->
     <div class="col-md-6 mb-3">
         @php
-            $hasUnsignedAgreement = $candidate->agreementDocuments
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'UNSIGNED')
-                ->count() > 0;
+        $hasUnsignedAgreement = $candidate->agreementDocuments
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'UNSIGNED')
+        ->count() > 0;
         @endphp
         <div class="card {{ $hasUnsignedAgreement ? 'border-success' : 'border-warning' }}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Unsigned Agreement</h6>
                 @if($hasUnsignedAgreement)
-                    <span class="badge badge-success">Uploaded</span>
+                <span class="badge badge-success">Uploaded</span>
                 @else
-                    <span class="badge badge-warning">Missing</span>
+                <span class="badge badge-warning">Missing</span>
                 @endif
             </div>
             <div class="card-body">
@@ -136,22 +136,22 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Signed Agreement Upload -->
     <div class="col-md-6 mb-3">
         @php
-            $hasSignedAgreement = $candidate->agreementDocuments
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'SIGNED')
-                ->count() > 0;
+        $hasSignedAgreement = $candidate->agreementDocuments
+        ->where('document_type', 'agreement')
+        ->where('sign_status', 'SIGNED')
+        ->count() > 0;
         @endphp
         <div class="card {{ $hasSignedAgreement ? 'border-success' : 'border-warning' }}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Signed Agreement</h6>
                 @if($hasSignedAgreement)
-                    <span class="badge badge-success">Uploaded</span>
+                <span class="badge badge-success">Uploaded</span>
                 @else
-                    <span class="badge badge-warning">Missing</span>
+                <span class="badge badge-warning">Missing</span>
                 @endif
             </div>
             <div class="card-body">
@@ -170,19 +170,36 @@
             </div>
         </div>
     </div>
-    
+
     <!-- PAN Card Upload -->
     <div class="col-md-4 mb-3">
         @php
-            $hasPanDoc = $requisitionDocs->where('document_type', 'pan_card')->isNotEmpty();
+        $hasPanDoc = $requisitionDocs->where('document_type', 'pan_card')->isNotEmpty();
         @endphp
         <div class="card {{ $hasPanDoc ? 'border-success' : 'border-warning' }}">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">PAN Card</h6>
+                <h6 class="mb-0">
+                    PAN Card
+
+                    @if($candidate->pan_status_2 == 'Operative')
+                    <span class="badge badge-success ml-2">✔ Operative</span>
+                    @elseif($candidate->pan_status_2 == 'Inoperative')
+                    <span class="badge badge-danger ml-2">✖ Inoperative</span>
+                    @elseif($candidate->pan_status_2)
+                    <span class="badge badge-warning ml-2">
+                        {{ $candidate->pan_status_2 }}
+                    </span>
+                    @else
+                    <span class="badge badge-secondary ml-2">
+                        Not Verified
+                    </span>
+                    @endif
+
+                </h6>
                 @if($hasPanDoc)
-                    <span class="badge badge-success">Uploaded</span>
+                <span class="badge badge-success">Uploaded</span>
                 @else
-                    <span class="badge badge-warning">Missing</span>
+                <span class="badge badge-warning">Missing</span>
                 @endif
             </div>
             <div class="card-body">
@@ -200,19 +217,19 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Aadhaar Card Upload -->
     <div class="col-md-4 mb-3">
         @php
-            $hasAadhaarDoc = $requisitionDocs->where('document_type', 'aadhaar_card')->isNotEmpty();
+        $hasAadhaarDoc = $requisitionDocs->where('document_type', 'aadhaar_card')->isNotEmpty();
         @endphp
         <div class="card {{ $hasAadhaarDoc ? 'border-success' : 'border-warning' }}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Aadhaar Card</h6>
                 @if($hasAadhaarDoc)
-                    <span class="badge badge-success">Uploaded</span>
+                <span class="badge badge-success">Uploaded</span>
                 @else
-                    <span class="badge badge-warning">Missing</span>
+                <span class="badge badge-warning">Missing</span>
                 @endif
             </div>
             <div class="card-body">
@@ -230,19 +247,19 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Bank Document Upload -->
     <div class="col-md-4 mb-3">
         @php
-            $hasBankDoc = $requisitionDocs->where('document_type', 'bank_document')->isNotEmpty();
+        $hasBankDoc = $requisitionDocs->where('document_type', 'bank_document')->isNotEmpty();
         @endphp
         <div class="card {{ $hasBankDoc ? 'border-success' : 'border-warning' }}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Bank Document</h6>
                 @if($hasBankDoc)
-                    <span class="badge badge-success">Uploaded</span>
+                <span class="badge badge-success">Uploaded</span>
                 @else
-                    <span class="badge badge-warning">Missing</span>
+                <span class="badge badge-warning">Missing</span>
                 @endif
             </div>
             <div class="card-body">
@@ -260,7 +277,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Other Document Upload -->
     <div class="col-md-12 mb-3">
         <div class="card">

@@ -77,10 +77,35 @@
             <label>PAN Number</label>
             <input type="text"
                 name="pan_no"
+                id="pan_no"
                 class="form-control text-uppercase"
+                maxlength="10"
                 value="{{ old('pan_no', $candidate->pan_no) }}"
                 pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                 title="Please enter valid PAN (e.g., ABCDE1234F)">
+
+            <small id="pan_status_badge">
+
+                @if($candidate->pan_status_2 == 'Operative')
+                <span class="badge bg-success">✔ Operative</span>
+
+                @elseif($candidate->pan_status_2 == 'Inoperative')
+                <span class="badge bg-danger">✖ Inoperative</span>
+
+                @elseif($candidate->pan_status_2)
+                <span class="badge bg-warning">{{ $candidate->pan_status_2 }}</span>
+
+                @else
+                <span class="badge bg-secondary">Not Verified</span>
+
+                @endif
+
+            </small>
+
+            <input type="hidden"
+                id="pan_status_2"
+                name="pan_status_2"
+                value="{{ $candidate->pan_status_2 }}">
         </div>
     </div>
 </div>
@@ -130,9 +155,9 @@
             <select name="city" class="form-select" required>
                 <option value="">-- Select City --</option>
                 @if($selectedCity)
-                    <option value="{{ $selectedCity->id }}" selected>
-                        {{ $selectedCity->city_village_name }}
-                    </option>
+                <option value="{{ $selectedCity->id }}" selected>
+                    {{ $selectedCity->city_village_name }}
+                </option>
                 @endif
             </select>
 
