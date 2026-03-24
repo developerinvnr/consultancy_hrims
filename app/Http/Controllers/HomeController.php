@@ -571,7 +571,7 @@ class HomeController extends Controller
             ->whereNotNull('mr.submission_date')
             ->whereRaw('cm.contract_start_date >= mr.submission_date')
 
-            ->where('mr.submission_date', '>=', '2025-03-01') // ✅ ADD THIS FILTER
+            ->where('mr.submission_date', '>=', '2026-03-01') // ✅ ADD THIS FILTER
 
             ->selectRaw('AVG(DATEDIFF(cm.contract_start_date, mr.submission_date)) as avg_days')
             ->value('avg_days');
@@ -590,7 +590,7 @@ class HomeController extends Controller
                 DATEDIFF(NOW(), submission_date) days
                 FROM manpower_requisitions
                 WHERE status = 'Pending HR Verification'
-                AND submission_date >= '2025-03-01'
+                AND submission_date >= '2026-03-01'
 
 
                 UNION ALL
@@ -602,7 +602,7 @@ class HomeController extends Controller
                 DATEDIFF(NOW(), hr_verification_date)
                 FROM manpower_requisitions
                 WHERE status = 'Pending Approval'
-                AND submission_date >= '2025-03-01'
+                AND submission_date >= '2026-03-01'
 
 
                 UNION ALL
@@ -616,7 +616,7 @@ class HomeController extends Controller
                 JOIN manpower_requisitions mr
                     ON mr.id = cm.requisition_id
                 WHERE cm.candidate_status = 'Agreement Pending'
-                AND mr.submission_date >= '2025-03-01'
+                AND mr.submission_date >= '2026-03-01'
 
 
                 UNION ALL
@@ -639,7 +639,7 @@ class HomeController extends Controller
                 JOIN manpower_requisitions mr
                     ON mr.id = cm.requisition_id
                 WHERE cm.candidate_status = 'Unsigned Agreement Created'
-                AND mr.submission_date >= '2025-03-01'
+                AND mr.submission_date >= '2026-03-01'
 
 
                 UNION ALL
@@ -665,7 +665,7 @@ class HomeController extends Controller
                     ON ac.agreement_document_id = ad.id
                 WHERE cm.candidate_status = 'Signed Agreement Uploaded'
                 AND ac.id IS NULL
-                AND mr.submission_date >= '2025-03-01'
+                AND mr.submission_date >= '2026-03-01'
 
 
                 UNION ALL
@@ -683,7 +683,7 @@ class HomeController extends Controller
                 JOIN manpower_requisitions mr
                     ON mr.id = cm.requisition_id
                 WHERE ac.received_date IS NULL
-                AND mr.submission_date >= '2025-03-01'
+                AND mr.submission_date >= '2026-03-01'
 
 
             ) stage_times
