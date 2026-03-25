@@ -75,7 +75,8 @@ $(document).ready(function () {
     /* ---------------- Upload Signed Agreement Button ---------------- */
 
     // Upload Signed Agreement Modal (from email)
-    $(".upload-signed-btn").on("click", function () {
+
+    $(document).on("click", ".upload-signed-btn", function () {
         const candidateId = $(this).data("candidate-id");
         const candidateCode = $(this).data("candidate-code");
         const candidateName = $(this).data("candidate-name");
@@ -99,7 +100,7 @@ $(document).ready(function () {
 
     /* ---------------- Upload Estamp Button ---------------- */
 
-    $(".upload-estamp-btn").on("click", function () {
+    $(document).on("click", ".upload-estamp-btn", function () {
         const candidateId = $(this).data("candidate-id");
         const candidateCode = $(this).data("candidate-code");
         const candidateName = $(this).data("candidate-name");
@@ -259,6 +260,9 @@ $(document).ready(function () {
         // Set today's date automatically
         let today = new Date().toISOString().split("T")[0];
         $('input[name="last_working_date"]').val(today);
+
+        // Show the modal
+        $("#endContractModal").modal("show");
     });
 
     $("#endContractForm").on("submit", function (e) {
@@ -334,7 +338,7 @@ $(document).ready(function () {
 
         // AJAX call to load managers
         $.ajax({
-			url: window.routes.getManagers.replace('__ID__', requisitionId),
+            url: window.routes.getManagers.replace("__ID__", requisitionId),
             type: "GET",
             success: function (response) {
                 if (!response.success) {
