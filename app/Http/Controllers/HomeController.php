@@ -581,117 +581,94 @@ class HomeController extends Controller
 
         // Detect Bottleneck Stage
         $bottleneckStage = DB::selectOne("
-            SELECT stage, AVG(days) avg_days
-            FROM (
+SELECT stage, AVG(days) avg_days
+FROM (
 
-                /* Pending HR Verification */
+SELECT 'Pending HR Verification' stage,
+DATEDIFF(NOW(), submission_date) days
+FROM manpower_requisitions
+WHERE status = 'Pending HR Verification'
+AND submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-                SELECT 'Pending HR Verification' stage,
-                DATEDIFF(NOW(), submission_date) days
-                FROM manpower_requisitions
-                WHERE status = 'Pending HR Verification'
-                AND submission_date >= '2026-03-01'
+UNION ALL
 
+SELECT 'Pending Approval',
+DATEDIFF(NOW(), hr_verification_date)
+FROM manpower_requisitions
+WHERE status = 'Pending Approval'
+AND submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-                UNION ALL
+UNION ALL
 
+SELECT 'Agreement Pending',
+DATEDIFF(NOW(), cm.created_at)
+FROM candidate_master cm
+JOIN manpower_requisitions mr
+ON mr.id = cm.requisition_id
+WHERE cm.candidate_status = 'Agreement Pending'
+AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-                /* Pending Approval */
+UNION ALL
 
-                SELECT 'Pending Approval',
-                DATEDIFF(NOW(), hr_verification_date)
-                FROM manpower_requisitions
-                WHERE status = 'Pending Approval'
-                AND submission_date >= '2026-03-01'
+SELECT 'Unsigned Agreement Created',
+DATEDIFF(NOW(), ad.created_at)
+FROM (
+SELECT candidate_id, MAX(id) id
+FROM agreement_documents
+WHERE sign_status = 'UNSIGNED'
+GROUP BY candidate_id
+) latest_ad
+JOIN agreement_documents ad
+ON ad.id = latest_ad.id
+JOIN candidate_master cm
+ON cm.id = ad.candidate_id
+JOIN manpower_requisitions mr
+ON mr.id = cm.requisition_id
+WHERE cm.candidate_status = 'Unsigned Agreement Created'
+AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
+UNION ALL
 
-                UNION ALL
+SELECT 'Signed Agreement Uploaded',
+DATEDIFF(NOW(), ad.created_at)
+FROM (
+SELECT candidate_id, MAX(id) id
+FROM agreement_documents
+WHERE sign_status = 'SIGNED'
+GROUP BY candidate_id
+) latest_signed
+JOIN agreement_documents ad
+ON ad.id = latest_signed.id
+JOIN candidate_master cm
+ON cm.id = ad.candidate_id
+JOIN manpower_requisitions mr
+ON mr.id = cm.requisition_id
+LEFT JOIN agreement_couriers ac
+ON ac.agreement_document_id = ad.id
+WHERE cm.candidate_status = 'Signed Agreement Uploaded'
+AND ac.id IS NULL
+AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
+UNION ALL
 
-                /* Agreement Pending */
+SELECT 'Courier Pending',
+DATEDIFF(NOW(), ac.dispatch_date)
+FROM agreement_couriers ac
+JOIN agreement_documents ad
+ON ad.id = ac.agreement_document_id
+JOIN candidate_master cm
+ON cm.id = ad.candidate_id
+JOIN manpower_requisitions mr
+ON mr.id = cm.requisition_id
+WHERE ac.received_date IS NULL
+AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-                SELECT 'Agreement Pending',
-                DATEDIFF(NOW(), cm.created_at)
-                FROM candidate_master cm
-                JOIN manpower_requisitions mr
-                    ON mr.id = cm.requisition_id
-                WHERE cm.candidate_status = 'Agreement Pending'
-                AND mr.submission_date >= '2026-03-01'
+) stage_times
 
-
-                UNION ALL
-
-
-                /* Unsigned Agreement Created (latest agreement only per candidate) */
-
-                SELECT 'Unsigned Agreement Created',
-                DATEDIFF(NOW(), ad.created_at)
-                FROM (
-                    SELECT candidate_id, MAX(id) id
-                    FROM agreement_documents
-                    WHERE sign_status = 'UNSIGNED'
-                    GROUP BY candidate_id
-                ) latest_ad
-                JOIN agreement_documents ad
-                    ON ad.id = latest_ad.id
-                JOIN candidate_master cm
-                    ON cm.id = ad.candidate_id
-                JOIN manpower_requisitions mr
-                    ON mr.id = cm.requisition_id
-                WHERE cm.candidate_status = 'Unsigned Agreement Created'
-                AND mr.submission_date >= '2026-03-01'
-
-
-                UNION ALL
-
-
-                /* Signed Agreement Uploaded but courier not dispatched */
-
-                SELECT 'Signed Agreement Uploaded',
-                DATEDIFF(NOW(), ad.created_at)
-                FROM (
-                    SELECT candidate_id, MAX(id) id
-                    FROM agreement_documents
-                    WHERE sign_status = 'SIGNED'
-                    GROUP BY candidate_id
-                ) latest_signed
-                JOIN agreement_documents ad
-                    ON ad.id = latest_signed.id
-                JOIN candidate_master cm
-                    ON cm.id = ad.candidate_id
-                JOIN manpower_requisitions mr
-                    ON mr.id = cm.requisition_id
-                LEFT JOIN agreement_couriers ac
-                    ON ac.agreement_document_id = ad.id
-                WHERE cm.candidate_status = 'Signed Agreement Uploaded'
-                AND ac.id IS NULL
-                AND mr.submission_date >= '2026-03-01'
-
-
-                UNION ALL
-
-
-                /* Courier dispatched but not received */
-
-                SELECT 'Courier Pending',
-                DATEDIFF(NOW(), ac.dispatch_date)
-                FROM agreement_couriers ac
-                JOIN agreement_documents ad
-                    ON ad.id = ac.agreement_document_id
-                JOIN candidate_master cm
-                    ON cm.id = ad.candidate_id
-                JOIN manpower_requisitions mr
-                    ON mr.id = cm.requisition_id
-                WHERE ac.received_date IS NULL
-                AND mr.submission_date >= '2026-03-01'
-
-
-            ) stage_times
-
-            GROUP BY stage
-            ORDER BY avg_days DESC
-            LIMIT 1
-            ");
+GROUP BY stage
+ORDER BY avg_days DESC
+LIMIT 1
+");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
@@ -788,8 +765,8 @@ class HomeController extends Controller
         ];
 
         if ($request->ajax()) {
-                return view('dashboard.partials.recent-requisitions-table',compact('recent_requisitions'))->render();
-         }
+            return view('dashboard.partials.recent-requisitions-table', compact('recent_requisitions'))->render();
+        }
 
         return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts', 'attention', 'joiningsChart'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
