@@ -515,6 +515,33 @@
 
 		});
 
+		$(document).on('click', '#recent-requisitions-table .pagination a', function(e) {
+
+			e.preventDefault();
+
+			let url = $(this).attr('href');
+
+			let tab = $('.requisition-tab.active').data('tab');
+
+			$('#recent-requisitions-table').html(
+				'<div class="text-center py-3">Loading...</div>'
+			);
+
+			$.ajax({
+				url: url,
+				type: "GET",
+				data: {
+					req_tab: tab
+				},
+				success: function(response) {
+
+					$('#recent-requisitions-table').html(response);
+
+				}
+			});
+
+		});
+
 	});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
