@@ -339,7 +339,7 @@ class HomeController extends Controller
 
                 if ($signedAgreement) {
                     // Get courier details for this agreement
-                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->first();
+                      $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->latest()->first();
 
 
                     // Attach to requisition object for use in view
