@@ -370,7 +370,7 @@
             const monthlySalary = Number(r.monthly_salary || 0);
             const perDaySalary = Number(r.per_day_salary || (monthlySalary / 30));
 
-            const arrearAmount = Number(r.arrear_amount || 0);
+            const arrearAmount = Math.round(Number(r.arrear_amount || 0));
             const arrearDays = Number(r.arrear_days || 0);
 
             const baseNetPay = Number(r.net_pay || 0);
@@ -529,7 +529,7 @@
     // Calculate arrear on days change
     $('#arrear_days').on('input', function() {
         const days = parseFloat($(this).val()) || 0;
-        const arrearAmount = (days * dailyRate).toFixed(2);
+        const arrearAmount = Math.round(days * dailyRate);
         $('#calculated_arrear').val(parseFloat(arrearAmount).toLocaleString('en-IN'));
     });
 
@@ -539,7 +539,7 @@
         const month = $('#month').val();
         const year = $('#year').val();
         const arrearDays = parseFloat($('#arrear_days').val()) || 0;
-        const arrearAmount = (arrearDays * dailyRate).toFixed(2);
+        const arrearAmount = Math.round(arrearDays * dailyRate);
         const remarks = $('#arrear_remarks').val();
 
         if (arrearDays < 0) {

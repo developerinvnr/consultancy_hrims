@@ -16,6 +16,13 @@ class AgreementUploadReminderCommand extends Command
     public function handle()
     {
         $candidates = CandidateMaster::whereNotNull('candidate_code')
+            ->where('candidate_status', 'Unsigned Agreement Created')
+            ->whereNull('last_working_date')
+            ->whereDate('contract_start_date', '<=', now())
+            ->where(function ($q) {
+                $q->whereNull('contract_end_date')
+                    ->orWhereDate('contract_end_date', '>=', now());
+            })
             ->whereHas('unsignedAgreements')
             ->with('reportingManager.manager.manager')
             ->get();

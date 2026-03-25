@@ -29,15 +29,25 @@ class AttendancePendingReminderCommand extends Command
     public function handle()
     {
         $candidates = CandidateMaster::whereNotNull('candidate_code')
+            ->where('candidate_status', 'Active')
             ->whereNull('last_working_date')
+            ->where('department_id', '!=', 10) // ✅ exclude Marketing
+            ->whereDate('contract_start_date', '<=', now())
+            ->where(function ($q) {
+                $q->whereNull('contract_end_date')
+                    ->orWhereDate('contract_end_date', '>=', now());
+            })
             ->with('reportingManager.manager.manager')
             ->get();
 
         foreach ($candidates as $candidate) {
 
-            $pendingDates = $candidate->pendingAttendanceDates();
+            $pendingDates = collect($candidate->pendingAttendanceDates())
+                ->filter(fn($date) => $date < now()->toDateString())
+                ->values()
+                ->toArray();
 
-            if (empty($pendingDates)) {
+            if (collect($pendingDates)->isEmpty()) {
                 continue;
             }
 
