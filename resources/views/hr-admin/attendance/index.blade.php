@@ -389,8 +389,17 @@
                 const beforeJoining = date < joiningDate;
                 const afterEnd = contractEndDate && date > contractEndDate;
                 const isFutureDate = date > today;
+                const lastWorkingDate = candidate.last_working_date ?
+                    new Date(candidate.last_working_date) :
+                    null;
 
-                const canEdit = !(beforeJoining || afterEnd || isFutureDate);
+                if (lastWorkingDate) {
+                    lastWorkingDate.setHours(0, 0, 0, 0);
+                }
+
+                const afterSeparation = lastWorkingDate && date > lastWorkingDate;
+
+                const canEdit = !(beforeJoining || afterEnd || afterSeparation || isFutureDate);
 
                 /* ===== SUNDAY (LOCKED FOREVER) ===== */
                 if (isSunday) {

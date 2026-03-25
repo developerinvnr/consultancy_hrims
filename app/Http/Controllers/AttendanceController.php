@@ -198,6 +198,9 @@ class AttendanceController extends Controller
                     'od_days' => $totalOD,
                     'cl_remaining' => $clRemaining,
                     'daily_rate' => $candidate->remuneration_per_month ? $candidate->remuneration_per_month / 26 : 0,
+                    'last_working_date' => $candidate->last_working_date
+                        ? Carbon::parse($candidate->last_working_date)->format('Y-m-d')
+                        : null,
                 ];
             }
 
@@ -243,10 +246,22 @@ class AttendanceController extends Controller
             // ]);
 
             $candidate = CandidateMaster::findOrFail($candidateId);
+            if (!empty($candidate->last_working_date)) {
+
+                $lastWorkingDate = Carbon::parse($candidate->last_working_date);
+
+                if ($lastWorkingDate->lessThan(Carbon::create($year, $month, 1))) {
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Candidate already separated before this month'
+                    ]);
+                }
+            }
             $isContractual = $candidate->requisition_type === 'Contractual';
             $isHRAdmin = $user->hasRole('admin') || $user->hasRole('hr_admin');
             $isReportingManager = $user->emp_id &&
-            $candidate->reporting_manager_employee_id == $user->emp_id;
+                $candidate->reporting_manager_employee_id == $user->emp_id;
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
             $isCurrentMonth = ($today->month == $month && $today->year == $year);
@@ -277,7 +292,7 @@ class AttendanceController extends Controller
             //     }
             // }
 
-           
+
 
             if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
 
@@ -351,15 +366,15 @@ class AttendanceController extends Controller
                 );
             }
             $usedCLTillNow = Attendance::where('candidate_id', $candidateId)
-                            ->where('year', $year)
-                            ->where('month', '<', $month)
-                            ->sum('total_cl');
+                ->where('year', $year)
+                ->where('month', '<', $month)
+                ->sum('total_cl');
 
             // ✅ Remaining CL for this month
             $availableCL = $leaveBalance
-                            ? ($leaveBalance->opening_cl_balance - $usedCLTillNow)
-                            : 0;
-    
+                ? ($leaveBalance->opening_cl_balance - $usedCLTillNow)
+                : 0;
+
             /* ---------------- TOTALS ---------------- */
 
             $totalPresent = 0;
@@ -373,17 +388,31 @@ class AttendanceController extends Controller
                 ? Carbon::parse($candidate->contract_end_date)
                 : null;
 
-                // Log::info('Existing attendance before update', [
-                //     'candidate_id' => $candidateId,
-                //     'month' => $month,
-                //     'year' => $year,
-                //     'existing' => $attendance->toArray()
-                // ]);
+            // Log::info('Existing attendance before update', [
+            //     'candidate_id' => $candidateId,
+            //     'month' => $month,
+            //     'year' => $year,
+            //     'existing' => $attendance->toArray()
+            // ]);
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
 
-                $status = $attendanceData[$day] ?? $attendance->{"A".$day};
+                $status = $attendanceData[$day] ?? $attendance->{"A" . $day};
                 $date = Carbon::create($year, $month, $day);
+
+                if (!empty($candidate->last_working_date)) {
+                        $lastWorkingDate = Carbon::parse($candidate->last_working_date);
+                        if ($date->greaterThan($lastWorkingDate)) {
+                            if (!empty($status)) {
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'Attendance cannot be filled after last working date'
+                                ]);
+                            }
+                            $attendance->{"A{$day}"} = null;
+                            continue;
+                        }
+                }
                 // Log::info('Processing attendance day', [
                 //     'candidate_id' => $candidateId,
                 //     'day' => $day,
@@ -506,7 +535,7 @@ class AttendanceController extends Controller
                 //     'available_cl_after' => $availableCL
                 // ]);
                 $totalCLUsed = $usedCLTillNow + $totalCL;
-                 //dd($totalCLUsed);
+                //dd($totalCLUsed);
                 $leaveBalance->cl_utilized = $totalCLUsed;
                 $leaveBalance->save();
             }
