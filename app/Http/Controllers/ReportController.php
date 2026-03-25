@@ -707,178 +707,181 @@ class ReportController extends Controller
     }
 
     public function tat(Request $request)
-    {
-        $financialYear = $request->get('financial_year');
-        $month = $request->get('month');
-        $departmentId = $request->get('department_id');
-        $requisitionType = $request->get('requisition_type');
-        $status = $request->get('status');
+{
+    $financialYear = $request->get('financial_year');
+    $month = $request->get('month');
+    $departmentId = $request->get('department_id');
+    $requisitionType = $request->get('requisition_type');
+    $status = $request->get('status');
 
-        if (!$financialYear) {
-            $currentMonth = date('n');
-            $currentYear = date('Y');
-            $financialYear = ($currentMonth >= 4)
-                ? $currentYear . '-' . ($currentYear + 1)
-                : ($currentYear - 1) . '-' . $currentYear;
-        }
+    if (!$financialYear) {
+        $currentMonth = date('n');
+        $currentYear = date('Y');
+        $financialYear = ($currentMonth >= 4)
+            ? $currentYear . '-' . ($currentYear + 1)
+            : ($currentYear - 1) . '-' . $currentYear;
+    }
 
-        [$startYear, $endYear] = explode('-', $financialYear);
+    [$startYear, $endYear] = explode('-', $financialYear);
 
-        // ✅ ROOT QUERY (Candidate आधारित)
-        $query = CandidateMaster::query()
-            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
+    // ✅ ROOT QUERY (Candidate आधारित)
+    $query = CandidateMaster::query()
+        ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
 
-            // ✅ Latest Agreement (fix duplicate)
-            ->leftJoinSub(
-                DB::table('agreement_documents')
-                    ->select('candidate_id', DB::raw('MAX(id) as id'))
-                    ->where('document_type', 'agreement')
-                    ->where('sign_status', 'UNSIGNED')
-                    ->groupBy('candidate_id'),
-                'created_ad',
-                'created_ad.candidate_id',
-                '=',
-                'candidate_master.id'
-            )
-            ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+        // ✅ Latest Agreement (fix duplicate)
+        ->leftJoinSub(
+            DB::table('agreement_documents')
+                ->select('candidate_id', DB::raw('MAX(id) as id'))
+                ->where('document_type', 'agreement')
+                ->where('sign_status', 'UNSIGNED')
+                ->groupBy('candidate_id'),
+            'created_ad',
+            'created_ad.candidate_id',
+            '=',
+            'candidate_master.id'
+        )
+        ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
 
-            ->leftJoinSub(
-                DB::table('agreement_documents')
-                    ->select('candidate_id', DB::raw('MAX(id) as id'))
-                    ->where('document_type', 'agreement')
-                    ->where('sign_status', 'SIGNED')
-                    ->groupBy('candidate_id'),
-                'signed_ad',
-                'signed_ad.candidate_id',
-                '=',
-                'candidate_master.id'
-            )
-            ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
+        ->leftJoinSub(
+            DB::table('agreement_documents')
+                ->select('candidate_id', DB::raw('MAX(id) as id'))
+                ->where('document_type', 'agreement')
+                ->where('sign_status', 'SIGNED')
+                ->groupBy('candidate_id'),
+            'signed_ad',
+            'signed_ad.candidate_id',
+            '=',
+            'candidate_master.id'
+        )
+        ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
-            // ✅ Latest Courier (fix duplicate)
-            ->leftJoinSub(
-                DB::table('agreement_couriers')
-                    ->select('agreement_document_id', DB::raw('MAX(id) as id'))
-                    ->groupBy('agreement_document_id'),
-                'latest_ac',
-                'latest_ac.agreement_document_id',
-                '=',
-                'ads.id'
-            )
-            ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
+        // ✅ Latest Courier (fix duplicate)
+        ->leftJoinSub(
+            DB::table('agreement_couriers')
+                ->select('agreement_document_id', DB::raw('MAX(id) as id'))
+                ->groupBy('agreement_document_id'),
+            'latest_ac',
+            'latest_ac.agreement_document_id',
+            '=',
+            'ads.id'
+        )
+        ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
 
-            ->select(
-                'candidate_master.*',
-                'mr.submission_date',
-                'mr.hr_verification_date',
-                'mr.approval_date',
-                'candidate_master.file_created_date',
-                'adc.created_at as agreement_created_date',
-                'ads.created_at as agreement_uploaded_date',
-                'ac.dispatch_date',
-                'ac.received_date'
-            );
+        ->select(
+            'candidate_master.*',
+            'mr.submission_date',
+            'mr.hr_verification_date',
+            'mr.approval_date',
+            'candidate_master.file_created_date',
+            'candidate_master.contract_start_date', // Already in candidate_master.*
+            'adc.created_at as agreement_created_date',
+            'ads.created_at as agreement_uploaded_date',
+            'ac.dispatch_date',
+            'ac.received_date'
+        );
 
-        if ($departmentId) {
-            $query->where('candidate_master.department_id', $departmentId);
-        }
+    if ($departmentId) {
+        $query->where('candidate_master.department_id', $departmentId);
+    }
 
-        if ($requisitionType) {
-            $query->where('candidate_master.requisition_type', $requisitionType);
-        }
+    if ($requisitionType) {
+        $query->where('candidate_master.requisition_type', $requisitionType);
+    }
 
-        if ($status) {
-            $query->where('mr.status', $status);
-        }
+    if ($status) {
+        $query->where('mr.status', $status);
+    }
+    
+    // ✅ NEW: Filter based on Contract Start Date instead of Submission Date
+    if ($month) {
+        $year = ($month >= 4) ? $startYear : $endYear;
+        $startDate = "{$year}-{$month}-01";
+        $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
+        
+        // Filter by contract_start_date
+        $query->whereNotNull('candidate_master.contract_start_date')
+              ->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate]);
+    } else {
+        // Filter by financial year based on contract_start_date
+        $query->whereNotNull('candidate_master.contract_start_date')
+              ->whereBetween('candidate_master.contract_start_date', [
+                $startYear . '-04-01',
+                $endYear . '-03-31'
+              ]);
+    }
 
-        // ✅ FIXED Date Filter - Only include records with valid submission_date
-        if ($month) {
-            $year = ($month >= 4) ? $startYear : $endYear;
-            $startDate = "{$year}-{$month}-01";
-            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
+    $allRecords = $query->get();
 
-            // Only include records where submission_date is NOT NULL and within the range
-            $query->whereNotNull('mr.submission_date')
-                ->whereBetween('mr.submission_date', [$startDate, $endDate]);
-        } else {
-            $query->whereNotNull('mr.submission_date')
-                ->whereBetween('mr.submission_date', [
-                    $startYear . '-04-01',
-                    $endYear . '-03-31'
-                ]);
-        }
+    // ✅ STAGE CONFIG (Dynamic)
+    $stages = [
+        'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+        'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+        'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+        'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+        'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+        'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+        'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
+    ];
 
-        $allRecords = $query->get();
+    $stageData = [];
+    foreach ($stages as $key => $s) {
+        $stageData[$key] = [];
+    }
 
-        // ✅ STAGE CONFIG (Dynamic)
-        $stages = [
-            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
-            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
-            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
-            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
-            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
-            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
-            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
-        ];
-
-        $stageData = [];
+    foreach ($allRecords as $row) {
         foreach ($stages as $key => $s) {
-            $stageData[$key] = [];
-        }
+            if ($key === 'file_creation') {
+                $fromDate = $row->received_date
+                    ?? $row->agreement_uploaded_date
+                    ?? $row->agreement_created_date
+                    ?? $row->approval_date;
+                $toDate = $row->file_created_date;
+            } else {
+                $fromDate = $row->{$s['from']} ?? null;
+                $toDate = $row->{$s['to']} ?? null;
+            }
 
-        foreach ($allRecords as $row) {
-            foreach ($stages as $key => $s) {
-                if ($key === 'file_creation') {
-                    $fromDate = $row->received_date
-                        ?? $row->agreement_uploaded_date
-                        ?? $row->agreement_created_date
-                        ?? $row->approval_date;
-                    $toDate = $row->file_created_date;
-                } else {
-                    $fromDate = $row->{$s['from']} ?? null;
-                    $toDate = $row->{$s['to']} ?? null;
-                }
-
-                if ($fromDate && $toDate) {
-                    $days = max(0, ceil(
-                        \Carbon\Carbon::parse($fromDate)
-                            ->diffInDays($toDate)
-                    ));
-                    $stageData[$key][] = $days;
-                }
+            if ($fromDate && $toDate) {
+                $days = max(0, ceil(
+                    \Carbon\Carbon::parse($fromDate)
+                        ->diffInDays($toDate)
+                ));
+                $stageData[$key][] = $days;
             }
         }
-
-        $getSummary = function ($data) {
-            return [
-                'total' => count($data),
-                'avg' => count($data) ? round(array_sum($data) / count($data), 2) : 0,
-                'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
-                'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
-                'above_3' => count(array_filter($data, fn($d) => $d > 3)),
-            ];
-        };
-
-        $summaries = [];
-        foreach ($stageData as $key => $data) {
-            $summaries[$key] = $getSummary($data);
-        }
-
-        $records = $query->latest('mr.submission_date')->paginate(20);
-        $departments = CoreDepartment::orderBy('department_name')->get();
-
-        return view('reports.tat', compact(
-            'records',
-            'summaries',
-            'stages',
-            'financialYear',
-            'month',
-            'departments',
-            'departmentId',
-            'requisitionType',
-            'status'
-        ));
     }
+
+    $getSummary = function ($data) {
+        return [
+            'total' => count($data),
+            'avg' => count($data) ? round(array_sum($data) / count($data), 2) : 0,
+            'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
+            'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
+            'above_3' => count(array_filter($data, fn($d) => $d > 3)),
+        ];
+    };
+
+    $summaries = [];
+    foreach ($stageData as $key => $data) {
+        $summaries[$key] = $getSummary($data);
+    }
+
+    // Order by contract_start_date
+    $records = $query->orderBy('candidate_master.contract_start_date', 'desc')->paginate(20);
+    $departments = CoreDepartment::orderBy('department_name')->get();
+    
+    return view('reports.tat', compact(
+        'records',
+        'summaries',
+        'stages',
+        'financialYear',
+        'month',
+        'departments',
+        'departmentId',
+        'requisitionType',
+        'status'
+    ));
+}
 
     public function tatExport(Request $request)
     {
