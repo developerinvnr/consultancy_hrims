@@ -670,38 +670,38 @@ class HomeController extends Controller
             /* Agreement Upload */
 
             SELECT 'Agreement Upload',
-DATEDIFF(ads.created_at, adc.created_at)
-FROM (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE sign_status='UNSIGNED'
-    AND document_type='agreement'
-    GROUP BY candidate_id
-) latest_unsigned
+            DATEDIFF(ads.created_at, adc.created_at)
+            FROM (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE sign_status='UNSIGNED'
+                AND document_type='agreement'
+                GROUP BY candidate_id
+            ) latest_unsigned
 
-JOIN agreement_documents adc
-ON adc.id = latest_unsigned.id
+            JOIN agreement_documents adc
+            ON adc.id = latest_unsigned.id
 
-JOIN (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE sign_status='SIGNED'
-    AND document_type='agreement'
-    GROUP BY candidate_id
-) latest_signed
+            JOIN (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE sign_status='SIGNED'
+                AND document_type='agreement'
+                GROUP BY candidate_id
+            ) latest_signed
 
-JOIN agreement_documents ads
-ON ads.id = latest_signed.id
-AND ads.candidate_id = adc.candidate_id
+            JOIN agreement_documents ads
+            ON ads.id = latest_signed.id
+            AND ads.candidate_id = adc.candidate_id
 
-JOIN candidate_master cm
-ON cm.id = adc.candidate_id
+            JOIN candidate_master cm
+            ON cm.id = adc.candidate_id
 
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
 
-WHERE ads.created_at IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            WHERE ads.created_at IS NOT NULL
+            AND ads.created_at BETWEEN '$startDate' AND '$endDate'
 
 
             UNION ALL
