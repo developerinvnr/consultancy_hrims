@@ -1433,7 +1433,7 @@ class HrAdminController extends Controller
 	public function showVerifySigned(CandidateMaster $candidate)
 	{
 		if ($candidate->candidate_status !== 'Unsigned Agreement Created') {
-			return redirect()->route('hr-admin.applications.approved')
+			return redirect()->route('hr-admin.dashboard')
 				->with('error', 'Cannot verify agreement for this employee');
 		}
 
@@ -1443,7 +1443,7 @@ class HrAdminController extends Controller
 			->first();
 
 		if (!$signedDocument) {
-			return redirect()->route('hr-admin.applications.approved')
+			return redirect()->route('hr-admin.dashboard')
 				->with('error', 'No signed agreement pending verification');
 		}
 

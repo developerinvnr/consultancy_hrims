@@ -84,7 +84,7 @@
                                         <span class="badge bg-white text-primary ms-1">{{ $hr_stats['pending_verification'] }}</span>
                                     @endif
                                 </a>
-                                <a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-sm btn-success">
+                                <a href="{{ route('hr-admin.dashboard',['req_tab'=>'approved']) }}" class="btn btn-sm btn-success">
                                     <i class="ri-check-double-line me-1"></i> Approved
                                     @if(isset($hr_stats) && $hr_stats['approved'] > 0)
                                         <span class="badge bg-white text-success ms-1">{{ $hr_stats['approved'] }}</span>

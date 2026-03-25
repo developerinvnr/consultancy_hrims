@@ -127,7 +127,7 @@
 						</div>
 					</div>
 					<div class="card-footer bg-warning border-top-0 py-2">
-						<a href="{{ route('hr-admin.applications.approved') }}" class="text-dark d-block text-end">
+						<a href="{{ route('hr-admin.dashboard',['req_tab'=>'approved']) }}" class="text-dark d-block text-end">
 							View Details <i class="ri-arrow-right-line align-middle"></i>
 						</a>
 					</div>
@@ -214,7 +214,7 @@
 						<a href="{{ route('hr-admin.applications.new') }}" class="btn btn-primary">
 							<i class="ri-file-list-line me-2"></i> Process New Applications
 						</a>
-						<a href="{{ route('hr-admin.applications.approved') }}" class="btn btn-success">
+						<a href="{{ route('hr-admin.dashboard',['req_tab'=>'approved']) }}" class="btn btn-success">
 							<i class="ri-checkbox-circle-line me-2"></i> Process Approved
 						</a>
 						<a href="{{ route('hr-admin.master.index') }}" class="btn btn-info">

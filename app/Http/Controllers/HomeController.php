@@ -787,6 +787,10 @@ class HomeController extends Controller
             'rejected' => ManpowerRequisition::where('status', 'Rejected')->count()
         ];
 
+        if ($request->ajax()) {
+                return view('dashboard.partials.recent-requisitions-table',compact('recent_requisitions'))->render();
+         }
+
         return view('dashboard.hr-admin', compact('stats', 'recent_requisitions', 'expiry', 'tabCounts', 'attention', 'joiningsChart'))->with(['req_tab' => $reqTab, 'exp_tab' => $expTab]);
     }
 
