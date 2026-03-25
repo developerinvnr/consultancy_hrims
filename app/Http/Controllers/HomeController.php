@@ -339,32 +339,7 @@ class HomeController extends Controller
 
                 if ($signedAgreement) {
                     // Get courier details for this agreement
-                      $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->latest()->first();
-
-                       if ($requisition->requisition_code == 'CRS0399') {
-                \Log::info('=== CRS0399 DEBUG ===');
-                \Log::info('Candidate ID: ' . $requisition->candidate->id);
-                \Log::info('Signed Agreement ID: ' . ($signedAgreement->id ?? 'null'));
-                \Log::info('Signed Agreement created_at: ' . ($signedAgreement->created_at ?? 'null'));
-                \Log::info('Has courier details: ' . (!is_null($courierDetails) ? 'Yes' : 'No'));
-                
-                if ($courierDetails) {
-                    \Log::info('Courier ID: ' . $courierDetails->id);
-                    \Log::info('Courier created_at: ' . $courierDetails->created_at);
-                    \Log::info('Dispatch date: ' . ($courierDetails->dispatch_date ?? 'null'));
-                    \Log::info('Received date: ' . ($courierDetails->received_date ?? 'null'));
-                    
-                    // Check all courier records for this agreement
-                    $allCouriers = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
-                        ->orderBy('created_at', 'desc')
-                        ->get();
-                    \Log::info('All couriers for agreement ID ' . $signedAgreement->id . ': ' . $allCouriers->count());
-                    foreach ($allCouriers as $courier) {
-                        \Log::info('Courier ' . $courier->id . ': created=' . $courier->created_at . ', dispatch=' . $courier->dispatch_date . ', received=' . $courier->received_date);
-                    }
-                }
-            }
-
+                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->latest()->first();
 
                     // Attach to requisition object for use in view
                     $requisition->signed_agreement = $signedAgreement;
@@ -374,118 +349,121 @@ class HomeController extends Controller
                     $requisition->courier_details = null;
                 }
             }
+
             $ageDays = 0;
+            $baseDate = null;
 
+            // ✅ Calculate ageing based on current status and when it entered that status
             switch ($requisition->status) {
-
                 case 'Pending HR Verification':
-
-                    $ageDays = $requisition->submission_date
-                        ? max(0, floor(now()->floatDiffInDays($requisition->submission_date)))
-                        : 0;
-
+                    // Age since submission date
+                    $baseDate = $requisition->submission_date;
                     break;
 
+                case 'Correction Required':
+                    // Age since last correction request date
+                    $baseDate = $requisition->correction_requested_date ?? $requisition->updated_at;
+                    break;
+
+                case 'Hr Verified':
+                    // Age since HR verification date
+                    $baseDate = $requisition->hr_verification_date;
+                    break;
 
                 case 'Pending Approval':
-
-                    $ageDays = $requisition->hr_verification_date
-                        ? max(0, floor(now()->floatDiffInDays($requisition->hr_verification_date)))
-                        : 0;
-
+                    // Age since HR verification (when it moved to approval)
+                    $baseDate = $requisition->hr_verification_date;
                     break;
-
 
                 case 'Approved':
-
-                    $ageDays = $requisition->approval_date
-                        ? max(0, floor(now()->floatDiffInDays($requisition->approval_date)))
-                        : 0;
-
+                    // Age since approval date
+                    $baseDate = $requisition->approval_date;
                     break;
 
-
                 default:
-
+                    // For statuses with candidates (agreement workflow)
                     if ($requisition->candidate) {
-
                         switch ($requisition->candidate->candidate_status) {
-
                             case 'Agreement Pending':
-
-                                $ageDays = max(0, floor(now()->floatDiffInDays(
-                                    $requisition->candidate->created_at
-                                )));
-
+                                // Age since approval date (when agreement process started)
+                                $baseDate = $requisition->approval_date;
                                 break;
 
-
                             case 'Unsigned Agreement Created':
-
+                                // Age since unsigned agreement was created
                                 $unsignedDoc = $requisition->candidate
                                     ->unsignedAgreements()
                                     ->latest()
                                     ->first();
-
-                                $ageDays = $unsignedDoc
-                                    ? max(0, floor(now()->floatDiffInDays($unsignedDoc->created_at)))
-                                    : 0;
-
+                                $baseDate = $unsignedDoc ? $unsignedDoc->created_at : $requisition->approval_date;
                                 break;
 
-
                             case 'Signed Agreement Uploaded':
-
-                                $signedDoc = $requisition->candidate
-                                    ->signedAgreements()
-                                    ->latest()
-                                    ->first();
-
-                                $ageDays = $signedDoc
-                                    ? max(0, floor(now()->floatDiffInDays($signedDoc->created_at)))
-                                    : 0;
-
+                                // Check if courier is dispatched
+                                if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                                    // Age since dispatch date if courier is pending
+                                    $baseDate = $requisition->courier_details->dispatch_date ?? $requisition->candidate->updated_at;
+                                } else {
+                                    // Age since signed agreement upload
+                                    $signedDoc = $requisition->candidate
+                                        ->signedAgreements()
+                                        ->latest()
+                                        ->first();
+                                    $baseDate = $signedDoc ? $signedDoc->created_at : $requisition->approval_date;
+                                }
                                 break;
                         }
                     }
+                    break;
             }
 
-            // courier stage ageing (override if applicable)
-
-           if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-                // Make sure dispatch_date exists before calculating
+            // ✅ Override for courier stage (if courier is pending)
+            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
                 if ($requisition->courier_details->dispatch_date) {
-                    $ageDays = max(0, floor(now()->floatDiffInDays(
-                        $requisition->courier_details->dispatch_date
-                    )));
+                    $baseDate = $requisition->courier_details->dispatch_date;
                 } else {
-                    // If no dispatch date, fall back to the previous calculation
-                    // or set to 0
-                    $ageDays = 0;
+                    // If not dispatched yet, age since agreement upload
+                    $signedDoc = $requisition->candidate->signedAgreements()->latest()->first();
+                    $baseDate = $signedDoc ? $signedDoc->created_at : $baseDate;
                 }
             }
 
+            // ✅ Override for file creation stage
+            if (
+                $requisition->candidate &&
+                $requisition->candidate->candidate_status == 'Signed Agreement Uploaded' &&
+                !$requisition->candidate->file_created_date
+            ) {
+                // If courier is received, age since received date
+                if ($requisition->courier_details && $requisition->courier_details->received_date) {
+                    $baseDate = $requisition->courier_details->received_date;
+                }
+            }
 
+            // ✅ Calculate ageing days (only if we have a valid base date)
+            if ($baseDate) {
+                $ageDays = max(0, floor(now()->floatDiffInDays($baseDate)));
+            } else {
+                // Fallback: if no specific date, use created_at
+                $ageDays = max(0, floor(now()->floatDiffInDays($requisition->created_at)));
+            }
 
-            // attach ageing
-
+            // Attach ageing to requisition
             $requisition->ageing_days = $ageDays;
 
-
-            // priority classification
-
+            // Priority classification based on ageing
             if ($ageDays < 1) {
-
                 $requisition->priority_label = '🟢 Low';
                 $requisition->priority_color = 'success';
             } elseif ($ageDays <= 2) {
-
                 $requisition->priority_label = '🟡 Medium';
                 $requisition->priority_color = 'warning';
-            } else {
-
-                $requisition->priority_label = '🔴 High';
+            } elseif ($ageDays <= 5) {
+                $requisition->priority_label = '🟠 High';
                 $requisition->priority_color = 'danger';
+            } else {
+                $requisition->priority_label = '🔴 Critical';
+                $requisition->priority_color = 'dark';
             }
         }
 
@@ -609,238 +587,238 @@ class HomeController extends Controller
         // MODIFIED: BOTTLENECK STAGE USING TAT REPORT LOGIC
         // =============================
 
-       $financialYear = $request->get('financial_year');
-    $month = $request->get('month');
-    
-    // Get current month if not specified
-    if (!$month) {
-        $month = date('m'); // Current month
-    }
-    
-    $departmentId = $request->get('department_id');
-    $requisitionType = $request->get('requisition_type');
-    $status = $request->get('status');
+        $financialYear = $request->get('financial_year');
+        $month = $request->get('month');
 
-    if (!$financialYear) {
-        $currentMonth = date('n');
-        $currentYear = date('Y');
-        $financialYear = ($currentMonth >= 4)
-            ? $currentYear . '-' . ($currentYear + 1)
-            : ($currentYear - 1) . '-' . $currentYear;
-    }
-
-    [$startYear, $endYear] = explode('-', $financialYear);
-
-    // Build the SAME query as TAT report, but filter by CONTRACT START DATE
-    $candidateQuery = CandidateMaster::query()
-        ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
-
-        // Unsigned agreement (created)
-        ->leftJoinSub(
-            DB::table('agreement_documents')
-                ->select('candidate_id', DB::raw('MAX(id) as id'))
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'UNSIGNED')
-                ->groupBy('candidate_id'),
-            'created_ad',
-            'created_ad.candidate_id',
-            '=',
-            'candidate_master.id'
-        )
-        ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
-
-        // Signed agreement (uploaded)
-        ->leftJoinSub(
-            DB::table('agreement_documents')
-                ->select('candidate_id', DB::raw('MAX(id) as id'))
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'SIGNED')
-                ->groupBy('candidate_id'),
-            'signed_ad',
-            'signed_ad.candidate_id',
-            '=',
-            'candidate_master.id'
-        )
-        ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
-
-        // Courier details
-        ->leftJoinSub(
-            DB::table('agreement_couriers')
-                ->select('agreement_document_id', DB::raw('MAX(id) as id'))
-                ->groupBy('agreement_document_id'),
-            'latest_ac',
-            'latest_ac.agreement_document_id',
-            '=',
-            'ads.id'
-        )
-        ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
-
-        ->select(
-            'candidate_master.*',
-            'mr.submission_date',
-            'mr.hr_verification_date',
-            'mr.approval_date',
-            'mr.status as requisition_status',
-            'candidate_master.file_created_date',
-            'adc.created_at as agreement_created_date',
-            'ads.created_at as agreement_uploaded_date',
-            'ac.dispatch_date',
-            'ac.received_date'
-        );
-
-    // ✅ FIXED: Filter by CONTRACT START DATE instead of submission_date
-    if ($month) {
-        $year = ($month >= 4) ? $startYear : $endYear;
-        $dateStart = "{$year}-{$month}-01";
-        $dateEnd = Carbon::parse($dateStart)->endOfMonth()->toDateString();
-        
-        // Filter by contract_start_date
-        $candidateQuery->whereNotNull('candidate_master.contract_start_date')
-                      ->whereBetween('candidate_master.contract_start_date', [$dateStart, $dateEnd]);
-    } else {
-        // Filter by financial year based on contract_start_date
-        $candidateQuery->whereNotNull('candidate_master.contract_start_date')
-                      ->whereBetween('candidate_master.contract_start_date', [
-                        $startYear . '-04-01',
-                        $endYear . '-03-31'
-                      ]);
-    }
-
-    // Apply optional filters (if passed)
-    if ($departmentId) {
-        $candidateQuery->where('candidate_master.department_id', $departmentId);
-    }
-
-    if ($requisitionType) {
-        $candidateQuery->where('candidate_master.requisition_type', $requisitionType);
-    }
-
-    if ($status) {
-        $candidateQuery->where('mr.status', $status);
-    }
-
-    $allCandidates = $candidateQuery->get();
-
-    // Log for debugging
-    \Log::info('Dashboard Bottleneck Calculation', [
-        'financial_year' => $financialYear,
-        'month' => $month,
-        'contract_start_date_range' => $dateStart ?? ($startYear . '-04-01') . ' to ' . ($dateEnd ?? ($endYear . '-03-31')),
-        'total_candidates' => $allCandidates->count()
-    ]);
-
-    // Stage definitions (SAME as TAT report)
-    $stageDefinitions = [
-        'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date', 'label' => 'HR Verification'],
-        'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date', 'label' => 'Approval'],
-        'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date', 'label' => 'Agreement Create'],
-        'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date', 'label' => 'Agreement Upload'],
-        'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date', 'label' => 'Courier Dispatch'],
-        'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date', 'label' => 'Courier Delivery'],
-        'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date', 'label' => 'File Creation'],
-    ];
-
-    // Calculate stage averages with EXACT same method as TAT report
-    $stageData = [];
-    foreach ($stageDefinitions as $key => $def) {
-        $stageData[$key] = [];
-    }
-
-    foreach ($allCandidates as $candidate) {
-        foreach ($stageDefinitions as $key => $def) {
-            if ($key === 'file_creation') {
-                $fromDate = $candidate->received_date
-                    ?? $candidate->agreement_uploaded_date
-                    ?? $candidate->agreement_created_date
-                    ?? $candidate->approval_date;
-                $toDate = $candidate->file_created_date;
-            } else {
-                $fromDate = $candidate->{$def['from']} ?? null;
-                $toDate = $candidate->{$def['to']} ?? null;
-            }
-
-            if ($fromDate && $toDate) {
-                // Use EXACT same calculation as TAT report (ceil)
-                $days = max(0, ceil(
-                    Carbon::parse($fromDate)->diffInDays($toDate)
-                ));
-                $stageData[$key][] = $days;
-            }
+        // Get current month if not specified
+        if (!$month) {
+            $month = date('m'); // Current month
         }
-    }
 
-    // Calculate summaries for each stage
-    $stageSummaries = [];
-    foreach ($stageData as $key => $data) {
-        if (count($data) > 0) {
-            $stageSummaries[$key] = [
-                'total' => count($data),
-                'avg' => round(array_sum($data) / count($data), 2),
-                'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
-                'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
-                'above_3' => count(array_filter($data, fn($d) => $d > 3)),
-                'label' => $stageDefinitions[$key]['label']
-            ];
+        $departmentId = $request->get('department_id');
+        $requisitionType = $request->get('requisition_type');
+        $status = $request->get('status');
+
+        if (!$financialYear) {
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+            $financialYear = ($currentMonth >= 4)
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        // Build the SAME query as TAT report, but filter by CONTRACT START DATE
+        $candidateQuery = CandidateMaster::query()
+            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
+
+            // Unsigned agreement (created)
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED')
+                    ->groupBy('candidate_id'),
+                'created_ad',
+                'created_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+
+            // Signed agreement (uploaded)
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->groupBy('candidate_id'),
+                'signed_ad',
+                'signed_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
+
+            // Courier details
+            ->leftJoinSub(
+                DB::table('agreement_couriers')
+                    ->select('agreement_document_id', DB::raw('MAX(id) as id'))
+                    ->groupBy('agreement_document_id'),
+                'latest_ac',
+                'latest_ac.agreement_document_id',
+                '=',
+                'ads.id'
+            )
+            ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
+
+            ->select(
+                'candidate_master.*',
+                'mr.submission_date',
+                'mr.hr_verification_date',
+                'mr.approval_date',
+                'mr.status as requisition_status',
+                'candidate_master.file_created_date',
+                'adc.created_at as agreement_created_date',
+                'ads.created_at as agreement_uploaded_date',
+                'ac.dispatch_date',
+                'ac.received_date'
+            );
+
+        // ✅ FIXED: Filter by CONTRACT START DATE instead of submission_date
+        if ($month) {
+            $year = ($month >= 4) ? $startYear : $endYear;
+            $dateStart = "{$year}-{$month}-01";
+            $dateEnd = Carbon::parse($dateStart)->endOfMonth()->toDateString();
+
+            // Filter by contract_start_date
+            $candidateQuery->whereNotNull('candidate_master.contract_start_date')
+                ->whereBetween('candidate_master.contract_start_date', [$dateStart, $dateEnd]);
         } else {
-            $stageSummaries[$key] = [
-                'total' => 0,
-                'avg' => 0,
-                'within_1' => 0,
-                'within_3' => 0,
-                'above_3' => 0,
-                'label' => $stageDefinitions[$key]['label']
-            ];
+            // Filter by financial year based on contract_start_date
+            $candidateQuery->whereNotNull('candidate_master.contract_start_date')
+                ->whereBetween('candidate_master.contract_start_date', [
+                    $startYear . '-04-01',
+                    $endYear . '-03-31'
+                ]);
         }
-    }
 
-    // Find bottleneck stage (highest average)
-    $bottleneckStage = null;
-    $maxAvg = 0;
-    $bottleneckKey = null;
-
-    foreach ($stageSummaries as $key => $summary) {
-        if ($summary['total'] > 0 && $summary['avg'] > $maxAvg) {
-            $maxAvg = $summary['avg'];
-            $bottleneckStage = $summary['label'];
-            $bottleneckKey = $key;
+        // Apply optional filters (if passed)
+        if ($departmentId) {
+            $candidateQuery->where('candidate_master.department_id', $departmentId);
         }
-    }
 
-    // Set attention panel bottleneck data
-    $attention['bottleneck_stage'] = $bottleneckStage ?? 'N/A';
-    $attention['bottleneck_avg_days'] = round($maxAvg, 1);
-
-    // Add TAT-style summary to attention for debugging/display
-    $attention['stage_summaries'] = $stageSummaries;
-
-    // Color coding for bottleneck
-    if ($maxAvg < 1) {
-        $attention['bottleneck_color'] = 'success';
-    } elseif ($maxAvg <= 3) {
-        $attention['bottleneck_color'] = 'warning';
-    } else {
-        $attention['bottleneck_color'] = 'danger';
-    }
-
-    // Log the bottleneck calculation
-    \Log::info('Dashboard Bottleneck Result', [
-        'bottleneck_stage' => $attention['bottleneck_stage'],
-        'bottleneck_avg' => $attention['bottleneck_avg_days'],
-        'stage_averages' => array_map(function($s) {
-            return ['label' => $s['label'], 'avg' => $s['avg'], 'total' => $s['total']];
-        }, $stageSummaries)
-    ]);
-
-    // Also store all stage averages for potential display
-    $attention['stage_averages'] = [];
-    foreach ($stageData as $key => $data) {
-        if (count($data) > 0) {
-            $attention['stage_averages'][$stageDefinitions[$key]['label']] = [
-                'avg' => round(array_sum($data) / count($data), 1),
-                'count' => count($data)
-            ];
+        if ($requisitionType) {
+            $candidateQuery->where('candidate_master.requisition_type', $requisitionType);
         }
-    }
+
+        if ($status) {
+            $candidateQuery->where('mr.status', $status);
+        }
+
+        $allCandidates = $candidateQuery->get();
+
+        // Log for debugging
+        \Log::info('Dashboard Bottleneck Calculation', [
+            'financial_year' => $financialYear,
+            'month' => $month,
+            'contract_start_date_range' => $dateStart ?? ($startYear . '-04-01') . ' to ' . ($dateEnd ?? ($endYear . '-03-31')),
+            'total_candidates' => $allCandidates->count()
+        ]);
+
+        // Stage definitions (SAME as TAT report)
+        $stageDefinitions = [
+            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date', 'label' => 'HR Verification'],
+            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date', 'label' => 'Approval'],
+            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date', 'label' => 'Agreement Create'],
+            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date', 'label' => 'Agreement Upload'],
+            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date', 'label' => 'Courier Dispatch'],
+            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date', 'label' => 'Courier Delivery'],
+            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date', 'label' => 'File Creation'],
+        ];
+
+        // Calculate stage averages with EXACT same method as TAT report
+        $stageData = [];
+        foreach ($stageDefinitions as $key => $def) {
+            $stageData[$key] = [];
+        }
+
+        foreach ($allCandidates as $candidate) {
+            foreach ($stageDefinitions as $key => $def) {
+                if ($key === 'file_creation') {
+                    $fromDate = $candidate->received_date
+                        ?? $candidate->agreement_uploaded_date
+                        ?? $candidate->agreement_created_date
+                        ?? $candidate->approval_date;
+                    $toDate = $candidate->file_created_date;
+                } else {
+                    $fromDate = $candidate->{$def['from']} ?? null;
+                    $toDate = $candidate->{$def['to']} ?? null;
+                }
+
+                if ($fromDate && $toDate) {
+                    // Use EXACT same calculation as TAT report (ceil)
+                    $days = max(0, ceil(
+                        Carbon::parse($fromDate)->diffInDays($toDate)
+                    ));
+                    $stageData[$key][] = $days;
+                }
+            }
+        }
+
+        // Calculate summaries for each stage
+        $stageSummaries = [];
+        foreach ($stageData as $key => $data) {
+            if (count($data) > 0) {
+                $stageSummaries[$key] = [
+                    'total' => count($data),
+                    'avg' => round(array_sum($data) / count($data), 2),
+                    'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
+                    'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
+                    'above_3' => count(array_filter($data, fn($d) => $d > 3)),
+                    'label' => $stageDefinitions[$key]['label']
+                ];
+            } else {
+                $stageSummaries[$key] = [
+                    'total' => 0,
+                    'avg' => 0,
+                    'within_1' => 0,
+                    'within_3' => 0,
+                    'above_3' => 0,
+                    'label' => $stageDefinitions[$key]['label']
+                ];
+            }
+        }
+
+        // Find bottleneck stage (highest average)
+        $bottleneckStage = null;
+        $maxAvg = 0;
+        $bottleneckKey = null;
+
+        foreach ($stageSummaries as $key => $summary) {
+            if ($summary['total'] > 0 && $summary['avg'] > $maxAvg) {
+                $maxAvg = $summary['avg'];
+                $bottleneckStage = $summary['label'];
+                $bottleneckKey = $key;
+            }
+        }
+
+        // Set attention panel bottleneck data
+        $attention['bottleneck_stage'] = $bottleneckStage ?? 'N/A';
+        $attention['bottleneck_avg_days'] = round($maxAvg, 1);
+
+        // Add TAT-style summary to attention for debugging/display
+        $attention['stage_summaries'] = $stageSummaries;
+
+        // Color coding for bottleneck
+        if ($maxAvg < 1) {
+            $attention['bottleneck_color'] = 'success';
+        } elseif ($maxAvg <= 3) {
+            $attention['bottleneck_color'] = 'warning';
+        } else {
+            $attention['bottleneck_color'] = 'danger';
+        }
+
+        // Log the bottleneck calculation
+        \Log::info('Dashboard Bottleneck Result', [
+            'bottleneck_stage' => $attention['bottleneck_stage'],
+            'bottleneck_avg' => $attention['bottleneck_avg_days'],
+            'stage_averages' => array_map(function ($s) {
+                return ['label' => $s['label'], 'avg' => $s['avg'], 'total' => $s['total']];
+            }, $stageSummaries)
+        ]);
+
+        // Also store all stage averages for potential display
+        $attention['stage_averages'] = [];
+        foreach ($stageData as $key => $data) {
+            if (count($data) > 0) {
+                $attention['stage_averages'][$stageDefinitions[$key]['label']] = [
+                    'avg' => round(array_sum($data) / count($data), 1),
+                    'count' => count($data)
+                ];
+            }
+        }
         $fyStart = now()->month >= 4
             ? now()->year . '-04-01'
             : (now()->year - 1) . '-04-01';
