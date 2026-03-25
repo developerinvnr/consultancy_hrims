@@ -578,103 +578,176 @@ class HomeController extends Controller
 
         $attention['avg_req_to_active'] = round($avgActiveTime ?? 0, 1);
 
+        $financialYear = $request->get('financial_year');
+        $month = $request->get('month');
+
+        if (!$financialYear) {
+
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+
+            $financialYear = ($currentMonth >= 4)
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
+        }
+
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        if ($month) {
+
+            $year = ($month >= 4) ? $startYear : $endYear;
+
+            $startDate = "$year-$month-01";
+
+            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->toDateString();
+
+        } else {
+
+            $startDate = "$startYear-04-01";
+
+            $endDate = "$endYear-03-31";
+        }
+
 
         // Detect Bottleneck Stage
-        $bottleneckStage = DB::selectOne("
-SELECT stage, AVG(days) avg_days
-FROM (
+       $bottleneckStage = DB::selectOne("
+        SELECT stage, AVG(days) avg_days
+        FROM (
 
-/* HR Verification */
-SELECT 'HR Verification' stage,
-DATEDIFF(
-COALESCE(hr_verification_date, NOW()),
-submission_date
-) days
-FROM manpower_requisitions
-WHERE submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        /* HR Verification */
 
-/* Approval */
-UNION ALL
-SELECT 'Approval',
-DATEDIFF(
-COALESCE(approval_date, NOW()),
-hr_verification_date
-)
-FROM manpower_requisitions
-WHERE hr_verification_date IS NOT NULL
-AND submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        SELECT 'HR Verification' stage,
+        DATEDIFF(
+        COALESCE(mr.hr_verification_date, NOW()),
+        mr.submission_date
+        ) days
+        FROM manpower_requisitions mr
+        WHERE mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
-/* Agreement Create */
-UNION ALL
-SELECT 'Agreement Create',
-DATEDIFF(
-COALESCE(ad.created_at, NOW()),
-approval_date
-)
-FROM agreement_documents ad
-JOIN candidate_master cm
-ON cm.id = ad.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE ad.document_type='agreement'
-AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-/* Agreement Upload */
-UNION ALL
-SELECT 'Agreement Upload',
-DATEDIFF(
-COALESCE(ads.created_at, NOW()),
-adc.created_at
-)
-FROM agreement_documents adc
-JOIN agreement_documents ads
-ON adc.candidate_id = ads.candidate_id
-AND ads.sign_status='SIGNED'
-JOIN candidate_master cm
-ON cm.id = adc.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE adc.sign_status='UNSIGNED'
-AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        UNION ALL
 
-/* Courier Dispatch */
-UNION ALL
-SELECT 'Courier Dispatch',
-DATEDIFF(
-COALESCE(ac.dispatch_date, NOW()),
-ads.created_at
-)
-FROM agreement_couriers ac
-JOIN agreement_documents ads
-ON ads.id = ac.agreement_document_id
-JOIN candidate_master cm
-ON cm.id = ads.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-/* Courier Delivery */
-UNION ALL
-SELECT 'Courier Delivery',
-DATEDIFF(
-COALESCE(ac.received_date, NOW()),
-ac.dispatch_date
-)
-FROM agreement_couriers ac
-JOIN agreement_documents ad
-ON ad.id = ac.agreement_document_id
-JOIN candidate_master cm
-ON cm.id = ad.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        /* Approval */
 
-) stage_times
+        SELECT 'Approval',
+        DATEDIFF(
+        COALESCE(mr.approval_date, NOW()),
+        mr.hr_verification_date
+        )
+        FROM manpower_requisitions mr
+        WHERE mr.hr_verification_date IS NOT NULL
+        AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
-GROUP BY stage
-ORDER BY avg_days DESC
-LIMIT 1
-");
+
+        UNION ALL
+
+
+        /* Agreement Create */
+
+        SELECT 'Agreement Create',
+        DATEDIFF(
+        COALESCE(adc.created_at, NOW()),
+        mr.approval_date
+        )
+        FROM agreement_documents adc
+        JOIN candidate_master cm
+        ON cm.id = adc.candidate_id
+        JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+        WHERE adc.document_type = 'agreement'
+        AND adc.sign_status = 'UNSIGNED'
+        AND mr.approval_date IS NOT NULL
+        AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+        UNION ALL
+
+
+        /* Agreement Upload */
+
+        SELECT 'Agreement Upload',
+        DATEDIFF(
+        COALESCE(ads.created_at, NOW()),
+        adc.created_at
+        )
+        FROM agreement_documents adc
+        JOIN agreement_documents ads
+        ON adc.candidate_id = ads.candidate_id
+        AND ads.sign_status = 'SIGNED'
+        JOIN candidate_master cm
+        ON cm.id = adc.candidate_id
+        JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+        WHERE adc.sign_status = 'UNSIGNED'
+        AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+        UNION ALL
+
+
+        /* Courier Dispatch */
+
+        SELECT 'Courier Dispatch',
+        DATEDIFF(
+        COALESCE(ac.dispatch_date, NOW()),
+        ads.created_at
+        )
+        FROM agreement_couriers ac
+        JOIN agreement_documents ads
+        ON ads.id = ac.agreement_document_id
+        JOIN candidate_master cm
+        ON cm.id = ads.candidate_id
+        JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+        WHERE mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+        UNION ALL
+
+
+        /* Courier Delivery */
+
+        SELECT 'Courier Delivery',
+        DATEDIFF(
+        COALESCE(ac.received_date, NOW()),
+        ac.dispatch_date
+        )
+        FROM agreement_couriers ac
+        JOIN agreement_documents ad
+        ON ad.id = ac.agreement_document_id
+        JOIN candidate_master cm
+        ON cm.id = ad.candidate_id
+        JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+        WHERE mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+        UNION ALL
+
+
+        /* File Creation */
+
+        SELECT 'File Creation',
+        DATEDIFF(
+        COALESCE(cm.file_created_date, NOW()),
+        ac.received_date
+        )
+        FROM candidate_master cm
+        JOIN agreement_documents ad
+        ON ad.candidate_id = cm.id
+        JOIN agreement_couriers ac
+        ON ac.agreement_document_id = ad.id
+        JOIN manpower_requisitions mr
+        ON mr.id = cm.requisition_id
+        WHERE mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+        ) stage_times
+
+        GROUP BY stage
+        ORDER BY avg_days DESC
+        LIMIT 1
+        ");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
