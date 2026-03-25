@@ -498,31 +498,27 @@ class ReportController extends Controller
                 }
             });
 
-            if ($exportStatus === 'exported') {
+        if ($exportStatus === 'exported') {
 
-                    $query->whereIn('id', function ($sub) {
+            $query->whereIn('id', function ($sub) {
 
-                        $sub->select('reference_id')
-                            ->from('report_exports')
-                            ->where('reference_table', 'salary_processings')
-                            ->where('report_type', 'jv');
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'jv');
+            });
+        }
 
-                    });
+        if ($exportStatus === 'not_exported') {
 
-                }
+            $query->whereNotIn('id', function ($sub) {
 
-                if ($exportStatus === 'not_exported') {
-
-                    $query->whereNotIn('id', function ($sub) {
-
-                        $sub->select('reference_id')
-                            ->from('report_exports')
-                            ->where('reference_table', 'salary_processings')
-                            ->where('report_type', 'jv');
-
-                    });
-
-                }
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'jv');
+            });
+        }
 
         // -------------------------------
         // 5️⃣ Pagination
@@ -597,12 +593,12 @@ class ReportController extends Controller
             });
 
         if ($exportStatus === 'exported') {
-                $query->whereIn('id', function ($sub) {
-                    $sub->select('reference_id')
-                        ->from('report_exports')
-                        ->where('reference_table', 'salary_processings')
-                        ->where('report_type', 'tds_jv');
-                });
+            $query->whereIn('id', function ($sub) {
+                $sub->select('reference_id')
+                    ->from('report_exports')
+                    ->where('reference_table', 'salary_processings')
+                    ->where('report_type', 'tds_jv');
+            });
         }
 
         if ($exportStatus === 'not_exported') {
@@ -612,7 +608,6 @@ class ReportController extends Controller
                     ->where('reference_table', 'salary_processings')
                     ->where('report_type', 'tds_jv');
             });
-
         }
 
         $records = $query->paginate(20)->withQueryString();
@@ -635,7 +630,7 @@ class ReportController extends Controller
                 $request->month,
                 $request->status,
                 $request->requisition_type ?? '',
-                $request->export_status ?? 'All' 
+                $request->export_status ?? 'All'
             ),
             'TDS_JV_Report.xlsx'
         );
@@ -715,7 +710,6 @@ class ReportController extends Controller
     {
         $financialYear = $request->get('financial_year');
         $month = $request->get('month');
-
         $departmentId = $request->get('department_id');
         $requisitionType = $request->get('requisition_type');
         $status = $request->get('status');
@@ -723,7 +717,6 @@ class ReportController extends Controller
         if (!$financialYear) {
             $currentMonth = date('n');
             $currentYear = date('Y');
-
             $financialYear = ($currentMonth >= 4)
                 ? $currentYear . '-' . ($currentYear + 1)
                 : ($currentYear - 1) . '-' . $currentYear;
@@ -737,12 +730,12 @@ class ReportController extends Controller
 
             // ✅ Latest Agreement (fix duplicate)
             ->leftJoinSub(
-        DB::table('agreement_documents')
-        ->select('candidate_id', DB::raw('MAX(id) as id'))
-        ->where('document_type', 'agreement')
-        ->where('sign_status', 'UNSIGNED')
-        ->groupBy('candidate_id'),
-            'created_ad',
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED')
+                    ->groupBy('candidate_id'),
+                'created_ad',
                 'created_ad.candidate_id',
                 '=',
                 'candidate_master.id'
@@ -776,20 +769,13 @@ class ReportController extends Controller
 
             ->select(
                 'candidate_master.*',
-
-                // Manpower
                 'mr.submission_date',
                 'mr.hr_verification_date',
                 'mr.approval_date',
-
                 'candidate_master.file_created_date',
-
-                // Agreement
-        'adc.created_at as agreement_created_date',
-        'ads.created_at as agreement_uploaded_date',
-
-                // Courier
-                 'ac.dispatch_date',
+                'adc.created_at as agreement_created_date',
+                'ads.created_at as agreement_uploaded_date',
+                'ac.dispatch_date',
                 'ac.received_date'
             );
 
@@ -804,34 +790,36 @@ class ReportController extends Controller
         if ($status) {
             $query->where('mr.status', $status);
         }
-        // ✅ Date Filter (based on submission OR candidate created)
+
+        // ✅ FIXED Date Filter - Only include records with valid submission_date
         if ($month) {
             $year = ($month >= 4) ? $startYear : $endYear;
             $startDate = "{$year}-{$month}-01";
-            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth();
+            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
 
-            $query->whereBetween('mr.submission_date', [$startDate, $endDate]);
+            // Only include records where submission_date is NOT NULL and within the range
+            $query->whereNotNull('mr.submission_date')
+                ->whereBetween('mr.submission_date', [$startDate, $endDate]);
         } else {
-            $query->whereBetween('mr.submission_date', [
-                $startYear . '-04-01',
-                $endYear . '-03-31'
-            ]);
+            $query->whereNotNull('mr.submission_date')
+                ->whereBetween('mr.submission_date', [
+                    $startYear . '-04-01',
+                    $endYear . '-03-31'
+                ]);
         }
 
         $allRecords = $query->get();
 
-        // ✅ STAGE CONFIG (Dynamic 🔥)
+        // ✅ STAGE CONFIG (Dynamic)
         $stages = [
-        'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
-        'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
-
-        'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
-        'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
-
-        'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
-        'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
-        'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
-     ];
+            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
+        ];
 
         $stageData = [];
         foreach ($stages as $key => $s) {
@@ -839,29 +827,26 @@ class ReportController extends Controller
         }
 
         foreach ($allRecords as $row) {
-        foreach ($stages as $key => $s) {
+            foreach ($stages as $key => $s) {
+                if ($key === 'file_creation') {
+                    $fromDate = $row->received_date
+                        ?? $row->agreement_uploaded_date
+                        ?? $row->agreement_created_date
+                        ?? $row->approval_date;
+                    $toDate = $row->file_created_date;
+                } else {
+                    $fromDate = $row->{$s['from']} ?? null;
+                    $toDate = $row->{$s['to']} ?? null;
+                }
 
-        if ($key === 'file_creation') {
-            $fromDate = $row->received_date
-                ?? $row->agreement_uploaded_date
-                ?? $row->agreement_created_date
-                ?? $row->approval_date;
-
-            $toDate = $row->file_created_date;
-        } else {
-            $fromDate = $row->{$s['from']} ?? null;
-            $toDate = $row->{$s['to']} ?? null;
-        }
-
-        if ($fromDate && $toDate) {
-            $days = max(0, ceil(
-                \Carbon\Carbon::parse($fromDate)
-                    ->diffInDays($toDate)
-            ));
-
-            $stageData[$key][] = $days;
-        }
-     }
+                if ($fromDate && $toDate) {
+                    $days = max(0, ceil(
+                        \Carbon\Carbon::parse($fromDate)
+                            ->diffInDays($toDate)
+                    ));
+                    $stageData[$key][] = $days;
+                }
+            }
         }
 
         $getSummary = function ($data) {
@@ -879,8 +864,9 @@ class ReportController extends Controller
             $summaries[$key] = $getSummary($data);
         }
 
-        $records = $query->latest()->paginate(20);
+        $records = $query->latest('mr.submission_date')->paginate(20);
         $departments = CoreDepartment::orderBy('department_name')->get();
+
         return view('reports.tat', compact(
             'records',
             'summaries',
