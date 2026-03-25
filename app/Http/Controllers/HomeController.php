@@ -652,7 +652,10 @@ AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 UNION ALL
 
 SELECT 'Courier Pending',
-DATEDIFF(NOW(), ac.dispatch_date)
+DATEDIFF(
+COALESCE(ac.received_date, NOW()),
+ac.dispatch_date
+)
 FROM agreement_couriers ac
 JOIN agreement_documents ad
 ON ad.id = ac.agreement_document_id
