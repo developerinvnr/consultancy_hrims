@@ -46,10 +46,10 @@
                             <label class="form-label form-label-sm">Department</label>
                             <select name="department_id" class="form-select form-select-sm">
                                 <option value="">All</option>
-                                @foreach($departments as $dept)
-                                <option value="{{ $dept->id }}"
-                                    {{ $departmentId==$dept->id?'selected':'' }}>
-                                    {{ $dept->department_name }}
+                                @foreach($departments as $deptId => $deptName)
+                                <option value="{{ $deptId }}"
+                                    {{ $departmentId==$deptId?'selected':'' }}>
+                                    {{ $deptName }}
                                 </option>
                                 @endforeach
                             </select>
@@ -75,19 +75,127 @@
                                 <option value="Rejected">Rejected</option>
                             </select>
                         </div>
+                        
                         <div class="col-md-1">
                             <button class="btn btn-sm btn-primary w-100">
                                 Filter
                             </button>
                         </div>
                     </form>
+                    
+                    <!-- Hierarchy Filters -->
+                    <!-- Hierarchy Filters -->
+<hr class="my-3">
+<form method="GET" action="{{ route('reports.tat') }}" class="row g-2 align-items-end mt-2">
+    <!-- Preserve existing filters -->
+    <input type="hidden" name="financial_year" value="{{ $financialYear }}">
+    <input type="hidden" name="month" value="{{ $month }}">
+    <input type="hidden" name="department_id" value="{{ $departmentId }}">
+    <input type="hidden" name="requisition_type" value="{{ $requisitionType }}">
+    <input type="hidden" name="status" value="{{ $status }}">
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Business Unit</label>
+        <select name="bu" class="form-select form-select-sm">
+            @foreach($businessUnits as $buId => $buName)
+            <option value="{{ $buId }}" {{ ($buId ?? '') == $buId ? 'selected' : '' }}>
+                {{ $buName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Zone</label>
+        <select name="zone" class="form-select form-select-sm">
+            @foreach($zones as $zoneId => $zoneName)
+            <option value="{{ $zoneId }}" {{ ($zoneId ?? '') == $zoneId ? 'selected' : '' }}>
+                {{ $zoneName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Region</label>
+        <select name="region" class="form-select form-select-sm">
+            @foreach($regions as $regionId => $regionName)
+            <option value="{{ $regionId }}" {{ ($regionId ?? '') == $regionId ? 'selected' : '' }}>
+                {{ $regionName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Territory</label>
+        <select name="territory" class="form-select form-select-sm">
+            @foreach($territories as $territoryId => $territoryName)
+            <option value="{{ $territoryId }}" {{ ($territoryId ?? '') == $territoryId ? 'selected' : '' }}>
+                {{ $territoryName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Vertical</label>
+        <select name="vertical" class="form-select form-select-sm">
+            @foreach($verticals as $verticalId => $verticalName)
+            <option value="{{ $verticalId }}" {{ ($verticalId ?? '') == $verticalId ? 'selected' : '' }}>
+                {{ $verticalName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <label class="form-label form-label-sm">Reporting Manager</label>
+        <select name="employee" class="form-select form-select-sm">
+            @foreach($employees as $empId => $empName)
+            <option value="{{ $empId }}" {{ ($employeeId ?? '') == $empId ? 'selected' : '' }}>
+                {{ $empName }}
+            </option>
+            @endforeach
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <button class="btn btn-sm btn-secondary w-100">
+            Apply Hierarchy Filters
+        </button>
+    </div>
+    
+    @if(($buId ?? 'All') != 'All' || ($zoneId ?? 'All') != 'All' || ($regionId ?? 'All') != 'All' || ($territoryId ?? 'All') != 'All' || ($verticalId ?? 'All') != 'All' || ($employeeId ?? 'All') != 'All')
+    <div class="col-md-2">
+        <a href="{{ route('reports.tat', array_merge(request()->except(['bu', 'zone', 'region', 'territory', 'vertical', 'employee']), ['bu' => 'All', 'zone' => 'All', 'region' => 'All', 'territory' => 'All', 'vertical' => 'All', 'employee' => 'All'])) }}" 
+           class="btn btn-sm btn-outline-danger w-100">
+            Clear All Filters
+        </a>
+    </div>
+    @endif
+</form>
                 </div>
             </div>
 
+            <!-- Display active hierarchy filters -->
+            @if(($buId ?? 'All') != 'All' || ($zoneId ?? 'All') != 'All' || ($regionId ?? 'All') != 'All' || ($territoryId ?? 'All') != 'All' || ($verticalId ?? 'All') != 'All' || ($employeeId ?? 'All') != 'All')
+            <div class="alert alert-info alert-sm mb-3">
+                <i class="ri-filter-line me-2"></i>
+                <strong>Active Filters:</strong>
+                @if(($buId ?? 'All') != 'All') Business Unit: {{ $businessUnits[$buId] ?? $buId }} @endif
+                @if(($zoneId ?? 'All') != 'All') | Zone: {{ $zones[$zoneId] ?? $zoneId }} @endif
+                @if(($regionId ?? 'All') != 'All') | Region: {{ $regions[$regionId] ?? $regionId }} @endif
+                @if(($territoryId ?? 'All') != 'All') | Territory: {{ $territories[$territoryId] ?? $territoryId }} @endif
+                @if(($verticalId ?? 'All') != 'All') | Vertical: {{ $verticals[$verticalId] ?? $verticalId }} @endif
+                @if(($employeeId ?? 'All') != 'All') | Reporting Manager: {{ $employees[$employeeId] ?? $employeeId }} @endif
+            </div>
+            @endif
+
+            <!-- KPI Cards remain the same -->
             <div class="kpi-container mb-3">
                 @foreach($summaries as $key => $s)
                 <div class="kpi-card">
-
                     <div class="kpi-top">
                         <div class="kpi-title">
                             {{ ucwords(str_replace('_',' ', $key)) }}
@@ -98,20 +206,20 @@
                     </div>
 
                     <div class="kpi-body d-flex justify-content-between align-items-center">
-    <div class="kpi-number">{{ $s['total'] }}</div>
-    <div class="kpi-avg">{{ $s['avg'] }}d</div>
-</div>
+                        <div class="kpi-number">{{ $s['total'] }}</div>
+                        <div class="kpi-avg">{{ $s['avg'] }}d</div>
+                    </div>
 
                     <div class="kpi-footer">
                         <span class="badge-success">≤1 day: {{ $s['within_1'] }}</span>
                         <span class="badge-warning">1–3 days: {{ $s['within_3'] }}</span>
                         <span class="badge-danger">>3 days: {{ $s['above_3'] }}</span>
                     </div>
-
                 </div>
                 @endforeach
             </div>
 
+            <!-- Table remains the same -->
             <div class="table-scroll">
                 <table class="table table-bordered table-hover table-sm mb-0">
                     <thead class="table-light">
@@ -120,7 +228,7 @@
                             <th>Req ID</th>
                             <th>Candidate</th>
                             <th>Submission</th>
-                            <th>Contract Start Date
+                            <th>Contract Start Date</th>
 
                             {{-- Stage Dates --}}
                             @foreach($stages as $key => $s)
@@ -150,52 +258,50 @@
                                 {{ $row->submission_date ? \Carbon\Carbon::parse($row->submission_date)->format('d-M-Y') : '-' }}
                             </td>
 
-                             <td>
-                    @if($row->contract_start_date)
-                        <span class="badge bg-info">
-                            {{ \Carbon\Carbon::parse($row->contract_start_date)->format('d-M-Y') }}
-                        </span>
-                    @else
-                        -
-                    @endif
-                </td>
-                
+                            <td>
+                                @if($row->contract_start_date)
+                                <span class="badge bg-info">
+                                    {{ \Carbon\Carbon::parse($row->contract_start_date)->format('d-M-Y') }}
+                                </span>
+                                @else
+                                -
+                                @endif
+                            </td>
 
-                            {{-- ✅ Stage Dates --}}
+                            {{-- Stage Dates --}}
                             @foreach($stages as $key => $s)
                             <td>
                                 {{ $row->{$s['to']} ? \Carbon\Carbon::parse($row->{$s['to']})->format('d-M-Y') : '-' }}
                             </td>
                             @endforeach
 
-                            {{-- ✅ Stage TAT --}}
+                            {{-- Stage TAT --}}
                             @foreach($stages as $key => $s)
-                           @php
-if($key === 'file_creation'){
-    $fromDate = $row->received_date
-        ?? $row->agreement_uploaded_date
-        ?? $row->agreement_created_date
-        ?? $row->approval_date;
+                            @php
+                                if($key === 'file_creation'){
+                                    $fromDate = $row->received_date
+                                        ?? $row->agreement_uploaded_date
+                                        ?? $row->agreement_created_date
+                                        ?? $row->approval_date;
+                                    $toDate = $row->file_created_date;
+                                } else {
+                                    $fromDate = $row->{$s['from']} ?? null;
+                                    $toDate = $row->{$s['to']} ?? null;
+                                }
 
-    $toDate = $row->file_created_date;
-} else {
-    $fromDate = $row->{$s['from']} ?? null;
-    $toDate = $row->{$s['to']} ?? null;
-}
-
-$tat = ($fromDate && $toDate)
-    ? \Carbon\Carbon::parse($fromDate)->diffInDays($toDate)
-    : null;
-@endphp
+                                $tat = ($fromDate && $toDate)
+                                    ? \Carbon\Carbon::parse($fromDate)->diffInDays($toDate)
+                                    : null;
+                            @endphp
 
                             <td class="text-center">
                                 @if($tat !== null)
                                 <span class="badge 
-                        @if($tat <= 1) bg-success
-                        @elseif($tat <= 3) bg-warning
-                        @else bg-danger
-                        @endif
-                    ">
+                                    @if($tat <= 1) bg-success
+                                    @elseif($tat <= 3) bg-warning
+                                    @else bg-danger
+                                    @endif
+                                ">
                                     {{ $tat < 1 ? 'Within 1 Day' : round($tat).' Days' }}
                                 </span>
                                 @else
@@ -203,12 +309,10 @@ $tat = ($fromDate && $toDate)
                                 @endif
                             </td>
                             @endforeach
-
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
-
             </div>
         </div>
         <div class="card-footer d-flex justify-content-end">
@@ -216,6 +320,7 @@ $tat = ($fromDate && $toDate)
         </div>
     </div>
 </div>
+
 <style>
     .kpi-container {
         display: grid;
@@ -223,7 +328,6 @@ $tat = ($fromDate && $toDate)
         gap: 8px;
     }
 
-    /* Compact Card */
     .kpi-card {
         background: #ffffff;
         border-radius: 8px;
@@ -237,19 +341,16 @@ $tat = ($fromDate && $toDate)
         transform: translateY(-2px);
     }
 
-    /* Header */
     .kpi-title {
         font-size: 11px;
         font-weight: 600;
         color: #374151;
     }
 
-    /* Reduce icon size */
     .kpi-icon {
         font-size: 13px;
     }
 
-    /* Body */
     .kpi-number {
         font-size: 18px;
         font-weight: 700;
@@ -261,20 +362,15 @@ $tat = ($fromDate && $toDate)
         color: #6b7280;
     }
 
-    /* Footer */
     .kpi-footer {
         font-size: 10px;
         margin-top: 4px;
     }
 
-    /* Reduce spacing */
     .kpi-body {
         margin-top: 4px;
     }
 
-
-
-    /* Badges */
     .badge-success {
         color: #059669;
         font-weight: 600;
@@ -298,13 +394,10 @@ $tat = ($fromDate && $toDate)
         border-radius: 8px;
     }
 
-    /* Keep table clean */
     .table-scroll table {
         min-width: 1200px;
-        /* adjust based on columns */
     }
 
-    /* Sticky Header */
     .table-scroll thead th {
         position: sticky;
         top: 0;
@@ -312,7 +405,6 @@ $tat = ($fromDate && $toDate)
         z-index: 2;
     }
 
-    /* Optional: sticky first column */
     .table-scroll th:first-child,
     .table-scroll td:first-child {
         position: sticky;
@@ -321,7 +413,6 @@ $tat = ($fromDate && $toDate)
         z-index: 1;
     }
 
-    /* Smooth scroll */
     .table-scroll::-webkit-scrollbar {
         height: 6px;
     }

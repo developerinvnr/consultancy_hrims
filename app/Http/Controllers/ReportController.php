@@ -18,6 +18,9 @@ use App\Exports\TatReportExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\HierarchyAccessService;
+use Illuminate\Support\Facades\Auth;
+
 
 class ReportController extends Controller
 {
@@ -706,192 +709,360 @@ class ReportController extends Controller
         );
     }
 
-    public function tat(Request $request)
-{
-    $financialYear = $request->get('financial_year');
-    $month = $request->get('month');
-    $departmentId = $request->get('department_id');
-    $requisitionType = $request->get('requisition_type');
-    $status = $request->get('status');
+    public function tat(Request $request, HierarchyAccessService $hierarchyService)
+    {
+        $financialYear = $request->get('financial_year');
+        $month = $request->get('month');
+        $departmentId = $request->get('department_id');
+        $requisitionType = $request->get('requisition_type');
+        $status = $request->get('status');
 
-    if (!$financialYear) {
-        $currentMonth = date('n');
-        $currentYear = date('Y');
-        $financialYear = ($currentMonth >= 4)
-            ? $currentYear . '-' . ($currentYear + 1)
-            : ($currentYear - 1) . '-' . $currentYear;
-    }
+        // ✅ New hierarchy filters
+        $buId = $request->get('bu', 'All');
+        $zoneId = $request->get('zone', 'All');
+        $regionId = $request->get('region', 'All');
+        $territoryId = $request->get('territory', 'All');
+        $verticalId = $request->get('vertical', 'All');
+        $employeeId = $request->get('employee', 'All');
 
-    [$startYear, $endYear] = explode('-', $financialYear);
+        if (!$financialYear) {
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+            $financialYear = ($currentMonth >= 4)
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
+        }
 
-    // ✅ ROOT QUERY (Candidate आधारित)
-    $query = CandidateMaster::query()
-        ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
+        [$startYear, $endYear] = explode('-', $financialYear);
 
-        // ✅ Latest Agreement (fix duplicate)
-        ->leftJoinSub(
-            DB::table('agreement_documents')
-                ->select('candidate_id', DB::raw('MAX(id) as id'))
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'UNSIGNED')
-                ->groupBy('candidate_id'),
-            'created_ad',
-            'created_ad.candidate_id',
-            '=',
-            'candidate_master.id'
-        )
-        ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
+        // ✅ Get logged in user
+        $user = Auth::user();
+        $employee = \App\Models\Employee::where('employee_id', $user->emp_id)->first();
 
-        ->leftJoinSub(
-            DB::table('agreement_documents')
-                ->select('candidate_id', DB::raw('MAX(id) as id'))
-                ->where('document_type', 'agreement')
-                ->where('sign_status', 'SIGNED')
-                ->groupBy('candidate_id'),
-            'signed_ad',
-            'signed_ad.candidate_id',
-            '=',
-            'candidate_master.id'
-        )
-        ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
+        // ✅ ROOT QUERY (Candidate आधारित)
+        $query = CandidateMaster::query()
+            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
 
-        // ✅ Latest Courier (fix duplicate)
-        ->leftJoinSub(
-            DB::table('agreement_couriers')
-                ->select('agreement_document_id', DB::raw('MAX(id) as id'))
-                ->groupBy('agreement_document_id'),
-            'latest_ac',
-            'latest_ac.agreement_document_id',
-            '=',
-            'ads.id'
-        )
-        ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
+            // ✅ Join hierarchy tables with correct field names
+            ->leftJoin('core_business_unit as bu', 'bu.id', '=', 'candidate_master.business_unit')
+            ->leftJoin('core_zone as zone', 'zone.id', '=', 'candidate_master.zone')
+            ->leftJoin('core_region as region', 'region.id', '=', 'candidate_master.region')
+            ->leftJoin('core_territory as territory', 'territory.id', '=', 'candidate_master.territory')
+            ->leftJoin('core_vertical as vertical', 'vertical.id', '=', 'candidate_master.vertical_id')  // ✅ Fixed: vertical_id
+            ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
 
-        ->select(
-            'candidate_master.*',
-            'mr.submission_date',
-            'mr.hr_verification_date',
-            'mr.approval_date',
-            'candidate_master.file_created_date',
-            'candidate_master.contract_start_date', // Already in candidate_master.*
-            'adc.created_at as agreement_created_date',
-            'ads.created_at as agreement_uploaded_date',
-            'ac.dispatch_date',
-            'ac.received_date'
-        );
+            // ✅ Latest Agreement (fix duplicate)
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED')
+                    ->groupBy('candidate_id'),
+                'created_ad',
+                'created_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
 
-    if ($departmentId) {
-        $query->where('candidate_master.department_id', $departmentId);
-    }
+            ->leftJoinSub(
+                DB::table('agreement_documents')
+                    ->select('candidate_id', DB::raw('MAX(id) as id'))
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->groupBy('candidate_id'),
+                'signed_ad',
+                'signed_ad.candidate_id',
+                '=',
+                'candidate_master.id'
+            )
+            ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
-    if ($requisitionType) {
-        $query->where('candidate_master.requisition_type', $requisitionType);
-    }
+            // ✅ Latest Courier (fix duplicate)
+            ->leftJoinSub(
+                DB::table('agreement_couriers')
+                    ->select('agreement_document_id', DB::raw('MAX(id) as id'))
+                    ->groupBy('agreement_document_id'),
+                'latest_ac',
+                'latest_ac.agreement_document_id',
+                '=',
+                'ads.id'
+            )
+            ->leftJoin('agreement_couriers as ac', 'ac.id', '=', 'latest_ac.id')
 
-    if ($status) {
-        $query->where('mr.status', $status);
-    }
-    
-    // ✅ NEW: Filter based on Contract Start Date instead of Submission Date
-    if ($month) {
-        $year = ($month >= 4) ? $startYear : $endYear;
-        $startDate = "{$year}-{$month}-01";
-        $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
-        
-        // Filter by contract_start_date
-        $query->whereNotNull('candidate_master.contract_start_date')
-              ->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate]);
-    } else {
-        // Filter by financial year based on contract_start_date
-        $query->whereNotNull('candidate_master.contract_start_date')
-              ->whereBetween('candidate_master.contract_start_date', [
-                $startYear . '-04-01',
-                $endYear . '-03-31'
-              ]);
-    }
+            ->select(
+                'candidate_master.*',
+                'mr.submission_date',
+                'mr.hr_verification_date',
+                'mr.approval_date',
+                'candidate_master.file_created_date',
+                'candidate_master.contract_start_date',
+                'adc.created_at as agreement_created_date',
+                'ads.created_at as agreement_uploaded_date',
+                'ac.dispatch_date',
+                'ac.received_date',
+                // ✅ Hierarchy fields
+                'bu.business_unit_name',
+                'zone.zone_name',
+                'region.region_name',
+                'territory.territory_name',
+                'vertical.vertical_name',
+                'dept.department_name'
+            );
 
-    $allRecords = $query->get();
+        // ✅ Apply Hierarchy Access Control (Critical!)
+        if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+            // Get all subordinates under this manager
+            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
 
-    // ✅ STAGE CONFIG (Dynamic)
-    $stages = [
-        'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
-        'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
-        'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
-        'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
-        'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
-        'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
-        'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
-    ];
+            // Filter candidates by reporting manager hierarchy
+            $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIds);
 
-    $stageData = [];
-    foreach ($stages as $key => $s) {
-        $stageData[$key] = [];
-    }
+            // Also apply location-based restrictions based on access level
+            $accessLevel = $hierarchyService->getAccessLevel($employee);
 
-    foreach ($allRecords as $row) {
-        foreach ($stages as $key => $s) {
-            if ($key === 'file_creation') {
-                $fromDate = $row->received_date
-                    ?? $row->agreement_uploaded_date
-                    ?? $row->agreement_created_date
-                    ?? $row->approval_date;
-                $toDate = $row->file_created_date;
-            } else {
-                $fromDate = $row->{$s['from']} ?? null;
-                $toDate = $row->{$s['to']} ?? null;
-            }
-
-            if ($fromDate && $toDate) {
-                $days = max(0, ceil(
-                    \Carbon\Carbon::parse($fromDate)
-                        ->diffInDays($toDate)
-                ));
-                $stageData[$key][] = $days;
+            switch ($accessLevel) {
+                case 'territory':
+                    // User can only see their territory
+                    $query->where('candidate_master.territory', $employee->territory);
+                    break;
+                case 'region':
+                    // User can see all territories under their region
+                    $territoriesInRegion = DB::table('core_territory')
+                        ->where('region_id', $employee->region)
+                        ->pluck('id');
+                    $query->whereIn('candidate_master.territory', $territoriesInRegion);
+                    break;
+                case 'zone':
+                    // User can see all regions under their zone
+                    $regionsInZone = DB::table('core_region')
+                        ->where('zone_id', $employee->zone)
+                        ->pluck('id');
+                    $territoriesInZone = DB::table('core_territory')
+                        ->whereIn('region_id', $regionsInZone)
+                        ->pluck('id');
+                    $query->whereIn('candidate_master.territory', $territoriesInZone);
+                    break;
+                case 'bu':
+                    // User can see all zones under their BU
+                    $zonesInBU = DB::table('core_zone')
+                        ->where('bu_id', $employee->bu)
+                        ->pluck('id');
+                    $regionsInBU = DB::table('core_region')
+                        ->whereIn('zone_id', $zonesInBU)
+                        ->pluck('id');
+                    $territoriesInBU = DB::table('core_territory')
+                        ->whereIn('region_id', $regionsInBU)
+                        ->pluck('id');
+                    $query->whereIn('candidate_master.territory', $territoriesInBU);
+                    break;
             }
         }
-    }
 
-    $getSummary = function ($data) {
-        return [
-            'total' => count($data),
-            'avg' => count($data) ? round(array_sum($data) / count($data), 2) : 0,
-            'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
-            'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
-            'above_3' => count(array_filter($data, fn($d) => $d > 3)),
+        // ✅ Apply user-selected hierarchy filters
+        if ($buId && $buId != 'All') {
+            $query->where('candidate_master.business_unit', $buId);
+        }
+
+        if ($zoneId && $zoneId != 'All') {
+            $query->where('candidate_master.zone', $zoneId);
+        }
+
+        if ($regionId && $regionId != 'All') {
+            $query->where('candidate_master.region', $regionId);
+        }
+
+        if ($territoryId && $territoryId != 'All') {
+            $query->where('candidate_master.territory', $territoryId);
+        }
+
+        if ($verticalId && $verticalId != 'All') {
+            $query->where('candidate_master.vertical_id', $verticalId);  // ✅ Fixed: vertical_id
+        }
+
+        if ($employeeId && $employeeId != 'All') {
+            $query->where('candidate_master.reporting_manager_employee_id', $employeeId);
+        }
+
+        // ✅ Apply existing filters
+        if ($departmentId) {
+            $query->where('candidate_master.department_id', $departmentId);
+        }
+
+        if ($requisitionType) {
+            $query->where('candidate_master.requisition_type', $requisitionType);
+        }
+
+        if ($status) {
+            $query->where('mr.status', $status);
+        }
+
+        // ✅ Filter based on Contract Start Date
+        if ($month) {
+            $year = ($month >= 4) ? $startYear : $endYear;
+            $startDate = "{$year}-{$month}-01";
+            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
+
+            $query->whereNotNull('candidate_master.contract_start_date')
+                ->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate]);
+        } else {
+            $query->whereNotNull('candidate_master.contract_start_date')
+                ->whereBetween('candidate_master.contract_start_date', [
+                    $startYear . '-04-01',
+                    $endYear . '-03-31'
+                ]);
+        }
+
+        $allRecords = $query->get();
+
+        // ✅ STAGE CONFIG (Dynamic)
+        $stages = [
+            'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date'],
+            'approval' => ['from' => 'hr_verification_date', 'to' => 'approval_date'],
+            'agreement_create' => ['from' => 'approval_date', 'to' => 'agreement_created_date'],
+            'agreement_upload' => ['from' => 'agreement_created_date', 'to' => 'agreement_uploaded_date'],
+            'courier_dispatch' => ['from' => 'agreement_uploaded_date', 'to' => 'dispatch_date'],
+            'courier_delivery' => ['from' => 'dispatch_date', 'to' => 'received_date'],
+            'file_creation' => ['from' => 'received_date', 'to' => 'file_created_date'],
         ];
-    };
 
-    $summaries = [];
-    foreach ($stageData as $key => $data) {
-        $summaries[$key] = $getSummary($data);
+        $stageData = [];
+        foreach ($stages as $key => $s) {
+            $stageData[$key] = [];
+        }
+
+        foreach ($allRecords as $row) {
+            foreach ($stages as $key => $s) {
+                if ($key === 'file_creation') {
+                    $fromDate = $row->received_date
+                        ?? $row->agreement_uploaded_date
+                        ?? $row->agreement_created_date
+                        ?? $row->approval_date;
+                    $toDate = $row->file_created_date;
+                } else {
+                    $fromDate = $row->{$s['from']} ?? null;
+                    $toDate = $row->{$s['to']} ?? null;
+                }
+
+                if ($fromDate && $toDate) {
+                    $days = max(0, ceil(
+                        \Carbon\Carbon::parse($fromDate)
+                            ->diffInDays($toDate)
+                    ));
+                    $stageData[$key][] = $days;
+                }
+            }
+        }
+
+        $getSummary = function ($data) {
+            return [
+                'total' => count($data),
+                'avg' => count($data) ? round(array_sum($data) / count($data), 2) : 0,
+                'within_1' => count(array_filter($data, fn($d) => $d <= 1)),
+                'within_3' => count(array_filter($data, fn($d) => $d > 1 && $d <= 3)),
+                'above_3' => count(array_filter($data, fn($d) => $d > 3)),
+            ];
+        };
+
+        $summaries = [];
+        foreach ($stageData as $key => $data) {
+            $summaries[$key] = $getSummary($data);
+        }
+
+        // ✅ Get hierarchy data for filters using the service
+        $businessUnits = $hierarchyService->getAssociatedBusinessUnitList($user->emp_id);
+        $zones = $hierarchyService->getAssociatedZoneList($user->emp_id);
+        $regions = $hierarchyService->getAssociatedRegionList($user->emp_id);
+        $territories = $hierarchyService->getAssociatedTerritoryList($user->emp_id);
+        $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
+
+        // ✅ Get verticals
+        $verticals = DB::table('core_vertical')
+            ->where('is_active', 1)
+            ->orderBy('vertical_name')
+            ->pluck('vertical_name', 'id')
+            ->prepend('All Verticals', 'All')
+            ->toArray();
+
+        // ✅ Get employees for reporting manager filter
+        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+            $employees = DB::table('core_employee')
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->prepend('All Employees', 'All')
+                ->toArray();
+        } else {
+            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $employees = DB::table('core_employee')
+                ->whereIn('employee_id', $allowedEmpIds)
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->prepend('All Employees', 'All')
+                ->toArray();
+        }
+
+        // Order by contract_start_date
+        $records = $query->orderBy('candidate_master.contract_start_date', 'desc')->paginate(20);
+
+        return view('reports.tat', compact(
+            'records',
+            'summaries',
+            'stages',
+            'financialYear',
+            'month',
+            'departments',
+            'departmentId',
+            'requisitionType',
+            'status',
+            // ✅ New variables
+            'businessUnits',
+            'zones',
+            'regions',
+            'territories',
+            'verticals',
+            'employees',
+            'buId',
+            'zoneId',
+            'regionId',
+            'territoryId',
+            'verticalId',
+            'employeeId'
+        ));
     }
-
-    // Order by contract_start_date
-    $records = $query->orderBy('candidate_master.contract_start_date', 'desc')->paginate(20);
-    $departments = CoreDepartment::orderBy('department_name')->get();
-    
-    return view('reports.tat', compact(
-        'records',
-        'summaries',
-        'stages',
-        'financialYear',
-        'month',
-        'departments',
-        'departmentId',
-        'requisitionType',
-        'status'
-    ));
-}
 
     public function tatExport(Request $request)
     {
+        $request->validate([
+            'financial_year' => 'required|string',
+            'month' => 'nullable|integer|between:1,12',
+            'department_id' => 'nullable|integer',
+            'requisition_type' => 'nullable|string|in:Contractual,TFA,CB',
+            'status' => 'nullable|string',
+            // ✅ New hierarchy filters
+            'bu' => 'nullable|string',
+            'zone' => 'nullable|string',
+            'region' => 'nullable|string',
+            'territory' => 'nullable|string',
+            'vertical' => 'nullable|string',
+            'employee' => 'nullable|string',
+        ]);
+
         return Excel::download(
             new TatReportExport(
                 $request->financial_year,
                 $request->month,
                 $request->department_id,
                 $request->requisition_type,
-                $request->status
+                $request->status,
+                // ✅ Pass hierarchy filters
+                $request->bu ?? 'All',
+                $request->zone ?? 'All',
+                $request->region ?? 'All',
+                $request->territory ?? 'All',
+                $request->vertical ?? 'All',
+                $request->employee ?? 'All'
             ),
             'TAT_Report.xlsx'
         );
