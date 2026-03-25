@@ -93,7 +93,7 @@
                             <th>Monthly Base</th>
                             <th>Extra</th>
                             <th>Deduction</th>
-                            <th>Arrear</th>
+                            <th>Additional Contract Charges</th>
                             <th>Net Pay</th>
                             <th>Status</th>
                         </tr>
@@ -120,7 +120,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="arrearModalLabel">Manage Arrear</h5>
+                <h5 class="modal-title" id="arrearModalLabel">Additional Contract Charges</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -170,7 +170,7 @@
                             <div class="form-text">Enter number of days for arrear calculation</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Calculated Arrear Amount</label>
+                            <label class="form-label">Calculated Additional Contract Charges Amount</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="text" id="calculated_arrear" class="form-control" readonly>
@@ -188,13 +188,13 @@
 
                     <div class="alert alert-info">
                         <i class="ri-information-line"></i>
-                        <strong>Calculation:</strong> Arrear Amount = Per Day Salary × Number of Days
+                        <strong>Calculation:</strong> Additional Contract Charges Amount = Per Day Salary × Number of Days
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveArrear()">Save Arrear</button>
+                <button type="button" class="btn btn-primary" onclick="saveArrear()">Save Additional Contract Charges</button>
             </div>
         </div>
     </div>
@@ -377,11 +377,11 @@
             const netPay = baseNetPay;
             const totalPayable = baseNetPay + arrearAmount;
             let arrearText = `<span class="text-muted">₹ 0</span>`;
-            let arrearLinkText = 'Add Arrear';
+            let arrearLinkText = 'Add Additional Contract Charges';
 
             if (arrearAmount > 0) {
                 arrearText = `<span class="text-success fw-bold">+ ₹ ${arrearAmount.toLocaleString('en-IN')}</span>`;
-                arrearLinkText = 'Edit Arrear';
+                arrearLinkText = 'Edit Additional Contract Charges';
             }
 
             const arrearAction = `
@@ -505,7 +505,7 @@
         $('#arrear_remarks').val('');
 
         // Update modal title
-        const modalTitle = 'Manage Arrear';
+        const modalTitle = 'Additional Contract Charges';
         $('#arrearModalLabel').text(modalTitle);
 
         // Add info message for pending salaries
@@ -515,7 +515,7 @@
             const infoHtml = `
                 <div class="alert alert-warning mt-2">
                     <i class="ri-information-line"></i>
-                    <strong>Note:</strong> Arrear amount will be calculated locally and included in net pay preview. 
+                    <strong>Note:</strong> Additional Contract Charges amount will be calculated locally and included in net pay preview. 
                     It will be saved to database only when salary is processed.
                 </div>
             `;
@@ -620,7 +620,7 @@
 
                     if (response.success) {
 
-                        toastr.success('Arrear saved');
+                        toastr.success('Additional Contract Charges saved');
 
                         $('#arrearModal').modal('hide');
 
