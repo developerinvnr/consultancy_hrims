@@ -593,19 +593,15 @@ class HomeController extends Controller
 
         [$startYear, $endYear] = explode('-', $financialYear);
 
-        if ($month) {
-
-            $year = ($month >= 4) ? $startYear : $endYear;
-
-            $startDate = "$year-$month-01";
-
-            $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->toDateString();
-        } else {
-
-            $startDate = "$startYear-04-01";
-
-            $endDate = "$endYear-03-31";
+        if (!$month) {
+            $month = now()->month;
         }
+
+        $year = ($month >= 4) ? $startYear : $endYear;
+
+        $startDate = "$year-$month-01";
+
+        $endDate = Carbon::parse($startDate)->endOfMonth()->toDateString();
 
 
         // Detect Bottleneck Stage
