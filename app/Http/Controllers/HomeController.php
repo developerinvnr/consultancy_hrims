@@ -667,28 +667,13 @@ UNION ALL
 
 SELECT 'Agreement Upload',
 DATEDIFF(ads.created_at, adc.created_at)
-FROM (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE document_type='agreement'
-    AND sign_status='UNSIGNED'
-    GROUP BY candidate_id
-) latest_unsigned
-
-JOIN agreement_documents adc
-ON adc.id = latest_unsigned.id
-
-JOIN (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE document_type='agreement'
-    AND sign_status='SIGNED'
-    GROUP BY candidate_id
-) latest_signed
+FROM agreement_documents adc
 
 JOIN agreement_documents ads
-ON ads.id = latest_signed.id
-AND ads.candidate_id = adc.candidate_id
+ON ads.candidate_id = adc.candidate_id
+AND ads.sign_status = 'SIGNED'
+AND adc.sign_status = 'UNSIGNED'
+AND ads.created_at > adc.created_at
 
 JOIN candidate_master cm
 ON cm.id = adc.candidate_id
@@ -696,7 +681,9 @@ ON cm.id = adc.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
 
-WHERE ads.created_at BETWEEN '$startDate' AND '$endDate'
+WHERE adc.document_type='agreement'
+AND ads.document_type='agreement'
+AND ads.created_at BETWEEN '$startDate' AND '$endDate'
 
 
 UNION ALL
