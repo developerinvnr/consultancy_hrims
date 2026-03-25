@@ -22,6 +22,6 @@ class CourierDetailsPendingMail extends Mailable
         return $this->subject(
             'Peepal Bonsai Portal: Courier Details Pending | Party Code: ' .
             $this->candidate->candidate_code
-        )->markdown('emails.requisition.courier-details-pending');
+        )->markdown('emails.requisition.courier_details_pending');
     }
 }

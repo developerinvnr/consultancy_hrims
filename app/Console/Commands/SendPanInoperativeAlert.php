@@ -32,7 +32,7 @@ class SendPanInoperativeAlert extends Command
 
             $this->info("📧 Sending email to: {$managerEmail}");
 
-            Mail::send('emails.requisition.pan-inoperative-alert', [
+            Mail::send('emails.requisition.pan_inoperative_alert', [
                 'candidate' => $candidate
             ], function ($message) use ($managerEmail, $hrEmail, $candidate) {
 

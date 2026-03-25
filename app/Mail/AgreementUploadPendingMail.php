@@ -22,6 +22,6 @@ class AgreementUploadPendingMail extends Mailable
         return $this->subject(
             'Peepal Bonsai Portal: Agreement Upload Pending | Party Code: ' .
             $this->candidate->candidate_code
-        )->markdown('emails.requisition.agreement-upload-pending');
+        )->markdown('emails.requisition.agreement_upload_pending');
     }
 }

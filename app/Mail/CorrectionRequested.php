@@ -29,6 +29,6 @@ class CorrectionRequested extends Mailable
             'Peepal Bonsai Portal: Action Required – Requisition Correction | ' 
             . $this->requisition->request_code
         )
-        ->markdown('emails.requisition.correction-requested');
+        ->markdown('emails.requisition.correction_requested');
     }
 }

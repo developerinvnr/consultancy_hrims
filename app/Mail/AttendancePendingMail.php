@@ -22,6 +22,6 @@ class AttendancePendingMail extends Mailable
         return $this->subject(
             'Peepal Bonsai Portal: Attendance Pending | Party Code: ' .
             $this->candidate->candidate_code
-        )->markdown('emails.requisition.attendance-pending');
+        )->markdown('emails.requisition.attendance_pending');
     }
 }

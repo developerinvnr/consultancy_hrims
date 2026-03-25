@@ -28,6 +28,6 @@ class RequisitionApprovalRequest extends Mailable
     {
         return $this->subject(
             'Peepal Bonsai Portal: Approval Required – Requisition ID ' . $this->requisition->request_code
-        )->markdown('emails.requisition.approval-request');
+        )->markdown('emails.requisition.approval_request');
     }
 }
