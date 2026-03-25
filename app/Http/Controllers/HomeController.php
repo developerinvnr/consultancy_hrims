@@ -341,6 +341,30 @@ class HomeController extends Controller
                     // Get courier details for this agreement
                       $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->latest()->first();
 
+                       if ($requisition->requisition_code == 'CRS0399') {
+                \Log::info('=== CRS0399 DEBUG ===');
+                \Log::info('Candidate ID: ' . $requisition->candidate->id);
+                \Log::info('Signed Agreement ID: ' . ($signedAgreement->id ?? 'null'));
+                \Log::info('Signed Agreement created_at: ' . ($signedAgreement->created_at ?? 'null'));
+                \Log::info('Has courier details: ' . (!is_null($courierDetails) ? 'Yes' : 'No'));
+                
+                if ($courierDetails) {
+                    \Log::info('Courier ID: ' . $courierDetails->id);
+                    \Log::info('Courier created_at: ' . $courierDetails->created_at);
+                    \Log::info('Dispatch date: ' . ($courierDetails->dispatch_date ?? 'null'));
+                    \Log::info('Received date: ' . ($courierDetails->received_date ?? 'null'));
+                    
+                    // Check all courier records for this agreement
+                    $allCouriers = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+                    \Log::info('All couriers for agreement ID ' . $signedAgreement->id . ': ' . $allCouriers->count());
+                    foreach ($allCouriers as $courier) {
+                        \Log::info('Courier ' . $courier->id . ': created=' . $courier->created_at . ', dispatch=' . $courier->dispatch_date . ', received=' . $courier->received_date);
+                    }
+                }
+            }
+
 
                     // Attach to requisition object for use in view
                     $requisition->signed_agreement = $signedAgreement;
