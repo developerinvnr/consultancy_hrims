@@ -120,6 +120,7 @@
                             <th>Req ID</th>
                             <th>Candidate</th>
                             <th>Submission</th>
+                            <th>Contract Start Date
 
                             {{-- Stage Dates --}}
                             @foreach($stages as $key => $s)
@@ -148,6 +149,17 @@
                             <td>
                                 {{ $row->submission_date ? \Carbon\Carbon::parse($row->submission_date)->format('d-M-Y') : '-' }}
                             </td>
+
+                             <td>
+                    @if($row->contract_start_date)
+                        <span class="badge bg-info">
+                            {{ \Carbon\Carbon::parse($row->contract_start_date)->format('d-M-Y') }}
+                        </span>
+                    @else
+                        -
+                    @endif
+                </td>
+                
 
                             {{-- ✅ Stage Dates --}}
                             @foreach($stages as $key => $s)
