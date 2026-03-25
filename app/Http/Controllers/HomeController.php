@@ -639,16 +639,7 @@ UNION ALL
 
 SELECT 'Agreement Create',
 DATEDIFF(adc.created_at, mr.approval_date)
-FROM (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE document_type='agreement'
-    AND sign_status='UNSIGNED'
-    GROUP BY candidate_id
-) latest_unsigned
-
-JOIN agreement_documents adc
-ON adc.id = latest_unsigned.id
+FROM agreement_documents adc
 
 JOIN candidate_master cm
 ON cm.id = adc.candidate_id
@@ -656,7 +647,8 @@ ON cm.id = adc.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
 
-WHERE mr.approval_date IS NOT NULL
+WHERE adc.document_type='agreement'
+AND adc.sign_status='UNSIGNED'
 AND adc.created_at BETWEEN '$startDate' AND '$endDate'
 
 
@@ -666,13 +658,15 @@ UNION ALL
 /* Agreement Upload */
 
 SELECT 'Agreement Upload',
-DATEDIFF(ads.created_at, adc.created_at)
+DATEDIFF(
+    MIN(ads.created_at),
+    adc.created_at
+)
 FROM agreement_documents adc
 
 JOIN agreement_documents ads
 ON ads.candidate_id = adc.candidate_id
 AND ads.sign_status = 'SIGNED'
-AND adc.sign_status = 'UNSIGNED'
 AND ads.created_at > adc.created_at
 
 JOIN candidate_master cm
@@ -682,8 +676,11 @@ JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
 
 WHERE adc.document_type='agreement'
-AND ads.document_type='agreement'
+AND adc.sign_status='UNSIGNED'
+
 AND ads.created_at BETWEEN '$startDate' AND '$endDate'
+
+GROUP BY adc.candidate_id
 
 
 UNION ALL
