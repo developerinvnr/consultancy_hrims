@@ -571,7 +571,7 @@ class HomeController extends Controller
             ->whereNotNull('mr.submission_date')
             ->whereRaw('cm.contract_start_date >= mr.submission_date')
 
-            ->where('mr.submission_date', '>=', '2026-03-01') // ✅ ADD THIS FILTER
+            ->where('mr.submission_date', '>=', now()->subDays(30)) // ✅ ADD THIS FILTER
 
             ->selectRaw('AVG(DATEDIFF(cm.contract_start_date, mr.submission_date)) as avg_days')
             ->value('avg_days');
@@ -584,74 +584,78 @@ class HomeController extends Controller
 SELECT stage, AVG(days) avg_days
 FROM (
 
-SELECT 'Pending HR Verification' stage,
-DATEDIFF(NOW(), submission_date) days
+/* HR Verification */
+SELECT 'HR Verification' stage,
+DATEDIFF(
+COALESCE(hr_verification_date, NOW()),
+submission_date
+) days
 FROM manpower_requisitions
-WHERE status = 'Pending HR Verification'
+WHERE submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+
+/* Approval */
+UNION ALL
+SELECT 'Approval',
+DATEDIFF(
+COALESCE(approval_date, NOW()),
+hr_verification_date
+)
+FROM manpower_requisitions
+WHERE hr_verification_date IS NOT NULL
 AND submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
+/* Agreement Create */
 UNION ALL
-
-SELECT 'Pending Approval',
-DATEDIFF(NOW(), hr_verification_date)
-FROM manpower_requisitions
-WHERE status = 'Pending Approval'
-AND submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-
-UNION ALL
-
-SELECT 'Agreement Pending',
-DATEDIFF(NOW(), cm.created_at)
-FROM candidate_master cm
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE cm.candidate_status = 'Agreement Pending'
-AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-
-UNION ALL
-
-SELECT 'Unsigned Agreement Created',
-DATEDIFF(NOW(), ad.created_at)
-FROM (
-SELECT candidate_id, MAX(id) id
-FROM agreement_documents
-WHERE sign_status = 'UNSIGNED'
-GROUP BY candidate_id
-) latest_ad
-JOIN agreement_documents ad
-ON ad.id = latest_ad.id
+SELECT 'Agreement Create',
+DATEDIFF(
+COALESCE(ad.created_at, NOW()),
+approval_date
+)
+FROM agreement_documents ad
 JOIN candidate_master cm
 ON cm.id = ad.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
-WHERE cm.candidate_status = 'Unsigned Agreement Created'
+WHERE ad.document_type='agreement'
 AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
+/* Agreement Upload */
 UNION ALL
-
-SELECT 'Signed Agreement Uploaded',
-DATEDIFF(NOW(), ad.created_at)
-FROM (
-SELECT candidate_id, MAX(id) id
-FROM agreement_documents
-WHERE sign_status = 'SIGNED'
-GROUP BY candidate_id
-) latest_signed
-JOIN agreement_documents ad
-ON ad.id = latest_signed.id
+SELECT 'Agreement Upload',
+DATEDIFF(
+COALESCE(ads.created_at, NOW()),
+adc.created_at
+)
+FROM agreement_documents adc
+JOIN agreement_documents ads
+ON adc.candidate_id = ads.candidate_id
+AND ads.sign_status='SIGNED'
 JOIN candidate_master cm
-ON cm.id = ad.candidate_id
+ON cm.id = adc.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
-LEFT JOIN agreement_couriers ac
-ON ac.agreement_document_id = ad.id
-WHERE cm.candidate_status = 'Signed Agreement Uploaded'
-AND ac.id IS NULL
+WHERE adc.sign_status='UNSIGNED'
 AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
+/* Courier Dispatch */
 UNION ALL
+SELECT 'Courier Dispatch',
+DATEDIFF(
+COALESCE(ac.dispatch_date, NOW()),
+ads.created_at
+)
+FROM agreement_couriers ac
+JOIN agreement_documents ads
+ON ads.id = ac.agreement_document_id
+JOIN candidate_master cm
+ON cm.id = ads.candidate_id
+JOIN manpower_requisitions mr
+ON mr.id = cm.requisition_id
+WHERE mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
-SELECT 'Courier Pending',
+/* Courier Delivery */
+UNION ALL
+SELECT 'Courier Delivery',
 DATEDIFF(
 COALESCE(ac.received_date, NOW()),
 ac.dispatch_date
@@ -663,8 +667,7 @@ JOIN candidate_master cm
 ON cm.id = ad.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
-WHERE ac.received_date IS NULL
-AND mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+WHERE mr.submission_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 
 ) stage_times
 
