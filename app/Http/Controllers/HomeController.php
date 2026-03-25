@@ -339,8 +339,8 @@ class HomeController extends Controller
 
                 if ($signedAgreement) {
                     // Get courier details for this agreement
-                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
-                        ->first();
+                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)->first();
+
 
                     // Attach to requisition object for use in view
                     $requisition->signed_agreement = $signedAgreement;
@@ -428,11 +428,19 @@ class HomeController extends Controller
 
             // courier stage ageing (override if applicable)
 
-            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-                $ageDays = max(0, floor(now()->floatDiffInDays(
-                    $requisition->courier_details->dispatch_date
-                )));
+           if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                // Make sure dispatch_date exists before calculating
+                if ($requisition->courier_details->dispatch_date) {
+                    $ageDays = max(0, floor(now()->floatDiffInDays(
+                        $requisition->courier_details->dispatch_date
+                    )));
+                } else {
+                    // If no dispatch date, fall back to the previous calculation
+                    // or set to 0
+                    $ageDays = 0;
+                }
             }
+
 
 
             // attach ageing
@@ -581,7 +589,7 @@ class HomeController extends Controller
         $month = $request->get('month');
         if (!$month) {
             $month = date('m'); // Current month
-            \Log::info('Setting default month to current month', ['month' => $month]);
+            //\Log::info('Setting default month to current month', ['month' => $month]);
         }
         $departmentId = $request->get('department_id');
         $requisitionType = $request->get('requisition_type');
@@ -776,20 +784,20 @@ class HomeController extends Controller
         }
 
         // Also log for debugging
-        \Log::info('Bottleneck Calculation', [
-            'financial_year' => $financialYear,
-            'month' => $month,
-            'total_candidates' => $allCandidates->count(),
-            'stage_summaries' => array_map(function ($s) {
-                return [
-                    'avg' => $s['avg'],
-                    'total' => $s['total'],
-                    'label' => $s['label']
-                ];
-            }, $stageSummaries),
-            'bottleneck' => $attention['bottleneck_stage'],
-            'bottleneck_avg' => $attention['bottleneck_avg_days']
-        ]);
+        // \Log::info('Bottleneck Calculation', [
+        //     'financial_year' => $financialYear,
+        //     'month' => $month,
+        //     'total_candidates' => $allCandidates->count(),
+        //     'stage_summaries' => array_map(function ($s) {
+        //         return [
+        //             'avg' => $s['avg'],
+        //             'total' => $s['total'],
+        //             'label' => $s['label']
+        //         ];
+        //     }, $stageSummaries),
+        //     'bottleneck' => $attention['bottleneck_stage'],
+        //     'bottleneck_avg' => $attention['bottleneck_avg_days']
+        // ]);
 
         // Also store all stage averages for potential display
         $attention['stage_averages'] = [];
