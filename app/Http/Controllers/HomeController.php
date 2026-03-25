@@ -717,11 +717,12 @@ ON mr.id = cm.requisition_id
 WHERE ads.document_type='agreement'
 AND ads.sign_status='SIGNED'
 
+AND ac.dispatch_date IS NOT NULL
 AND ac.dispatch_date > ads.created_at
 
 AND ac.dispatch_date BETWEEN '$startDate' AND '$endDate'
 
-GROUP BY ads.candidate_id
+GROUP BY ads.id
 
 
 UNION ALL
