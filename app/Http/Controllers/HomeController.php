@@ -611,152 +611,185 @@ class HomeController extends Controller
         // Detect Bottleneck Stage
         $bottleneckStage = DB::selectOne("
 
-SELECT stage, AVG(days) avg_days
-FROM (
+            SELECT stage, AVG(days) avg_days
+            FROM (
 
-/* HR Verification */
+            /* HR Verification */
 
-SELECT 'HR Verification' stage,
-DATEDIFF(
-mr.hr_verification_date,
-mr.submission_date
-) days
-FROM manpower_requisitions mr
-WHERE mr.hr_verification_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            SELECT 'HR Verification' stage,
+            DATEDIFF(mr.hr_verification_date, mr.submission_date) days
+            FROM manpower_requisitions mr
+            WHERE mr.hr_verification_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
 
-UNION ALL
+            UNION ALL
 
 
-/* Approval */
+            /* Approval */
 
-SELECT 'Approval',
-DATEDIFF(
-mr.approval_date,
-mr.hr_verification_date
-)
-FROM manpower_requisitions mr
-WHERE mr.approval_date IS NOT NULL
-AND mr.hr_verification_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            SELECT 'Approval',
+            DATEDIFF(mr.approval_date, mr.hr_verification_date)
+            FROM manpower_requisitions mr
+            WHERE mr.approval_date IS NOT NULL
+            AND mr.hr_verification_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
 
-UNION ALL
+            UNION ALL
 
 
-/* Agreement Create */
+            /* Agreement Create */
 
-SELECT 'Agreement Create',
-DATEDIFF(
-adc.created_at,
-mr.approval_date
-)
-FROM agreement_documents adc
-JOIN candidate_master cm
-ON cm.id = adc.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE adc.document_type = 'agreement'
-AND adc.sign_status = 'UNSIGNED'
-AND mr.approval_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            SELECT 'Agreement Create',
+            DATEDIFF(adc.created_at, mr.approval_date)
+            FROM (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE document_type='agreement'
+                AND sign_status='UNSIGNED'
+                GROUP BY candidate_id
+            ) latest_unsigned
 
+            JOIN agreement_documents adc
+            ON adc.id = latest_unsigned.id
 
-UNION ALL
+            JOIN candidate_master cm
+            ON cm.id = adc.candidate_id
 
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
 
-/* Agreement Upload */
-
-SELECT 'Agreement Upload',
-DATEDIFF(
-ads.created_at,
-adc.created_at
-)
-FROM agreement_documents adc
-JOIN agreement_documents ads
-ON adc.candidate_id = ads.candidate_id
-AND ads.sign_status = 'SIGNED'
-JOIN candidate_master cm
-ON cm.id = adc.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE adc.sign_status = 'UNSIGNED'
-AND ads.created_at IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            WHERE mr.approval_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
 
-UNION ALL
+            UNION ALL
 
 
-/* Courier Dispatch */
+            /* Agreement Upload */
 
-SELECT 'Courier Dispatch',
-DATEDIFF(
-ac.dispatch_date,
-ads.created_at
-)
-FROM agreement_couriers ac
-JOIN agreement_documents ads
-ON ads.id = ac.agreement_document_id
-JOIN candidate_master cm
-ON cm.id = ads.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE ac.dispatch_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            SELECT 'Agreement Upload',
+            DATEDIFF(ads.created_at, adc.created_at)
+            FROM (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE sign_status='UNSIGNED'
+                GROUP BY candidate_id
+            ) latest_unsigned
 
+            JOIN agreement_documents adc
+            ON adc.id = latest_unsigned.id
 
-UNION ALL
+            JOIN (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE sign_status='SIGNED'
+                GROUP BY candidate_id
+            ) latest_signed
 
+            JOIN agreement_documents ads
+            ON ads.id = latest_signed.id
+            AND ads.candidate_id = adc.candidate_id
 
-/* Courier Delivery */
+            JOIN candidate_master cm
+            ON cm.id = adc.candidate_id
 
-SELECT 'Courier Delivery',
-DATEDIFF(
-ac.received_date,
-ac.dispatch_date
-)
-FROM agreement_couriers ac
-JOIN agreement_documents ad
-ON ad.id = ac.agreement_document_id
-JOIN candidate_master cm
-ON cm.id = ad.candidate_id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE ac.received_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
+
+            WHERE ads.created_at IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
 
-UNION ALL
+            UNION ALL
 
 
-/* File Creation */
+            /* Courier Dispatch */
 
-SELECT 'File Creation',
-DATEDIFF(
-cm.file_created_date,
-ac.received_date
-)
-FROM candidate_master cm
-JOIN agreement_documents ad
-ON ad.candidate_id = cm.id
-JOIN agreement_couriers ac
-ON ac.agreement_document_id = ad.id
-JOIN manpower_requisitions mr
-ON mr.id = cm.requisition_id
-WHERE cm.file_created_date IS NOT NULL
-AND ac.received_date IS NOT NULL
-AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+            SELECT 'Courier Dispatch',
+            DATEDIFF(ac.dispatch_date, ads.created_at)
+            FROM (
+                SELECT candidate_id, MAX(id) id
+                FROM agreement_documents
+                WHERE sign_status='SIGNED'
+                GROUP BY candidate_id
+            ) latest_signed
+
+            JOIN agreement_documents ads
+            ON ads.id = latest_signed.id
+
+            JOIN agreement_couriers ac
+            ON ac.agreement_document_id = ads.id
+
+            JOIN candidate_master cm
+            ON cm.id = ads.candidate_id
+
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
+
+            WHERE ac.dispatch_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
 
 
-) stage_times
+            UNION ALL
 
-GROUP BY stage
-ORDER BY avg_days DESC
-LIMIT 1
 
-");
+            /* Courier Delivery */
+
+            SELECT 'Courier Delivery',
+            DATEDIFF(ac.received_date, ac.dispatch_date)
+            FROM agreement_couriers ac
+
+            JOIN agreement_documents ad
+            ON ad.id = ac.agreement_document_id
+
+            JOIN candidate_master cm
+            ON cm.id = ad.candidate_id
+
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
+
+            WHERE ac.received_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+            UNION ALL
+
+
+            /* File Creation */
+
+            SELECT 'File Creation',
+            DATEDIFF(cm.file_created_date, ac.received_date)
+            FROM candidate_master cm
+
+            JOIN (
+                SELECT agreement_document_id, MAX(id) id
+                FROM agreement_couriers
+                GROUP BY agreement_document_id
+            ) latest_ac
+
+            JOIN agreement_couriers ac
+            ON ac.id = latest_ac.id
+
+            JOIN agreement_documents ad
+            ON ad.id = ac.agreement_document_id
+
+            JOIN manpower_requisitions mr
+            ON mr.id = cm.requisition_id
+
+            WHERE cm.file_created_date IS NOT NULL
+            AND ac.received_date IS NOT NULL
+            AND mr.submission_date BETWEEN '$startDate' AND '$endDate'
+
+
+            ) stage_times
+
+            GROUP BY stage
+            ORDER BY avg_days DESC
+            LIMIT 1
+
+            ");
 
         $attention['bottleneck_stage'] = $bottleneckStage->stage ?? 'N/A';
 
