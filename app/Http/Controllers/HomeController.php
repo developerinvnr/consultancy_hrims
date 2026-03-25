@@ -638,17 +638,11 @@ UNION ALL
 /* Agreement Create */
 
 SELECT 'Agreement Create',
-DATEDIFF(adc.created_at, mr.approval_date)
-FROM (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE document_type='agreement'
-    AND sign_status='UNSIGNED'
-    GROUP BY candidate_id
-) latest_unsigned
-
-JOIN agreement_documents adc
-ON adc.id = latest_unsigned.id
+DATEDIFF(
+    MIN(adc.created_at),
+    MIN(mr.approval_date)
+)
+FROM agreement_documents adc
 
 JOIN candidate_master cm
 ON cm.id = adc.candidate_id
@@ -656,8 +650,13 @@ ON cm.id = adc.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
 
-WHERE mr.approval_date IS NOT NULL
+WHERE adc.document_type='agreement'
+AND adc.sign_status='UNSIGNED'
+AND adc.created_at > mr.approval_date
+
 AND adc.created_at BETWEEN '$startDate' AND '$endDate'
+
+GROUP BY adc.candidate_id
 
 
 UNION ALL
@@ -674,7 +673,7 @@ FROM agreement_documents adc
 
 JOIN agreement_documents ads
 ON ads.candidate_id = adc.candidate_id
-AND ads.sign_status = 'SIGNED'
+AND ads.sign_status='SIGNED'
 AND ads.created_at > adc.created_at
 
 JOIN candidate_master cm
@@ -687,6 +686,8 @@ WHERE adc.document_type='agreement'
 AND adc.sign_status='UNSIGNED'
 AND ads.document_type='agreement'
 
+AND adc.created_at > mr.approval_date
+
 AND ads.created_at BETWEEN '$startDate' AND '$endDate'
 
 GROUP BY adc.candidate_id
@@ -698,17 +699,11 @@ UNION ALL
 /* Courier Dispatch */
 
 SELECT 'Courier Dispatch',
-DATEDIFF(ac.dispatch_date, ads.created_at)
-FROM (
-    SELECT candidate_id, MAX(id) id
-    FROM agreement_documents
-    WHERE document_type='agreement'
-    AND sign_status='SIGNED'
-    GROUP BY candidate_id
-) latest_signed
-
-JOIN agreement_documents ads
-ON ads.id = latest_signed.id
+DATEDIFF(
+    MIN(ac.dispatch_date),
+    MIN(ads.created_at)
+)
+FROM agreement_documents ads
 
 JOIN agreement_couriers ac
 ON ac.agreement_document_id = ads.id
@@ -719,8 +714,14 @@ ON cm.id = ads.candidate_id
 JOIN manpower_requisitions mr
 ON mr.id = cm.requisition_id
 
-WHERE ac.dispatch_date IS NOT NULL
+WHERE ads.document_type='agreement'
+AND ads.sign_status='SIGNED'
+
+AND ac.dispatch_date > ads.created_at
+
 AND ac.dispatch_date BETWEEN '$startDate' AND '$endDate'
+
+GROUP BY ads.candidate_id
 
 
 UNION ALL
