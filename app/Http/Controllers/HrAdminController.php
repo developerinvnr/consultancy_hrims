@@ -116,6 +116,29 @@ class HrAdminController extends Controller
 
 		$agreementDocuments = [];
 
+		$agreements = [
+			'unsigned' => collect(),
+			'signed' => null,
+		];
+
+		if ($candidate) {
+
+			$unsigned = AgreementDocument::where('candidate_id', $candidate->id)
+				->where('sign_status', 'UNSIGNED')
+				->latest()
+				->get();
+
+			$signed = AgreementDocument::where('candidate_id', $candidate->id)
+				->where('sign_status', 'SIGNED')
+				->latest()
+				->first();
+
+						$agreements = [
+							'unsigned' => $unsigned,
+							'signed' => $signed,
+						];
+					}
+
 		if ($candidate) {
 			try {
 				// Get agreement documents using candidate_code instead of candidate_id
@@ -195,7 +218,8 @@ class HrAdminController extends Controller
 			'showSendApprovalButton',
 			'agreementDocuments',
 			'candidate',
-			'latestDocuments' // Pass this to the view
+			'latestDocuments', // Pass this to the view
+			'agreements'
 		));
 	}
 

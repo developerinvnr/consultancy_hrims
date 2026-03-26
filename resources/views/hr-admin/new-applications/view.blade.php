@@ -258,17 +258,22 @@
             </div>
 
             {{-- Timeline Section --}}
-            <div class="col-md-12 mt-2">
+            <div class="mt-2">
+
                 <div class="card border">
+
                     <div class="card-header bg-light py-1 px-2">
                         <h6 class="mb-0 fs-6">
-                            <i class="ri-timeline-line me-1"></i>Requisition Timeline
+                            <i class="ri-timeline-line me-1"></i>
+                            Requisition Timeline
                         </h6>
                     </div>
 
                     <div class="card-body p-2">
+
                         <div class="d-flex flex-wrap gap-2 small">
 
+                            {{-- Submitted --}}
                             @if($requisition->submission_date)
                             <span class="badge bg-primary">
                                 Submitted<br>
@@ -276,6 +281,8 @@
                             </span>
                             @endif
 
+
+                            {{-- HR Verified --}}
                             @if($requisition->hr_verification_date)
                             <span class="badge bg-info">
                                 HR Verified<br>
@@ -283,6 +290,8 @@
                             </span>
                             @endif
 
+
+                            {{-- Approved --}}
                             @if($requisition->approval_date)
                             <span class="badge bg-success">
                                 Approved<br>
@@ -290,6 +299,44 @@
                             </span>
                             @endif
 
+
+                            {{-- Agreement Created --}}
+                            @if(($agreements['unsigned'] ?? collect())->first())
+                            <span class="badge bg-secondary">
+                                Agreement Created<br>
+                                {{ $agreements['unsigned']->first()->created_at->format('d M Y') }}
+                            </span>
+                            @endif
+
+
+                            {{-- Agreement Signed --}}
+                            @if($agreements['signed'])
+                            <span class="badge bg-success">
+                                Agreement Signed<br>
+                                {{ $agreements['signed']->updated_at->format('d M Y') }}
+                            </span>
+                            @endif
+
+
+                            {{-- Courier Dispatched --}}
+                            @if($agreements['signed']?->courierDetails?->dispatch_date)
+                            <span class="badge bg-warning text-dark">
+                                Courier Sent<br>
+                                {{ $agreements['signed']->courierDetails->dispatch_date->format('d M Y') }}
+                            </span>
+                            @endif
+
+
+                            {{-- Courier Received --}}
+                            @if($agreements['signed']?->courierDetails?->received_date)
+                            <span class="badge bg-success">
+                                Courier Received<br>
+                                {{ $agreements['signed']->courierDetails->received_date->format('d M Y') }}
+                            </span>
+                            @endif
+
+
+                            {{-- File Created --}}
                             @if($requisition->candidate?->file_created_date)
                             <span class="badge bg-primary">
                                 File Created<br>
@@ -297,6 +344,8 @@
                             </span>
                             @endif
 
+
+                            {{-- Ledger Created --}}
                             @if($requisition->candidate?->ledger_created_at)
                             <span class="badge bg-info">
                                 Ledger Created<br>
@@ -304,6 +353,8 @@
                             </span>
                             @endif
 
+
+                            {{-- Contract Cancelled --}}
                             @if($requisition->candidate?->contract_cancelled_at)
                             <span class="badge bg-danger">
                                 Contract Cancelled<br>
@@ -312,8 +363,11 @@
                             @endif
 
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
 
             @if(
