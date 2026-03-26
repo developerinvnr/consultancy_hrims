@@ -194,36 +194,44 @@
                                     <td>{{ $requisition->created_at->format('d-m-Y') }}</td>
                                     <td>
                                         @php
+                                        // First, check if candidate is cancelled
+                                        if($candidate && $candidate->candidate_status == 'Cancelled') {
+                                        $status = 'Cancelled';
+                                        $color = 'danger';
+                                        }
+                                        // Then check requisition status
+                                        else {
                                         $status = $requisition->workflow_status;
 
-                                        // change only display text
-                                        $displayStatus = $status === 'Unsigned Agreement Created'
-                                        ? 'Unsigned Agreement Created'
-                                        : $status;
+                                        // Override for inactive requisitions
+                                        if($requisition->status == 'Inactive') {
+                                        $status = 'Inactive';
+                                        }
+
+                                        $displayStatus = $status === 'Unsigned Agreement Created' ? 'Unsigned Agreement Created' : $status;
 
                                         $statusColors = [
-
                                         'Pending HR Verification' => 'warning',
                                         'Correction Required' => 'danger',
                                         'Pending Approval' => 'info',
                                         'Approved' => 'primary',
-
+                                        'Inactive' => 'secondary', // Add this
+                                        'Cancelled' => 'danger', // Add this
                                         'Agreement Upload Pending' => 'secondary',
                                         'Pending Dispatch' => 'info',
                                         'Courier Pending' => 'warning',
                                         'File Creation Pending' => 'primary',
-
                                         'Active' => 'success',
                                         'Inactive' => 'danger',
                                         'Rejected' => 'dark'
-
                                         ];
 
                                         $color = $statusColors[$status] ?? 'secondary';
+                                        }
                                         @endphp
 
                                         <span class="badge bg-{{ $color }}">
-                                            {{ $displayStatus }}
+                                            {{ $status }}
                                         </span>
                                     </td>
                                     <td>

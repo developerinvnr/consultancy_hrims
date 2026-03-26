@@ -46,14 +46,13 @@ class HrRequisitionController extends Controller
             switch ($status) {
 
                 case 'dispatch_pending':
-                    $query->whereHas('candidate', function ($candidateQuery) {
-                        $candidateQuery->where('candidate_status', '!=', 'Cancelled')  // Exclude cancelled
-                            ->where('candidate_status', 'Signed Agreement Uploaded')
-                            ->whereHas('signedAgreements', function ($q) {
-                                $q->whereDoesntHave('courierDetails');
-                            });
-                    });
-                    break;
+    $query->whereHas('candidate', function ($candidateQuery) {
+        $candidateQuery->where('candidate_status', 'Signed Agreement Uploaded')
+            ->whereHas('signedAgreements', function ($q) {
+                $q->whereDoesntHave('courierDetails');
+            });
+    });
+    break;
 
                     case 'file_pending':
                         $query->whereHas('candidate', function ($candidateQuery) {
