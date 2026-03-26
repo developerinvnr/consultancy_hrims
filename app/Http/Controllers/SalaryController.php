@@ -851,6 +851,64 @@ class SalaryController extends Controller
     }
 
 
+    /**
+     * Get departments that have candidates under a specific employee's hierarchy
+     */
+    public function getDepartmentsByEmployee(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|integer',
+            'financial_year' => 'required|string'
+        ]);
+
+        $employeeId = $request->employee_id;
+        $financialYear = $request->financial_year;
+        [$startYear, $endYear] = explode('-', $financialYear);
+
+        $user = Auth::user();
+        $hierarchyService = app(\App\Services\HierarchyAccessService::class);
+
+        // Get all team members under the selected employee
+        $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
+        $teamMemberIdsString = array_map('strval', $teamMemberIds);
+
+        // Get distinct departments from candidates that report to this team
+        $departments = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
+            ->whereHas('salaryProcessings', function ($q) use ($startYear, $endYear) {
+                $q->where(function ($query) use ($startYear, $endYear) {
+                    $query->where(function ($q1) use ($startYear) {
+                        $q1->where('year', $startYear)
+                            ->whereBetween('month', [4, 12]);
+                    })
+                        ->orWhere(function ($q2) use ($endYear) {
+                            $q2->where('year', $endYear)
+                                ->whereBetween('month', [1, 3]);
+                        });
+                });
+            })
+            ->join('core_department', 'candidate_master.department_id', '=', 'core_department.id')
+            ->select('core_department.id', 'core_department.department_name')
+            ->distinct()
+            ->orderBy('core_department.department_name')
+            ->get();
+
+        // Format for dropdown
+        $departmentList = [
+            'All' => 'All Departments'
+        ];
+
+        foreach ($departments as $dept) {
+            $departmentList[$dept->id] = $dept->department_name;
+        }
+
+        return response()->json([
+            'success' => true,
+            'departments' => $departmentList,
+            'has_candidates' => count($departments) > 0
+        ]);
+    }
+
 
     /**
      * Get management report data
@@ -883,33 +941,54 @@ class SalaryController extends Controller
 
         $user = Auth::user();
         $hierarchyService = app(\App\Services\HierarchyAccessService::class);
+
+        // DEBUG: Log user info
+        \Log::info('=== Management Report Debug ===');
+        \Log::info('User ID: ' . $user->emp_id);
+        \Log::info('User Roles: ' . json_encode($user->getRoleNames()));
+        \Log::info('Filters: ' . json_encode($filters));
+
         $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
+
+        // DEBUG: Count total active candidates
+        $totalCandidates = CandidateMaster::whereIn('final_status', ['A', 'D'])->count();
+        \Log::info('Total active candidates in system: ' . $totalCandidates);
 
         // ✅ Apply hierarchy ONLY for non-admin
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
-
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
+            \Log::info('Non-admin user - Allowed employee IDs: ' . json_encode($allowedEmpIdsString));
 
-            $query->whereIn('reporting_manager_employee_id', $allowedEmpIds);
+            // Check how many candidates have these reporting managers
+            $candidatesWithAllowedManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
+                ->whereIn('reporting_manager_employee_id', $allowedEmpIdsString)
+                ->count();
+            \Log::info('Candidates with allowed reporting managers: ' . $candidatesWithAllowedManagers);
+
+            $query->whereIn('reporting_manager_employee_id', $allowedEmpIdsString);
+        } else {
+            \Log::info('Admin/Management user - No hierarchy restriction applied');
         }
 
-        // ✅ Attach relations properly
-        $query->with([
-            'salaryProcessings' => function ($q) use ($startYear, $endYear) {
-                $q->where(function ($query) use ($startYear, $endYear) {
-                    $query->where(function ($q1) use ($startYear) {
-                        $q1->where('year', $startYear)
-                            ->whereBetween('month', [4, 12]);
-                    })
-                        ->orWhere(function ($q2) use ($endYear) {
-                            $q2->where('year', $endYear)
-                                ->whereBetween('month', [1, 3]);
-                        });
-                })
-                    ->select('candidate_id', 'month', 'year', 'net_pay');
-            }
-        ]);
-        // Apply Filters
+        // ✅ Apply employee filter (if selected) - get entire team under that manager
+        if (isset($filters['employee']) && $filters['employee'] !== 'All' && !empty($filters['employee'])) {
+            $teamMemberIds = $hierarchyService->getTeamMemberIds($filters['employee']);
+            $teamMemberIdsString = array_map('strval', $teamMemberIds);
+
+            \Log::info('Employee filter applied - Manager ID: ' . $filters['employee']);
+            \Log::info('Team member IDs (as strings): ' . json_encode($teamMemberIdsString));
+
+            // Check candidates with these reporting managers before applying filter
+            $candidatesWithTeamManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
+                ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
+                ->count();
+            \Log::info('Candidates with team reporting managers: ' . $candidatesWithTeamManagers);
+
+            $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
+        }
+
+        // Apply other Filters
         foreach ($filters as $key => $value) {
             if ($value && $value !== 'All') {
                 switch ($key) {
@@ -929,9 +1008,13 @@ class SalaryController extends Controller
                         $query->where('territory', $value);
                         break;
                     case 'employee':
-                        $query->where('reporting_manager_employee_id', $value);
+                        // 🔥 FIX: Use recursive hierarchy instead of just direct manager
+                        $teamMemberIds = $hierarchyService->getTeamMemberIds($value);
+                        $teamMemberIdsString = array_map('strval', $teamMemberIds);
+                        \Log::info('Employee filter - Manager ID: ' . $value);
+                        \Log::info('Team member IDs found: ' . json_encode($teamMemberIdsString));
+                        $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
                         break;
-
                     case 'requisition_type':
                         $query->where('requisition_type', $value);
                         break;
@@ -939,6 +1022,29 @@ class SalaryController extends Controller
             }
         }
 
+        // DEBUG: Count before group by
+        $countBeforeGroup = $query->count();
+        \Log::info('Count before group by: ' . $countBeforeGroup);
+
+        // Get sample of reporting_manager_employee_id values in candidate_master
+        $sampleReportingManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->whereNotNull('reporting_manager_employee_id')
+            ->where('reporting_manager_employee_id', '!=', '')
+            ->distinct()
+            ->limit(10)
+            ->pluck('reporting_manager_employee_id')
+            ->toArray();
+        \Log::info('Sample reporting_manager_employee_id values in DB: ' . json_encode($sampleReportingManagers));
+
+        // Get sample of department_id values
+        $sampleDepartments = CandidateMaster::whereIn('final_status', ['A', 'D'])
+            ->distinct()
+            ->limit(10)
+            ->pluck('department_id')
+            ->toArray();
+        \Log::info('Sample department_id values in DB: ' . json_encode($sampleDepartments));
+
+        // Get results with grouping
         $candidates = $query
             ->leftJoin('salary_processings as sp', 'candidate_master.id', '=', 'sp.candidate_id')
             ->select(
@@ -948,6 +1054,8 @@ class SalaryController extends Controller
                 'candidate_master.contract_start_date',
                 'candidate_master.contract_end_date',
                 'candidate_master.last_working_date',
+                'candidate_master.reporting_manager_employee_id',
+                'candidate_master.department_id',
 
                 DB::raw("SUM(CASE WHEN sp.month = 4 THEN sp.net_pay ELSE 0 END) as april"),
                 DB::raw("SUM(CASE WHEN sp.month = 5 THEN sp.net_pay ELSE 0 END) as may"),
@@ -969,10 +1077,16 @@ class SalaryController extends Controller
                 'candidate_master.candidate_name',
                 'candidate_master.contract_start_date',
                 'candidate_master.contract_end_date',
-                'candidate_master.last_working_date'
+                'candidate_master.last_working_date',
+                'candidate_master.reporting_manager_employee_id',
+                'candidate_master.department_id'
             )
             ->orderBy('candidate_master.candidate_code')
             ->get();
+
+        \Log::info('Final candidates count after group by: ' . $candidates->count());
+
+        // ... rest of the method remains the same ...
 
         $months = [
             'april',
@@ -989,28 +1103,23 @@ class SalaryController extends Controller
             'march'
         ];
 
-
         $reportData = [];
         $monthlyTotals = array_fill_keys($months, 0);
         $monthlyTotals['grand_total'] = 0;
 
         foreach ($candidates as $candidate) {
-
             $employeeData = [
                 'id' => $candidate->id,
                 'code' => $candidate->candidate_code,
                 'name' => $candidate->candidate_name,
-
-                // NEW FIELDS
                 'contract_start_date' => $candidate->contract_start_date
                     ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y') : null,
-
                 'contract_end_date' => $candidate->contract_end_date
                     ? Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : null,
-
                 'termination_date' => $candidate->last_working_date
                     ? Carbon::parse($candidate->last_working_date)->format('d-m-Y') : null,
-
+                'department_id' => $candidate->department_id,
+                'reporting_manager_id' => $candidate->reporting_manager_employee_id,
                 'grand_total' => 0
             ];
 
@@ -1019,9 +1128,7 @@ class SalaryController extends Controller
             }
 
             foreach ($candidate->salaryProcessings as $salary) {
-
                 $monthName = strtolower(date('F', mktime(0, 0, 0, $salary->month, 1)));
-
                 $amount = $salary->net_pay ?? 0;
 
                 $employeeData[$monthName] = $amount;
@@ -1040,7 +1147,13 @@ class SalaryController extends Controller
             'monthly_totals' => $monthlyTotals,
             'count' => count($reportData),
             'financial_year' => $financialYear,
-            'filters' => $filters
+            'filters' => $filters,
+            'debug' => [
+                'total_candidates' => $totalCandidates,
+                'count_before_group' => $countBeforeGroup,
+                'sample_reporting_managers' => $sampleReportingManagers,
+                'sample_departments' => $sampleDepartments
+            ]
         ]);
     }
 
@@ -1192,7 +1305,7 @@ class SalaryController extends Controller
                 ->where('payment_status', 'pending');
         }
 
-         if ($request->filled('requisition_type') && $request->requisition_type !== 'All') {
+        if ($request->filled('requisition_type') && $request->requisition_type !== 'All') {
             $query->whereHas('candidate', function ($q) use ($request) {
                 $q->where('requisition_type', $request->requisition_type);
             });

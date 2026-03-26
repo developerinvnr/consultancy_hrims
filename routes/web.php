@@ -288,6 +288,10 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
     Route::post('/toggle-payment', [SalaryController::class, 'togglePayment'])->name('salary.toggle.payment');
 
     Route::post('/release-batch',[SalaryController::class,'releaseBatch'])->name('salary.release.batch');
+
+    // Add this route for getting departments by employee
+        Route::post('/get-departments-by-employee', [SalaryController::class, 'getDepartmentsByEmployee'])
+            ->name('salary.departments.by.employee');
 });
 
 

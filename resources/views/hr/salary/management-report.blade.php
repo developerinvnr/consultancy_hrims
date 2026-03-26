@@ -46,23 +46,14 @@
 					</select>
 				</div>
 
-				<!-- Department -->
+				<!-- Employee -->
 				<div class="col-md-3 col-lg-2">
-					<label class="form-label form-label-sm mb-1">Department</label>
-					<select id="department" class="form-select form-select-sm">
-						@foreach($departments as $key => $value)
-						<option value="{{ $key }}">{{ $value }}</option>
-						@endforeach
-					</select>
-				</div>
-
-				<div class="col-md-3 col-lg-2">
-					<label class="form-label form-label-sm mb-1">Employee</label>
+					<label class="form-label form-label-sm mb-1">Manager / Employee</label>
 					<select id="employee" class="form-select form-select-sm"
-						{{ count($employee_list) == 1 ? 'disabled' : '' }}>
+						{{ count($employee_list) == 1 ? 'disabled' : '' }} onchange="loadDepartmentsByEmployee()">
 
 						@if(count($employee_list) > 1)
-						<option value="All">All Employees</option>
+						<option value="All">All Managers</option>
 						@endif
 
 						@foreach($employee_list as $key => $value)
@@ -70,6 +61,21 @@
 						@endforeach
 					</select>
 				</div>
+
+				<!-- Department (will be populated dynamically) -->
+				<div class="col-md-3 col-lg-2">
+					<label class="form-label form-label-sm mb-1">Department</label>
+					<select id="department" class="form-select form-select-sm">
+						<option value="All">All Departments</option>
+						@foreach($departments as $key => $value)
+						@if($key !== 'All')
+						<option value="{{ $key }}">{{ $value }}</option>
+						@endif
+						@endforeach
+					</select>
+				</div>
+
+
 
 
 				<!-- BU -->
@@ -237,6 +243,11 @@
 		let department = $('#department').val();
 		if (department && department !== 'All') {
 			currentFilters.department = department;
+		}
+
+		let employee = $('#employee').val();
+		if (employee && employee !== 'All') {
+			currentFilters.employee = employee;
 		}
 
 
@@ -522,6 +533,92 @@
 	// Auto-load current year data on page load
 	$(document).ready(function() {
 		loadReportPreview();
+	});
+
+	// Function to load departments based on selected employee
+	function loadDepartmentsByEmployee() {
+		let employeeId = $('#employee').val();
+		let financialYear = $('#financial_year').val();
+
+		if (!employeeId || employeeId === 'All') {
+			// If All Employees selected, reset department dropdown to show all departments
+			resetDepartmentDropdown();
+			return;
+		}
+
+		// Show loading state
+		let departmentSelect = $('#department');
+		departmentSelect.prop('disabled', true);
+		departmentSelect.html('<option value="All">Loading departments...</option>');
+
+		$.ajax({
+			url: "{{ route('salary.departments.by.employee') }}",
+			method: 'POST',
+			data: {
+				_token: '{{ csrf_token() }}',
+				employee_id: employeeId,
+				financial_year: financialYear
+			},
+			success: function(response) {
+				if (response.success) {
+					// Populate department dropdown
+					departmentSelect.empty();
+					$.each(response.departments, function(value, label) {
+						departmentSelect.append($('<option></option>').val(value).html(label));
+					});
+					departmentSelect.prop('disabled', false);
+
+					// If no candidates found, show message
+					if (!response.has_candidates) {
+						toastr.warning('No candidates found under this manager for the selected financial year');
+					}
+				} else {
+					toastr.error('Failed to load departments');
+					resetDepartmentDropdown();
+				}
+			},
+			error: function() {
+				toastr.error('Failed to load departments');
+				resetDepartmentDropdown();
+			}
+		});
+	}
+
+	// Function to reset department dropdown to original state
+	function resetDepartmentDropdown() {
+		let departmentSelect = $('#department');
+		departmentSelect.prop('disabled', false);
+		departmentSelect.empty();
+		departmentSelect.append('<option value="All">All Departments</option>');
+
+		// Add original departments if needed
+		@foreach($departments as $key => $value)
+		@if($key !== 'All')
+		departmentSelect.append('<option value="{{ $key }}">{{ $value }}</option>');
+		@endif
+		@endforeach
+	}
+
+	// Also call this when financial year changes
+	$(document).ready(function() {
+		// Load departments when employee changes
+		$('#employee').on('change', function() {
+			loadDepartmentsByEmployee();
+		});
+
+		// Also when financial year changes
+		$('#financial_year').on('change', function() {
+			let employeeId = $('#employee').val();
+			if (employeeId && employeeId !== 'All') {
+				loadDepartmentsByEmployee();
+			}
+		});
+
+		// Initial load - if an employee is pre-selected
+		let initialEmployee = $('#employee').val();
+		if (initialEmployee && initialEmployee !== 'All') {
+			loadDepartmentsByEmployee();
+		}
 	});
 </script>
 @endpush
