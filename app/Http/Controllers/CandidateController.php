@@ -61,7 +61,6 @@ class CandidateController extends Controller
         $requisition = ManpowerRequisition::with('candidate')
             ->findOrFail($id);
 
-        //dd($id);
         if (!$requisition->candidate) {
             return back()->with('error', 'Candidate not found.');
         }
@@ -81,11 +80,8 @@ class CandidateController extends Controller
         }
 
         DB::transaction(function () use ($requisition, $request, $user) {
-
             $candidate = $requisition->candidate;
-
             if (!$candidate->file_created_date)  {
-
                 \App\Models\Attendance::where(
                     'candidate_id',
                     $candidate->id
