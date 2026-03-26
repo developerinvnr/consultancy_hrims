@@ -50,6 +50,69 @@ class CandidateController extends Controller
             ->with('success', 'Team member deactivated successfully.');
     }
 
+    public function cancelContract(Request $request, $id)
+    {
+        $request->validate([
+            'cancel_reason' => 'required|string|min:10|max:500',
+        ], [
+            'cancel_reason.required' => 'Please enter cancellation reason.',
+            'cancel_reason.min' => 'Reason must be at least 10 characters.',
+        ]);
+        $requisition = ManpowerRequisition::with('candidate')
+            ->findOrFail($id);
+
+        //dd($id);
+        if (!$requisition->candidate) {
+            return back()->with('error', 'Candidate not found.');
+        }
+
+        $user = Auth::user();
+        // Allow Reporting Manager OR HR Admin
+        if (
+            $requisition->reporting_manager_employee_id != $user->emp_id
+            && !$user->hasRole('hr_admin')
+        ) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Prevent duplicate cancellation
+        if ($requisition->candidate->contract_cancelled_at) {
+            return back()->with('error', 'Contract already cancelled.');
+        }
+
+        DB::transaction(function () use ($requisition, $request, $user) {
+
+            $candidate = $requisition->candidate;
+
+            if (!$candidate->file_created_date)  {
+
+                \App\Models\Attendance::where(
+                    'candidate_id',
+                    $candidate->id
+                )->delete();
+
+                \App\Models\LeaveBalance::where(
+                    'CandidateID',
+                    $candidate->id
+                )->delete();
+            }
+
+            $candidate->update([
+                'contract_cancelled_at' => now(),
+                'contract_cancelled_by' => $user->id,
+                'contract_cancellation_reason' => $request->cancel_reason,
+                'candidate_status' => 'Cancelled',
+                'final_status' => 'D'
+            ]);
+
+            $requisition->update([
+                'status' => 'Inactive'
+            ]);
+        });
+
+        return back()->with('success', 'Contract cancelled successfully.');
+    }
+
     public function verifyPan(Request $request)
     {
         $request->validate([

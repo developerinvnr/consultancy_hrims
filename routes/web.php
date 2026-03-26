@@ -297,6 +297,7 @@ Route::middleware(['auth'])->group(function () {
         '/candidate/{candidate}/deactivate',
         [CandidateController::class, 'deactivate']
     )->name('candidate.deactivate');
+    Route::post('/requisitions/{id}/cancel-contract',[CandidateController::class, 'cancelContract'])->name('requisitions.cancel-contract');
     Route::post('/hrverify-pan', [CandidateController::class, 'verifyPan'])->name('hrverify.pan');
 
     Route::post('/hierarchy/zone-by-bu', [HierarchyController::class, 'getZoneByBU'])->name('hierarchy.zone.by.bu');

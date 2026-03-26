@@ -63,6 +63,7 @@ class AttendanceController extends Controller
                 'reporting_manager_employee_id'
             ])
                 ->whereIn('final_status', ['A', 'D'])
+                ->whereNotIn('candidate_status', ['Cancelled', 'Rejected'])
                 ->whereNotNull('contract_start_date')
                 ->where('contract_start_date', '<=', Carbon::create($year, $month)->endOfMonth());
 
@@ -247,16 +248,20 @@ class AttendanceController extends Controller
 
             $candidate = CandidateMaster::findOrFail($candidateId);
             if (!empty($candidate->last_working_date)) {
-
                 $lastWorkingDate = Carbon::parse($candidate->last_working_date);
-
                 if ($lastWorkingDate->lessThan(Carbon::create($year, $month, 1))) {
-
                     return response()->json([
                         'success' => false,
-                        'message' => 'Candidate already separated before this month'
+                        'message' => 'Party already separated before this month'
                     ]);
                 }
+            }
+
+            if (in_array($candidate->candidate_status, ['Cancelled', 'Rejected'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance cannot be updated for cancelled Party.'
+                ]);
             }
             $isContractual = $candidate->requisition_type === 'Contractual';
             $isHRAdmin = $user->hasRole('admin') || $user->hasRole('hr_admin');
@@ -295,16 +300,11 @@ class AttendanceController extends Controller
 
 
             if (!$isHRAdmin && $isReportingManager && $isCurrentMonth) {
-
                 $todayDay = $today->day;
-
                 // 🔥 RELAXATION FOR FEB 2026 (but no future dates)
                 if ($month == 2 && $year == 2026) {
-
                     foreach ($attendanceData as $day => $status) {
-
                         if ($status === null || $status === '') continue;
-
                         if ((int)$day > $todayDay) {
                             return response()->json([
                                 'success' => false,

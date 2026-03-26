@@ -49,6 +49,9 @@ class CandidateMaster extends Model
         'file_created_date',
         'contract_end_date',
         'last_working_date',
+        'contract_cancelled_at',
+        'contract_cancelled_by',
+        'contract_cancellation_reason',
         'remuneration_per_month',
         'contract_amount',
         'account_holder_name',
@@ -88,6 +91,7 @@ class CandidateMaster extends Model
         'remuneration_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
         'last_working_date' => 'date',
+        'contract_cancelled_at'=> 'date',
         'ledger_created' => 'boolean',
         'ledger_created_at' => 'datetime',
     ];

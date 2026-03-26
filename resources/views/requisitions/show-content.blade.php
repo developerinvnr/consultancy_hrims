@@ -281,146 +281,146 @@
         </div>
     </div>
 
-   <!-- Documents -->
-<div class="col-md-12">
-    <div class="card border">
-        <div class="card-header bg-light py-1 px-2">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Documents</h6>
-                <span class="badge bg-primary fs-6">{{ $requisition->documents->count() }}</span>
+    <!-- Documents -->
+    <div class="col-md-12">
+        <div class="card border">
+            <div class="card-header bg-light py-1 px-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fs-6">Documents</h6>
+                    <span class="badge bg-primary fs-6">{{ $requisition->documents->count() }}</span>
+                </div>
             </div>
-        </div>
 
-        <div class="card-body p-2">
+            <div class="card-body p-2">
 
-            @if($requisition->documents && $requisition->documents->count() > 0)
+                @if($requisition->documents && $requisition->documents->count() > 0)
 
                 <div class="row g-1">
 
                     @foreach($requisition->documents as $document)
 
-                        @php
-                            $s3Url = Storage::disk('s3')->url($document->file_path);
+                    @php
+                    $s3Url = Storage::disk('s3')->url($document->file_path);
 
-                            // Icon mapping
-                            $iconClass = [
-                                'pan_card' => 'ri-bank-card-line',
-                                'aadhaar_card' => 'ri-id-card-line',
-                                'bank_document' => 'ri-bank-line',
-                                'resume' => 'ri-file-text-line',
-                                'driving_licence' => 'ri-car-line',
-                                'zbm_gm_approval' => 'ri-approval-line'
-                            ][$document->document_type] ?? 'ri-file-line';
+                    // Icon mapping
+                    $iconClass = [
+                    'pan_card' => 'ri-bank-card-line',
+                    'aadhaar_card' => 'ri-id-card-line',
+                    'bank_document' => 'ri-bank-line',
+                    'resume' => 'ri-file-text-line',
+                    'driving_licence' => 'ri-car-line',
+                    'zbm_gm_approval' => 'ri-approval-line'
+                    ][$document->document_type] ?? 'ri-file-line';
 
-                            // Verification status (ONLY for verified document types)
-                            $status = null;
-                            $statusClass = null;
+                    // Verification status (ONLY for verified document types)
+                    $status = null;
+                    $statusClass = null;
 
-                            if($document->document_type === 'pan_card'){
-                                $status = $requisition->pan_status_2;
-                            }
-                            elseif($document->document_type === 'bank_document'){
-                                $status = $requisition->bank_verification_status;
-                            }
-                            elseif($document->document_type === 'driving_licence'){
-                                $status = $requisition->dl_verification_status;
-                            }
+                    if($document->document_type === 'pan_card'){
+                    $status = $requisition->pan_status_2;
+                    }
+                    elseif($document->document_type === 'bank_document'){
+                    $status = $requisition->bank_verification_status;
+                    }
+                    elseif($document->document_type === 'driving_licence'){
+                    $status = $requisition->dl_verification_status;
+                    }
 
-                            // Assign color only if status exists
-                            if(!empty($status)){
-                                $statusClass = match(strtolower($status)){
-                                    'verified','valid','success','successful' => 'success',
-                                    'pending' => 'warning',
-                                    'failed','invalid','rejected','inoperative' => 'danger',
-                                    default => 'secondary'
-                                };
-                            }
-                        @endphp
-
-
-                        <div class="col-12">
-
-                            <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-1">
-
-                                <!-- Left section -->
-                                <div class="d-flex align-items-center">
-
-                                    <i class="{{ $iconClass }} me-2 text-primary fs-6"></i>
-
-                                    <div>
-
-                                        <!-- Document name -->
-                                        <small class="d-block text-muted">
-                                            @switch($document->document_type)
-                                                @case('pan_card') PAN Card @break
-                                                @case('aadhaar_card') Aadhaar Card @break
-                                                @case('bank_document') Bank Document @break
-                                                @case('resume') Resume @break
-                                                @case('driving_licence') Driving Licence @break
-                                                @case('zbm_gm_approval') ZBM/GM Approval @break
-                                                @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
-                                            @endswitch
-                                        </small>
-
-                                        <!-- File name -->
-                                        <small class="text-muted d-block">
-                                            {{ $document->file_name }}
-                                        </small>
-
-                                        <!-- Verification badge ONLY if exists -->
-                                        @if(!empty($status))
-                                            <span class="badge bg-{{ $statusClass }} mt-1">
-                                                {{ ucfirst($status) }}
-                                            </span>
-                                        @endif
-
-                                    </div>
-
-                                </div>
+                    // Assign color only if status exists
+                    if(!empty($status)){
+                    $statusClass = match(strtolower($status)){
+                    'verified','valid','success','successful' => 'success',
+                    'pending' => 'warning',
+                    'failed','invalid','rejected','inoperative' => 'danger',
+                    default => 'secondary'
+                    };
+                    }
+                    @endphp
 
 
-                                <!-- Right buttons -->
-                                <div class="btn-group btn-group-xs">
+                    <div class="col-12">
 
-                                    <a href="{{ $s3Url }}"
-                                       target="_blank"
-                                       class="btn btn-outline-primary btn-xs"
-                                       title="View">
-                                        <i class="ri-eye-line fs-6"></i>
-                                    </a>
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-1">
 
-                                    <a href="{{ $s3Url }}"
-                                       download="{{ $document->file_name }}"
-                                       class="btn btn-outline-secondary btn-xs"
-                                       title="Download">
-                                        <i class="ri-download-line fs-6"></i>
-                                    </a>
+                            <!-- Left section -->
+                            <div class="d-flex align-items-center">
+
+                                <i class="{{ $iconClass }} me-2 text-primary fs-6"></i>
+
+                                <div>
+
+                                    <!-- Document name -->
+                                    <small class="d-block text-muted">
+                                        @switch($document->document_type)
+                                        @case('pan_card') PAN Card @break
+                                        @case('aadhaar_card') Aadhaar Card @break
+                                        @case('bank_document') Bank Document @break
+                                        @case('resume') Resume @break
+                                        @case('driving_licence') Driving Licence @break
+                                        @case('zbm_gm_approval') ZBM/GM Approval @break
+                                        @default {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
+                                        @endswitch
+                                    </small>
+
+                                    <!-- File name -->
+                                    <small class="text-muted d-block">
+                                        {{ $document->file_name }}
+                                    </small>
+
+                                    <!-- Verification badge ONLY if exists -->
+                                    @if(!empty($status))
+                                    <span class="badge bg-{{ $statusClass }} mt-1">
+                                        {{ ucfirst($status) }}
+                                    </span>
+                                    @endif
 
                                 </div>
 
                             </div>
 
+
+                            <!-- Right buttons -->
+                            <div class="btn-group btn-group-xs">
+
+                                <a href="{{ $s3Url }}"
+                                    target="_blank"
+                                    class="btn btn-outline-primary btn-xs"
+                                    title="View">
+                                    <i class="ri-eye-line fs-6"></i>
+                                </a>
+
+                                <a href="{{ $s3Url }}"
+                                    download="{{ $document->file_name }}"
+                                    class="btn btn-outline-secondary btn-xs"
+                                    title="Download">
+                                    <i class="ri-download-line fs-6"></i>
+                                </a>
+
+                            </div>
+
                         </div>
+
+                    </div>
 
                     @endforeach
 
                 </div>
 
-            @else
+                @else
 
                 <div class="text-center py-2">
                     <i class="ri-folder-open-line text-muted fs-3"></i>
                     <p class="text-muted mt-1 small">No documents uploaded</p>
                 </div>
 
-            @endif
+                @endif
 
+            </div>
         </div>
     </div>
-</div>
 
     <!-- Agreements Section -->
-   @if(($agreements['unsigned'] ?? collect())->count() > 0 || ($agreements['signed'] ?? null))
+    @if(($agreements['unsigned'] ?? collect())->count() > 0 || ($agreements['signed'] ?? null))
     <div class="col-md-12 mt-3">
         <div class="card border">
             <div class="card-header bg-light py-1 px-2">
@@ -466,7 +466,7 @@
                                 title="View">
                                 <i class="ri-eye-line fs-6"></i>
                             </a>
-                          
+
                         </div>
                     </div>
 
@@ -532,7 +532,180 @@
         </div>
     </div>
     @endif
+
+
+    <!-- Timeline Section -->
+    <div class="col-md-12">
+        <div class="card border">
+            <div class="card-header bg-light py-1 px-2">
+                <h6 class="mb-0 fs-6">
+                    <i class="ri-timeline-line me-1"></i>Requisition Timeline
+                </h6>
+            </div>
+            <div class="card-body p-2">
+                <div class="d-flex flex-wrap align-items-center gap-2 small">
+                    {{-- Submitted --}}
+                    @if($requisition->submission_date)
+                    <span class="badge bg-primary">
+                        Submitted
+                        <br>
+                        {{ $requisition->submission_date->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- HR Verified --}}
+                    @if($requisition->hr_verification_date)
+                    <span class="badge bg-info">
+                        HR Verified
+                        <br>
+                        {{ $requisition->hr_verification_date->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Approved --}}
+                    @if($requisition->approval_date)
+                    <span class="badge bg-success">
+                        Approved
+                        <br>
+                        {{ $requisition->approval_date->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Agreement Created --}}
+                    @if(($agreements['unsigned'] ?? collect())->first())
+                    <span class="badge bg-secondary">
+                        Agreement Created
+                        <br>
+                        {{ $agreements['unsigned']->first()->created_at->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Agreement Signed --}}
+                    @if($agreements['signed'])
+                    <span class="badge bg-success">
+                        Agreement Signed
+                        <br>
+                        {{ $agreements['signed']->updated_at->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Courier Dispatched --}}
+                    @if($agreements['signed']?->courierDetails?->dispatch_date)
+                    <span class="badge bg-warning text-dark">
+                        Courier Sent
+                        <br>
+                        {{ $agreements['signed']->courierDetails->dispatch_date->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Courier Received --}}
+                    @if($agreements['signed']?->courierDetails?->received_date)
+                    <span class="badge bg-success">
+                        Courier Received
+                        <br>
+                        {{ $agreements['signed']->courierDetails->received_date->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- File Created --}}
+                    @if($requisition->candidate?->file_created_date)
+                    <span class="badge bg-primary">
+                        File Created
+                        <br>
+                        {{ \Carbon\Carbon::parse($requisition->candidate->file_created_date)->format('d M Y') }}
+                    </span>
+                    @endif
+                    {{-- Ledger Created --}}
+                    @if($requisition->candidate?->ledger_created_at)
+                    <span class="badge bg-info">
+                        Ledger Created
+                        <br>
+                        {{ \Carbon\Carbon::parse($requisition->candidate->ledger_created_at)->format('d M Y') }}
+                    </span>
+                    @endif
+                    @if($requisition->candidate?->contract_cancelled_at)
+                    <span class="badge bg-danger">
+                        Contract Cancelled
+                        <br>
+                        {{ \Carbon\Carbon::parse($requisition->candidate->contract_cancelled_at)->format('d M Y') }}
+                    </span>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @php
+    $loggedEmpId = auth()->user()->emp_id ?? null;
+    @endphp
+    @if($requisition->reporting_manager_employee_id == $loggedEmpId
+    && empty($requisition->candidate?->contract_cancelled_at))
+    <div class="col-md-12 mt-2">
+        <div class="card border-danger">
+            <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                <div class="small text-danger fw-medium">
+                    Contract cancellation available for reporting manager
+                </div>
+                <button class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#cancelContractModal">
+                    <i class="ri-close-circle-line me-1"></i>
+                    Cancel Contract
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>
+
+{{-- MODAL --}}
+@if($requisition->reporting_manager_employee_id == $loggedEmpId
+&& empty($requisition->candidate?->contract_cancelled_at))
+<div class="modal fade"
+    id="cancelContractModal"
+    tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST"
+                action="{{ route('requisitions.cancel-contract', $requisition->id) }}">
+                @csrf
+                <div class="modal-header">
+                    <h6 class="modal-title text-danger">
+                        Cancel Contract
+                    </h6>
+                    <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+                </div>
+
+
+                <div class="modal-body">
+                    <label class="form-label small">
+                        Reason for cancellation
+                    </label>
+                    <textarea name="cancel_reason"
+                        class="form-control @error('cancel_reason') is-invalid @enderror"
+                        rows="3"
+                        required
+                        placeholder="Enter reason why contract is being cancelled minimum 10 characters">{{ old('cancel_reason') }}</textarea>
+
+                    @error('cancel_reason')
+                    <div class="invalid-feedback d-block">
+                        {{ $message }}
+                    </div>
+                    @enderror
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                        class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                        Close
+                    </button>
+                    <button type="submit"
+                        class="btn btn-danger btn-sm">
+                        Confirm Cancel Contract
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 
 <!-- Add compact CSS styles -->
 <style>
@@ -589,4 +762,78 @@
     .compact-view .alert .fs-6 {
         font-size: 0.875rem;
     }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline:before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .timeline-icon {
+        position: absolute;
+        left: -30px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        z-index: 1;
+    }
+
+    .timeline-icon i {
+        font-size: 18px;
+    }
+
+    .timeline-content {
+        padding-left: 20px;
+    }
+
+    .timeline-content h6 {
+        margin-bottom: 5px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    /* Background colors */
+    .bg-primary {
+        background-color: #0d6efd;
+    }
+
+    .bg-info {
+        background-color: #0dcaf0;
+    }
+
+    .bg-success {
+        background-color: #198754;
+    }
+
+    .bg-danger {
+        background-color: #dc3545;
+    }
 </style>
+@if ($errors->has('cancel_reason'))
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var cancelModal = new bootstrap.Modal(
+            document.getElementById('cancelContractModal')
+        );
+        cancelModal.show();
+    });
+</script>
+@endif
