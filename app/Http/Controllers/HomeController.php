@@ -83,18 +83,18 @@ class HomeController extends Controller
 
 
             case 'unsigned':
-    $query->whereHas('candidate', function ($q) {
-        $q->where('candidate_status', 'Unsigned Agreement Created');
-    })
-    // ✅ Add eager loading for candidate with agreements
-    ->with(['candidate' => function($q) {
-        $q->with(['unsignedAgreements' => function($sub) {
-            $sub->where('document_type', 'agreement')
+        $query->whereHas('candidate', function ($q) {
+            $q->where('candidate_status', 'Unsigned Agreement Created');
+        })
+        // ✅ Add eager loading for candidate with agreements
+        ->with(['candidate' => function($q) {
+            $q->with(['unsignedAgreements' => function($sub) {
+                $sub->where('document_type', 'agreement')
                 ->where('sign_status', 'UNSIGNED')
                 ->latest();
         }]);
-    }]);
-    break;
+        }]);
+        break;
 
 
             case 'dispatch_pending':
@@ -110,10 +110,12 @@ class HomeController extends Controller
 
 
             case 'courier_pending':
-
-                $query->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
-                    $q->whereNotNull('dispatch_date')
-                        ->whereNull('received_date');
+                $query->whereHas('candidate', function ($candidateQuery) {
+                    $candidateQuery->where('candidate_status', '!=', 'Cancelled')  // Exclude cancelled
+                        ->whereHas('signedAgreements.courierDetails', function ($courierQuery) {
+                            $courierQuery->whereNotNull('dispatch_date')
+                                ->whereNull('received_date');
+                        });
                 });
                 break;
 
@@ -218,299 +220,299 @@ class HomeController extends Controller
             ]);
 
             \Log::info('=== Dashboard Load ===', [
-    'req_tab' => $reqTab,
-    'count' => $recent_requisitions->count(),
-    'sql' => $query->toSql()
-]);
+        'req_tab' => $reqTab,
+        'count' => $recent_requisitions->count(),
+        'sql' => $query->toSql()
+      ]);
 
             // ✅ ADD THIS DEBUG RIGHT HERE
-\Log::info('Recent Requisitions Loaded', [
-    'req_tab' => $reqTab,
-    'count' => $recent_requisitions->count(),
-    'items' => $recent_requisitions->map(function($req) {
-        return [
-            'requisition_code' => $req->requisition_code,
-            'status' => $req->status,
-            'has_candidate' => $req->candidate ? 'Yes' : 'No',
-            'candidate_status' => $req->candidate ? $req->candidate->candidate_status : 'N/A',
-            'candidate_id' => $req->candidate ? $req->candidate->id : 'N/A'
-        ];
-    })
-    ]);
-
-        // KPI Stats with more detailed breakdowns
-        $stats = [
-            // Requisition Pipeline Stats
-            'total_requisitions' => ManpowerRequisition::count(),
-            'pending_verification' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
-            'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
-            'pending_approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
-            'approved' => ManpowerRequisition::where(function ($query) {
-                $query->where('status', 'Approved')
-                    ->orWhere('status', 'Agreement Pending')
-                    ->orWhere('status', 'Unsigned Agreement Created')
-                    ->orWhere('status', 'Agreement Completed');
-            })->count(),
-            'rejected' => ManpowerRequisition::where(function ($q) {
-
-                $q->where('status', 'Rejected')
-                    ->orWhereHas('candidate', function ($sub) {
-                        $sub->where('candidate_status', 'Rejected');
-                    });
-            })->count(),
-            'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
-            'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
-
-            // Agreement Workflow Stats
-            'agreement_pending' => ManpowerRequisition::where('status', 'Agreement Pending')->count(),
-            'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Created')->count(),
-            'agreement_completed' => ManpowerRequisition::where('status', 'Agreement Completed')->count(),
-
-            // Candidate Master Stats
-            'total_candidates' => CandidateMaster::count(),
-            'active_candidates' => CandidateMaster::where('candidate_status', 'Active')->count(),
-            'signed_agreement_uploaded' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
-            'rejected_candidates' => CandidateMaster::where('candidate_status', 'Rejected')->count(),
-
-            'verification_count' => ManpowerRequisition::whereNotNull('hr_verification_date')
-                ->whereNotNull('submission_date')
-                ->count(),
-            'approval_count' => ManpowerRequisition::whereNotNull('approval_date')
-                ->whereNotNull('submission_date')
-                ->count(),
-        ];
-
-        // Requisition Type Breakdown
-        $stats['requisition_by_type'] = ManpowerRequisition::select('requisition_type', DB::raw('count(*) as count'))
-            ->groupBy('requisition_type')
-            ->pluck('count', 'requisition_type')
-            ->toArray();
-
-        // Monthly Stats (Current Month)
-        $currentMonth = now()->startOfMonth();
-        $stats['this_month'] = [
-            'submissions' => ManpowerRequisition::where('submission_date', '>=', $currentMonth)->count(),
-            'verifications' => ManpowerRequisition::where('hr_verification_date', '>=', $currentMonth)->count(),
-            'approvals' => ManpowerRequisition::where('approval_date', '>=', $currentMonth)->count(),
-            'processed' => ManpowerRequisition::where('processing_date', '>=', $currentMonth)->count(),
-        ];
-
-        // Top Submitters (Last 30 days)
-        $stats['top_submitters'] = ManpowerRequisition::select('submitted_by_name', DB::raw('count(*) as count'))
-            ->where('submission_date', '>=', now()->subDays(30))
-            ->groupBy('submitted_by_name')
-            ->orderBy('count', 'desc')
-            ->limit(6)
-            ->get();
-
-        // Department-wise breakdown
-        $stats['by_department'] = CandidateMaster::select('department_id', DB::raw('count(*) as count'))->where('candidate_status', 'Active')
-            ->with('department:id,department_name')
-            ->groupBy('department_id')
-            ->orderBy('count', 'desc')
-            ->limit(6)
-            ->get();
-
-        // Average Processing Times
-        $stats['avg_times'] = [
-            'verification_time' => 0,
-            'approval_time' => 0,
-            'verification_display' => 'N/A',
-            'approval_display' => 'N/A',
-        ];
-
-        // Calculate verification time (submission to HR verification)
-        $verificationData = ManpowerRequisition::whereNotNull('hr_verification_date')
-            ->whereNotNull('submission_date')
-            ->selectRaw('TIMESTAMPDIFF(HOUR, submission_date, hr_verification_date) as hours_diff')
-            ->get();
-
-        if ($verificationData->isNotEmpty()) {
-            $avgVerificationHours = $verificationData->avg('hours_diff');
-            if ($avgVerificationHours > 0) {
-                $stats['avg_times']['verification_time'] = $avgVerificationHours;
-                $stats['avg_times']['verification_display'] = $this->formatHours($avgVerificationHours);
-            }
-        }
-
-        // Calculate approval time (HR verification to approval)
-        $approvalData = ManpowerRequisition::whereNotNull('approval_date')
-            ->whereNotNull('submission_date')
-            ->selectRaw('TIMESTAMPDIFF(DAY, submission_date, approval_date) as days_diff')
-            ->get();
-
-        if ($approvalData->isNotEmpty()) {
-            $avgApprovalDays = $approvalData->avg('days_diff');
-            if ($avgApprovalDays !== null && $avgApprovalDays >= 0) {
-                $stats['avg_times']['approval_time'] = $avgApprovalDays;
-                $stats['avg_times']['approval_display'] = number_format($avgApprovalDays, 1) . 'd';
-            }
-        } else {
-            $stats['avg_times']['approval_display'] = 'N/A';
-        }
-
-        // Recent requisitions
-        // $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate'])
-        //     ->orderBy('created_at', 'desc')
-        //     ->paginate(10);
-
-        // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
-       foreach ($recent_requisitions as $requisition) {
-            \Log::info('Processing Requisition', [
-                'requisition_code' => $requisition->requisition_code,
-                'has_candidate' => $requisition->candidate ? 'Yes' : 'No',
-                'candidate' => $requisition->candidate,
-                'status' => $requisition->status
+        \Log::info('Recent Requisitions Loaded', [
+            'req_tab' => $reqTab,
+            'count' => $recent_requisitions->count(),
+            'items' => $recent_requisitions->map(function($req) {
+                return [
+                    'requisition_code' => $req->requisition_code,
+                    'status' => $req->status,
+                    'has_candidate' => $req->candidate ? 'Yes' : 'No',
+                    'candidate_status' => $req->candidate ? $req->candidate->candidate_status : 'N/A',
+                    'candidate_id' => $req->candidate ? $req->candidate->id : 'N/A'
+                ];
+            })
             ]);
-        if ($requisition->candidate) {
-        // Load UNSIGNED agreement
-        $unsignedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
-            ->where('document_type', 'agreement')
-            ->where('sign_status', 'UNSIGNED')
-            ->latest()
-            ->first();
-            
-        // Load SIGNED agreement
-        $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
-            ->where('document_type', 'agreement')
-            ->where('sign_status', 'SIGNED')
-            ->latest()
-            ->first();
 
-        // Get courier details
-        $courierDetails = null;
-        if ($signedAgreement) {
-            $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
-                ->latest()
-                ->first();
-        }
+                // KPI Stats with more detailed breakdowns
+                $stats = [
+                    // Requisition Pipeline Stats
+                    'total_requisitions' => ManpowerRequisition::count(),
+                    'pending_verification' => ManpowerRequisition::where('status', 'Pending HR Verification')->count(),
+                    'hr_verified' => ManpowerRequisition::where('status', 'Hr Verified')->count(),
+                    'pending_approval' => ManpowerRequisition::where('status', 'Pending Approval')->count(),
+                    'approved' => ManpowerRequisition::where(function ($query) {
+                        $query->where('status', 'Approved')
+                            ->orWhere('status', 'Agreement Pending')
+                            ->orWhere('status', 'Unsigned Agreement Created')
+                            ->orWhere('status', 'Agreement Completed');
+                    })->count(),
+                    'rejected' => ManpowerRequisition::where(function ($q) {
 
-        // Attach to requisition
-        $requisition->unsigned_agreement = $unsignedAgreement;
-        $requisition->signed_agreement = $signedAgreement;
-        $requisition->courier_details = $courierDetails;
+                        $q->where('status', 'Rejected')
+                            ->orWhereHas('candidate', function ($sub) {
+                                $sub->where('candidate_status', 'Rejected');
+                            });
+                    })->count(),
+                    'correction_required' => ManpowerRequisition::where('status', 'Correction Required')->count(),
+                    'processed' => ManpowerRequisition::where('status', 'Processed')->count(),
 
-                // ✅ ADD THIS DEBUG LOG
-        \Log::info('Candidate Data', [
-            'requisition_code' => $requisition->requisition_code,
-            'candidate_name' => $requisition->candidate->candidate_name,
-            'candidate_status' => $requisition->candidate->candidate_status,
-            'has_unsigned_agreement' => $unsignedAgreement ? 'Yes' : 'No',
-            'unsigned_agreement_created_at' => $unsignedAgreement ? $unsignedAgreement->created_at : null,
-            'requisition_status' => $requisition->status
-        ]);
+                    // Agreement Workflow Stats
+                    'agreement_pending' => ManpowerRequisition::where('status', 'Agreement Pending')->count(),
+                    'unsigned_uploaded' => ManpowerRequisition::where('status', 'Unsigned Agreement Created')->count(),
+                    'agreement_completed' => ManpowerRequisition::where('status', 'Agreement Completed')->count(),
 
-        }
+                    // Candidate Master Stats
+                    'total_candidates' => CandidateMaster::count(),
+                    'active_candidates' => CandidateMaster::where('candidate_status', 'Active')->count(),
+                    'signed_agreement_uploaded' => CandidateMaster::where('candidate_status', 'Signed Agreement Uploaded')->count(),
+                    'rejected_candidates' => CandidateMaster::where('candidate_status', 'Rejected')->count(),
 
-        
+                    'verification_count' => ManpowerRequisition::whereNotNull('hr_verification_date')
+                        ->whereNotNull('submission_date')
+                        ->count(),
+                    'approval_count' => ManpowerRequisition::whereNotNull('approval_date')
+                        ->whereNotNull('submission_date')
+                        ->count(),
+                ];
 
-        $ageDays = 0;
-        $baseDate = null;
+                // Requisition Type Breakdown
+                $stats['requisition_by_type'] = ManpowerRequisition::select('requisition_type', DB::raw('count(*) as count'))
+                    ->groupBy('requisition_type')
+                    ->pluck('count', 'requisition_type')
+                    ->toArray();
 
-    // ✅ FIRST: Check candidate status for agreement workflow
-    if ($requisition->candidate) {
-        $candidateStatus = $requisition->candidate->candidate_status;
-        
-        switch ($candidateStatus) {
-            case 'Agreement Pending':
-                $baseDate = $requisition->approval_date;
-                \Log::info('Ageing - Agreement Pending', [
-                    'candidate' => $requisition->candidate->candidate_name,
-                    'base_date' => $baseDate
-                ]);
-                break;
-                
-            case 'Unsigned Agreement Created':
-                // ✅ THIS IS THE CASE FOR YOUR CANDIDATES
-                if ($requisition->unsigned_agreement) {
-                    $baseDate = $requisition->unsigned_agreement->created_at;
-                    \Log::info('Ageing - Unsigned Agreement Created', [
-                        'candidate' => $requisition->candidate->candidate_name,
-                        'agreement_created_at' => $baseDate,
-                        'requisition_code' => $requisition->requisition_code
-                    ]);
-                } else {
-                    // Fallback to candidate creation date
-                    $baseDate = $requisition->candidate->created_at;
-                    \Log::info('Ageing - Unsigned Agreement Created (fallback)', [
-                        'candidate' => $requisition->candidate->candidate_name,
-                        'candidate_created_at' => $baseDate
-                    ]);
+                // Monthly Stats (Current Month)
+                $currentMonth = now()->startOfMonth();
+                $stats['this_month'] = [
+                    'submissions' => ManpowerRequisition::where('submission_date', '>=', $currentMonth)->count(),
+                    'verifications' => ManpowerRequisition::where('hr_verification_date', '>=', $currentMonth)->count(),
+                    'approvals' => ManpowerRequisition::where('approval_date', '>=', $currentMonth)->count(),
+                    'processed' => ManpowerRequisition::where('processing_date', '>=', $currentMonth)->count(),
+                ];
+
+                // Top Submitters (Last 30 days)
+                $stats['top_submitters'] = ManpowerRequisition::select('submitted_by_name', DB::raw('count(*) as count'))
+                    ->where('submission_date', '>=', now()->subDays(30))
+                    ->groupBy('submitted_by_name')
+                    ->orderBy('count', 'desc')
+                    ->limit(6)
+                    ->get();
+
+                // Department-wise breakdown
+                $stats['by_department'] = CandidateMaster::select('department_id', DB::raw('count(*) as count'))->where('candidate_status', 'Active')
+                    ->with('department:id,department_name')
+                    ->groupBy('department_id')
+                    ->orderBy('count', 'desc')
+                    ->limit(6)
+                    ->get();
+
+                // Average Processing Times
+                $stats['avg_times'] = [
+                    'verification_time' => 0,
+                    'approval_time' => 0,
+                    'verification_display' => 'N/A',
+                    'approval_display' => 'N/A',
+                ];
+
+                // Calculate verification time (submission to HR verification)
+                $verificationData = ManpowerRequisition::whereNotNull('hr_verification_date')
+                    ->whereNotNull('submission_date')
+                    ->selectRaw('TIMESTAMPDIFF(HOUR, submission_date, hr_verification_date) as hours_diff')
+                    ->get();
+
+                if ($verificationData->isNotEmpty()) {
+                    $avgVerificationHours = $verificationData->avg('hours_diff');
+                    if ($avgVerificationHours > 0) {
+                        $stats['avg_times']['verification_time'] = $avgVerificationHours;
+                        $stats['avg_times']['verification_display'] = $this->formatHours($avgVerificationHours);
+                    }
                 }
-                break;
+
+                // Calculate approval time (HR verification to approval)
+                $approvalData = ManpowerRequisition::whereNotNull('approval_date')
+                    ->whereNotNull('submission_date')
+                    ->selectRaw('TIMESTAMPDIFF(DAY, submission_date, approval_date) as days_diff')
+                    ->get();
+
+                if ($approvalData->isNotEmpty()) {
+                    $avgApprovalDays = $approvalData->avg('days_diff');
+                    if ($avgApprovalDays !== null && $avgApprovalDays >= 0) {
+                        $stats['avg_times']['approval_time'] = $avgApprovalDays;
+                        $stats['avg_times']['approval_display'] = number_format($avgApprovalDays, 1) . 'd';
+                    }
+                } else {
+                    $stats['avg_times']['approval_display'] = 'N/A';
+                }
+
+                // Recent requisitions
+                // $recent_requisitions = ManpowerRequisition::with(['submittedBy', 'department', 'function', 'candidate'])
+                //     ->orderBy('created_at', 'desc')
+                //     ->paginate(10);
+
+                // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
+            foreach ($recent_requisitions as $requisition) {
+                    \Log::info('Processing Requisition', [
+                        'requisition_code' => $requisition->requisition_code,
+                        'has_candidate' => $requisition->candidate ? 'Yes' : 'No',
+                        'candidate' => $requisition->candidate,
+                        'status' => $requisition->status
+                    ]);
+                if ($requisition->candidate) {
+                // Load UNSIGNED agreement
+                $unsignedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'UNSIGNED')
+                    ->latest()
+                    ->first();
+                    
+                // Load SIGNED agreement
+                $signedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
+                    ->where('document_type', 'agreement')
+                    ->where('sign_status', 'SIGNED')
+                    ->latest()
+                    ->first();
+
+                // Get courier details
+                $courierDetails = null;
+                if ($signedAgreement) {
+                    $courierDetails = AgreementCourier::where('agreement_document_id', $signedAgreement->id)
+                        ->latest()
+                        ->first();
+                }
+
+                // Attach to requisition
+                $requisition->unsigned_agreement = $unsignedAgreement;
+                $requisition->signed_agreement = $signedAgreement;
+                $requisition->courier_details = $courierDetails;
+
+                        // ✅ ADD THIS DEBUG LOG
+                \Log::info('Candidate Data', [
+                    'requisition_code' => $requisition->requisition_code,
+                    'candidate_name' => $requisition->candidate->candidate_name,
+                    'candidate_status' => $requisition->candidate->candidate_status,
+                    'has_unsigned_agreement' => $unsignedAgreement ? 'Yes' : 'No',
+                    'unsigned_agreement_created_at' => $unsignedAgreement ? $unsignedAgreement->created_at : null,
+                    'requisition_status' => $requisition->status
+                ]);
+
+                }
+
                 
-case 'Signed Agreement Uploaded':
-    // ✅ FIX: Use $requisition->courier_details instead of $courierDetails
-    if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-        $baseDate = $requisition->courier_details->dispatch_date ?? $requisition->candidate->updated_at;
-    } else {
-        $baseDate = $requisition->signed_agreement ? $requisition->signed_agreement->created_at : $requisition->approval_date;
-    }
-    break;
+
+                $ageDays = 0;
+                $baseDate = null;
+
+            // ✅ FIRST: Check candidate status for agreement workflow
+            if ($requisition->candidate) {
+                $candidateStatus = $requisition->candidate->candidate_status;
+                
+                switch ($candidateStatus) {
+                    case 'Agreement Pending':
+                        $baseDate = $requisition->approval_date;
+                        \Log::info('Ageing - Agreement Pending', [
+                            'candidate' => $requisition->candidate->candidate_name,
+                            'base_date' => $baseDate
+                        ]);
+                        break;
+                        
+                    case 'Unsigned Agreement Created':
+                        // ✅ THIS IS THE CASE FOR YOUR CANDIDATES
+                        if ($requisition->unsigned_agreement) {
+                            $baseDate = $requisition->unsigned_agreement->created_at;
+                            \Log::info('Ageing - Unsigned Agreement Created', [
+                                'candidate' => $requisition->candidate->candidate_name,
+                                'agreement_created_at' => $baseDate,
+                                'requisition_code' => $requisition->requisition_code
+                            ]);
+                        } else {
+                            // Fallback to candidate creation date
+                            $baseDate = $requisition->candidate->created_at;
+                            \Log::info('Ageing - Unsigned Agreement Created (fallback)', [
+                                'candidate' => $requisition->candidate->candidate_name,
+                                'candidate_created_at' => $baseDate
+                            ]);
+                        }
+                        break;
+                        
+        case 'Signed Agreement Uploaded':
+            // ✅ FIX: Use $requisition->courier_details instead of $courierDetails
+            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                $baseDate = $requisition->courier_details->dispatch_date ?? $requisition->candidate->updated_at;
+            } else {
+                $baseDate = $requisition->signed_agreement ? $requisition->signed_agreement->created_at : $requisition->approval_date;
+            }
+            break;
                 
             default:
                 // If no match, check requisition status
                 $this->setBaseDateFromRequisitionStatus($requisition, $baseDate);
                 break;
         }
-    } else {
-        // No candidate, check requisition status
-        $this->setBaseDateFromRequisitionStatus($requisition, $baseDate);
-    }
-    
-    // ✅ Override for courier stage
-    if ($requisition->courier_details && !$requisition->courier_details->received_date) {
-        if ($requisition->courier_details->dispatch_date) {
-            $baseDate = $requisition->courier_details->dispatch_date;
+        } else {
+            // No candidate, check requisition status
+            $this->setBaseDateFromRequisitionStatus($requisition, $baseDate);
         }
-    }
     
-    // ✅ Override for file creation stage
-    if ($requisition->candidate &&
-        $requisition->candidate->candidate_status == 'Signed Agreement Uploaded' &&
-        !$requisition->candidate->file_created_date &&
-        $requisition->courier_details && 
-        $requisition->courier_details->received_date) {
-        $baseDate = $requisition->courier_details->received_date;
-    }
-    
-    // ✅ Calculate ageing days// ✅ Calculate ageing days - Use integer days
-if ($baseDate) {
-    $baseDateCarbon = Carbon::parse($baseDate);
-    $now = Carbon::now();
-    
-    // Use diffInDays for integer days (no decimals)
-    $ageDays = $baseDateCarbon->diffInDays($now);
-    
-    \Log::info('Ageing Calculated', [
-        'candidate' => $requisition->candidate->candidate_name ?? 'N/A',
-        'candidate_status' => $requisition->candidate->candidate_status ?? 'N/A',
-        'requisition_status' => $requisition->status,
-        'base_date' => $baseDate,
-        'age_days' => $ageDays
-    ]);
-} else {
-    $ageDays = 0;
-}
+            // ✅ Override for courier stage
+            if ($requisition->courier_details && !$requisition->courier_details->received_date) {
+                if ($requisition->courier_details->dispatch_date) {
+                    $baseDate = $requisition->courier_details->dispatch_date;
+                }
+            }
+            
+            // ✅ Override for file creation stage
+            if ($requisition->candidate &&
+                $requisition->candidate->candidate_status == 'Signed Agreement Uploaded' &&
+                !$requisition->candidate->file_created_date &&
+                $requisition->courier_details && 
+                $requisition->courier_details->received_date) {
+                $baseDate = $requisition->courier_details->received_date;
+            }
+            
+            // ✅ Calculate ageing days// ✅ Calculate ageing days - Use integer days
+        if ($baseDate) {
+            $baseDateCarbon = Carbon::parse($baseDate);
+            $now = Carbon::now();
+            
+            // Use diffInDays for integer days (no decimals)
+            $ageDays = $baseDateCarbon->diffInDays($now);
+            
+            \Log::info('Ageing Calculated', [
+                'candidate' => $requisition->candidate->candidate_name ?? 'N/A',
+                'candidate_status' => $requisition->candidate->candidate_status ?? 'N/A',
+                'requisition_status' => $requisition->status,
+                'base_date' => $baseDate,
+                'age_days' => $ageDays
+            ]);
+        } else {
+            $ageDays = 0;
+        }
 
-// Ensure it's an integer
-$requisition->ageing_days = (int) $ageDays;
-    
-    // Priority classification
-    if ($ageDays < 1) {
-        $requisition->priority_label = '🟢 Low';
-        $requisition->priority_color = 'success';
-    } elseif ($ageDays <= 2) {
-        $requisition->priority_label = '🟡 Medium';
-        $requisition->priority_color = 'warning';
-    } elseif ($ageDays <= 5) {
-        $requisition->priority_label = '🟠 High';
-        $requisition->priority_color = 'danger';
-    } else {
-        $requisition->priority_label = '🔴 Critical';
-        $requisition->priority_color = 'dark';
-    }
-}
+        // Ensure it's an integer
+        $requisition->ageing_days = (int) $ageDays;
+            
+            // Priority classification
+            if ($ageDays < 1) {
+                $requisition->priority_label = '🟢 Low';
+                $requisition->priority_color = 'success';
+            } elseif ($ageDays <= 2) {
+                $requisition->priority_label = '🟡 Medium';
+                $requisition->priority_color = 'warning';
+            } elseif ($ageDays <= 5) {
+                $requisition->priority_label = '🟠 High';
+                $requisition->priority_color = 'danger';
+            } else {
+                $requisition->priority_label = '🔴 Critical';
+                $requisition->priority_color = 'dark';
+            }
+        }
 
         $sortedCollection =
             $recent_requisitions->getCollection()
@@ -595,10 +597,13 @@ $requisition->ageing_days = (int) $ageDays;
         )->count();
 
         // Courier Pending
-        $attention['courier_pending'] = ManpowerRequisition::whereHas(
-            'candidate.signedAgreements.courierDetails',
-            fn($q) => $q->whereNull('received_date')
-        )->count();
+        $attention['courier_pending'] = ManpowerRequisition::whereHas('candidate', function ($candidateQuery) {
+                $candidateQuery->where('candidate_status', '!=', 'Cancelled')
+                    ->whereHas('signedAgreements.courierDetails', function ($courierQuery) {
+                        $courierQuery->whereNotNull('dispatch_date')
+                            ->whereNull('received_date');
+                    });
+        })->count();
 
         // Contracts expiring soon
         $attention['expiring_3_days'] = CandidateMaster::whereBetween(
@@ -920,12 +925,14 @@ $requisition->ageing_days = (int) $ageDays;
                         $q2->whereDoesntHave('courierDetails');
                     });
             })->count(),
-            'courier_pending' => ManpowerRequisition::whereHas(
-                'candidate.signedAgreements.courierDetails',
-                function ($q) {
-                    $q->whereNull('received_date');
-                }
-            )->count(),
+            'courier_pending' => ManpowerRequisition::whereHas('candidate', function ($candidateQuery) {
+                $candidateQuery->where('candidate_status', '!=', 'Cancelled')
+                    ->whereHas('signedAgreements.courierDetails', function ($courierQuery) {
+                        $courierQuery->whereNotNull('dispatch_date')
+                            ->whereNull('received_date');
+                    });
+            })->count(),
+
 
             'file_pending' => ManpowerRequisition::whereHas('candidate', function ($q) {
                 $q->where('candidate_status', 'Signed Agreement Uploaded')
