@@ -219,27 +219,6 @@ class HomeController extends Controller
                 'action_filter' => $actionFilter
             ]);
 
-        \Log::info('=== Dashboard Load ===', [
-            'req_tab' => $reqTab,
-            'count' => $recent_requisitions->count(),
-            'sql' => $query->toSql()
-        ]);
-
-        // ✅ ADD THIS DEBUG RIGHT HERE
-        \Log::info('Recent Requisitions Loaded', [
-            'req_tab' => $reqTab,
-            'count' => $recent_requisitions->count(),
-            'items' => $recent_requisitions->map(function ($req) {
-                return [
-                    'requisition_code' => $req->requisition_code,
-                    'status' => $req->status,
-                    'has_candidate' => $req->candidate ? 'Yes' : 'No',
-                    'candidate_status' => $req->candidate ? $req->candidate->candidate_status : 'N/A',
-                    'candidate_id' => $req->candidate ? $req->candidate->id : 'N/A'
-                ];
-            })
-        ]);
-
         // KPI Stats with more detailed breakdowns
         $stats = [
             // Requisition Pipeline Stats
@@ -358,12 +337,7 @@ class HomeController extends Controller
 
         // FOR EACH REQUISITION, LOAD THE AGREEMENT AND COURIER DATA
         foreach ($recent_requisitions as $requisition) {
-            \Log::info('Processing Requisition', [
-                'requisition_code' => $requisition->requisition_code,
-                'has_candidate' => $requisition->candidate ? 'Yes' : 'No',
-                'candidate' => $requisition->candidate,
-                'status' => $requisition->status
-            ]);
+           
             if ($requisition->candidate) {
                 // Load UNSIGNED agreement
                 $unsignedAgreement = AgreementDocument::where('candidate_id', $requisition->candidate->id)
@@ -390,17 +364,7 @@ class HomeController extends Controller
                 // Attach to requisition
                 $requisition->unsigned_agreement = $unsignedAgreement;
                 $requisition->signed_agreement = $signedAgreement;
-                $requisition->courier_details = $courierDetails;
-
-                // ✅ ADD THIS DEBUG LOG
-                \Log::info('Candidate Data', [
-                    'requisition_code' => $requisition->requisition_code,
-                    'candidate_name' => $requisition->candidate->candidate_name,
-                    'candidate_status' => $requisition->candidate->candidate_status,
-                    'has_unsigned_agreement' => $unsignedAgreement ? 'Yes' : 'No',
-                    'unsigned_agreement_created_at' => $unsignedAgreement ? $unsignedAgreement->created_at : null,
-                    'requisition_status' => $requisition->status
-                ]);
+                $requisition->courier_details = $courierDetails;                
             }
 
 
@@ -415,28 +379,15 @@ class HomeController extends Controller
                 switch ($candidateStatus) {
                     case 'Agreement Pending':
                         $baseDate = $requisition->approval_date;
-                        \Log::info('Ageing - Agreement Pending', [
-                            'candidate' => $requisition->candidate->candidate_name,
-                            'base_date' => $baseDate
-                        ]);
                         break;
 
                     case 'Unsigned Agreement Created':
                         // ✅ THIS IS THE CASE FOR YOUR CANDIDATES
                         if ($requisition->unsigned_agreement) {
                             $baseDate = $requisition->unsigned_agreement->created_at;
-                            \Log::info('Ageing - Unsigned Agreement Created', [
-                                'candidate' => $requisition->candidate->candidate_name,
-                                'agreement_created_at' => $baseDate,
-                                'requisition_code' => $requisition->requisition_code
-                            ]);
                         } else {
                             // Fallback to candidate creation date
                             $baseDate = $requisition->candidate->created_at;
-                            \Log::info('Ageing - Unsigned Agreement Created (fallback)', [
-                                'candidate' => $requisition->candidate->candidate_name,
-                                'candidate_created_at' => $baseDate
-                            ]);
                         }
                         break;
 
@@ -483,18 +434,19 @@ class HomeController extends Controller
                 $now = Carbon::now();
 
                 // Use diffInDays for integer days (no decimals)
-                $ageDays = $baseDateCarbon->diffInDays($now);
-
-                \Log::info('Ageing Calculated', [
-                    'candidate' => $requisition->candidate->candidate_name ?? 'N/A',
-                    'candidate_status' => $requisition->candidate->candidate_status ?? 'N/A',
-                    'requisition_status' => $requisition->status,
-                    'base_date' => $baseDate,
-                    'age_days' => $ageDays
-                ]);
+                $ageDays = floor($baseDateCarbon->diffInDays($now));
             } else {
                 $ageDays = 0;
             }
+
+        //     \Log::info('Priority Debug', [
+        //     'requisition_code' => $requisition->requisition_code,
+        //     'candidate_name' => $requisition->candidate->candidate_name ?? 'N/A',
+        //     'base_date' => $baseDate,
+        //     'age_days' => $ageDays,
+        //     'current_date' => Carbon::now()->toDateString(),
+        //     'calculation' => Carbon::parse($baseDate)->diffInDays(Carbon::now())
+        // ]);
 
             // Ensure it's an integer
             $requisition->ageing_days = (int) $ageDays;
@@ -746,14 +698,6 @@ class HomeController extends Controller
 
         $allCandidates = $candidateQuery->get();
 
-        // Log for debugging
-        \Log::info('Dashboard Bottleneck Calculation', [
-            'financial_year' => $financialYear,
-            'month' => $month,
-            'contract_start_date_range' => $dateStart ?? ($startYear . '-04-01') . ' to ' . ($dateEnd ?? ($endYear . '-03-31')),
-            'total_candidates' => $allCandidates->count()
-        ]);
-
         // Stage definitions (SAME as TAT report)
         $stageDefinitions = [
             'hr' => ['from' => 'submission_date', 'to' => 'hr_verification_date', 'label' => 'HR Verification'],
@@ -846,15 +790,6 @@ class HomeController extends Controller
         } else {
             $attention['bottleneck_color'] = 'danger';
         }
-
-        // Log the bottleneck calculation
-        \Log::info('Dashboard Bottleneck Result', [
-            'bottleneck_stage' => $attention['bottleneck_stage'],
-            'bottleneck_avg' => $attention['bottleneck_avg_days'],
-            'stage_averages' => array_map(function ($s) {
-                return ['label' => $s['label'], 'avg' => $s['avg'], 'total' => $s['total']];
-            }, $stageSummaries)
-        ]);
 
         // Also store all stage averages for potential display
         $attention['stage_averages'] = [];
