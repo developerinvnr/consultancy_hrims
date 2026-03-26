@@ -46,38 +46,36 @@ class HrRequisitionController extends Controller
             switch ($status) {
 
                 case 'dispatch_pending':
-
-                    $query->whereHas('candidate', function ($q) {
-                        $q->where('candidate_status', 'Signed Agreement Uploaded');
-                    })
-                        ->whereHas('candidate.signedAgreements', function ($q) {
-                            $q->whereDoesntHave('courierDetails');
-                        });
-
+                    $query->whereHas('candidate', function ($candidateQuery) {
+                        $candidateQuery->where('candidate_status', '!=', 'Cancelled')  // Exclude cancelled
+                            ->where('candidate_status', 'Signed Agreement Uploaded')
+                            ->whereHas('signedAgreements', function ($q) {
+                                $q->whereDoesntHave('courierDetails');
+                            });
+                    });
                     break;
+
+                    case 'file_pending':
+                        $query->whereHas('candidate', function ($candidateQuery) {
+                            $candidateQuery->where('candidate_status', '!=', 'Cancelled')  // Exclude cancelled
+                                ->where('candidate_status', 'Signed Agreement Uploaded')
+                                ->whereNull('file_created_date')
+                                ->whereHas('signedAgreements.courierDetails', function ($q) {
+                                    $q->whereNotNull('received_date');
+                                });
+                        });
+                     break;
 
 
                 case 'courier_pending':
-
-                    $query->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
-                        $q->whereNull('received_date');
+                    $query->whereHas('candidate', function ($candidateQuery) {
+                        $candidateQuery->where('candidate_status', '!=', 'Cancelled')  // Exclude cancelled
+                            ->whereHas('signedAgreements.courierDetails', function ($courierQuery) {
+                                $courierQuery->whereNotNull('dispatch_date')
+                                    ->whereNull('received_date');
+                            });
                     });
-
-                    break;
-
-
-                case 'file_pending':
-
-                    $query->whereHas('candidate', function ($q) {
-                        $q->where('candidate_status', 'Signed Agreement Uploaded')
-                            ->whereNull('file_created_date');
-                    })
-                        ->whereHas('candidate.signedAgreements.courierDetails', function ($q) {
-                            $q->whereNotNull('received_date');
-                        });
-
-                    break;
-
+                break;
 
                 case 'active':
 
