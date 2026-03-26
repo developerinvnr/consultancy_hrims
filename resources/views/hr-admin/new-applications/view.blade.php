@@ -256,6 +256,97 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Timeline Section --}}
+            <div class="col-md-12 mt-2">
+                <div class="card border">
+                    <div class="card-header bg-light py-1 px-2">
+                        <h6 class="mb-0 fs-6">
+                            <i class="ri-timeline-line me-1"></i>Requisition Timeline
+                        </h6>
+                    </div>
+
+                    <div class="card-body p-2">
+                        <div class="d-flex flex-wrap gap-2 small">
+
+                            @if($requisition->submission_date)
+                            <span class="badge bg-primary">
+                                Submitted<br>
+                                {{ $requisition->submission_date->format('d M Y') }}
+                            </span>
+                            @endif
+
+                            @if($requisition->hr_verification_date)
+                            <span class="badge bg-info">
+                                HR Verified<br>
+                                {{ $requisition->hr_verification_date->format('d M Y') }}
+                            </span>
+                            @endif
+
+                            @if($requisition->approval_date)
+                            <span class="badge bg-success">
+                                Approved<br>
+                                {{ $requisition->approval_date->format('d M Y') }}
+                            </span>
+                            @endif
+
+                            @if($requisition->candidate?->file_created_date)
+                            <span class="badge bg-primary">
+                                File Created<br>
+                                {{ \Carbon\Carbon::parse($requisition->candidate->file_created_date)->format('d M Y') }}
+                            </span>
+                            @endif
+
+                            @if($requisition->candidate?->ledger_created_at)
+                            <span class="badge bg-info">
+                                Ledger Created<br>
+                                {{ \Carbon\Carbon::parse($requisition->candidate->ledger_created_at)->format('d M Y') }}
+                            </span>
+                            @endif
+
+                            @if($requisition->candidate?->contract_cancelled_at)
+                            <span class="badge bg-danger">
+                                Contract Cancelled<br>
+                                {{ \Carbon\Carbon::parse($requisition->candidate->contract_cancelled_at)->format('d M Y') }}
+                            </span>
+                            @endif
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if(
+            auth()->user()->hasRole('hr_admin')
+            && !$requisition->candidate?->contract_cancelled_at
+            && !$requisition->candidate?->file_created_date
+            )
+
+            <div class="col-md-12 mt-2">
+
+                <div class="card border-danger">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+
+                        <div class="small text-danger fw-medium">
+                            HR can cancel this contract if candidate has not joined
+                        </div>
+
+                        <button class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#cancelContractModal">
+
+                            <i class="ri-close-circle-line me-1"></i>
+                            Cancel Contract
+
+                        </button>
+
+                    </div>
+                </div>
+
+            </div>
+
+            @endif
+
         </div>
 
         <!-- Documents Card -->
@@ -411,6 +502,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <!-- Document View Modal -->
@@ -686,6 +778,93 @@
         </div>
     </div>
 </div>
+
+
+{{-- Cancel Contract Modal (HR) --}}
+@if(
+auth()->user()->hasRole('hr_admin')
+&& !$requisition->candidate?->contract_cancelled_at
+&& !$requisition->candidate?->file_created_date
+)
+
+<div class="modal fade"
+    id="cancelContractModal"
+    tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form method="POST"
+                action="{{ route('requisitions.cancel-contract', $requisition->id) }}">
+
+                @csrf
+
+                <div class="modal-header">
+
+                    <h6 class="modal-title text-danger">
+                        Cancel Contract
+                    </h6>
+
+                    <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="alert alert-danger py-1 small">
+                        <i class="ri-error-warning-line me-1"></i>
+                        This action will cancel the contract permanently.
+                    </div>
+
+                    <label class="form-label small text-danger">
+                        Reason for cancellation *
+                    </label>
+
+                    <textarea name="cancel_reason"
+                        class="form-control @error('cancel_reason') is-invalid @enderror"
+                        rows="3"
+                        required minlength="10"
+                        placeholder="Enter cancellation reason">{{ old('cancel_reason') }}</textarea>
+
+                    @error('cancel_reason')
+                    <div class="invalid-feedback d-block">
+                        {{ $message }}
+                    </div>
+                    @enderror
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                        class="btn btn-light btn-sm"
+                        data-bs-dismiss="modal">
+                        Close
+                    </button>
+
+                    <button type="submit"
+                        class="btn btn-danger btn-sm">
+
+                        Confirm Cancel Contract
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@endif
 @endsection
 
 @push('styles')

@@ -632,7 +632,7 @@
     $loggedEmpId = auth()->user()->emp_id ?? null;
     @endphp
     @if($requisition->reporting_manager_employee_id == $loggedEmpId
-    && empty($requisition->candidate?->contract_cancelled_at))
+    && empty($requisition->candidate?->contract_cancelled_at) && !$requisition->candidate?->file_created_date)
     <div class="col-md-12 mt-2">
         <div class="card border-danger">
             <div class="card-body p-2 d-flex justify-content-between align-items-center">
@@ -653,8 +653,11 @@
 </div>
 
 {{-- MODAL --}}
-@if($requisition->reporting_manager_employee_id == $loggedEmpId
-&& empty($requisition->candidate?->contract_cancelled_at))
+@if(
+$requisition->reporting_manager_employee_id == $loggedEmpId
+&& !$requisition->candidate?->contract_cancelled_at
+&& !$requisition->candidate?->file_created_date
+)
 <div class="modal fade"
     id="cancelContractModal"
     tabindex="-1">
