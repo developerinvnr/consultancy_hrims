@@ -65,13 +65,32 @@
 				<!-- Department (will be populated dynamically) -->
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Department</label>
-					<select id="department" class="form-select form-select-sm">
+					<select id="department" class="form-select form-select-sm" onchange="loadSubDepartmentsByDepartment()">
 						<option value="All">All Departments</option>
 						@foreach($departments as $key => $value)
 						@if($key !== 'All')
 						<option value="{{ $key }}">{{ $value }}</option>
 						@endif
 						@endforeach
+					</select>
+				</div>
+
+				<!-- Vertical -->
+				<div class="col-md-3 col-lg-2">
+					<label class="form-label form-label-sm mb-1">Vertical</label>
+					<select id="vertical" class="form-select form-select-sm">
+						<option value="All">All Verticals</option>
+						@foreach($verticals as $key => $value)
+						<option value="{{ $key }}">{{ $value }}</option>
+						@endforeach
+					</select>
+				</div>
+
+				<!-- Sub Department (will be populated based on department) -->
+				<div class="col-md-3 col-lg-2">
+					<label class="form-label form-label-sm mb-1">Sub Department</label>
+					<select id="sub_department" class="form-select form-select-sm">
+						<option value="All">All Sub Departments</option>
 					</select>
 				</div>
 
@@ -248,6 +267,18 @@
 		let employee = $('#employee').val();
 		if (employee && employee !== 'All') {
 			currentFilters.employee = employee;
+		}
+
+		// 🔥 ADD: Vertical filter
+		let vertical = $('#vertical').val();
+		if (vertical && vertical !== 'All') {
+			currentFilters.vertical = vertical;
+		}
+
+		// 🔥 ADD: Sub-department filter
+		let subDepartment = $('#sub_department').val();
+		if (subDepartment && subDepartment !== 'All') {
+			currentFilters.sub_department = subDepartment;
 		}
 
 
@@ -529,6 +560,55 @@
 	});
 
 
+	// 🔥 ADD: Function to load sub-departments based on department
+	function loadSubDepartmentsByDepartment() {
+		let departmentId = $('#department').val();
+
+		if (!departmentId || departmentId === 'All') {
+			// Reset sub-department dropdown
+			let subDeptSelect = $('#sub_department');
+			subDeptSelect.empty();
+			subDeptSelect.append('<option value="All">All Sub Departments</option>');
+			return;
+		}
+
+		// Show loading state
+		let subDeptSelect = $('#sub_department');
+		subDeptSelect.prop('disabled', true);
+		subDeptSelect.html('<option value="All">Loading sub-departments...</option>');
+
+		$.ajax({
+			url: "{{ route('salary.subdepartments.by.department') }}",
+			method: 'POST',
+			data: {
+				_token: '{{ csrf_token() }}',
+				department_id: departmentId
+			},
+			success: function(response) {
+				if (response.success) {
+					subDeptSelect.empty();
+					$.each(response.sub_departments, function(value, label) {
+						subDeptSelect.append($('<option></option>').val(value).html(label));
+					});
+					subDeptSelect.prop('disabled', false);
+				} else {
+					toastr.error('Failed to load sub-departments');
+					resetSubDepartmentDropdown();
+				}
+			},
+			error: function() {
+				toastr.error('Failed to load sub-departments');
+				resetSubDepartmentDropdown();
+			}
+		});
+	}
+
+	function resetSubDepartmentDropdown() {
+		let subDeptSelect = $('#sub_department');
+		subDeptSelect.prop('disabled', false);
+		subDeptSelect.empty();
+		subDeptSelect.append('<option value="All">All Sub Departments</option>');
+	}
 
 	// Auto-load current year data on page load
 	$(document).ready(function() {

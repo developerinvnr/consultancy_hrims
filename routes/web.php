@@ -290,8 +290,10 @@ Route::middleware(['auth'])->prefix('hr/salary')->group(function () {
     Route::post('/release-batch',[SalaryController::class,'releaseBatch'])->name('salary.release.batch');
 
     // Add this route for getting departments by employee
-        Route::post('/get-departments-by-employee', [SalaryController::class, 'getDepartmentsByEmployee'])
+    Route::post('/get-departments-by-employee', [SalaryController::class, 'getDepartmentsByEmployee'])
             ->name('salary.departments.by.employee');
+
+    Route::post('/get-sub-departments-by-department', [SalaryController::class, 'getSubDepartmentsByDepartment'])->name('salary.subdepartments.by.department');
 });
 
 

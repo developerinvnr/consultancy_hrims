@@ -802,7 +802,7 @@ class SalaryController extends Controller
     {
         $user = Auth::user();
 
-        // Get logged in employee record (optional safety check)
+        // Get logged in employee record
         $employee = \App\Models\Employee::where('employee_id', $user->emp_id)->first();
 
         $access_level = $hierarchyService->getAccessLevel($employee);
@@ -816,9 +816,14 @@ class SalaryController extends Controller
         // Department restriction
         $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
 
-        // 🔥 NEW: Recursive reporting employee list
-        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+        // 🔥 Get verticals based on access level
+        $verticals = $hierarchyService->getAssociatedVerticalList($user->emp_id);
 
+        // 🔥 Get sub-departments based on access level (initially all, but will be filtered by department)
+        $sub_departments = $hierarchyService->getAssociatedSubDepartmentList($user->emp_id);
+
+        // Recursive reporting employee list
+        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $employee_list = DB::table('core_employee')
                 ->where('emp_status', 'A')
                 ->orderBy('emp_name')
@@ -826,9 +831,7 @@ class SalaryController extends Controller
                 ->prepend('All Employees', 'All')
                 ->toArray();
         } else {
-
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
-
             $employee_list = DB::table('core_employee')
                 ->whereIn('employee_id', $allowedEmpIds)
                 ->where('emp_status', 'A')
@@ -837,15 +840,15 @@ class SalaryController extends Controller
                 ->toArray();
         }
 
-        //dd($employee);
-
         return view('hr.salary.management-report', compact(
             'departments',
             'bu_list',
             'zone_list',
             'region_list',
             'territory_list',
-            'employee_list',   // 🔥 Added
+            'employee_list',
+            'verticals',
+            'sub_departments',
             'access_level'
         ));
     }
@@ -909,6 +912,41 @@ class SalaryController extends Controller
         ]);
     }
 
+    /**
+     * Get sub-departments based on selected department
+     */
+    public function getSubDepartmentsByDepartment(Request $request)
+    {
+        $request->validate([
+            'department_id' => 'required|integer'
+        ]);
+
+        $departmentId = $request->department_id;
+
+        // Get sub-departments mapped to this department from core_department_subdepartment_mapping
+        $subDepartments = DB::table('core_department_subdepartment_mapping as cdsm')
+            ->join('core_sub_department as sd', 'cdsm.sub_department_id', '=', 'sd.id')
+            ->where('cdsm.fun_vertical_dept_id', $departmentId)
+            ->where('sd.is_active', 1)
+            ->select('sd.id', 'sd.sub_department_name')
+            ->distinct()
+            ->orderBy('sd.sub_department_name')
+            ->get();
+
+        $subDepartmentList = [
+            'All' => 'All Sub Departments'
+        ];
+
+        foreach ($subDepartments as $subDept) {
+            $subDepartmentList[$subDept->id] = $subDept->sub_department_name;
+        }
+
+        return response()->json([
+            'success' => true,
+            'sub_departments' => $subDepartmentList
+        ]);
+    }
+
 
     /**
      * Get management report data
@@ -923,6 +961,8 @@ class SalaryController extends Controller
             'region' => 'nullable|integer',
             'territory' => 'nullable|integer',
             'employee' => 'nullable|integer',
+            'vertical' => 'nullable|integer', // 🔥 ADD
+            'sub_department' => 'nullable|integer', // 🔥 ADD
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
@@ -936,6 +976,8 @@ class SalaryController extends Controller
             'region',
             'territory',
             'employee',
+            'vertical',
+            'sub_department',
             'requisition_type'
         ]);
 
@@ -994,6 +1036,12 @@ class SalaryController extends Controller
                 switch ($key) {
                     case 'department':
                         $query->where('department_id', $value);
+                        break;
+                    case 'vertical':
+                        $query->where('vertical_id', $value);
+                        break;
+                    case 'sub_department':
+                        $query->where('sub_department', $value);
                         break;
                     case 'bu':
                         $query->where('business_unit', $value);
