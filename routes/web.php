@@ -391,6 +391,8 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 
     Route::get('/tat', [ReportController::class, 'tat'])->name('tat');
     Route::get('/tat/export', [ReportController::class, 'tatExport'])->name('tat.export');
+
+    Route::post('/tat/filters/{employeeId}', [ReportController::class, 'getEmployeeFilters'])->name('reports.tat.filters');
 });
 
 Route::middleware(['auth'])->prefix('ledger')->name('ledger.')->group(function () {

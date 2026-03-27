@@ -18,45 +18,79 @@ class HierarchyAccessService
 	}
 
 	/**
-	 * Check if user has management department access
+	 * Check if user is in Sales department
 	 */
-	private function hasManagementAccess($employeeId)
+	public function isSalesDepartment($employeeId)
+	{
+		$departmentId = $this->getUserDepartment($employeeId);
+		return $departmentId == 15; // Sales department ID
+	}
+
+	/**
+	 * Check if user should see location filters (BU, Zone, Region, Territory)
+	 * Only show for:
+	 * 1. Admin, hr_admin, management roles (full access)
+	 * 2. Users in Sales department (based on their access level)
+	 */
+	public function shouldShowLocationFilters($employeeId)
 	{
 		$user = Auth::user();
 
-		// Admin, hr_admin, management roles have full access
+		// Admin, hr_admin, management roles → show all location filters
 		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return true;
 		}
 
-		// Check if user belongs to Management department (ID 18)
-		$departmentId = $this->getUserDepartment($employeeId);
-		return $departmentId == 18;
+		// Sales department users → show location filters
+		if ($this->isSalesDepartment($employeeId)) {
+			return true;
+		}
+
+		// Other departments → do NOT show location filters
+		return false;
 	}
 
 	public function getAssociatedBusinessUnitList($employeeId)
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_business_unit')
 				->where('is_active', '1')
 				->pluck('business_unit_name', 'id')
-				->prepend('All BU', 'All')
+				->prepend('All Business Units', 'All')
 				->toArray();
 		}
 
-		$buId = DB::table('core_employee')
-			->where('employee_id', $employeeId)
-			->where('zone', 0)
-			->value('bu');
+		// For Sales department users, return their associated BU based on access level
+		if ($this->isSalesDepartment($employeeId)) {
+			$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
 
-		if ($buId > 0) {
+			// If user has specific BU access
+			if ($employee && $employee->bu > 0) {
+				return DB::table('core_business_unit')
+					->where('id', $employee->bu)
+					->pluck('business_unit_name', 'id')
+					->prepend('All Business Units', 'All')
+					->toArray();
+			}
+
+			// Return all BUs for Sales users with higher access
 			return DB::table('core_business_unit')
-				->where('id', $buId)
+				->where('is_active', '1')
 				->pluck('business_unit_name', 'id')
-				->prepend('Select BU', '')
+				->prepend('All Business Units', 'All')
+				->toArray();
+		}
+
+		// For other departments, return only their specific BU if assigned
+		$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
+		if ($employee && $employee->bu > 0) {
+			return DB::table('core_business_unit')
+				->where('id', $employee->bu)
+				->pluck('business_unit_name', 'id')
+				->prepend('All Business Units', 'All')
 				->toArray();
 		}
 
@@ -67,25 +101,43 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_zone')
 				->where('is_active', '1')
 				->pluck('zone_name', 'id')
-				->prepend('All Zone', 'All')
+				->prepend('All Zones', 'All')
 				->toArray();
 		}
 
-		$zoneId = DB::table('core_employee')
-			->where('employee_id', $employeeId)
-			->where('region', 0)
-			->value('zone');
+		// For Sales department users, return their associated zones based on access level
+		if ($this->isSalesDepartment($employeeId)) {
+			$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
 
-		if ($zoneId > 0) {
+			// If user has specific Zone access
+			if ($employee && $employee->zone > 0) {
+				return DB::table('core_zone')
+					->where('id', $employee->zone)
+					->pluck('zone_name', 'id')
+					->prepend('All Zones', 'All')
+					->toArray();
+			}
+
+			// Return all zones for Sales users with higher access
 			return DB::table('core_zone')
-				->where('id', $zoneId)
+				->where('is_active', '1')
 				->pluck('zone_name', 'id')
-				->prepend('Select Zone', '')
+				->prepend('All Zones', 'All')
+				->toArray();
+		}
+
+		// For other departments, return only their specific zone if assigned
+		$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
+		if ($employee && $employee->zone > 0) {
+			return DB::table('core_zone')
+				->where('id', $employee->zone)
+				->pluck('zone_name', 'id')
+				->prepend('All Zones', 'All')
 				->toArray();
 		}
 
@@ -96,25 +148,43 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_region')
 				->where('is_active', '1')
 				->pluck('region_name', 'id')
-				->prepend('All Region', 'All')
+				->prepend('All Regions', 'All')
 				->toArray();
 		}
 
-		$regionId = DB::table('core_employee')
-			->where('employee_id', $employeeId)
-			->where('territory', 0)
-			->value('region');
+		// For Sales department users, return their associated regions based on access level
+		if ($this->isSalesDepartment($employeeId)) {
+			$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
 
-		if ($regionId > 0) {
+			// If user has specific Region access
+			if ($employee && $employee->region > 0) {
+				return DB::table('core_region')
+					->where('id', $employee->region)
+					->pluck('region_name', 'id')
+					->prepend('All Regions', 'All')
+					->toArray();
+			}
+
+			// Return all regions for Sales users with higher access
 			return DB::table('core_region')
-				->where('id', $regionId)
+				->where('is_active', '1')
 				->pluck('region_name', 'id')
-				->prepend('Select Region', '')
+				->prepend('All Regions', 'All')
+				->toArray();
+		}
+
+		// For other departments, return only their specific region if assigned
+		$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
+		if ($employee && $employee->region > 0) {
+			return DB::table('core_region')
+				->where('id', $employee->region)
+				->pluck('region_name', 'id')
+				->prepend('All Regions', 'All')
 				->toArray();
 		}
 
@@ -125,23 +195,43 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_territory')
 				->where('is_active', '1')
 				->pluck('territory_name', 'id')
-				->prepend('All Territory', 'All')
+				->prepend('All Territories', 'All')
 				->toArray();
 		}
 
-		$territoryId = DB::table('core_employee')
-			->where('employee_id', $employeeId)
-			->value('territory');
+		// For Sales department users, return their associated territories based on access level
+		if ($this->isSalesDepartment($employeeId)) {
+			$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
 
-		if ($territoryId > 0) {
+			// If user has specific Territory access
+			if ($employee && $employee->territory > 0) {
+				return DB::table('core_territory')
+					->where('id', $employee->territory)
+					->pluck('territory_name', 'id')
+					->prepend('All Territories', 'All')
+					->toArray();
+			}
+
+			// Return all territories for Sales users with higher access
 			return DB::table('core_territory')
-				->where('id', $territoryId)
+				->where('is_active', '1')
 				->pluck('territory_name', 'id')
+				->prepend('All Territories', 'All')
+				->toArray();
+		}
+
+		// For other departments, return only their specific territory if assigned
+		$employee = DB::table('core_employee')->where('employee_id', $employeeId)->first();
+		if ($employee && $employee->territory > 0) {
+			return DB::table('core_territory')
+				->where('id', $employee->territory)
+				->pluck('territory_name', 'id')
+				->prepend('All Territories', 'All')
 				->toArray();
 		}
 
@@ -162,11 +252,16 @@ class HierarchyAccessService
 			return 'none';
 		}
 
-		// If user belongs to Management department, give full access
-		if ($employee->department == 18) {
-			return 'all';
+		// For Sales department users, return their access level
+		if ($this->isSalesDepartment($employee->employee_id)) {
+			if ($employee->territory > 0) return 'territory';
+			if ($employee->region > 0) return 'region';
+			if ($employee->zone > 0) return 'zone';
+			if ($employee->bu > 0) return 'bu';
+			return 'all'; // Sales users with no restrictions get all access
 		}
 
+		// For other departments, return their access level based on assigned hierarchy
 		if ($employee->territory > 0) return 'territory';
 		if ($employee->region > 0) return 'region';
 		if ($employee->zone > 0) return 'zone';
@@ -179,8 +274,8 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Admin, hr_admin, management roles OR Management department → show all departments
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Admin, hr_admin, management roles → show all departments
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_department')
 				->where('is_active', 1)
 				->orderBy('department_name')
@@ -206,51 +301,38 @@ class HierarchyAccessService
 
 	public function getReportingEmployeeIds($empId)
 	{
-		$allIds = [$empId];
-		$this->collectSubordinates($empId, $allIds);
+		$allIds = [(string)$empId];
+		$this->collectSubordinatesFromEmployee($empId, $allIds);
 		return $allIds;
 	}
 
-	private function collectSubordinates($managerEmpId, &$allIds)
+	private function collectSubordinatesFromEmployee($managerEmpId, &$allIds)
 	{
-		$subordinates = DB::table('users')
-			->where('reporting_id', $managerEmpId)
-			->pluck('emp_id')
+		// Use core_employee table with emp_reporting field
+		$subordinates = DB::table('core_employee')
+			->where('emp_reporting', $managerEmpId)
+			->where('emp_status', 'A')
+			->pluck('employee_id')
 			->toArray();
 
 		foreach ($subordinates as $subEmpId) {
-			if (!in_array($subEmpId, $allIds)) {
-				$allIds[] = $subEmpId;
-				$this->collectSubordinates($subEmpId, $allIds);
+			$subEmpIdStr = (string)$subEmpId;
+			if (!in_array($subEmpIdStr, $allIds)) {
+				$allIds[] = $subEmpIdStr;
+				$this->collectSubordinatesFromEmployee($subEmpIdStr, $allIds);
 			}
 		}
 	}
 
-	/**
-	 * Get all employee IDs under a manager (including indirect reports)
-	 * This works with the core_employee table structure
-	 */
 	public function getTeamMemberIds($managerEmployeeId)
 	{
-		$teamIds = [];
+		$teamIds = [$managerEmployeeId]; // Start with the manager themselves
 		$this->getRecursiveTeamMembers($managerEmployeeId, $teamIds);
-
-		// Log for debugging
-		\Log::info('Team members for manager ' . $managerEmployeeId . ': ' . json_encode($teamIds));
-
 		return $teamIds;
 	}
 
-	/**
-	 * Recursively get all team members from core_employee table
-	 */
 	private function getRecursiveTeamMembers($managerEmployeeId, &$teamIds)
 	{
-		// Add current manager
-		if (!in_array($managerEmployeeId, $teamIds)) {
-			$teamIds[] = $managerEmployeeId;
-		}
-
 		// Get direct reports from core_employee table
 		$directReports = DB::table('core_employee')
 			->where('emp_reporting', $managerEmployeeId)
@@ -261,27 +343,20 @@ class HierarchyAccessService
 		\Log::info('Direct reports for manager ' . $managerEmployeeId . ': ' . json_encode($directReports));
 
 		foreach ($directReports as $reportId) {
-			$this->getRecursiveTeamMembers($reportId, $teamIds);
+			if (!in_array($reportId, $teamIds)) {
+				$teamIds[] = $reportId;
+				$this->getRecursiveTeamMembers($reportId, $teamIds);
+			}
 		}
 	}
 
 	/**
-	 * Check if user has full access (Admin, HR Admin, Management role, or Management department)
+	 * Check if user has full access (Admin, HR Admin, Management roles)
 	 */
 	public function hasFullAccess($employeeId = null)
 	{
 		$user = Auth::user();
-
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
-			return true;
-		}
-
-		if ($employeeId) {
-			$departmentId = $this->getUserDepartment($employeeId);
-			return $departmentId == 18;
-		}
-
-		return false;
+		return $user->hasAnyRole(['Admin', 'hr_admin', 'management']);
 	}
 
 	/**
@@ -291,8 +366,8 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_vertical')
 				->where('is_active', 1)
 				->orderBy('vertical_name')
@@ -301,13 +376,22 @@ class HierarchyAccessService
 				->toArray();
 		}
 
-		// Get user's vertical from employee record
+		// For Sales department users, show all verticals
+		if ($this->isSalesDepartment($employeeId)) {
+			return DB::table('core_vertical')
+				->where('is_active', 1)
+				->orderBy('vertical_name')
+				->pluck('vertical_name', 'id')
+				->prepend('All Verticals', 'All')
+				->toArray();
+		}
+
+		// Get user's vertical from employee record for other departments
 		$employee = DB::table('core_employee')
 			->where('employee_id', $employeeId)
 			->first();
 
 		if ($employee && $employee->emp_vertical > 0) {
-			// User has specific vertical access
 			return DB::table('core_vertical')
 				->where('id', $employee->emp_vertical)
 				->where('is_active', 1)
@@ -332,8 +416,8 @@ class HierarchyAccessService
 	{
 		$user = Auth::user();
 
-		// Full access for Admin, hr_admin, management roles OR Management department
-		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $this->hasManagementAccess($employeeId)) {
+		// Full access for Admin, hr_admin, management roles
+		if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
 			return DB::table('core_sub_department')
 				->where('is_active', 1)
 				->orderBy('sub_department_name')
@@ -342,13 +426,22 @@ class HierarchyAccessService
 				->toArray();
 		}
 
-		// Get user's sub-department from employee record
+		// For Sales department users, show all sub-departments
+		if ($this->isSalesDepartment($employeeId)) {
+			return DB::table('core_sub_department')
+				->where('is_active', 1)
+				->orderBy('sub_department_name')
+				->pluck('sub_department_name', 'id')
+				->prepend('All Sub Departments', 'All')
+				->toArray();
+		}
+
+		// Get user's sub-department from employee record for other departments
 		$employee = DB::table('core_employee')
 			->where('employee_id', $employeeId)
 			->first();
 
 		if ($employee && $employee->emp_sub_department > 0) {
-			// User has specific sub-department access
 			return DB::table('core_sub_department')
 				->where('id', $employee->emp_sub_department)
 				->where('is_active', 1)
