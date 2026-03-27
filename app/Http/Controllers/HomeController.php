@@ -44,7 +44,9 @@ class HomeController extends Controller
         $statusFilter = $request->get('status_filter');
         $actionFilter = $request->get('action_filter');
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy', 'currentApprover']);
-
+        $query->whereHas('candidate', function($q) {
+            $q->where('candidate_status', '!=', 'Inactive');
+        });
         switch ($reqTab) {
 
             case 'submission':
@@ -504,9 +506,49 @@ class HomeController extends Controller
         ])->count();
 
         // Delayed Cases (> 3 days in same stage)
-        $attention['delayed_cases'] = collect($recent_requisitions)
-            ->where('ageing_days', '>', 2)
+        $attention['delayed_cases'] = $recent_requisitions->getCollection()
+            ->filter(function($requisition) {
+                return $requisition->candidate 
+                    && $requisition->ageing_days > 2 
+                    && !in_array($requisition->candidate->candidate_status, ['Inactive', 'Rejected', 'Cancelled', 'Active']);
+            })
             ->count();
+
+            // Debug: Find ALL requisitions with ageing_days > 2
+$allDelayedRequisitions = $recent_requisitions->getCollection()
+    ->filter(function($requisition) {
+        return $requisition->ageing_days > 2;
+    });
+
+\Log::info('=== ALL REQUISITIONS WITH ageing_days > 2 ===');
+\Log::info('Count: ' . $allDelayedRequisitions->count());
+
+foreach ($allDelayedRequisitions as $req) {
+    $candidateStatus = $req->candidate ? $req->candidate->candidate_status : 'NO CANDIDATE';
+    $isExcluded = in_array($candidateStatus, ['Inactive', 'Rejected', 'Cancelled', 'Active']);
+    
+    \Log::info('Requisition: ' . $req->requisition_code);
+    \Log::info('  - Ageing Days: ' . $req->ageing_days);
+    \Log::info('  - Has Candidate: ' . ($req->candidate ? 'Yes' : 'No'));
+    \Log::info('  - Candidate Status: ' . $candidateStatus);
+    \Log::info('  - Is Excluded: ' . ($isExcluded ? 'Yes' : 'No'));
+    \Log::info('  - Will be counted: ' . ($isExcluded ? 'NO' : 'YES'));
+    \Log::info('---');
+}
+
+// Then calculate delayed cases
+$delayedRequisitions = $recent_requisitions->getCollection()
+    ->filter(function($requisition) {
+        return $requisition->candidate 
+            && $requisition->ageing_days > 2 
+            && !in_array($requisition->candidate->candidate_status, ['Inactive', 'Rejected', 'Cancelled', 'Active']);
+    });
+
+$attention['delayed_cases'] = $delayedRequisitions->count();
+
+\Log::info('=== FINAL DELAYED CASES COUNT ===');
+\Log::info('Delayed Cases: ' . $attention['delayed_cases']);
+
 
         $avgDelayDays = DB::table('manpower_requisitions')
             ->where('status', 'Pending Approval')

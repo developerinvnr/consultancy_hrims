@@ -29,14 +29,10 @@
 					</h6>
 
 					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
-
-						🔴 Delayed Cases
-
-						<small class="text-{{ $attention['delay_color'] }}">
-							({{ $attention['avg_delay_days'] }}d {{ $attention['delay_severity'] }})
-						</small>
-
+						<span>🔴 Delayed Cases</span>
+						<span class="fw-bold">{{ $attention['delayed_cases'] ?? 0 }}</span>
 					</div>
+
 
 
 					<div class="border rounded px-2 py-1 mb-2 d-flex justify-content-between align-items-center bg-light">
