@@ -91,7 +91,7 @@ class CandidateMaster extends Model
         'remuneration_per_month' => 'decimal:2',
         'external_created_at' => 'datetime',
         'last_working_date' => 'date',
-        'contract_cancelled_at'=> 'date',
+        'contract_cancelled_at' => 'date',
         'ledger_created' => 'boolean',
         'ledger_created_at' => 'datetime',
     ];
@@ -274,17 +274,57 @@ class CandidateMaster extends Model
 
         $pendingDates = [];
 
-        for ($day = 1; $day <= now()->day; $day++) {
+        $today = now();
 
+        $contractStartDate = $this->contract_start_date;
+        $contractEndDate   = $this->contract_end_date;
+
+        // If contract not started yet → return empty
+        if ($contractStartDate && $contractStartDate->gt($today)) {
+            return [];
+        }
+
+        // First & last day of month
+        $firstDayOfMonth = $today->copy()->startOfMonth();
+        $lastDayOfMonth  = $today->copy()->endOfMonth();
+
+        // Determine active start date
+        $activeStart = $firstDayOfMonth;
+
+        if ($contractStartDate && $contractStartDate->gt($firstDayOfMonth)) {
+            $activeStart = $contractStartDate->copy();
+        }
+
+        // Determine active end date
+        $activeEnd = $today;
+
+        if ($contractEndDate && $contractEndDate->lt($activeEnd)) {
+            $activeEnd = $contractEndDate->copy();
+        }
+
+        // If candidate not active in this range
+        if ($activeStart->gt($activeEnd)) {
+            return [];
+        }
+
+        $currentCheckDate = $activeStart->copy();
+
+        while ($currentCheckDate->between($activeStart, $activeEnd)) {
+
+            // Skip Sundays
+            if ($currentCheckDate->isSunday()) {
+                $currentCheckDate->addDay();
+                continue;
+            }
+
+            $day = $currentCheckDate->day;
             $column = 'A' . $day;
 
             if (empty($attendance->$column)) {
-
-                $pendingDates[] = now()
-                    ->startOfMonth()
-                    ->addDays($day - 1)
-                    ->format('d M Y');
+                $pendingDates[] = $currentCheckDate->toDateString();
             }
+
+            $currentCheckDate->addDay();
         }
 
         return $pendingDates;
