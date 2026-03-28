@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+
 
 class ManpowerRequisition extends Model
 {
@@ -125,7 +127,13 @@ class ManpowerRequisition extends Model
 
     public function currentApprover()
     {
-        return $this->belongsTo(User::class, 'approver_id', 'id');
+        return $this->belongsTo(User::class, 'approver_id', 'emp_id')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('core_employee')
+                    ->whereColumn('core_employee.employee_id', 'users.emp_id')
+                    ->where('core_employee.company_id', 1); // Hardcoded for India
+            });
     }
 
     // public function employeeGeneral()
