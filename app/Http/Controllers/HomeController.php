@@ -45,7 +45,8 @@ class HomeController extends Controller
         $actionFilter = $request->get('action_filter');
         $query = ManpowerRequisition::with(['submittedBy', 'department', 'candidate', 'rejectedBy', 'currentApprover']);
         // For approval tab, we should include requisitions even if candidate doesn't exist yet
-        if (!in_array($reqTab, ['approval', 'submission', 'correction_required', 'hr_verified'])) {
+        $exemptTabs = ['approval', 'submission', 'correction_required', 'hr_verified', 'approved', 'rejected'];
+        if (!in_array($reqTab, $exemptTabs)) {
             $query->whereHas('candidate', function($q) {
                 $q->where('candidate_status', '!=', 'Inactive');
             });
