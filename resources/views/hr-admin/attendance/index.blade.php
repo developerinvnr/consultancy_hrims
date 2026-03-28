@@ -427,6 +427,7 @@
         <option value="CH" ${status === 'CH' ? 'selected' : ''}>CH</option>
         <option value="OD" ${status === 'OD' ? 'selected' : ''}>OD</option>
         <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
+        <option value="HF" ${status === 'HF' ? 'selected' : ''}>HF</option>
     `;
                 } else {
                     optionsHtml = `
@@ -434,6 +435,7 @@
         <option value="P" ${status === 'P' ? 'selected' : ''}>P</option>
         <option value="A" ${status === 'A' ? 'selected' : ''}>A</option>
         <option value="H" ${status === 'H' ? 'selected' : ''}>H</option>
+        <option value="HF" ${status === 'HF' ? 'selected' : ''}>HF</option>
     `;
                 }
 
@@ -443,7 +445,7 @@
                         data-day="${day}"
                         data-can-edit="${canEdit}">
                         <select class="edit-select compact-select"
-                            data-day="${day}"
+                            data-day="${day}" data-old-value="${status}"
                             onchange="recalculateTotals(${candidate.candidate_id})"
                             ${canEdit ? '' : 'disabled'}>
                             ${optionsHtml}
@@ -498,47 +500,107 @@
 
     // Recalculate totals for editing row
     function recalculateTotals(candidateId) {
-        const row = $(`#row-${candidateId}`);
-        let present = 0,
-            absent = 0,
-            cl = 0,
-            od = 0;
 
-        // Count weekday attendance
+        const row = $(`#row-${candidateId}`);
+
+        let present = 0;
+        let absent = 0;
+        let cl = 0;
+        let od = 0;
+
+        let remainingCL =
+            parseFloat($(`#cl-balance-${candidateId}`).text()) +
+            parseFloat($(`#cl-${candidateId}`).text());
+
+        let errorFound = false;
+
         row.find('.edit-select').each(function() {
-            const status = $(this).val();
+
+            if (errorFound) return;
+
+            let selectBox = $(this);
+            let status = selectBox.val();
+
+            if (!status) return;
+
+            /* ===== FULL DAY CL ===== */
+
+            if (status === 'CL') {
+
+                if (remainingCL < 1) {
+
+                    toastr.warning("No CL balance left");
+
+                    selectBox.val(selectBox.data('old-value') || '');
+
+                    errorFound = true;
+                    return;
+                }
+
+                remainingCL -= 1;
+                cl += 1;
+                present += 1;
+
+                return;
+            }
+
+            /* ===== HALF DAY CL ===== */
+
+            if (status === 'CH') {
+
+                if (remainingCL < 0.5) {
+
+                    toastr.warning("No CL balance left");
+
+                    selectBox.val(selectBox.data('old-value') || '');
+
+                    errorFound = true;
+                    return;
+                }
+
+                remainingCL -= 0.5;
+                cl += 0.5;
+                present += 0.5;
+
+                return;
+            }
+
+            /* ===== OTHER STATUS ===== */
+
             switch (status) {
+
                 case 'P':
                     present++;
                     break;
+
                 case 'A':
                     absent++;
                     break;
-                case 'CL':
-                    cl += 1;
+
+                case 'HF':
+                    present += 0.5;
+                    absent += 0.5;
                     break;
 
-                case 'CH':
-                    cl += 0.5; // Half day CL deduction
-                    present += 0.5; // Optional depending on rule
-                    break;
                 case 'OD':
                     od++;
-                    present++; // OD counts as present
+                    present++;
                     break;
+
                 case 'H':
-                    present++; // Holiday counts as present
+                    present++;
                     break;
             }
+
         });
 
+        if (errorFound) return;
 
         $(`#present-${candidateId}`).text(present);
         $(`#absent-${candidateId}`).text(absent);
         $(`#cl-${candidateId}`).text(cl);
         $(`#od-${candidateId}`).text(od);
     }
-
 
     // Save attendance for candidate
     function saveAttendance(candidateId) {
@@ -1118,6 +1180,9 @@
         color: #6c757d;
     }
 
+    .compact-select option[value="HF"] {
+        color: #fd7e14;
+    }
 
 
 

@@ -173,7 +173,7 @@ class AttendanceController extends Controller
 
                     $usedCL = Attendance::where('candidate_id', $candidate->candidate_id)
                         ->where('year', $year)
-                        ->sum('total_cl');
+                        ->sum(DB::raw('total_cl + total_ch'));
 
                     $clRemaining = max(0, $openingCL - $usedCL);
                 }
@@ -194,7 +194,7 @@ class AttendanceController extends Controller
                     'attendance' => $dayAttendance,
                     'total_present' => $totalPresent,
                     'total_absent' => $totalAbsent,
-                    'cl_used' => Attendance::where('candidate_id', $candidate->candidate_id)->where('year', $year)->sum('total_cl'),
+                    'cl_used' => Attendance::where('candidate_id', $candidate->candidate_id)->where('year', $year)->sum(DB::raw('total_cl + total_ch')),
                     'lwp_days' => $totalLWP,
                     'od_days' => $totalOD,
                     'cl_remaining' => $clRemaining,
@@ -365,23 +365,26 @@ class AttendanceController extends Controller
                     ]
                 );
             }
-            $usedCLTillNow = Attendance::where('candidate_id', $candidateId)
-                ->where('year', $year)
-                ->where('month', '<', $month)
-                ->sum('total_cl');
+           $usedCLTillNow = Attendance::where('candidate_id', $candidateId)
+                    ->where('year', $year)
+                    ->sum(DB::raw('total_cl + total_ch'));
 
-            // ✅ Remaining CL for this month
-            $availableCL = $leaveBalance
-                ? ($leaveBalance->opening_cl_balance - $usedCLTillNow)
-                : 0;
+                $currentMonthCL =
+                    ($attendance->total_cl ?? 0)
+                + ($attendance->total_ch ?? 0);
+
+                $availableCL = $leaveBalance
+                    ? ($leaveBalance->opening_cl_balance
+                        - ($usedCLTillNow - $currentMonthCL))
+                    : 0;
 
             /* ---------------- TOTALS ---------------- */
-
-            $totalPresent = 0;
-            $totalAbsent  = 0;
-            $totalCL = 0;
-            $totalOD = 0;
-            $totalLWP = 0;
+                $totalPresent = 0;
+                $totalAbsent  = 0;
+                $totalCL = 0;
+                $totalCH = 0;
+                $totalOD = 0;
+                $totalLWP = 0;
 
             /* ---------------- DAY LOOP ---------------- */
             $contractEndDate = $candidate->contract_end_date
@@ -397,8 +400,33 @@ class AttendanceController extends Controller
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
 
-                $status = $attendanceData[$day] ?? $attendance->{"A" . $day};
+                //$status = $attendanceData[$day] ?? $attendance->{"A" . $day};
+                $status = array_key_exists($day, $attendanceData) ? $attendanceData[$day] : $attendance->{"A{$day}"};
                 $date = Carbon::create($year, $month, $day);
+
+                 $wasHoliday = ($attendance->{"A{$day}"} === 'H');
+                    $isNowHoliday = ($status === 'H');
+                    
+                    // Handle Holiday (H) - Only HR Admin can set/modify holidays
+                    if ($isNowHoliday || $wasHoliday) {
+                        // If status changed from something else to H, or H to something else
+                        if ($wasHoliday !== $isNowHoliday) {
+                            // Only HR Admin can change holiday status
+                            if (!$isHRAdmin) {
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'Only HR Admin can mark or modify holidays'
+                                ]);
+                            }
+                        }
+                        
+                        // If it's being set as holiday
+                        if ($isNowHoliday) {
+                            $attendance->{"A{$day}"} = 'H';
+                            $totalPresent += 1;
+                            continue;
+                        }
+                    }
 
                 if (!empty($candidate->last_working_date)) {
                         $lastWorkingDate = Carbon::parse($candidate->last_working_date);
@@ -424,7 +452,7 @@ class AttendanceController extends Controller
 
                 if ($date->lessThan($joiningDate)) {
 
-                    if (!empty($status)) {
+                    if (!empty($status) && $status !== 'H') {
                         return response()->json([
                             'success' => false,
                             'message' => 'Attendance cannot be filled before joining date'
@@ -436,7 +464,7 @@ class AttendanceController extends Controller
                 }
 
                 if ($contractEndDate && $date->greaterThan($contractEndDate)) {
-                    if (!empty($status)) {
+                    if (!empty($status && $status !== 'H')) {
                         return response()->json([
                             'success' => false,
                             'message' => 'Attendance cannot be filled after contract end date'
@@ -457,18 +485,30 @@ class AttendanceController extends Controller
                 }
 
                 if ($isContractual) {
-                    if ($status === 'CH' && $availableCL < 0.5) {
-                        $status = 'HF';
-                    }
                     if ($status === 'CL' && $availableCL < 1) {
                         return response()->json([
                             'success' => false,
                             'message' => 'Insufficient CL balance'
                         ]);
                     }
+                     // Allow HF to be set manually
+                    if ($status === 'HF') {
+                        // No CL deduction, just half day present
+                        $status = 'HF';
+                    }
                 }
 
-                $attendance->{"A{$day}"} = $status;
+                \Log::info('Day Debug', [
+                    'day' => $day,
+                    'incoming_status' => $attendanceData[$day] ?? null,
+                    'final_status_before_save' => $status,
+                    'availableCL_before' => $availableCL
+                ]);
+
+                //$attendance->{"A{$day}"} = $status;
+                if (array_key_exists($day, $attendanceData)) {
+                    $attendance->{"A{$day}"} = $attendanceData[$day];
+                }
 
                 switch ($status) {
                     case 'P':
@@ -478,11 +518,22 @@ class AttendanceController extends Controller
                         $totalPresent += 1;
                         break;
 
-                    case 'CH':
-                        $totalPresent += 0.5;  // half day present
-                        $totalCL += 0.5;       // half day CL deduction
-                        $availableCL -= 0.5;
-                        break;
+                  case 'CH':
+
+                    if ($availableCL < 0.5) {
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'No CL balance available. Please mark Half Day (HF) instead.'
+                        ]);
+
+                    }
+
+                    $totalPresent += 0.5;
+                    $totalCH += 0.5;
+                    $availableCL -= 0.5;
+
+                    break;
 
                     case 'HF':
                         $totalPresent += 0.5;
@@ -517,16 +568,70 @@ class AttendanceController extends Controller
             //     'total_od' => $totalOD
             // ]);
 
+            $totalPresent = 0;
+            $totalAbsent = 0;
+            $totalCL = 0;
+            $totalCH = 0;
+            $totalOD = 0;
+
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+
+                $val = $attendance->{"A{$d}"};
+
+                switch ($val) {
+
+                    case 'P':
+                    case 'OD':
+                    case 'CL':
+                    case 'H':
+                        $totalPresent += 1;
+                        break;
+
+                    case 'CH':
+                        $totalPresent += 0.5;
+                        $totalCH += 0.5;
+                        break;
+
+                    case 'HF':
+                        $totalPresent += 0.5;
+                        $totalAbsent += 0.5;
+                        break;
+
+                    case 'A':
+                        $totalAbsent += 1;
+                        break;
+                }
+
+                if ($val === 'CL') {
+                    $totalCL += 1;
+                }
+
+                if ($val === 'OD') {
+                    $totalOD++;
+                }
+
+                \Log::info('Recalculation', [
+                    'day' => $d,
+                    'value' => $val
+                ]);
+            }
+
             /* ---------------- SAVE ---------------- */
 
             $attendance->total_present = $totalPresent;
             $attendance->total_absent  = $totalAbsent;
-            $attendance->total_cl      = $totalCL;
+            $attendance->total_cl = $totalCL;
+            $attendance->total_ch = $totalCH;
             $attendance->total_od      = $totalOD;
             $attendance->total_lwp     = $totalLWP;
             $attendance->submitted_by  = $user->id;
             $attendance->status        = 'submitted';
             $attendance->save();
+
+            \Log::info('Saved Status', [
+                'day' => $day,
+                'saved_status' => $attendance->{"A{$day}"}
+            ]);
 
             if ($leaveBalance) {
                 // Log::info('Leave balance update', [
@@ -534,7 +639,9 @@ class AttendanceController extends Controller
                 //     'opening_cl' => $leaveBalance->opening_cl_balance,
                 //     'available_cl_after' => $availableCL
                 // ]);
-                $totalCLUsed = $usedCLTillNow + $totalCL;
+                $totalCLUsed = Attendance::where('candidate_id', $candidateId)
+                            ->where('year', $year)
+                            ->sum(DB::raw('total_cl + total_ch'));
                 //dd($totalCLUsed);
                 $leaveBalance->cl_utilized = $totalCLUsed;
                 $leaveBalance->save();
@@ -547,6 +654,7 @@ class AttendanceController extends Controller
                 'message' => 'Attendance updated successfully',
                 'cl_remaining' => $availableCL,
                 'cl_used' => $totalCL,
+                'ch_days' => $totalCH,
                 'od_days' => $totalOD,
             ]);
         } catch (\Exception $e) {
