@@ -34,7 +34,11 @@ class AgreementUploadReminderCommand extends Command
                 continue;
             }
 
-            $pendingDays = now()->diffInDays($agreement->created_at);
+            $pendingDays = $agreement->created_at->copy()->startOfDay()->diffInDays(now()->startOfDay());
+
+            if ($pendingDays < 1) {
+                continue;
+            }
 
             $mailTo = $candidate->reportingManager?->emp_email;
 
