@@ -21,8 +21,8 @@ Schedule::command('approval:reminders')->dailyAt('10:00');
 */
 
 // Agreement upload pending reminder (every day)
-Schedule::command('agreement:upload-reminders')
-    ->dailyAt('11:00');
+Schedule::command('agreement:upload-reminders')->everyMinute();
+    //->dailyAt('11:00');
 
 
 // Courier details pending reminder (every day)
