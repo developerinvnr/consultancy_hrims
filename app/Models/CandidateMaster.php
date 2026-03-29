@@ -296,7 +296,9 @@ class CandidateMaster extends Model
         }
 
         // Determine active end date
-        $activeEnd = $today;
+        //$activeEnd = $today;
+        $activeEnd = $today->copy()->subDay();
+
 
         if ($contractEndDate && $contractEndDate->lt($activeEnd)) {
             $activeEnd = $contractEndDate->copy();
