@@ -529,7 +529,7 @@ class AttendanceController extends Controller
 
                     }
 
-                    $totalPresent += 0.5;
+                    $totalPresent += 1;  
                     $totalCH += 0.5;
                     $availableCL -= 0.5;
 
@@ -588,7 +588,7 @@ class AttendanceController extends Controller
                         break;
 
                     case 'CH':
-                        $totalPresent += 0.5;
+                        $totalPresent += 1;
                         $totalCH += 0.5;
                         break;
 
