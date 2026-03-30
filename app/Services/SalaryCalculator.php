@@ -87,7 +87,7 @@ class SalaryCalculator
                     break;
 
                  case 'CH':
-                    $presentDays += 0.5;  // Half day with CL deduction
+                    $presentDays += 1;  // Half day with CL deduction
                     break;
                     
                 case 'HF':
