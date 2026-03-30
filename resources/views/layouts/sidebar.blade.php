@@ -106,15 +106,15 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 @endif
 
                 {{--
-@if(auth()->user()->hasAnyRole(['hr_admin']))
-<li class="nav-item">
-    <a class="nav-link menu-link @activeRoute('import.candidates.*')"
-        href="{{ route('import.candidates') }}">
-                <i class="ri-file-list-3-line"></i>
-                <span>Import Excel</span>
-                </a>
-                </li>
-                @endif
+                    @if(auth()->user()->hasAnyRole(['hr_admin']))
+                        <li class="nav-item">
+                            <a class="nav-link menu-link @activeRoute('import.candidates.*')"
+                                href="{{ route('import.candidates') }}">
+                                        <i class="ri-file-list-3-line"></i>
+                                        <span>Import Excel</span>
+                             </a>
+                        </li>
+                    @endif
                 --}}
 
 
@@ -167,22 +167,12 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
-                @can('payment_workflow.view')
-                    <li class="nav-item">
-                        <a href="{{ route('payment.workflow.index') }}" class="nav-link">
-                            <i class="mdi mdi-cash"></i>
-                            <span>Payment Workflow</span>
-                        </a>
-                    </li>
-                @endcan
-
-
-                {{--<li class="nav-item">
-                    <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
-                <i class="ri-database-2-line"></i>
-                <span>Master Report</span>
-                </a>
-                </li>--}}
+                    {{--<li class="nav-item">
+                        <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
+                    <i class="ri-database-2-line"></i>
+                    <span>Master Report</span>
+                    </a>
+                    </li>--}}
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.detailed.report.*')"
@@ -206,7 +196,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                         <span>Email Logs</span>
                     </a>
                 </li>
-                @endif
+               @endif
 
                 {{--<li class="nav-item">
                     <a href="{{ route('salary.management.report') }}" class="nav-link">
@@ -215,10 +205,21 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </a>
                 </li>--}}
 
+               @can('payment_workflow.view')
+                    <li class="nav-item">
+                        <a href="{{ route('payment.workflow.index') }}" class="nav-link">
+                            <i class="mdi mdi-cash"></i>
+                            <span>Payment Workflow</span>
+                        </a>
+                    </li>
+                @endcan
+
                 <a href="{{ route('reports.index') }}" class="nav-link">
                     <i class="ri-file-chart-line"></i>
                     <span>Reports</span>
                 </a>
+
+                
 
                 @can('ledger.manage')
                 <a href="{{ route('ledger.index') }}" class="nav-link">
