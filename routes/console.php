@@ -12,7 +12,7 @@ Artisan::command('inspire', function () {
 Schedule::command('alert:pan-inoperative')->dailyAt('14:00');
 
 // ✅ Approval Reminder (daily at 10 AM)
-Schedule::command('approval:reminders')->dailyAt('10:56 ');
+Schedule::command('approval:reminders')->dailyAt('17:41 ');
 
 /*
 |--------------------------------------------------------------------------
