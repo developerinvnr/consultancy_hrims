@@ -305,17 +305,14 @@ class AttendanceController extends Controller
             // }
 
             // Check if user is not HR admin and trying to edit previous month
-            if (!$isHRAdmin && !$isReportingManager) {
-                $currentDate = Carbon::now();
-                $selectedMonthDate = Carbon::create($year, $month, 1);
+            $isPastMonth = ($year < $today->year) || ($year == $today->year && $month < $today->month);
 
-                // If selected month is before current month
-                if ($selectedMonthDate->lt($currentDate->copy()->startOfMonth())) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'You cannot edit attendance for previous months'
-                    ]);
-                }
+            if (!$isHRAdmin && $isReportingManager && $isPastMonth) {
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reporting Managers cannot edit previous month attendance'
+                ]);
             }
 
 
