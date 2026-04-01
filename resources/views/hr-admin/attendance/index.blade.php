@@ -900,9 +900,20 @@
 
             const todayDate = today.getDate();
 
+            // NEW: Check if it's a previous month
+            const isPreviousMonth =
+                (selectedYear < today.getFullYear()) ||
+                (selectedYear === today.getFullYear() && selectedMonth < (today.getMonth() + 1));
+
+            // RESTRICTION: Reporting Managers cannot edit previous months
+            if (!isHrAdmin && isPreviousMonth) {
+                toastr.warning('You cannot edit attendance for previous months');
+                return;
+            }
+
             let allowedDays = [];
 
-            // Calculate last 7 working days
+            // Calculate last 7 working days (only for current month)
             if (!isHrAdmin && isCurrentMonth) {
 
                 let cursor = new Date(today);
@@ -939,7 +950,7 @@
                     allowEdit = true;
                 }
 
-                // 🔥 NORMAL 7 DAY RULE
+                // 🔥 NORMAL 7 DAY RULE (ONLY FOR CURRENT MONTH)
                 else if (
                     !isHrAdmin &&
                     isCurrentMonth &&
@@ -949,19 +960,8 @@
                     allowEdit = true;
                 }
 
-                // 🔥 PAST MONTH → full edit allowed
-                else if (!isHrAdmin && !isCurrentMonth && canEditBase) {
-
-                    const selectedDate = new Date(selectedYear, selectedMonth - 1, day);
-
-                    selectedDate.setHours(0, 0, 0, 0);
-
-                    if (selectedDate <= today) {
-                        allowEdit = true;
-                    } else {
-                        allowEdit = false;
-                    }
-                }
+                // REMOVED THE PAST MONTH EDIT ALLOWANCE
+                // Past months are now blocked by the earlier check
 
                 if (allowEdit) {
                     $(this).prop('disabled', false);
