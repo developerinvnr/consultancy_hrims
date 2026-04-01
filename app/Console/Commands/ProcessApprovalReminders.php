@@ -23,7 +23,7 @@ class ProcessApprovalReminders extends Command
 
         foreach ($requisitions as $req) {
 
-            $hours = now()->diffInHours($req->approval_requested_at);
+            $hours = now()->greaterThan($req->approval_requested_at) ? $req->approval_requested_at->diffInHours(now()) : 0;
 
             $approver = Employee::where('employee_id', $req->approver_id)->first();
 

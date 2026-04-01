@@ -102,6 +102,7 @@ class ManpowerRequisition extends Model
         'processing_date' => 'datetime',
         'submission_date' => 'datetime',
         'last_working_date' => 'date',
+        'approval_requested_at' => 'datetime',
     ];
 
     // Relationships
