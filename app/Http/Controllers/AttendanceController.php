@@ -446,16 +446,23 @@ class AttendanceController extends Controller
                 }
 
                 if (!empty($candidate->last_working_date)) {
+
                     $lastWorkingDate = Carbon::parse($candidate->last_working_date);
+
                     if ($date->greaterThan($lastWorkingDate)) {
-                        if (!empty($status)) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Attendance cannot be filled after last working date'
-                            ]);
+
+                        // Only restrict non HR admins
+                        if (!$isHRAdmin) {
+                            if (!empty($status)) {
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'Attendance cannot be filled after last working date'
+                                ]);
+                            }
+
+                            $attendance->{"A{$day}"} = null;
+                            continue;
                         }
-                        $attendance->{"A{$day}"} = null;
-                        continue;
                     }
                 }
                 // Log::info('Processing attendance day', [

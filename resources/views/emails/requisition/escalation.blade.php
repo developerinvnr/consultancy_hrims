@@ -13,6 +13,7 @@ The following requisition approval is **still pending** in the Peepal Bonsai Por
 - **Engagement Type:** {{ $requisition->requisition_type }}
 - **Department:** {{ $requisition->department->department_name ?? 'N/A' }}
 - **Location:** {{ $requisition->work_location_hq ?? 'N/A' }}
+- **Submitted By:** {{ $requisition->submittedBy->name ?? 'N/A' }}
 
 @component('mail::button', ['url' => $approvalUrl])
 Open Peepal Bonsai Portal

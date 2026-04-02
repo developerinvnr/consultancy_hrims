@@ -65,8 +65,9 @@ class ProcessApprovalReminders extends Command
 
             if ($hours >= 72 && $req->reminder_level == 1 && $manager) {
 
-                Mail::to($manager->emp_email)
-                    ->queue(new RequisitionEscalationMail($req, $manager));
+                Mail::to($approver->emp_email)
+                    ->cc([$manager->emp_email])
+                    ->queue(new RequisitionEscalationMail($req, $approver));
 
                 $req->reminder_level = 2;
                 $req->save();
@@ -74,12 +75,14 @@ class ProcessApprovalReminders extends Command
                 $this->info("3 day escalation sent for requisition {$req->request_code}");
             }
 
+
             /* 5 DAY ESCALATION */
 
             if ($hours >= 120 && $req->reminder_level == 2 && $upperManager) {
 
-                Mail::to($upperManager->emp_email)
-                    ->queue(new RequisitionEscalationMail($req, $upperManager));
+                Mail::to($approver->emp_email)
+                    ->cc([$manager->emp_email, $upperManager->emp_email])
+                    ->queue(new RequisitionEscalationMail($req, $approver));
 
                 $req->reminder_level = 3;
                 $req->save();
@@ -87,12 +90,14 @@ class ProcessApprovalReminders extends Command
                 $this->info("5 day escalation sent for requisition {$req->request_code}");
             }
 
+
             /* 7 DAY FINAL ESCALATION */
 
             if ($hours >= 168 && $req->reminder_level == 3 && $upperManager) {
 
-                Mail::to($upperManager->emp_email)
-                    ->queue(new RequisitionEscalationMail($req, $upperManager));
+                Mail::to($approver->emp_email)
+                    ->cc([$manager->emp_email, $upperManager->emp_email])
+                    ->queue(new RequisitionEscalationMail($req, $approver));
 
                 $req->reminder_level = 4;
                 $req->save();
