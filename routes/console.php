@@ -12,7 +12,7 @@ Artisan::command('inspire', function () {
 Schedule::command('alert:pan-inoperative')->dailyAt('09:30')->timezone('Asia/Kolkata');
 
 // ✅ Approval Reminder (daily at 10 AM)
-Schedule::command('approval:reminders')->dailyAt('10:00')->timezone('Asia/Kolkata');
+Schedule::command('approval:reminders')->dailyAt('10:30')->timezone('Asia/Kolkata');
 
 /*
 |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ Schedule::command('approval:reminders')->dailyAt('10:00')->timezone('Asia/Kolkat
 
 // Agreement upload pending reminder (every day)
 Schedule::command('agreement:upload-reminders')
-    ->dailyAt('10:30')->timezone('Asia/Kolkata');
+    ->dailyAt('10:15')->timezone('Asia/Kolkata');
 
 
 // Courier details pending reminder (every day)
