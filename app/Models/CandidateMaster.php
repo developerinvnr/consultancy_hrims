@@ -213,9 +213,11 @@ class CandidateMaster extends Model
         return $this->hasMany(\App\Models\PartyEditHistory::class, 'candidate_id');
     }
 
+
     public function reportingManager()
     {
-        return $this->belongsTo(Employee::class, 'reporting_manager_employee_id', 'employee_id');
+        return $this->belongsTo(Employee::class, 'reporting_manager_employee_id', 'employee_id')
+            ->where('company_id', 1);
     }
 
     public function getFormattedAddressAttribute()

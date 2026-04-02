@@ -82,9 +82,12 @@ class Employee extends Model
         return $this->belongsTo(Department::class, 'department');
     }
 
+
+
     public function reportingManager()
     {
-        return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id');
+        return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id')
+            ->where('company_id', 1);
     }
 
     public function subordinates()
