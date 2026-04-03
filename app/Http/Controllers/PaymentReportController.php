@@ -23,7 +23,6 @@ class PaymentReportController extends Controller
         // Get filter parameters
         $financialYear = $request->get('financial_year');
         $month = $request->get('month');
-        $year = $request->get('year');
         $departmentId = $request->get('department_id');
         $subDepartmentId = $request->get('sub_department', 'All');
         $status = $request->get('status');
@@ -45,6 +44,9 @@ class PaymentReportController extends Controller
                 ? $currentYear . '-' . ($currentYear + 1)
                 : ($currentYear - 1) . '-' . $currentYear;
         }
+
+        // Parse financial year
+        [$startYear, $endYear] = explode('-', $financialYear);
 
         // Get logged in user
         $user = Auth::user();
@@ -139,20 +141,14 @@ class PaymentReportController extends Controller
             $query->where('candidate_master.sub_department', $subDepartmentId);
         }
 
-        // ========== FIXED: Month/Year filter logic ==========
-        if ($month && $year) {
-            // Specific month and year selected
+        // ========== FINANCIAL YEAR & MONTH FILTER ==========
+        if ($month && $month != 'All') {
+            // Specific month selected - determine which year based on FY
+            $year = ($month >= 4) ? $startYear : $endYear;
             $query->where('salary_processings.month', $month)
                   ->where('salary_processings.year', $year);
-        } elseif ($year) {
-            // Only year selected (Month = All) - Show ALL months of that year
-            $query->where('salary_processings.year', $year);
-        } elseif ($month) {
-            // Only month selected (rare case) - Show that month across all years
-            $query->where('salary_processings.month', $month);
-        } elseif ($financialYear) {
-            // Financial year selected - Show all months in that FY
-            [$startYear, $endYear] = explode('-', $financialYear);
+        } else {
+            // No month selected - show full financial year (April to March)
             $query->where(function ($q) use ($startYear, $endYear) {
                 $q->where(function ($q2) use ($startYear) {
                     $q2->where('salary_processings.year', $startYear)
@@ -163,7 +159,6 @@ class PaymentReportController extends Controller
                 });
             });
         }
-        // If NO year, NO month, NO financial year - show all data
 
         // Apply payment status filter
         if ($status && $status != 'All') {
@@ -177,10 +172,6 @@ class PaymentReportController extends Controller
 
         // Only show active candidates
         $query->whereIn('candidate_master.final_status', ['A', 'D']);
-
-        // Debug: Uncomment to see the actual SQL query
-        // \Log::info('Payment Report SQL: ' . $query->toSql());
-        // \Log::info('Payment Report Bindings: ', $query->getBindings());
 
         // Get summary statistics
         $summary = $this->getPaymentSummary(clone $query);
@@ -208,19 +199,14 @@ class PaymentReportController extends Controller
         $regions = $hierarchyService->getAssociatedRegionList($user->emp_id);
         $territories = $hierarchyService->getAssociatedTerritoryList($user->emp_id);
 
-        // Get available years for filter
-        $availableYears = SalaryProcessing::select('year')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->toArray();
+        // Get available financial years for filter
+        $availableFinancialYears = $this->getAvailableFinancialYears();
 
         return view('reports.payment', compact(
             'records',
             'summary',
             'financialYear',
             'month',
-            'year',
             'departmentId',
             'subDepartmentId',
             'status',
@@ -242,47 +228,60 @@ class PaymentReportController extends Controller
             'showLocationFilters',
             'autoAppliedDepartment',
             'autoAppliedSubDepartment',
-            'availableYears'
+            'availableFinancialYears'
         ));
     }
 
     /**
-     * Get payment summary statistics
+     * Get available financial years from salary_processings data
+     */
+    private function getAvailableFinancialYears()
+    {
+        $years = SalaryProcessing::select('year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+        
+        $financialYears = [];
+        foreach ($years as $year) {
+            $financialYears[] = ($year - 1) . '-' . $year;
+            $financialYears[] = $year . '-' . ($year + 1);
+        }
+        
+        $financialYears = array_unique($financialYears);
+        sort($financialYears);
+        
+        return $financialYears;
+    }
+
+    /**
+     * Get payment summary statistics (simplified)
      */
     private function getPaymentSummary($query)
     {
         $results = $query->get();
 
-        $totalPayable = $results->sum('total_payable');
         $totalNetPay = $results->sum('net_pay');
-        $totalDeductions = $results->sum('deduction_amount') + $results->sum('extra_amount');
-        $totalArrear = $results->sum('arrear_amount');
 
+        // Payment status counts
         $pendingCount = $results->where('payment_status', 'pending')->count();
         $processedCount = $results->where('payment_status', 'processed')->count();
         $paidCount = $results->where('payment_status', 'paid')->count();
         $heldCount = $results->where('payment_status', 'held')->count();
 
-        $processingPending = $results->where('status', 'pending')->count();
-        $processingProcessed = $results->where('status', 'processed')->count();
+        // Processing status
         $processingRelease = $results->where('status', 'release')->count();
-        $processingHold = $results->where('status', 'hold')->count();
 
         return [
             'total_candidates' => $results->count(),
-            'total_payable' => $totalPayable,
             'total_net_pay' => $totalNetPay,
-            'total_deductions' => $totalDeductions,
-            'total_arrear' => $totalArrear,
             'avg_net_pay' => $results->count() > 0 ? round($totalNetPay / $results->count(), 2) : 0,
             'pending_count' => $pendingCount,
             'processed_count' => $processedCount,
             'paid_count' => $paidCount,
             'held_count' => $heldCount,
-            'processing_pending' => $processingPending,
-            'processing_processed' => $processingProcessed,
             'processing_release' => $processingRelease,
-            'processing_hold' => $processingHold,
         ];
     }
 
@@ -361,6 +360,7 @@ class PaymentReportController extends Controller
                 ->toArray();
         } else {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $allowedEmpIds[] = $user->emp_id;
             $employees = DB::table('core_employee')
                 ->whereIn('employee_id', $allowedEmpIds)
                 ->where('emp_status', 'A')
@@ -450,7 +450,6 @@ class PaymentReportController extends Controller
         $filters = [
             'financial_year' => $request->get('financial_year'),
             'month' => $request->get('month'),
-            'year' => $request->get('year'),
             'department_id' => $request->get('department_id'),
             'sub_department' => $request->get('sub_department', 'All'),
             'status' => $request->get('status'),
@@ -474,13 +473,13 @@ class PaymentReportController extends Controller
     {
         $parts = ['Payment_Report'];
 
-        if (!empty($filters['month']) && !empty($filters['year'])) {
+        if (!empty($filters['month']) && $filters['month'] != 'All') {
             $monthName = $this->getMonthName($filters['month']);
-            $parts[] = $monthName . '_' . $filters['year'];
-        } elseif (!empty($filters['financial_year'])) {
+            $parts[] = $monthName;
+        }
+        
+        if (!empty($filters['financial_year'])) {
             $parts[] = 'FY_' . $filters['financial_year'];
-        } elseif (!empty($filters['year'])) {
-            $parts[] = 'Year_' . $filters['year'];
         }
 
         if (!empty($filters['employee']) && $filters['employee'] != 'All') {

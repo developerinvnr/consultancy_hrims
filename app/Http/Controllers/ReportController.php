@@ -746,37 +746,18 @@ class ReportController extends Controller
 
         // For non-admin, non-Sales users, auto-apply their own department and sub-department
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management']) && !$hierarchyService->isSalesDepartment($user->emp_id)) {
-            // If no department filter in URL or empty, use the user's own department
             if (empty($departmentId) && $employee && $employee->department) {
                 $departmentId = $employee->department;
                 $autoAppliedDepartment = true;
             }
-            // If no sub-department filter in URL or set to 'All', use the user's own sub-department
             if (($subDepartmentId == 'All' || empty($subDepartmentId)) && $employee && $employee->sub_department) {
                 $subDepartmentId = $employee->sub_department;
                 $autoAppliedSubDepartment = true;
             }
         }
 
-        // Build base query
+        // Build base query with DISTINCT to avoid duplicates
         $query = CandidateMaster::query()
-            ->whereIn('candidate_master.final_status', ['A', 'D'])
-            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
-            ->leftJoin('agreement_documents as ad_unsigned', function ($join) {
-                $join->on('ad_unsigned.candidate_id', '=', 'candidate_master.id')
-                    ->where('ad_unsigned.document_type', 'agreement')
-                    ->where('ad_unsigned.sign_status', 'UNSIGNED');
-            })
-            ->leftJoin('agreement_documents as ad_signed', function ($join) {
-                $join->on('ad_signed.candidate_id', '=', 'candidate_master.id')
-                    ->where('ad_signed.document_type', 'agreement')
-                    ->where('ad_signed.sign_status', 'SIGNED');
-            })
-            ->leftJoin('agreement_couriers as ac', function ($join) {
-                $join->on('ac.agreement_document_id', '=', 'ad_signed.id');
-            })
-            ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
-            ->leftJoin('core_sub_department as sub_dept', 'sub_dept.id', '=', 'candidate_master.sub_department')
             ->select(
                 'candidate_master.*',
                 'mr.submission_date',
@@ -784,53 +765,104 @@ class ReportController extends Controller
                 'mr.approval_date',
                 'candidate_master.file_created_date',
                 'candidate_master.contract_start_date',
-                'ad_unsigned.created_at as agreement_created_date',
-                'ad_signed.created_at as agreement_uploaded_date',
-                'ac.dispatch_date',
-                'ac.received_date',
+                DB::raw('(SELECT created_at FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "UNSIGNED" ORDER BY created_at DESC LIMIT 1) as agreement_created_date'),
+                DB::raw('(SELECT created_at FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "SIGNED" ORDER BY created_at DESC LIMIT 1) as agreement_uploaded_date'),
+                DB::raw('(SELECT dispatch_date FROM agreement_couriers WHERE agreement_document_id = (SELECT id FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "SIGNED" ORDER BY created_at DESC LIMIT 1) ORDER BY id DESC LIMIT 1) as dispatch_date'),
+                DB::raw('(SELECT received_date FROM agreement_couriers WHERE agreement_document_id = (SELECT id FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "SIGNED" ORDER BY created_at DESC LIMIT 1) ORDER BY id DESC LIMIT 1) as received_date'),
                 'dept.department_name',
                 'sub_dept.sub_department_name'
-            );
+            )
+            ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
+            ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
+            ->leftJoin('core_sub_department as sub_dept', 'sub_dept.id', '=', 'candidate_master.sub_department')
+            ->whereIn('candidate_master.final_status', ['A', 'D'])
+            ->distinct();
 
         // Apply hierarchy access control
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $allowedEmpIds[] = $user->emp_id;
+            $allowedEmpIds = array_unique($allowedEmpIds);
             $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
             $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIdsString);
 
             $accessLevel = $hierarchyService->getAccessLevel($employee);
 
+            $territoryIds = [];
+
             switch ($accessLevel) {
                 case 'territory':
-                    $query->where('candidate_master.territory', $employee->territory);
+                    if ($employee->territory && $employee->territory != 0) {
+                        $territoryIds = [$employee->territory];
+                    }
                     break;
                 case 'region':
-                    $territoriesInRegion = DB::table('core_territory')
-                        ->where('region_id', $employee->region)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInRegion);
+                    if ($employee->region && $employee->region != 0) {
+                        $territoryIds = \App\Models\Employee::where('region', $employee->region)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('territory')
+                            ->where('territory', '!=', 0)
+                            ->distinct()
+                            ->pluck('territory')
+                            ->toArray();
+                    }
                     break;
                 case 'zone':
-                    $regionsInZone = DB::table('core_region')
-                        ->where('zone_id', $employee->zone)
-                        ->pluck('id');
-                    $territoriesInZone = DB::table('core_territory')
-                        ->whereIn('region_id', $regionsInZone)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInZone);
+                    if ($employee->zone && $employee->zone != 0) {
+                        $regionsInZone = \App\Models\Employee::where('zone', $employee->zone)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('region')
+                            ->where('region', '!=', 0)
+                            ->distinct()
+                            ->pluck('region')
+                            ->toArray();
+
+                        if (!empty($regionsInZone)) {
+                            $territoryIds = \App\Models\Employee::whereIn('region', $regionsInZone)
+                                ->where('emp_status', 'A')
+                                ->whereNotNull('territory')
+                                ->where('territory', '!=', 0)
+                                ->distinct()
+                                ->pluck('territory')
+                                ->toArray();
+                        }
+                    }
                     break;
                 case 'bu':
-                    $zonesInBU = DB::table('core_zone')
-                        ->where('bu_id', $employee->bu)
-                        ->pluck('id');
-                    $regionsInBU = DB::table('core_region')
-                        ->whereIn('zone_id', $zonesInBU)
-                        ->pluck('id');
-                    $territoriesInBU = DB::table('core_territory')
-                        ->whereIn('region_id', $regionsInBU)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInBU);
+                    if ($employee->bu && $employee->bu != 0) {
+                        $zonesInBU = \App\Models\Employee::where('bu', $employee->bu)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('zone')
+                            ->where('zone', '!=', 0)
+                            ->distinct()
+                            ->pluck('zone')
+                            ->toArray();
+
+                        if (!empty($zonesInBU)) {
+                            $regionsInBU = \App\Models\Employee::whereIn('zone', $zonesInBU)
+                                ->where('emp_status', 'A')
+                                ->whereNotNull('region')
+                                ->where('region', '!=', 0)
+                                ->distinct()
+                                ->pluck('region')
+                                ->toArray();
+
+                            if (!empty($regionsInBU)) {
+                                $territoryIds = \App\Models\Employee::whereIn('region', $regionsInBU)
+                                    ->where('emp_status', 'A')
+                                    ->whereNotNull('territory')
+                                    ->where('territory', '!=', 0)
+                                    ->distinct()
+                                    ->pluck('territory')
+                                    ->toArray();
+                            }
+                        }
+                    }
                     break;
+            }
+
+            if (!empty($territoryIds)) {
+                $query->whereIn('candidate_master.territory', $territoryIds);
             }
         }
 
@@ -858,12 +890,13 @@ class ReportController extends Controller
         // Apply employee filter
         if ($employeeId && $employeeId != 'All') {
             $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
-            $teamMemberIdsString = array_map('strval', $teamMemberIds);
+            $teamMemberIds[] = $employeeId;
+            $teamMemberIdsString = array_map('strval', array_unique($teamMemberIds));
             $query->whereIn('candidate_master.reporting_manager_employee_id', $teamMemberIdsString);
         }
 
         // Apply department filter
-        if ($departmentId) {
+        if ($departmentId && $departmentId != 'All') {
             $query->where('candidate_master.department_id', $departmentId);
         }
 
@@ -877,13 +910,12 @@ class ReportController extends Controller
             $query->where('candidate_master.requisition_type', $requisitionType);
         }
 
-        if ($status) {
+        if ($status && $status != 'All') {
             $query->where('mr.status', $status);
         }
 
         // Filter by contract start date
-        // Filter by contract start date - include contracts that overlap with the financial year
-        if ($month) {
+        if ($month && $month != 'All') {
             $year = ($month >= 4) ? $startYear : $endYear;
             $startDate = "{$year}-{$month}-01";
             $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
@@ -905,9 +937,7 @@ class ReportController extends Controller
 
             $query->whereNotNull('candidate_master.contract_start_date')
                 ->where(function ($q) use ($fyStart, $fyEnd) {
-                    // Contract started during FY
                     $q->whereBetween('candidate_master.contract_start_date', [$fyStart, $fyEnd])
-                        // OR contract started before FY but ends during or after FY
                         ->orWhere(function ($q2) use ($fyStart, $fyEnd) {
                             $q2->where('candidate_master.contract_start_date', '<=', $fyEnd)
                                 ->where(function ($q3) use ($fyStart) {
@@ -979,9 +1009,9 @@ class ReportController extends Controller
         // Get departments and sub-departments based on selected employee
         if ($employeeId && $employeeId != 'All') {
             $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
-            $teamMemberIdsString = array_map('strval', $teamMemberIds);
+            $teamMemberIds[] = $employeeId;
+            $teamMemberIdsString = array_map('strval', array_unique($teamMemberIds));
 
-            // Get departments from candidates under this manager
             $departmentsList = CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
                 ->whereNotNull('department_id')
@@ -996,7 +1026,6 @@ class ReportController extends Controller
                 ->pluck('department_name', 'id')
                 ->toArray();
 
-            // Get sub-departments from candidates under this manager
             $subDepartmentsList = CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
                 ->whereNotNull('sub_department')
@@ -1011,11 +1040,8 @@ class ReportController extends Controller
                 ->pluck('sub_department_name', 'id')
                 ->toArray();
 
-            // Add "All Sub Departments" option at the beginning
             $subDepartments = ['All' => 'All Sub Departments'] + $subDepartments;
-    
         } else {
-            // If no employee selected, get all departments
             $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
             $subDepartments = DB::table('core_sub_department')
                 ->where('is_active', 1)
@@ -1043,6 +1069,7 @@ class ReportController extends Controller
             $employees = ['All' => 'All Employees'] + $employees;
         } else {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $allowedEmpIds[] = $user->emp_id;
             $employees = DB::table('core_employee')
                 ->whereIn('employee_id', $allowedEmpIds)
                 ->where('emp_status', 'A')
@@ -1052,25 +1079,13 @@ class ReportController extends Controller
             $employees = ['All' => 'All Employees'] + $employees;
         }
 
-        // Debug for Achcheylal Chauhan
-        if ($user->emp_id == '73') {
-            
-
-            $teamIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
-            $candidatesCount = CandidateMaster::whereIn('reporting_manager_employee_id', $teamIds)->count();
-
-            $filteredCount = CandidateMaster::whereIn('reporting_manager_employee_id', $teamIds)
-                ->where('department_id', $departmentId)
-                ->where('sub_department', $subDepartmentId)
-                ->count();
-        }
-
         // Get paginated records
-        $records = $query->orderBy('candidate_master.contract_start_date', 'desc')->paginate(20)->withQueryString();
+        $records = $query->orderBy('candidate_master.contract_start_date', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $showLocationFilters = $hierarchyService->shouldShowLocationFilters($user->emp_id);
 
-        // Get hierarchy data for location filters
         $businessUnits = $hierarchyService->getAssociatedBusinessUnitList($user->emp_id);
         $zones = $hierarchyService->getAssociatedZoneList($user->emp_id);
         $regions = $hierarchyService->getAssociatedRegionList($user->emp_id);

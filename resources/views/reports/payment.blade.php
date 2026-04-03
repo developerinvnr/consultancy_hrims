@@ -3,7 +3,7 @@
 <div class="container-fluid">
     <div class="row mb-2">
         <div class="col-12 d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Remuneration Report</h4>
+            <h4 class="mb-0">Payment Report</h4>
             <a href="{{ route('reports.payment.export', request()->query()) }}" class="btn btn-sm btn-success">
                 <i class="ri-file-excel-2-line"></i> Export Excel
             </a>
@@ -16,22 +16,12 @@
             <div class="card mb-2 shadow-sm">
                 <div class="card-body">
                     <form method="GET" action="{{ route('reports.paymentReport') }}" class="row g-2 align-items-end" id="mainFilterForm">
-                        {{--<div class="col-md-2">
+                        <div class="col-md-2">
                             <label class="form-label form-label-sm">Financial Year</label>
                             <select name="financial_year" class="form-select form-select-sm" id="financial_year">
                                 <option value="">Select Financial Year</option>
-                                <option value="2024-2025" {{ $financialYear=='2024-2025' ? 'selected' : '' }}>2024-2025</option>
-                                <option value="2025-2026" {{ $financialYear=='2025-2026' ? 'selected' : '' }}>2025-2026</option>
-                                <option value="2026-2027" {{ $financialYear=='2026-2027' ? 'selected' : '' }}>2026-2027</option>
-                            </select>
-                        </div>--}}
-
-                        <div class="col-md-1">
-                            <label class="form-label form-label-sm">Year</label>
-                            <select name="year" class="form-select form-select-sm" id="year_select">
-                                <option value="">All</option>
-                                @foreach($availableYears as $yr)
-                                <option value="{{ $yr }}" {{ $year == $yr ? 'selected' : '' }}>{{ $yr }}</option>
+                                @foreach($availableFinancialYears as $fy)
+                                <option value="{{ $fy }}" {{ $financialYear == $fy ? 'selected' : '' }}>{{ $fy }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -88,7 +78,6 @@
                     <form method="GET" action="{{ route('reports.paymentReport') }}" class="row g-2 align-items-end mt-2" id="hierarchyFilterForm">
                         <!-- Preserve existing filters -->
                         <input type="hidden" name="financial_year" value="{{ $financialYear }}">
-                        <input type="hidden" name="year" value="{{ $year }}">
                         <input type="hidden" name="month" value="{{ $month }}">
                         <input type="hidden" name="status" value="{{ $status }}">
                         <input type="hidden" name="payment_mode" value="{{ $paymentMode }}">
@@ -240,7 +229,7 @@
                 <p class="mt-2">Loading filters...</p>
             </div>
 
-            <!-- Summary KPI Cards -->
+            <!-- Summary KPI Cards (Simplified) -->
             <div class="kpi-container mb-3 px-3">
                 <!-- Total Candidates Card -->
                 <div class="kpi-card">
@@ -259,49 +248,57 @@
                     </div>
                 </div>
 
-                <!-- Total Payable Card -->
+                <!-- Total Net Pay Card -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <div class="kpi-title">Total Payable</div>
+                        <div class="kpi-title">Total Net Pay</div>
                         <div class="kpi-icon">💰</div>
                     </div>
-                    <div class="kpi-body d-flex justify-content-between align-items-center">
-                        <div class="kpi-number">₹{{ number_format($summary['total_payable'], 2) }}</div>
-                        <div class="kpi-avg">Gross</div>
+                    <div class="kpi-body">
+                        <div class="kpi-number">₹{{ number_format($summary['total_net_pay'], 2) }}</div>
                     </div>
                     <div class="kpi-footer">
-                        <span class="text-success">Net: ₹{{ number_format($summary['total_net_pay'], 2) }}</span>
-                    </div>
-                </div>
-
-                <!-- Deductions Card -->
-                <div class="kpi-card">
-                    <div class="kpi-top">
-                        <div class="kpi-title">Total Deductions</div>
-                        <div class="kpi-icon">📉</div>
-                    </div>
-                    <div class="kpi-body d-flex justify-content-between align-items-center">
-                        <div class="kpi-number">₹{{ number_format($summary['total_deductions'], 2) }}</div>
-                        <div class="kpi-avg">+ Arrear</div>
-                    </div>
-                    <div class="kpi-footer">
-                        <span>Arrear: ₹{{ number_format($summary['total_arrear'], 2) }}</span>
+                        <span class="text-muted">Total amount disbursed</span>
                     </div>
                 </div>
 
                 <!-- Processing Status Card -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <div class="kpi-title">Processing Status</div>
-                        <div class="kpi-icon">⚙️</div>
+                        <div class="kpi-title">Released for Payment</div>
+                        <div class="kpi-icon">✅</div>
                     </div>
-                    <div class="kpi-body d-flex justify-content-between align-items-center">
+                    <div class="kpi-body">
                         <div class="kpi-number">{{ $summary['processing_release'] }}</div>
-                        <div class="kpi-avg">Released</div>
                     </div>
                     <div class="kpi-footer">
-                        <span>Pending: {{ $summary['processing_pending'] }}</span>
-                        <span>Hold: {{ $summary['processing_hold'] }}</span>
+                        <span class="text-muted">Candidates released</span>
+                    </div>
+                </div>
+
+                <!-- Payment Status Summary Card -->
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <div class="kpi-title">Payment Status</div>
+                        <div class="kpi-icon">📊</div>
+                    </div>
+                    <div class="kpi-body d-flex justify-content-between">
+                        <div class="text-center">
+                            <div class="fw-bold text-warning">{{ $summary['pending_count'] }}</div>
+                            <small>Pending</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-info">{{ $summary['processed_count'] }}</div>
+                            <small>Processed</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-success">{{ $summary['paid_count'] }}</div>
+                            <small>Paid</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-danger">{{ $summary['held_count'] }}</div>
+                            <small>Held</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -317,9 +314,7 @@
                             <th>Month/Year</th>
                             <th>Department</th>
                             <th>Reporting Manager</th>
-                            <th>Monthly Salary</th>
-                            <th>Paid Days</th>
-                            <th>Net Pay</th>
+                            <th>Net Pay (₹)</th>
                             <th>Processing Status</th>
                             <th>Payment Status</th>
                             <th>UTR Number</th>
@@ -347,13 +342,8 @@
                                 @endif
                             </td>
                             <td>{{ $row->reporting_manager_name ?? '-' }}</td>
-                            <td>₹{{ number_format($row->monthly_salary, 2) }}</td>
-                            <td>{{ $row->paid_days ?? 0 }} / {{ $row->total_days ?? 0 }}</td>
                             <td>
                                 <strong class="text-success">₹{{ number_format($row->net_pay, 2) }}</strong>
-                                @if($row->arrear_amount > 0)
-                                <br><small class="text-info">+ Arrear: ₹{{ number_format($row->arrear_amount, 2) }}</small>
-                                @endif
                             </td>
                             <td>
                                 @php
@@ -398,7 +388,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="13" class="text-center py-5">
+                            <td colspan="11" class="text-center py-5">
                                 <div class="alert alert-info mb-0">
                                     <i class="ri-information-line fs-4 d-block mb-2"></i>
                                     <strong>No payment data found</strong><br>
@@ -486,7 +476,7 @@
     }
 
     .table-scroll table {
-        min-width: 1200px;
+        min-width: 1000px;
     }
 
     .table-scroll thead th {
@@ -508,20 +498,6 @@
     .table-scroll thead th:first-child {
         background: #f8fafc;
         z-index: 3;
-    }
-
-    .table-scroll::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .table-scroll::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .table-scroll::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
     }
 
     .form-label-sm {
@@ -582,7 +558,6 @@ $(document).ready(function() {
         if (employeeId && employeeId !== 'All') {
             $('#loadingSpinner').show();
 
-            // Disable all filter selects while loading
             $('#vertical_filter, #sub_department_filter, #department_filter, #applyFiltersBtn').prop('disabled', true);
             @if($showLocationFilters)
             $('#bu_filter, #zone_filter, #region_filter, #territory_filter').prop('disabled', true);
@@ -597,7 +572,6 @@ $(document).ready(function() {
                 success: function(response) {
                     if (response.success) {
                         @if($showLocationFilters)
-                        // Update Business Unit dropdown
                         let buSelect = $('#bu_filter');
                         buSelect.empty();
                         buSelect.append('<option value="All">All Business Units</option>');
@@ -606,7 +580,6 @@ $(document).ready(function() {
                         });
                         buSelect.val('All');
 
-                        // Update Zone dropdown
                         let zoneSelect = $('#zone_filter');
                         zoneSelect.empty();
                         zoneSelect.append('<option value="All">All Zones</option>');
@@ -615,7 +588,6 @@ $(document).ready(function() {
                         });
                         zoneSelect.val('All');
 
-                        // Update Region dropdown
                         let regionSelect = $('#region_filter');
                         regionSelect.empty();
                         regionSelect.append('<option value="All">All Regions</option>');
@@ -624,7 +596,6 @@ $(document).ready(function() {
                         });
                         regionSelect.val('All');
 
-                        // Update Territory dropdown
                         let territorySelect = $('#territory_filter');
                         territorySelect.empty();
                         territorySelect.append('<option value="All">All Territories</option>');
@@ -634,7 +605,6 @@ $(document).ready(function() {
                         territorySelect.val('All');
                         @endif
 
-                        // Update Vertical dropdown
                         let verticalSelect = $('#vertical_filter');
                         verticalSelect.empty();
                         verticalSelect.append('<option value="All">All Verticals</option>');
@@ -643,7 +613,6 @@ $(document).ready(function() {
                         });
                         verticalSelect.val('All');
 
-                        // Update Department dropdown
                         let deptSelect = $('#department_filter');
                         deptSelect.empty();
                         deptSelect.append('<option value="">All Departments</option>');
@@ -651,14 +620,12 @@ $(document).ready(function() {
                             deptSelect.append('<option value="' + id + '">' + name + '</option>');
                         });
 
-                        // Auto-select manager's department
                         if (response.data.manager_department && response.data.departments[response.data.manager_department]) {
                             deptSelect.val(response.data.manager_department);
                         } else {
                             deptSelect.val('');
                         }
 
-                        // Update Sub Department dropdown
                         let subDeptSelect = $('#sub_department_filter');
                         subDeptSelect.empty();
                         subDeptSelect.append('<option value="All">All Sub Departments</option>');
@@ -666,27 +633,20 @@ $(document).ready(function() {
                             subDeptSelect.append('<option value="' + id + '">' + name + '</option>');
                         });
 
-                        // Auto-select manager's sub-department
                         if (response.data.manager_sub_department && response.data.sub_departments[response.data.manager_sub_department]) {
                             subDeptSelect.val(response.data.manager_sub_department);
                         } else {
                             subDeptSelect.val('All');
                         }
 
-                        // Show department and sub-department containers
                         $('#department_filter_container').show();
                         $('#sub_department_filter_container').show();
 
-                        // Build the new URL with auto-selected filters
                         let currentUrl = new URL(window.location.href);
                         let params = new URLSearchParams();
 
-                        // Preserve main filters
                         if ($('select[name="financial_year"]').val()) {
                             params.set('financial_year', $('select[name="financial_year"]').val());
-                        }
-                        if ($('select[name="year"]').val()) {
-                            params.set('year', $('select[name="year"]').val());
                         }
                         if ($('select[name="month"]').val()) {
                             params.set('month', $('select[name="month"]').val());
@@ -698,19 +658,14 @@ $(document).ready(function() {
                             params.set('payment_mode', $('select[name="payment_mode"]').val());
                         }
 
-                        // Add the employee filter
                         params.set('employee', employeeId);
 
-                        // Add department if auto-selected
                         if (response.data.manager_department && response.data.departments[response.data.manager_department]) {
                             params.set('department_id', response.data.manager_department);
                         }
 
-                        // Add sub-department if auto-selected
                         if (response.data.manager_sub_department && response.data.sub_departments[response.data.manager_sub_department]) {
-                          	  if ($('#sub_department_filter').val() !== 'All') {
-									params.set('sub_department', $('#sub_department_filter').val());
-								}
+                            params.set('sub_department', response.data.manager_sub_department);
                         }
 
                         let newUrl = currentUrl.pathname + '?' + params.toString();
@@ -727,19 +682,14 @@ $(document).ready(function() {
                 }
             });
         } else {
-            // If "All Employees" selected, redirect to clean URL
             $('#department_filter_container').hide();
             $('#sub_department_filter_container').hide();
 
             let currentUrl = new URL(window.location.href);
             let params = new URLSearchParams();
 
-            // Preserve main filters
             if ($('select[name="financial_year"]').val()) {
                 params.set('financial_year', $('select[name="financial_year"]').val());
-            }
-            if ($('select[name="year"]').val()) {
-                params.set('year', $('select[name="year"]').val());
             }
             if ($('select[name="month"]').val()) {
                 params.set('month', $('select[name="month"]').val());
@@ -797,7 +747,6 @@ $(document).ready(function() {
         $('#hierarchyFilterForm').submit();
     });
 
-    // Initial load - show/hide containers
     let currentEmployee = '{{ $employeeId }}';
     if (currentEmployee && currentEmployee !== 'All') {
         $('#department_filter_container').show();

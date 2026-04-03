@@ -64,7 +64,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         $this->requisitionType = $requisitionType;
         $this->status = $status;
         
-        // ✅ Store all filters for display
+        // Store all filters for display
         $this->filters = [
             'bu' => $buId,
             'zone' => $zoneId,
@@ -95,15 +95,15 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
 
     protected function prepareData()
     {
-        // ✅ Get logged in user
+        // Get logged in user
         $user = Auth::user();
         $employee = Employee::where('employee_id', $user->emp_id)->first();
 
-        // ✅ Build query with hierarchy joins
+        // Build query with hierarchy joins
         $query = CandidateMaster::query()
             ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
             
-            // ✅ Join hierarchy tables
+            // Join hierarchy tables for display names
             ->leftJoin('core_business_unit as bu', 'bu.id', '=', 'candidate_master.business_unit')
             ->leftJoin('core_zone as zone', 'zone.id', '=', 'candidate_master.zone')
             ->leftJoin('core_region as region', 'region.id', '=', 'candidate_master.region')
@@ -111,7 +111,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             ->leftJoin('core_vertical as vertical', 'vertical.id', '=', 'candidate_master.vertical_id')
             ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
 
-            // ✅ Latest Agreement
+            // Latest Unsigned Agreement
             ->leftJoinSub(
                 DB::table('agreement_documents')
                     ->select('candidate_id', DB::raw('MAX(id) as id'))
@@ -125,6 +125,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             )
             ->leftJoin('agreement_documents as adc', 'adc.id', '=', 'created_ad.id')
 
+            // Latest Signed Agreement
             ->leftJoinSub(
                 DB::table('agreement_documents')
                     ->select('candidate_id', DB::raw('MAX(id) as id'))
@@ -138,7 +139,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             )
             ->leftJoin('agreement_documents as ads', 'ads.id', '=', 'signed_ad.id')
 
-            // ✅ Latest Courier
+            // Latest Courier
             ->leftJoinSub(
                 DB::table('agreement_couriers')
                     ->select('agreement_document_id', DB::raw('MAX(id) as id'))
@@ -169,48 +170,96 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 'dept.department_name'
             );
 
-        // ✅ Apply Hierarchy Access Control
+        // Apply Hierarchy Access Control - FIXED to use employee records for territory mapping
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $allowedEmpIds = $this->hierarchyService->getReportingEmployeeIds($user->emp_id);
-            $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIds);
-            
+            $allowedEmpIds[] = $user->emp_id;
+            $allowedEmpIds = array_unique($allowedEmpIds);
+            $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
+            $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIdsString);
+
             $accessLevel = $this->hierarchyService->getAccessLevel($employee);
             
+            // Get territory IDs based on access level using employee records
+            $territoryIds = [];
+
             switch ($accessLevel) {
                 case 'territory':
-                    $query->where('candidate_master.territory', $employee->territory);
+                    if ($employee->territory && $employee->territory != 0) {
+                        $territoryIds = [$employee->territory];
+                    }
                     break;
                 case 'region':
-                    $territoriesInRegion = DB::table('core_territory')
-                        ->where('region_id', $employee->region)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInRegion);
+                    if ($employee->region && $employee->region != 0) {
+                        $territoryIds = Employee::where('region', $employee->region)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('territory')
+                            ->where('territory', '!=', 0)
+                            ->distinct()
+                            ->pluck('territory')
+                            ->toArray();
+                    }
                     break;
                 case 'zone':
-                    $regionsInZone = DB::table('core_region')
-                        ->where('zone_id', $employee->zone)
-                        ->pluck('id');
-                    $territoriesInZone = DB::table('core_territory')
-                        ->whereIn('region_id', $regionsInZone)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInZone);
+                    if ($employee->zone && $employee->zone != 0) {
+                        $regionsInZone = Employee::where('zone', $employee->zone)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('region')
+                            ->where('region', '!=', 0)
+                            ->distinct()
+                            ->pluck('region')
+                            ->toArray();
+
+                        if (!empty($regionsInZone)) {
+                            $territoryIds = Employee::whereIn('region', $regionsInZone)
+                                ->where('emp_status', 'A')
+                                ->whereNotNull('territory')
+                                ->where('territory', '!=', 0)
+                                ->distinct()
+                                ->pluck('territory')
+                                ->toArray();
+                        }
+                    }
                     break;
                 case 'bu':
-                    $zonesInBU = DB::table('core_zone')
-                        ->where('bu_id', $employee->bu)
-                        ->pluck('id');
-                    $regionsInBU = DB::table('core_region')
-                        ->whereIn('zone_id', $zonesInBU)
-                        ->pluck('id');
-                    $territoriesInBU = DB::table('core_territory')
-                        ->whereIn('region_id', $regionsInBU)
-                        ->pluck('id');
-                    $query->whereIn('candidate_master.territory', $territoriesInBU);
+                    if ($employee->bu && $employee->bu != 0) {
+                        $zonesInBU = Employee::where('bu', $employee->bu)
+                            ->where('emp_status', 'A')
+                            ->whereNotNull('zone')
+                            ->where('zone', '!=', 0)
+                            ->distinct()
+                            ->pluck('zone')
+                            ->toArray();
+
+                        if (!empty($zonesInBU)) {
+                            $regionsInBU = Employee::whereIn('zone', $zonesInBU)
+                                ->where('emp_status', 'A')
+                                ->whereNotNull('region')
+                                ->where('region', '!=', 0)
+                                ->distinct()
+                                ->pluck('region')
+                                ->toArray();
+
+                            if (!empty($regionsInBU)) {
+                                $territoryIds = Employee::whereIn('region', $regionsInBU)
+                                    ->where('emp_status', 'A')
+                                    ->whereNotNull('territory')
+                                    ->where('territory', '!=', 0)
+                                    ->distinct()
+                                    ->pluck('territory')
+                                    ->toArray();
+                            }
+                        }
+                    }
                     break;
+            }
+
+            if (!empty($territoryIds)) {
+                $query->whereIn('candidate_master.territory', $territoryIds);
             }
         }
 
-        // ✅ Apply user-selected hierarchy filters
+        // Apply user-selected hierarchy filters
         if ($this->filters['bu'] && $this->filters['bu'] != 'All') {
             $query->where('candidate_master.business_unit', $this->filters['bu']);
         }
@@ -232,41 +281,64 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         }
 
         if ($this->filters['employee'] && $this->filters['employee'] != 'All') {
-            $query->where('candidate_master.reporting_manager_employee_id', $this->filters['employee']);
+            $teamMemberIds = $this->hierarchyService->getTeamMemberIds($this->filters['employee']);
+            $teamMemberIds[] = $this->filters['employee'];
+            $query->whereIn('candidate_master.reporting_manager_employee_id', $teamMemberIds);
         }
 
-        // ✅ Apply existing filters
-        if ($this->departmentId) {
+        // Apply existing filters
+        if ($this->departmentId && $this->departmentId != 'All') {
             $query->where('candidate_master.department_id', $this->departmentId);
         }
 
-        if ($this->requisitionType) {
+        if ($this->requisitionType && $this->requisitionType !== 'All') {
             $query->where('candidate_master.requisition_type', $this->requisitionType);
         }
 
-        if ($this->status) {
+        if ($this->status && $this->status != 'All') {
             $query->where('mr.status', $this->status);
         }
 
-        // ✅ Date filter based on Contract Start Date
-        if ($this->month) {
+        // Only show active candidates
+        $query->whereIn('candidate_master.final_status', ['A', 'D']);
+
+        // Date filter based on Contract Start Date
+        if ($this->month && $this->month != 'All') {
             $year = ($this->month >= 4) ? $this->startYear : $this->endYear;
             $startDate = "{$year}-{$this->month}-01";
-            $endDate = Carbon::parse($startDate)->endOfMonth();
+            $endDate = Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
 
             $query->whereNotNull('candidate_master.contract_start_date')
-                  ->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate]);
+                ->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate])
+                        ->orWhere(function ($q2) use ($startDate, $endDate) {
+                            $q2->where('candidate_master.contract_start_date', '<=', $endDate)
+                                ->where(function ($q3) use ($startDate) {
+                                    $q3->whereNull('candidate_master.contract_end_date')
+                                        ->orWhere('candidate_master.contract_end_date', '>=', $startDate);
+                                });
+                        });
+                });
         } else {
+            $fyStart = $this->startYear . '-04-01';
+            $fyEnd = $this->endYear . '-03-31';
+
             $query->whereNotNull('candidate_master.contract_start_date')
-                  ->whereBetween('candidate_master.contract_start_date', [
-                    $this->startYear . '-04-01',
-                    $this->endYear . '-03-31'
-                  ]);
+                ->where(function ($q) use ($fyStart, $fyEnd) {
+                    $q->whereBetween('candidate_master.contract_start_date', [$fyStart, $fyEnd])
+                        ->orWhere(function ($q2) use ($fyStart, $fyEnd) {
+                            $q2->where('candidate_master.contract_start_date', '<=', $fyEnd)
+                                ->where(function ($q3) use ($fyStart) {
+                                    $q3->whereNull('candidate_master.contract_end_date')
+                                        ->orWhere('candidate_master.contract_end_date', '>=', $fyStart);
+                                });
+                        });
+                });
         }
 
         $records = $query->orderByDesc('candidate_master.contract_start_date')->get();
 
-        // ✅ Initialize stage totals
+        // Initialize stage totals
         $this->stageTotals = [];
         foreach ($this->stages as $key => $stage) {
             $this->stageTotals[$key] = [
@@ -278,7 +350,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             ];
         }
 
-        // ✅ Prepare data
+        // Prepare data
         $this->data = [];
         
         foreach ($records as $row) {
@@ -434,30 +506,29 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastRow = count($this->data) + 3; // +3 for title, headers, and summary row
-                $lastColumn = chr(65 + (count($this->headings()) - 1)); // Calculate last column letter
+                $lastRow = count($this->data) + 3;
+                $lastColumn = chr(65 + (count($this->headings()) - 1));
 
                 // Set column widths
-                $sheet->getColumnDimension('A')->setWidth(8);   // S No.
-                $sheet->getColumnDimension('B')->setWidth(12);  // Req ID
-                $sheet->getColumnDimension('C')->setWidth(30);  // Candidate Name
-                $sheet->getColumnDimension('D')->setWidth(15);  // Submission Date
-                $sheet->getColumnDimension('E')->setWidth(18);  // Contract Start Date
-                $sheet->getColumnDimension('F')->setWidth(18);  // Business Unit
-                $sheet->getColumnDimension('G')->setWidth(15);  // Zone
-                $sheet->getColumnDimension('H')->setWidth(15);  // Region
-                $sheet->getColumnDimension('I')->setWidth(15);  // Territory
-                $sheet->getColumnDimension('J')->setWidth(15);  // Vertical
-                $sheet->getColumnDimension('K')->setWidth(20);  // Department
+                $sheet->getColumnDimension('A')->setWidth(8);
+                $sheet->getColumnDimension('B')->setWidth(12);
+                $sheet->getColumnDimension('C')->setWidth(30);
+                $sheet->getColumnDimension('D')->setWidth(15);
+                $sheet->getColumnDimension('E')->setWidth(18);
+                $sheet->getColumnDimension('F')->setWidth(18);
+                $sheet->getColumnDimension('G')->setWidth(15);
+                $sheet->getColumnDimension('H')->setWidth(15);
+                $sheet->getColumnDimension('I')->setWidth(15);
+                $sheet->getColumnDimension('J')->setWidth(15);
+                $sheet->getColumnDimension('K')->setWidth(20);
 
-                // Stage columns
                 $stageCount = count($this->stages);
                 for ($i = 0; $i < $stageCount; $i++) {
-                    $col = chr(76 + $i); // L onwards for dates
+                    $col = chr(76 + $i);
                     $sheet->getColumnDimension($col)->setWidth(15);
                 }
                 for ($i = 0; $i < $stageCount; $i++) {
-                    $col = chr(76 + $stageCount + $i); // TAT columns
+                    $col = chr(76 + $stageCount + $i);
                     $sheet->getColumnDimension($col)->setWidth(15);
                 }
 
@@ -474,53 +545,6 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
                 ]);
 
-                // Center align S No. column
-                $sheet->getStyle('A2:A' . ($lastRow + 1))
-                    ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-                // Add summary row with stage statistics
-                $summaryRow = $lastRow + 1;
-                
-                // Merge first few columns for summary label
-                $sheet->mergeCells('A' . $summaryRow . ':C' . $summaryRow);
-                $sheet->setCellValue('A' . $summaryRow, 'STAGE SUMMARY');
-                $sheet->getStyle('A' . $summaryRow)->applyFromArray([
-                    'font' => ['bold' => true, 'size' => 12],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F4A261']]
-                ]);
-
-                // Add summary statistics for each stage
-                $currentCol = 'D';
-                $stageIndex = 0;
-                foreach ($this->stages as $key => $stage) {
-                    $totals = $this->stageTotals[$key];
-                    $summaryText = $stage['name'] . "\n" .
-                                  "Total: " . $totals['total'] . "\n" .
-                                  "Avg: " . $totals['avg'] . "d\n" .
-                                  "≤1d: " . $totals['within_1'] . "\n" .
-                                  "1-3d: " . $totals['within_3'] . "\n" .
-                                  ">3d: " . $totals['above_3'];
-                    
-                    $sheet->setCellValue($currentCol . $summaryRow, $summaryText);
-                    $sheet->getStyle($currentCol . $summaryRow)->getAlignment()->setWrapText(true);
-                    $sheet->getStyle($currentCol . $summaryRow)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
-                    
-                    $currentCol = chr(ord($currentCol) + 1);
-                    $stageIndex++;
-                    
-                    // Skip TAT column in summary
-                    $currentCol = chr(ord($currentCol) + 1);
-                }
-
-                // Style summary row
-                $sheet->getStyle('A' . $summaryRow . ':' . $lastColumn . $summaryRow)->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFF3E0']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_TOP]
-                ]);
-                $sheet->getRowDimension($summaryRow)->setRowHeight(75);
-
                 // Add title
                 $sheet->insertNewRowBefore(1, 2);
                 $sheet->mergeCells('A1:' . $lastColumn . '1');
@@ -528,9 +552,8 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 $title = "TAT Report (Action Wise) - {$this->financialYear}";
                 $filterText = '';
                 
-                // Build filter description
                 $filterDescriptions = [];
-                if ($this->month) {
+                if ($this->month && $this->month != 'All') {
                     $monthName = date('F', mktime(0, 0, 0, $this->month, 1));
                     $filterDescriptions[] = "Month: {$monthName}";
                 }
@@ -549,10 +572,10 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 if ($this->filters['vertical'] && $this->filters['vertical'] != 'All') {
                     $filterDescriptions[] = "Vertical: {$this->filters['vertical']}";
                 }
-                if ($this->requisitionType) {
+                if ($this->requisitionType && $this->requisitionType !== 'All') {
                     $filterDescriptions[] = "Type: {$this->requisitionType}";
                 }
-                if ($this->status) {
+                if ($this->status && $this->status != 'All') {
                     $filterDescriptions[] = "Status: {$this->status}";
                 }
                 
@@ -562,9 +585,16 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 
                 $sheet->setCellValue('A1', $title);
                 $sheet->getStyle('A1')->applyFromArray([
-                    'font' => ['bold' => true, 'size' => 16],
+                    'font' => ['bold' => true, 'size' => 14],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F4FD']]
+                ]);
+
+                // Add generated date
+                $sheet->setCellValue('A2', 'Generated on: ' . Carbon::now()->format('d-m-Y H:i:s'));
+                $sheet->getStyle('A2')->applyFromArray([
+                    'font' => ['italic' => true, 'size' => 10],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT]
                 ]);
             },
         ];
