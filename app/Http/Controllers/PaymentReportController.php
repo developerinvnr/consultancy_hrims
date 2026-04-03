@@ -17,9 +17,14 @@ class PaymentReportController extends Controller
 {
     /**
      * Payment Report - Show salary payments with hierarchy access control
+     * Following the same pattern as Management Report
      */
     public function paymentReport(Request $request, HierarchyAccessService $hierarchyService)
     {
+        $user = Auth::user();
+        $employee = Employee::where('employee_id', $user->emp_id)->first();
+        $accessLevel = $hierarchyService->getAccessLevel($employee);
+
         // Get filter parameters
         $financialYear = $request->get('financial_year');
         $month = $request->get('month');
@@ -28,7 +33,7 @@ class PaymentReportController extends Controller
         $status = $request->get('status');
         $paymentMode = $request->get('payment_mode');
 
-        // Hierarchy filters
+        // Hierarchy filters (same as Management Report)
         $buId = $request->get('bu', 'All');
         $zoneId = $request->get('zone', 'All');
         $regionId = $request->get('region', 'All');
@@ -38,36 +43,22 @@ class PaymentReportController extends Controller
 
         // Set default financial year if not provided
         if (!$financialYear) {
-            $currentMonth = date('n');
-            $currentYear = date('Y');
-            $financialYear = ($currentMonth >= 4)
-                ? $currentYear . '-' . ($currentYear + 1)
-                : ($currentYear - 1) . '-' . $currentYear;
+            $latestYear = SalaryProcessing::max('year');
+            if ($latestYear) {
+                $financialYear = ($latestYear - 1) . '-' . $latestYear;
+            } else {
+                $currentMonth = date('n');
+                $currentYear = date('Y');
+                $financialYear = ($currentMonth >= 4)
+                    ? $currentYear . '-' . ($currentYear + 1)
+                    : ($currentYear - 1) . '-' . $currentYear;
+            }
         }
 
         // Parse financial year
         [$startYear, $endYear] = explode('-', $financialYear);
 
-        // Get logged in user
-        $user = Auth::user();
-        $employee = Employee::where('employee_id', $user->emp_id)->first();
-
-        // Flags to track auto-applied filters
-        $autoAppliedDepartment = false;
-        $autoAppliedSubDepartment = false;
-
-        // For non-admin, non-Sales users, auto-apply their own department and sub-department
-        if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management']) && !$hierarchyService->isSalesDepartment($user->emp_id)) {
-            if (!$request->filled('department_id') && $employee && $employee->department) {
-                $departmentId = $employee->department;
-                $autoAppliedDepartment = true;
-            }
-            if (!$request->filled('sub_department')) {
-                $subDepartmentId = 'All';
-            }
-        }
-
-        // Build base query for salary_processings
+        // ========== BUILD QUERY (Same pattern as Management Report) ==========
         $query = SalaryProcessing::query()
             ->leftJoin('candidate_master', 'salary_processings.candidate_id', '=', 'candidate_master.id')
             ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
@@ -75,11 +66,7 @@ class PaymentReportController extends Controller
             ->leftJoin('core_vertical as vert', 'vert.id', '=', 'candidate_master.vertical_id')
             ->leftJoin('core_employee as emp', function ($join) {
                 $join->on('emp.employee_id', '=', 'candidate_master.reporting_manager_employee_id')
-                    ->whereRaw('emp.id = (
-                        SELECT MAX(id)
-                        FROM core_employee
-                        WHERE employee_id = candidate_master.reporting_manager_employee_id
-                    )');
+                    ->whereRaw('emp.id = (SELECT MAX(id) FROM core_employee WHERE employee_id = candidate_master.reporting_manager_employee_id)');
             })
             ->select(
                 'salary_processings.*',
@@ -99,56 +86,94 @@ class PaymentReportController extends Controller
                 'sub_dept.sub_department_name',
                 'vert.vertical_name',
                 'emp.emp_name as reporting_manager_name'
-            );
+            )
+            ->whereIn('candidate_master.final_status', ['A', 'D']);
 
-        // Apply hierarchy access control
+        // ========== APPLY HIERARCHY ACCESS (Same as Management Report) ==========
+        // Only apply hierarchy for non-admin users
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
-            $allowedEmpIds[] = $user->emp_id;
-            $allowedEmpIds = array_unique($allowedEmpIds);
-            $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIds);
+            $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
+            $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIdsString);
         }
 
-        // Apply user-selected hierarchy filters
-        if ($buId && $buId != 'All') {
-            $query->where('candidate_master.business_unit', $buId);
-        }
-        if ($zoneId && $zoneId != 'All') {
-            $query->where('candidate_master.zone', $zoneId);
-        }
-        if ($regionId && $regionId != 'All') {
-            $query->where('candidate_master.region', $regionId);
-        }
-        if ($territoryId && $territoryId != 'All') {
-            $query->where('candidate_master.territory', $territoryId);
-        }
-        if ($verticalId && $verticalId != 'All') {
-            $query->where('candidate_master.vertical_id', $verticalId);
+        // ========== APPLY FILTERS (Same order as Management Report) ==========
+        
+        // 1. Employee filter (reporting manager)
+        if ($employeeId && $employeeId !== 'All') {
+            $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
+            $teamMemberIdsString = array_map('strval', $teamMemberIds);
+            $query->whereIn('candidate_master.reporting_manager_employee_id', $teamMemberIdsString);
         }
 
-        // Apply employee filter (reporting manager)
-        if ($employeeId && $employeeId != 'All') {
-            $query->where('candidate_master.reporting_manager_employee_id', $employeeId);
-        }
-
-        // Apply department filter
-        if ($departmentId && $departmentId != 'All') {
+        // 2. Department filter (only if selected and not 'All')
+        if ($departmentId && $departmentId !== 'All') {
             $query->where('candidate_master.department_id', $departmentId);
         }
 
-        // Apply sub-department filter
-        if ($subDepartmentId && $subDepartmentId != 'All') {
+        // 3. Sub-department filter
+        if ($subDepartmentId && $subDepartmentId !== 'All') {
             $query->where('candidate_master.sub_department', $subDepartmentId);
         }
 
+        // 4. Vertical filter
+        if ($verticalId && $verticalId !== 'All') {
+            $query->where('candidate_master.vertical_id', $verticalId);
+        }
+
+        // 5. BU filter
+        if ($buId && $buId !== 'All') {
+            $query->where('candidate_master.business_unit', $buId);
+        }
+
+        // 6. Zone filter (with region mapping)
+        if ($zoneId && $zoneId !== 'All') {
+            $regionsUnderZone = DB::table('core_region')
+                ->where('zone', $zoneId)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($regionsUnderZone)) {
+                $query->whereIn('candidate_master.region', $regionsUnderZone);
+            } else {
+                $query->where('candidate_master.zone', $zoneId);
+            }
+        }
+
+        // 7. Region filter (with territory mapping)
+        if ($regionId && $regionId !== 'All') {
+            $territoriesUnderRegion = Employee::where('region', $regionId)
+                ->where('emp_status', 'A')
+                ->whereNotNull('territory')
+                ->where('territory', '!=', 0)
+                ->distinct()
+                ->pluck('territory')
+                ->toArray();
+            
+            if (!empty($territoriesUnderRegion)) {
+                $query->whereIn('candidate_master.territory', $territoriesUnderRegion);
+            } else {
+                $query->where('candidate_master.region', $regionId);
+            }
+        }
+
+        // 8. Territory filter
+        if ($territoryId && $territoryId !== 'All') {
+            $query->where('candidate_master.territory', $territoryId);
+        }
+
+        // 9. Requisition type filter
+        $requisitionType = $request->get('requisition_type');
+        if ($requisitionType && $requisitionType !== 'All') {
+            $query->where('candidate_master.requisition_type', $requisitionType);
+        }
+
         // ========== FINANCIAL YEAR & MONTH FILTER ==========
-        if ($month && $month != 'All') {
-            // Specific month selected - determine which year based on FY
+        if ($month && $month !== 'All') {
             $year = ($month >= 4) ? $startYear : $endYear;
             $query->where('salary_processings.month', $month)
                   ->where('salary_processings.year', $year);
         } else {
-            // No month selected - show full financial year (April to March)
             $query->where(function ($q) use ($startYear, $endYear) {
                 $q->where(function ($q2) use ($startYear) {
                     $q2->where('salary_processings.year', $startYear)
@@ -160,18 +185,22 @@ class PaymentReportController extends Controller
             });
         }
 
-        // Apply payment status filter
-        if ($status && $status != 'All') {
+        // 10. Payment status filter
+        if ($status && $status !== 'All') {
             $query->where('salary_processings.payment_status', $status);
         }
 
-        // Apply payment mode filter
-        if ($paymentMode && $paymentMode != 'All') {
+        // 11. Payment mode filter
+        if ($paymentMode && $paymentMode !== 'All') {
             $query->where('salary_processings.payment_mode', $paymentMode);
         }
 
-        // Only show active candidates
-        $query->whereIn('candidate_master.final_status', ['A', 'D']);
+        // Debug logging
+        // \Log::info('=== Payment Report Debug ===');
+        // \Log::info('Financial Year: ' . $financialYear);
+        // \Log::info('Department filter: ' . ($departmentId ?? 'null'));
+        // \Log::info('Employee filter: ' . ($employeeId ?? 'null'));
+        // \Log::info('Total records before pagination: ' . $query->count());
 
         // Get summary statistics
         $summary = $this->getPaymentSummary(clone $query);
@@ -183,23 +212,45 @@ class PaymentReportController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Get dropdown data
-        $departments = $this->getDepartmentsForPayment($user, $employeeId, $hierarchyService);
-        $subDepartments = $this->getSubDepartmentsForPayment($user, $employeeId, $departmentId, $hierarchyService);
-        $verticals = $this->getVerticals();
-        $employees = $this->getEmployeesForPayment($user, $hierarchyService);
-
-        // Add "All" option to sub-departments
+        // ========== GET DROPDOWN DATA (Same as Management Report) ==========
+        
+        // Department list (same as Management Report)
+        $departments = $hierarchyService->getAssociatedDepartmentList($user->emp_id);
+        
+        // Sub-department list (based on access level)
+        $subDepartments = $hierarchyService->getAssociatedSubDepartmentList($user->emp_id);
         $subDepartments = ['All' => 'All Sub Departments'] + $subDepartments;
+        
+        // Vertical list (same as Management Report)
+        $verticals = $hierarchyService->getAssociatedVerticalList($user->emp_id);
+        
+        // Employee list (reporting managers)
+        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
+            $employees = DB::table('core_employee')
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->prepend('All Employees', 'All')
+                ->toArray();
+        } else {
+            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
+            $employees = DB::table('core_employee')
+                ->whereIn('employee_id', $allowedEmpIds)
+                ->where('emp_status', 'A')
+                ->orderBy('emp_name')
+                ->pluck('emp_name', 'employee_id')
+                ->prepend('All Employees', 'All')
+                ->toArray();
+        }
 
-        // Get hierarchy data for location filters
+        // Location filters (same as Management Report)
         $showLocationFilters = $hierarchyService->shouldShowLocationFilters($user->emp_id);
         $businessUnits = $hierarchyService->getAssociatedBusinessUnitList($user->emp_id);
         $zones = $hierarchyService->getAssociatedZoneList($user->emp_id);
         $regions = $hierarchyService->getAssociatedRegionList($user->emp_id);
         $territories = $hierarchyService->getAssociatedTerritoryList($user->emp_id);
 
-        // Get available financial years for filter
+        // Available financial years
         $availableFinancialYears = $this->getAvailableFinancialYears();
 
         return view('reports.payment', compact(
@@ -226,9 +277,8 @@ class PaymentReportController extends Controller
             'verticalId',
             'employeeId',
             'showLocationFilters',
-            'autoAppliedDepartment',
-            'autoAppliedSubDepartment',
-            'availableFinancialYears'
+            'availableFinancialYears',
+            'accessLevel'
         ));
     }
 
@@ -242,21 +292,30 @@ class PaymentReportController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
-        
+
         $financialYears = [];
         foreach ($years as $year) {
             $financialYears[] = ($year - 1) . '-' . $year;
             $financialYears[] = $year . '-' . ($year + 1);
         }
-        
+
         $financialYears = array_unique($financialYears);
         sort($financialYears);
         
+        // Add current FY if empty
+        if (empty($financialYears)) {
+            $currentMonth = date('n');
+            $currentYear = date('Y');
+            $financialYears[] = ($currentMonth >= 4) 
+                ? $currentYear . '-' . ($currentYear + 1)
+                : ($currentYear - 1) . '-' . $currentYear;
+        }
+
         return $financialYears;
     }
 
     /**
-     * Get payment summary statistics (simplified)
+     * Get payment summary statistics
      */
     private function getPaymentSummary($query)
     {
@@ -264,13 +323,10 @@ class PaymentReportController extends Controller
 
         $totalNetPay = $results->sum('net_pay');
 
-        // Payment status counts
         $pendingCount = $results->where('payment_status', 'pending')->count();
         $processedCount = $results->where('payment_status', 'processed')->count();
         $paidCount = $results->where('payment_status', 'paid')->count();
         $heldCount = $results->where('payment_status', 'held')->count();
-
-        // Processing status
         $processingRelease = $results->where('status', 'release')->count();
 
         return [
@@ -286,103 +342,17 @@ class PaymentReportController extends Controller
     }
 
     /**
-     * Get departments for payment report dropdown
-     */
-    private function getDepartmentsForPayment($user, $employeeId, $hierarchyService)
-    {
-        if ($employeeId && $employeeId != 'All') {
-            $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
-            $departmentsList = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                ->whereIn('reporting_manager_employee_id', $teamMemberIds)
-                ->whereNotNull('department_id')
-                ->distinct()
-                ->pluck('department_id')
-                ->toArray();
-
-            return DB::table('core_department')
-                ->whereIn('id', $departmentsList)
-                ->where('is_active', 1)
-                ->orderBy('department_name')
-                ->pluck('department_name', 'id')
-                ->toArray();
-        }
-
-        return $hierarchyService->getAssociatedDepartmentList($user->emp_id);
-    }
-
-    /**
-     * Get sub-departments for payment report dropdown
-     */
-    private function getSubDepartmentsForPayment($user, $employeeId, $departmentId, $hierarchyService)
-    {
-        $query = DB::table('core_sub_department')->where('is_active', 1);
-
-        if ($employeeId && $employeeId != 'All') {
-            $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
-            $subDepartmentsList = CandidateMaster::whereIn('reporting_manager_employee_id', $teamMemberIds)
-                ->whereNotNull('sub_department')
-                ->distinct()
-                ->pluck('sub_department')
-                ->toArray();
-
-            if (!empty($subDepartmentsList)) {
-                $query->whereIn('id', $subDepartmentsList);
-            }
-        }
-
-        return $query->orderBy('sub_department_name')
-            ->pluck('sub_department_name', 'id')
-            ->toArray();
-    }
-
-    /**
-     * Get verticals for dropdown
-     */
-    private function getVerticals()
-    {
-        return DB::table('core_vertical')
-            ->where('is_active', 1)
-            ->orderBy('vertical_name')
-            ->pluck('vertical_name', 'id')
-            ->toArray();
-    }
-
-    /**
-     * Get employees for payment report dropdown
-     */
-    private function getEmployeesForPayment($user, $hierarchyService)
-    {
-        if ($user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
-            $employees = DB::table('core_employee')
-                ->where('emp_status', 'A')
-                ->orderBy('emp_name')
-                ->pluck('emp_name', 'employee_id')
-                ->toArray();
-        } else {
-            $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
-            $allowedEmpIds[] = $user->emp_id;
-            $employees = DB::table('core_employee')
-                ->whereIn('employee_id', $allowedEmpIds)
-                ->where('emp_status', 'A')
-                ->orderBy('emp_name')
-                ->pluck('emp_name', 'employee_id')
-                ->toArray();
-        }
-
-        return ['All' => 'All Employees'] + $employees;
-    }
-
-    /**
      * Get filters data when employee is selected (AJAX)
      */
     public function getPaymentFiltersByEmployee($employeeId, HierarchyAccessService $hierarchyService)
     {
         try {
             $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
+            $teamMemberIdsString = array_map('strval', $teamMemberIds);
             $manager = Employee::where('employee_id', $employeeId)->first();
 
             $departmentsList = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                ->whereIn('reporting_manager_employee_id', $teamMemberIds)
+                ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
                 ->whereNotNull('department_id')
                 ->distinct()
                 ->pluck('department_id')
@@ -396,7 +366,7 @@ class PaymentReportController extends Controller
                 ->toArray();
 
             $subDepartmentsList = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                ->whereIn('reporting_manager_employee_id', $teamMemberIds)
+                ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
                 ->whereNotNull('sub_department')
                 ->distinct()
                 ->pluck('sub_department')
@@ -413,12 +383,7 @@ class PaymentReportController extends Controller
             $zones = $hierarchyService->getAssociatedZoneList($employeeId);
             $regions = $hierarchyService->getAssociatedRegionList($employeeId);
             $territories = $hierarchyService->getAssociatedTerritoryList($employeeId);
-
-            $verticals = DB::table('core_vertical')
-                ->where('is_active', 1)
-                ->orderBy('vertical_name')
-                ->pluck('vertical_name', 'id')
-                ->toArray();
+            $verticals = $hierarchyService->getAssociatedVerticalList($employeeId);
 
             return response()->json([
                 'success' => true,
@@ -460,15 +425,13 @@ class PaymentReportController extends Controller
             'territory' => $request->get('territory', 'All'),
             'vertical' => $request->get('vertical', 'All'),
             'employee' => $request->get('employee', 'All'),
+            'requisition_type' => $request->get('requisition_type', 'All'),
         ];
 
         $filename = $this->generateExportFileName($filters);
         return Excel::download(new PaymentReportExport($filters, $hierarchyService), $filename);
     }
 
-    /**
-     * Generate export filename based on applied filters
-     */
     private function generateExportFileName($filters)
     {
         $parts = ['Payment_Report'];
@@ -477,7 +440,7 @@ class PaymentReportController extends Controller
             $monthName = $this->getMonthName($filters['month']);
             $parts[] = $monthName;
         }
-        
+
         if (!empty($filters['financial_year'])) {
             $parts[] = 'FY_' . $filters['financial_year'];
         }

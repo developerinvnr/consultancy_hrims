@@ -80,13 +80,6 @@ class CommunicationControlController extends Controller
 		// Clear cache for this control
 		$this->communicationService->clearCache($communicationControl->control_key);
 
-		// Log the change
-		\Log::info('Communication control toggled', [
-			'control_key ' => $communicationControl->control_key,
-			'status' => $newStatus ? 'active' : 'inactive',
-			'user' => Auth::user()->email,
-		]);
-
 		return response()->json([
 			'success' => true,
 			'is_active' => $newStatus,

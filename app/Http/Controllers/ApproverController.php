@@ -158,7 +158,6 @@ class ApproverController extends Controller
 				->with('success', 'Requisition approved successfully.');
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error approving requisition: ' . $e->getMessage());
 
 			return redirect()->back()
 				->with('error', 'Failed to approve requisition: ' . $e->getMessage());
@@ -200,7 +199,6 @@ class ApproverController extends Controller
 				->with('success', 'Requisition rejected successfully.');
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error rejecting requisition: ' . $e->getMessage());
 
 			return redirect()->back()
 				->with('error', 'Failed to reject requisition: ' . $e->getMessage());

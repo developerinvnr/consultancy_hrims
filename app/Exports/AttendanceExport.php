@@ -48,11 +48,11 @@ class AttendanceExport implements
 
     public function collection(): Collection
     {
-        Log::info('Starting attendance export collection', [
-            'user_id' => $this->user ? $this->user->id : 'null',
-            'month' => $this->month,
-            'year' => $this->year
-        ]);
+        // Log::info('Starting attendance export collection', [
+        //     'user_id' => $this->user ? $this->user->id : 'null',
+        //     'month' => $this->month,
+        //     'year' => $this->year
+        // ]);
 
         // Build query with role-based filtering
         $query = CandidateMaster::query()
@@ -84,10 +84,10 @@ class AttendanceExport implements
 
         $candidates = $query->orderBy('candidate_code')->get();
 
-        Log::info('Candidates found for export:', [
-            'count' => $candidates->count(),
-            'candidates' => $candidates->pluck('candidate_code')->toArray()
-        ]);
+        // Log::info('Candidates found for export:', [
+        //     'count' => $candidates->count(),
+        //     'candidates' => $candidates->pluck('candidate_code')->toArray()
+        // ]);
 
         if ($candidates->isEmpty()) {
             return collect([]);
@@ -207,9 +207,9 @@ class AttendanceExport implements
         }
 
         $this->collectionData = collect($rows);
-        Log::info('Export collection prepared:', [
-            'row_count' => $this->collectionData->count()
-        ]);
+        // Log::info('Export collection prepared:', [
+        //     'row_count' => $this->collectionData->count()
+        // ]);
         
         return $this->collectionData;
     }
@@ -263,10 +263,10 @@ class AttendanceExport implements
                 $highestRow = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
                 
-                Log::info('Before shifting:', [
-                    'highest_row' => $highestRow,
-                    'highest_column' => $highestColumn
-                ]);
+                // Log::info('Before shifting:', [
+                //     'highest_row' => $highestRow,
+                //     'highest_column' => $highestColumn
+                // ]);
                 
                 // If we have data, shift it down by 2 rows
                 if ($highestRow > 0) {
@@ -412,11 +412,11 @@ class AttendanceExport implements
                 }
                 
                 // Log final state
-                Log::info('After sheet processing:', [
-                    'final_highest_row' => $newHighestRow,
-                    'headers_written' => true,
-                    'data_start_row' => 3
-                ]);
+                // Log::info('After sheet processing:', [
+                //     'final_highest_row' => $newHighestRow,
+                //     'headers_written' => true,
+                //     'data_start_row' => 3
+                // ]);
             }
         ];
     }

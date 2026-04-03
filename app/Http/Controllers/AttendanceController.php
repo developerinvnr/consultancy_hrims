@@ -522,12 +522,12 @@ class AttendanceController extends Controller
                     }
                 }
 
-                \Log::info('Day Debug', [
-                    'day' => $day,
-                    'incoming_status' => $attendanceData[$day] ?? null,
-                    'final_status_before_save' => $status,
-                    'availableCL_before' => $availableCL
-                ]);
+                // \Log::info('Day Debug', [
+                //     'day' => $day,
+                //     'incoming_status' => $attendanceData[$day] ?? null,
+                //     'final_status_before_save' => $status,
+                //     'availableCL_before' => $availableCL
+                // ]);
 
                 //$attendance->{"A{$day}"} = $status;
                 if (array_key_exists($day, $attendanceData)) {
@@ -633,10 +633,10 @@ class AttendanceController extends Controller
                     $totalOD++;
                 }
 
-                \Log::info('Recalculation', [
-                    'day' => $d,
-                    'value' => $val
-                ]);
+                // \Log::info('Recalculation', [
+                //     'day' => $d,
+                //     'value' => $val
+                // ]);
             }
 
             /* ---------------- SAVE ---------------- */
@@ -651,10 +651,10 @@ class AttendanceController extends Controller
             $attendance->status        = 'submitted';
             $attendance->save();
 
-            \Log::info('Saved Status', [
-                'day' => $day,
-                'saved_status' => $attendance->{"A{$day}"}
-            ]);
+            // \Log::info('Saved Status', [
+            //     'day' => $day,
+            //     'saved_status' => $attendance->{"A{$day}"}
+            // ]);
 
             if ($leaveBalance) {
                 // Log::info('Leave balance update', [
@@ -682,7 +682,6 @@ class AttendanceController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error($e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -1181,7 +1180,6 @@ class AttendanceController extends Controller
                 'lwp_days' => $leaveBalance->lwp_days_accumulated
             ];
         } catch (\Exception $e) {
-            \Log::error('Leave deduction error: ' . $e->getMessage());
             return [
                 'success' => false,
                 'warning' => null,
@@ -1455,14 +1453,14 @@ class AttendanceController extends Controller
                 \Maatwebsite\Excel\Excel::XLSX
             );
         } catch (\Exception $e) {
-            \Log::error('Attendance Export Error:', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'user' => Auth::id(),
-                'request' => $request->all(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // \Log::error('Attendance Export Error:', [
+            //     'message' => $e->getMessage(),
+            //     'file' => $e->getFile(),
+            //     'line' => $e->getLine(),
+            //     'user' => Auth::id(),
+            //     'request' => $request->all(),
+            //     'trace' => $e->getTraceAsString()
+            // ]);
 
             return redirect()
                 ->back()
@@ -1620,13 +1618,7 @@ class AttendanceController extends Controller
                 ], 400);
             }
 
-            Log::info('Processing attendance update', [
-                'candidate_id' => $candidateId,
-                'month' => $month,
-                'year' => $year,
-                'day' => $day,
-                'status' => $status
-            ]);
+
 
             // ✅ fetch or create
             $attendance = Attendance::firstOrNew([
@@ -1695,13 +1687,13 @@ class AttendanceController extends Controller
 
             DB::commit();
 
-            Log::info('Attendance updated successfully', [
-                'candidate_id' => $candidateId,
-                'month' => $month,
-                'year' => $year,
-                'day' => $day,
-                'status' => $status
-            ]);
+            // Log::info('Attendance updated successfully', [
+            //     'candidate_id' => $candidateId,
+            //     'month' => $month,
+            //     'year' => $year,
+            //     'day' => $day,
+            //     'status' => $status
+            // ]);
 
             return response()->json([
 
@@ -1724,10 +1716,10 @@ class AttendanceController extends Controller
 
             DB::rollBack();
 
-            Log::error('Attendance update failed', [
-                'error' => $e->getMessage(),
-                'request' => $request->all()
-            ]);
+            // Log::error('Attendance update failed', [
+            //     'error' => $e->getMessage(),
+            //     'request' => $request->all()
+            // ]);
 
             return response()->json([
                 'Code' => 500,

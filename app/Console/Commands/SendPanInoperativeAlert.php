@@ -14,7 +14,6 @@ class SendPanInoperativeAlert extends Command
 
     public function handle()
     {
-        \Log::info('PAN alert command STARTED at ' . now());
         $hrEmail = 'hrsupport@vnrseeds.com';
 
         $candidates = CandidateMaster::with('reportingManager')
@@ -41,7 +40,6 @@ class SendPanInoperativeAlert extends Command
                     ->subject("PAN Inoperative Alert - {$candidate->candidate_name}");
             });
         }
-         \Log::info('PAN alert command COMPLETED at ' . now());
         $this->info('PAN Inoperative alert emails sent successfully.');
     }
 }
