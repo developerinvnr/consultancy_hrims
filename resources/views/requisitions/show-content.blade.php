@@ -569,6 +569,8 @@
                     </span>
                     @endif
                     {{-- Agreement Created --}}
+
+                @isset($agreements)
                     @if(($agreements['unsigned'] ?? collect())->first())
                     <span class="badge bg-secondary">
                         Agreement Created
@@ -600,6 +602,7 @@
                         {{ $agreements['signed']->courierDetails->received_date->format('d M Y') }}
                     </span>
                     @endif
+                    @endisset
                     {{-- File Created --}}
                     @if($requisition->candidate?->file_created_date)
                     <span class="badge bg-primary">

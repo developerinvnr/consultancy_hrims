@@ -56,17 +56,59 @@ class ApproverController extends Controller
 			return redirect()->back()
 				->with('error', 'This requisition is not pending approval.');
 		}
-		//dd(Auth::user()->emp_id);
 
 		$requisition->load([
 			'function',
 			'department',
 			'vertical',
 			'submittedBy',
-			'documents'
+			'documents',
+			'candidate'  // Load the candidate relationship
 		]);
-		return view('approver.view', compact('requisition'));
+
+		// ========== FIX: Load agreements data ==========
+		$agreements = $this->getAgreementsData($requisition);
+
+		return view('approver.view', compact('requisition', 'agreements'));
 	}
+
+	/**
+	 * Get agreements data for the requisition
+	 */
+	private function getAgreementsData($requisition)
+	{
+		$agreements = [
+			'unsigned' => collect(),
+			'signed' => null
+		];
+
+		// Check if candidate exists
+		if (!$requisition->candidate) {
+			return $agreements;
+		}
+
+		// Get all agreement documents for this candidate
+		$agreementDocs = AgreementDocument::where('candidate_id', $requisition->candidate->id)
+			->where('document_type', 'agreement')
+			->orderBy('created_at', 'desc')
+			->get();
+
+		foreach ($agreementDocs as $doc) {
+			// Add file URL
+			$doc->file_url = $doc->file_path ? Storage::disk('s3')->url($doc->file_path) : null;
+
+			if ($doc->sign_status === 'SIGNED') {
+				// Get courier details for signed agreement
+				$doc->courierDetails = $doc->courierDetails()->first();
+				$agreements['signed'] = $doc;
+			} else {
+				$agreements['unsigned']->push($doc);
+			}
+		}
+
+		return $agreements;
+	}
+
 
 	/**
 	 * Approve requisition
