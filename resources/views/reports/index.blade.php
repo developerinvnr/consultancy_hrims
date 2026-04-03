@@ -138,6 +138,20 @@
             </div>
         </div>
 
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 report-card">
+                <div class="card-body">
+                    <h6 class="fw-bold">Payment Report</h6>
+                    <p class="text-muted small">
+                        Payment report action wise.
+                    </p>
+                    <a href="{{ route('reports.paymentReport') }}" class="btn btn-sm btn-primary">
+                        Open Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Vendor Details -->
         {{--<div class="col-md-4">

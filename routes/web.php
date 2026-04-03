@@ -18,6 +18,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\CommunicationControlController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\PaymentReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrRequisitionController;
 use App\Http\Controllers\ImportController;
@@ -88,7 +89,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/create/{type}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'create'])->name('requisitions.create');
         Route::post('/', [\App\Http\Controllers\ManpowerRequisitionController::class, 'store'])->name('requisitions.store');
         Route::get('/{requisition}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'show'])->name('requisitions.show');
-        Route::get('/{requisition}/edit', [\App\Http\Controllers\ManpowerRequisitionController::class, 'edit'])->name('requisitions.edit');
+        Route::get('/{requisition}/edit', [\App\Http\Controllers\ManpowerRequisitionController::class, 'edireportt'])->name('requisitions.edit');
         Route::put('/{requisition}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'update'])->name('requisitions.update');
         Route::get('/document/{document}/download', [\App\Http\Controllers\ManpowerRequisitionController::class, 'downloadDocument'])->name('document.download');
     });
@@ -393,6 +394,10 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::get('/tat/export', [ReportController::class, 'tatExport'])->name('tat.export');
 
     Route::post('/tat/filters/{employeeId}', [ReportController::class, 'getEmployeeFilters'])->name('reports.tat.filters');
+
+    Route::get('/paymentReport', [PaymentReportController::class, 'paymentReport'])->name('paymentReport');
+    Route::get('/payment/export', [PaymentReportController::class, 'paymentReportExport'])->name('payment.export');
+    Route::post('/payment/filters/{employeeId}', [PaymentReportController::class, 'getPaymentFiltersByEmployee'])->name('payment.filters');
 });
 
 Route::middleware(['auth'])->prefix('ledger')->name('ledger.')->group(function () {
