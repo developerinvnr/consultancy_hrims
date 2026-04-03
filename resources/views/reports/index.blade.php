@@ -141,9 +141,9 @@
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
-                    <h6 class="fw-bold">Payment Report</h6>
+                    <h6 class="fw-bold">Hierarchy-wise Consultant Remuneration Report</h6>
                     <p class="text-muted small">
-                        Payment report action wise.
+                        Remuneration Report action wise.
                     </p>
                     <a href="{{ route('reports.paymentReport') }}" class="btn btn-sm btn-primary">
                         Open Report

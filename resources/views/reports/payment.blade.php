@@ -3,7 +3,7 @@
 <div class="container-fluid">
     <div class="row mb-2">
         <div class="col-12 d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Payment Report</h4>
+            <h4 class="mb-0">Remuneration Report</h4>
             <a href="{{ route('reports.payment.export', request()->query()) }}" class="btn btn-sm btn-success">
                 <i class="ri-file-excel-2-line"></i> Export Excel
             </a>
