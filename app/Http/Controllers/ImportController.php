@@ -43,11 +43,7 @@ class ImportController extends Controller
 		set_time_limit(0);
 
 		// DISABLE MOST LOGGING TO PREVENT MEMORY EXHAUSTION
-		\Log::debug('Memory limit increased for import');
-
-		\Log::info('=== PREVIEW EXCEL STARTED ===');
-		\Log::info('User ID: ' . auth()->id());
-		\Log::info('Has file: ' . ($request->hasFile('excel_file') ? 'YES' : 'NO'));
+		
 		$requisitionType = $request->requisition_type;
 		$request->validate([
 			'excel_file' => 'required|mimes:xlsx,xls,csv|max:2048',
@@ -55,26 +51,17 @@ class ImportController extends Controller
 		]);
 
 		try {
-			\Log::info('Starting Excel processing...');
 
 			$file = $request->file('excel_file');
-			\Log::info('File details:', [
-				'name' => $file->getClientOriginalName(),
-				'extension' => $file->getClientOriginalExtension(),
-				'size' => $file->getSize(),
-				'mime' => $file->getMimeType()
-			]);
+			
 
 			// TRY 1: First attempt with error handling
 			try {
-				\Log::info('Attempting to read Excel file...');
 				$data = Excel::toArray([], $file);
 
-				\Log::info('Excel read successfully');
-				\Log::info('Number of sheets: ' . count($data));
+		
 
 				if (!empty($data) && isset($data[0])) {
-					\Log::info('First sheet has ' . count($data[0]) . ' rows');
 
 					// Log first few rows to see structure
 					for ($i = 0; $i < min(3, count($data[0])); $i++) {

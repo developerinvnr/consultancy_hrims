@@ -195,13 +195,6 @@ class PaymentReportController extends Controller
             $query->where('salary_processings.payment_mode', $paymentMode);
         }
 
-        // Debug logging
-        // \Log::info('=== Payment Report Debug ===');
-        // \Log::info('Financial Year: ' . $financialYear);
-        // \Log::info('Department filter: ' . ($departmentId ?? 'null'));
-        // \Log::info('Employee filter: ' . ($employeeId ?? 'null'));
-        // \Log::info('Total records before pagination: ' . $query->count());
-
         // Get summary statistics
         $summary = $this->getPaymentSummary(clone $query);
 

@@ -307,7 +307,7 @@ class ManpowerRequisitionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating requisition: ' . $e->getMessage());
+         
 
             return response()->json([
                 'success' => false,
@@ -362,11 +362,7 @@ class ManpowerRequisitionController extends Controller
         // Helper function to save documents without path manipulation
         $saveDocument = function ($type, $filenameField, $pathField) use ($request, $requisitionId, $userId, $s3Service) {
             if (!$request->filled($filenameField) || !$request->filled($pathField)) {
-                Log::info("Document $type not provided", [
-                    'requisition_id' => $requisitionId,
-                    'filename_field' => $filenameField,
-                    'path_field' => $pathField
-                ]);
+              
                 return false;
             }
 
@@ -375,20 +371,11 @@ class ManpowerRequisitionController extends Controller
 
             // CRITICAL: Verify the file exists in S3 before saving
             if (!$s3Service->fileExists($filePath)) {
-                Log::error("File does not exist in S3 for $type", [
-                    'requisition_id' => $requisitionId,
-                    'file_path' => $filePath,
-                    'file_name' => $fileName
-                ]);
+               
                 return false;
             }
 
-            Log::info("Saving document to requisition", [
-                'requisition_id' => $requisitionId,
-                'document_type' => $type,
-                'file_path' => $filePath,
-                'file_name' => $fileName
-            ]);
+          
 
             // Use updateOrCreate to avoid duplicates
             RequisitionDocument::updateOrCreate(
@@ -795,7 +782,6 @@ class ManpowerRequisitionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error updating requisition: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,

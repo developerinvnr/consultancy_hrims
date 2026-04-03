@@ -251,11 +251,6 @@ class PaymentWorkflowController extends Controller
 			];
 		}
 
-		Log::info('Matrix Payment Sync Request', [
-			'month' => $month,
-			'year' => $year,
-			'payments' => $payload
-		]);
 
 		$response = Http::withHeaders([
 			'x-api-key' => 'YizwA2jvt69eXKbLAhyF0gAeJCHOhmQFTx1efMcN',
@@ -266,10 +261,7 @@ class PaymentWorkflowController extends Controller
 		);
 
 		if (!$response->successful()) {
-			Log::error('Matrix API connection failed', [
-				'status' => $response->status(),
-				'body' => $response->body()
-			]);
+		
 
 			return response()->json([
 				'success' => false,
@@ -278,7 +270,6 @@ class PaymentWorkflowController extends Controller
 		}
 
 		$data = $response->json();
-		Log::info('Payment Sync Response', $data);
 
 		foreach ($data['results'] as $result) {
 			$matchStatus = $result['match_status'] ?? null;
@@ -304,11 +295,6 @@ class PaymentWorkflowController extends Controller
 							'verification_remark' => null
 						]);
 
-					Log::info('Payment marked as paid (matched)', [
-						'id' => $matchedRow->id,
-						'candidate_code' => $matchedRow->candidate_code,
-						'utr' => $transaction['utr_number']
-					]);
 				} else {
 					Log::warning('Matched transaction but account/amount mismatch', [
 						'account' => $account,
@@ -343,11 +329,7 @@ class PaymentWorkflowController extends Controller
 							'verification_remark' => 'already_verified'
 						]);
 
-					Log::info('Payment marked as already_verified', [
-						'id' => $matchedRow->id,
-						'candidate_code' => $matchedRow->candidate_code,
-						'utr' => $result['nearest_match']['utr_number']
-					]);
+				
 				} else {
 					// Just update the remark
 					DB::table('salary_processings')
@@ -356,11 +338,7 @@ class PaymentWorkflowController extends Controller
 							'verification_remark' => $reason
 						]);
 
-					Log::info('Payment remark updated', [
-						'id' => $matchedRow->id,
-						'candidate_code' => $matchedRow->candidate_code,
-						'remark' => $reason
-					]);
+					
 				}
 			}
 		}

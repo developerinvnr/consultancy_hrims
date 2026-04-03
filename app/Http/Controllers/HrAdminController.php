@@ -263,8 +263,6 @@ class HrAdminController extends Controller
 				->with('success', 'Application verified successfully. You can now send it for approval.');
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error verifying application: ' . $e->getMessage());
-
 			return redirect()->back()
 				->with('error', 'Failed to verify application. Please try again.');
 		}
@@ -339,9 +337,6 @@ class HrAdminController extends Controller
 		} catch (\Exception $e) {
 
 			DB::rollBack();
-
-			Log::error('Reject failed: ' . $e->getMessage());
-
 			return back()->with('error', 'Failed to reject application.');
 		}
 	}
@@ -534,8 +529,6 @@ class HrAdminController extends Controller
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error updating requisition: ' . $e->getMessage());
-
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to update information: ' . $e->getMessage()
@@ -734,32 +727,12 @@ class HrAdminController extends Controller
 			if ($canSendEmail) {
 				try {
 					Mail::to($approver->emp_email)->send(new RequisitionApprovalRequest($requisition, $approver));
-
-					// Log email sent
-					Log::info('Approval email sent', [
-						'request_code' => $requisition->id,
-						'approver_id' => $approver->id,
-						'approver_email' => $approver->emp_email,
-						'sent_at' => now()
-					]);
-
 					$emailStatus = "Email notification sent to " . $approver->emp_email;
-				} catch (\Exception $emailException) {
-					// Log email error but don't fail the transaction
-					Log::error('Failed to send approval email: ' . $emailException->getMessage(), [
-						'request_code' => $requisition->id,
-						'approver_email' => $approver->emp_email
-					]);
-
+				} catch (\Exception $emailException) {					
 					$emailStatus = "Email notification failed to send.";
 				}
 			} else {
-				// Log that email was skipped due to communication controls
-				Log::info('Approval email skipped - communication control disabled', [
-					'request_code' => $requisition->id,
-					'approval_reminders' => $this->communicationService->isEnabled('approval_reminders')
-				]);
-
+				
 				$emailStatus = "Email notification not sent (communication control disabled).";
 			}
 
@@ -770,12 +743,7 @@ class HrAdminController extends Controller
 				->with('success', 'Application sent for approval successfully. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error sending for approval: ' . $e->getMessage(), [
-				'request_code' => $requisition->id,
-				'approver_id' => $request->approver_id,
-				'user_id' => auth()->id()
-			]);
-
+			
 			return redirect()->back()
 				->with('error', 'Failed to send for approval: ' . $e->getMessage());
 		}
@@ -828,20 +796,13 @@ class HrAdminController extends Controller
 							->send(new CorrectionRequested($requisition, $request->correction_remarks));
 					}
 
-					Log::info('Correction request email sent', [
-						'request_code' => $requisition->id,
-						'email' => $reportingManager->emp_email
-					]);
-
 					$emailStatus = "Correction request email sent to {$reportingManager->emp_email}";
 				} catch (\Exception $e) {
-					Log::error('Correction email failed: ' . $e->getMessage());
+					
 					$emailStatus = "Correction email failed.";
 				}
 			} else {
-				Log::info('Correction email skipped by communication control', [
-					'request_code' => $requisition->id
-				]);
+				
 
 				$emailStatus = "Correction email skipped (disabled by admin).";
 			}
@@ -853,7 +814,6 @@ class HrAdminController extends Controller
 				->with('success', 'Correction request sent. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error requesting correction: ' . $e->getMessage());
 
 			return redirect()->back()
 				->with('error', 'Failed to send correction request. Please try again.');
@@ -911,7 +871,6 @@ class HrAdminController extends Controller
 				]
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error fetching reporting managers: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to load reporting managers'
@@ -1067,7 +1026,7 @@ class HrAdminController extends Controller
 			// Call Agreement Generation API
 			$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidateCode);
 
-			\Log::info('Agreement API Response in processApplicationModal:', $agreementResponse);
+		
 
 			if (!$agreementResponse['success']) {
 				throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
@@ -1094,11 +1053,6 @@ class HrAdminController extends Controller
 					'pdf_path'   => $agreementResponse['pdf_path_estamp'] ?? null,
 				],
 			];
-
-			if (empty($agreementId) || count($agreements) === 0) {
-				\Log::error('Agreement generated but PDFs missing', $agreementResponse);
-				throw new \Exception('Agreement generated but PDF files not received from API');
-			}
 
 			foreach ($agreements as $agreement) {
 
@@ -1170,9 +1124,6 @@ class HrAdminController extends Controller
 				}
 			}
 			// end Check communication control
-
-			\Log::info('Process completed successfully for candidate: ' . $candidateCode);
-
 			return response()->json([
 				'success' => true,
 				'message' => 'Candidate created successfully! Candidate Code: ' . $candidateCode .
@@ -1186,9 +1137,7 @@ class HrAdminController extends Controller
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			\Log::error('Error processing application: ' . $e->getMessage());
-			\Log::error('Stack trace: ' . $e->getTraceAsString());
-
+	
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to process application: ' . $e->getMessage()
@@ -1272,7 +1221,6 @@ class HrAdminController extends Controller
 				'team_id'           => $requisition->team_id,
 			];
 
-			\Log::info('Agreement API Request Payload:', $apiData);
 
 			// CURL
 			$ch = curl_init();
@@ -1292,8 +1240,7 @@ class HrAdminController extends Controller
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-			\Log::info('API Response: ' . $response);
-			\Log::info('HTTP Code: ' . $httpCode);
+		
 
 			if ($curlError || !$response) {
 				return [
@@ -1311,8 +1258,6 @@ class HrAdminController extends Controller
 				];
 			}
 
-			\Log::info('Full API Response for debugging:', $apiResponse);
-
 			// ✅ Extract CORRECT fields
 			return [
 				'success'             => true,
@@ -1323,7 +1268,6 @@ class HrAdminController extends Controller
 				'full_response'       => $apiResponse,
 			];
 		} catch (\Exception $e) {
-			\Log::error('Exception in generateAgreementViaAPI: ' . $e->getMessage());
 
 			return [
 				'success' => false,
@@ -1586,7 +1530,6 @@ class HrAdminController extends Controller
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error verifying signed agreement: ' . $e->getMessage());
 
 			return redirect()->back()
 				->with('error', 'Failed to activate employee. Please try again.');
@@ -1671,10 +1614,6 @@ class HrAdminController extends Controller
 
 			DB::rollBack();
 
-			Log::error('Signed agreement upload failed', [
-				'candidate_id' => $candidate->id,
-				'error'        => $e->getMessage(),
-			]);
 
 			return response()->json([
 				'success' => false,
@@ -1717,7 +1656,6 @@ class HrAdminController extends Controller
 				]
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error getting agreement details: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to get agreement details'
@@ -1785,14 +1723,7 @@ class HrAdminController extends Controller
 				$updateData['uploaded_by_user_id'] = Auth::id();
 				$agreement->update($updateData);
 
-				// Log the update
-				Log::info('Agreement updated via modal', array_merge([
-					'agreement_id' => $agreement->id,
-					'candidate_id' => $candidate->id,
-					'document_type' => $agreement->document_type,
-					'updated_by' => Auth::id(),
-					'updated_at' => now()
-				], $logChanges));
+				
 
 				DB::commit();
 
@@ -1809,7 +1740,7 @@ class HrAdminController extends Controller
 			}
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error updating agreement via modal: ' . $e->getMessage());
+			
 
 			return response()->json([
 				'success' => false,
@@ -1905,7 +1836,7 @@ class HrAdminController extends Controller
 				'Content-Type' => $document->mime_type,
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error downloading document: ' . $e->getMessage());
+	
 
 			return redirect()->back()
 				->with('error', 'Failed to download document. Please try again.');
@@ -1968,7 +1899,7 @@ class HrAdminController extends Controller
 				'Content-Disposition' => 'attachment; filename="' . basename($filePath) . '"',
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error downloading agreement document: ' . $e->getMessage());
+			
 			return redirect()->back()
 				->with('error', 'Failed to download agreement.');
 		}
@@ -1997,7 +1928,7 @@ class HrAdminController extends Controller
 				'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"',
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error viewing agreement document: ' . $e->getMessage());
+		
 			abort(500, 'Failed to view agreement.');
 		}
 	}
@@ -2089,7 +2020,7 @@ class HrAdminController extends Controller
 		try {
 
 			if (!auth()->user()->hasRole('hr_admin')) {
-				\Log::warning('Unauthorized access to editParty');
+			
 				abort(403, 'Unauthorized');
 			}
 
@@ -2143,12 +2074,7 @@ class HrAdminController extends Controller
 			));
 		} catch (\Throwable $e) {
 
-			\Log::error('EditParty Error', [
-				'message' => $e->getMessage(),
-				'file' => $e->getFile(),
-				'line' => $e->getLine(),
-				'trace' => $e->getTraceAsString()
-			]);
+			
 
 			abort(500, 'Something went wrong.');
 		}
@@ -2412,7 +2338,7 @@ class HrAdminController extends Controller
 		| Get only changed fields
 		|--------------------------------------------------------------------------
 		*/
-			\Log::info('Dirty fields:', $candidate->getDirty());
+		
 
 			$dirtyFields = $candidate->getDirty();
 
@@ -2718,7 +2644,7 @@ class HrAdminController extends Controller
 			// 		// Generate new agreement via API
 			// 		$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidate->candidate_code);
 
-			// 		\Log::info('Agreement API Response for reporting change:', $agreementResponse);
+		
 
 			// 		if (!$agreementResponse['success']) {
 			// 			throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
@@ -2788,14 +2714,8 @@ class HrAdminController extends Controller
 			// 			'reason' => 'Reporting manager changed',
 			// 		]);
 
-			// 		\Log::info('New agreement generated successfully for candidate: ' . $candidate->candidate_code . ' due to reporting change');
+			
 			// 	} catch (\Exception $e) {
-			// 		\Log::error('Failed to generate agreement for reporting change: ' . $e->getMessage(), [
-			// 			'candidate_id' => $candidate->id,
-			// 			'reporting_from' => $oldReportingTo ?? 'unknown',
-			// 			'reporting_to' => $request->new_reporting_to,
-			// 		]);
-
 			// 		// Don't rollback the entire transaction if agreement generation fails
 			// 		// Just log it and continue - the reporting change is still saved
 			// 		// PartyEditHistory::create([
@@ -2816,10 +2736,7 @@ class HrAdminController extends Controller
 
 				$this->syncManpowerTable($candidate);
 
-				Log::info('Candidate updated', [
-					'candidate_id' => $candidate->id,
-					'changes' => $dirtyFields
-				]);
+			
 			}
 
 			DB::commit();
@@ -2845,10 +2762,7 @@ class HrAdminController extends Controller
 			return redirect()->back()->with('success', $message);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error updating party: ' . $e->getMessage(), [
-				'candidate_id' => $candidate->id,
-				'user_id' => Auth::id()
-			]);
+			
 
 			return redirect()->back()
 				->with('error', 'Failed to update party details: ' . $e->getMessage())
@@ -2903,7 +2817,7 @@ class HrAdminController extends Controller
 				'document' => $document
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error uploading document: ' . $e->getMessage());
+			
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to upload document: ' . $e->getMessage()
@@ -2965,10 +2879,7 @@ class HrAdminController extends Controller
 
 			DB::rollBack();
 
-			Log::error('Estamp upload failed', [
-				'candidate_id' => $candidate->id,
-				'error' => $e->getMessage()
-			]);
+			
 
 			return response()->json([
 				'success' => false,

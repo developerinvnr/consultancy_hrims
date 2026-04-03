@@ -224,7 +224,7 @@ class MyTeamController extends Controller
                         try {
                             $s3Url = Storage::disk('s3')->url($doc->file_path);
                         } catch (\Exception $e) {
-                            \Log::error("Error generating S3 URL for document {$doc->id}: " . $e->getMessage());
+                           
                             $s3Url = null;
                         }
 
@@ -262,7 +262,7 @@ class MyTeamController extends Controller
                     try {
                         $s3Url = Storage::disk('s3')->url($doc->file_path);
                     } catch (\Exception $e) {
-                        \Log::error("Error generating S3 URL for agreement document {$doc->id}: " . $e->getMessage());
+                    
                         $s3Url = null;
                     }
 
@@ -280,8 +280,7 @@ class MyTeamController extends Controller
             // Merge all documents
             $documents = $requisitionDocuments->merge($agreementDocuments);
 
-            // Log for debugging
-            \Log::info("Loaded documents for candidate {$id}: " . $documents->count() . " documents found");
+           
 
             return response()->json([
                 'success' => true,

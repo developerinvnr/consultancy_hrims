@@ -206,14 +206,7 @@ class SalaryController extends Controller
                     $agreementSigned = isset($agreementSignedMap[$candidate->id]);
                     $courierReceived = isset($courierReceivedMap[$candidate->id]);
                     $fileCreated = !empty($candidate->file_created_date);
-                    // \Log::info('Salary Processing Debug', [
-                    //     'candidate_id' => $candidate->id,
-                    //     'candidate_code' => $candidate->candidate_code,
-                    //     'agreementSigned' => $agreementSigned,
-                    //     'courierReceived' => $courierReceived,
-                    //     'fileCreated' => $fileCreated
-                    // ]);
-
+                   
                     $autoHold = false;
                     $holdReason = null;
 
@@ -227,12 +220,7 @@ class SalaryController extends Controller
                         $autoHold = true;
                         $holdReason = 'File not created yet';
                     }
-
-                    // \Log::info('Salary Hold Decision', [
-                    //     'candidate_id' => $candidate->id,
-                    //     'autoHold' => $autoHold,
-                    //     'holdReason' => $holdReason
-                    // ]);
+                    
                     $totalPayable = $salaryData['net_pay'] + $arrearAmount;
                     SalaryProcessing::create(array_merge($salaryData, [
                         'candidate_id' => $candidate->id,
@@ -362,7 +350,6 @@ class SalaryController extends Controller
 
             DB::rollBack();
 
-            \Log::error("Arrear save error: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -409,7 +396,6 @@ class SalaryController extends Controller
                 'data' => $salary
             ]);
         } catch (\Exception $e) {
-            \Log::error("Failed to update arrear: " . $e->getMessage(), $request->all());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update arrear: ' . $e->getMessage()
@@ -678,20 +664,6 @@ class SalaryController extends Controller
 
         $candidates = $query->orderBy('candidate_code')->get();
 
-        // Debug: Check what data is loaded
-        // foreach ($candidates as $candidate) {
-        //     \Log::info('Candidate Data:', [
-        //         'id' => $candidate->id,
-        //         'code' => $candidate->candidate_code,
-        //         'function_id' => $candidate->function_id,
-        //         'function_relation' => $candidate->function,
-        //         'vertical_id' => $candidate->vertical_id,
-        //         'vertical_relation' => $candidate->vertical,
-        //         'department_id' => $candidate->department_id,
-        //         'department_relation' => $candidate->department,
-        //     ]);
-        // }
-
         $result = [];
 
         foreach ($candidates as $candidate) {
@@ -704,12 +676,7 @@ class SalaryController extends Controller
             $territoryName = $candidate->territoryRef?->territory_name ?? '';
 
 
-            // \Log::info('BU-Zone-Region-Territory', [
-            //     'bu' => $candidate->businessUnit,
-            //     'zone' => $candidate->zone,
-            //     'region' => $candidate->region,
-            //     'territory' => $candidate->territory,
-            // ]);
+            
 
             //dd($buName);
             // Debug the relationships
@@ -984,29 +951,22 @@ class SalaryController extends Controller
         $user = Auth::user();
         $hierarchyService = app(\App\Services\HierarchyAccessService::class);
 
-        // DEBUG: Log user info
-        \Log::info('=== Management Report Debug ===');
-        \Log::info('User ID: ' . $user->emp_id);
-        \Log::info('User Roles: ' . json_encode($user->getRoleNames()));
-        \Log::info('Filters: ' . json_encode($filters));
-
+      
         $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
 
         // DEBUG: Count total active candidates
         $totalCandidates = CandidateMaster::whereIn('final_status', ['A', 'D'])->count();
-        \Log::info('Total active candidates in system: ' . $totalCandidates);
 
         // ✅ Apply hierarchy ONLY for non-admin
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
             $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
-            \Log::info('Non-admin user - Allowed employee IDs: ' . json_encode($allowedEmpIdsString));
 
             // Check how many candidates have these reporting managers
             $candidatesWithAllowedManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->whereIn('reporting_manager_employee_id', $allowedEmpIdsString)
                 ->count();
-            \Log::info('Candidates with allowed reporting managers: ' . $candidatesWithAllowedManagers);
+           
 
             $query->whereIn('reporting_manager_employee_id', $allowedEmpIdsString);
         } else {
@@ -1018,14 +978,11 @@ class SalaryController extends Controller
             $teamMemberIds = $hierarchyService->getTeamMemberIds($filters['employee']);
             $teamMemberIdsString = array_map('strval', $teamMemberIds);
 
-            \Log::info('Employee filter applied - Manager ID: ' . $filters['employee']);
-            \Log::info('Team member IDs (as strings): ' . json_encode($teamMemberIdsString));
-
             // Check candidates with these reporting managers before applying filter
             $candidatesWithTeamManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
                 ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
                 ->count();
-            \Log::info('Candidates with team reporting managers: ' . $candidatesWithTeamManagers);
+           
 
             $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
         }
@@ -1059,8 +1016,7 @@ class SalaryController extends Controller
                         // 🔥 FIX: Use recursive hierarchy instead of just direct manager
                         $teamMemberIds = $hierarchyService->getTeamMemberIds($value);
                         $teamMemberIdsString = array_map('strval', $teamMemberIds);
-                        \Log::info('Employee filter - Manager ID: ' . $value);
-                        \Log::info('Team member IDs found: ' . json_encode($teamMemberIdsString));
+                       
                         $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
                         break;
                     case 'requisition_type':
@@ -1072,7 +1028,7 @@ class SalaryController extends Controller
 
         // DEBUG: Count before group by
         $countBeforeGroup = $query->count();
-        \Log::info('Count before group by: ' . $countBeforeGroup);
+       
 
         // Get sample of reporting_manager_employee_id values in candidate_master
         $sampleReportingManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
@@ -1082,7 +1038,7 @@ class SalaryController extends Controller
             ->limit(10)
             ->pluck('reporting_manager_employee_id')
             ->toArray();
-        \Log::info('Sample reporting_manager_employee_id values in DB: ' . json_encode($sampleReportingManagers));
+        
 
         // Get sample of department_id values
         $sampleDepartments = CandidateMaster::whereIn('final_status', ['A', 'D'])
@@ -1090,7 +1046,7 @@ class SalaryController extends Controller
             ->limit(10)
             ->pluck('department_id')
             ->toArray();
-        \Log::info('Sample department_id values in DB: ' . json_encode($sampleDepartments));
+    
 
         // Get results with grouping
         $candidates = $query
@@ -1131,10 +1087,6 @@ class SalaryController extends Controller
             )
             ->orderBy('candidate_master.candidate_code')
             ->get();
-
-        \Log::info('Final candidates count after group by: ' . $candidates->count());
-
-        // ... rest of the method remains the same ...
 
         $months = [
             'april',

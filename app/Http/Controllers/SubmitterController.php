@@ -215,12 +215,6 @@ class SubmitterController extends Controller
 		} catch (\Exception $e) {
 			DB::rollBack();
 
-			Log::error('Signed agreement upload failed', [
-				'requisition_id' => $requisition->id,
-				'candidate_id'   => $candidate->id,
-				'error'          => $e->getMessage(),
-			]);
-
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to upload signed agreement.'
@@ -254,12 +248,6 @@ class SubmitterController extends Controller
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-			Log::info('Agrisamvida signed agreement sync', [
-				'http_code' => $httpCode,
-				'response'  => $response,
-				'error'     => $curlError,
-				'payload'   => $apiPayload,
-			]);
 		} catch (\Exception $apiEx) {
 			Log::warning('Agrisamvida API sync exception', [
 				'message' => $apiEx->getMessage(),
@@ -346,17 +334,6 @@ class SubmitterController extends Controller
 					'sent_by_user_id' => Auth::id(),
 				]
 			);
-
-			// Log to Laravel log instead of activity()
-			Log::info('Courier details ' . ($courierDetails->wasRecentlyCreated ? 'added' : 'updated') . ' for agreement', [
-				'agreement_id' => $agreement->id,
-				'candidate_id' => $candidate->id,
-				'user_id' => Auth::id(),
-				'courier_name' => $request->courier_name,
-				'docket_number' => $request->docket_number,
-				'dispatch_date' => $request->dispatch_date
-			]);
-
 			DB::commit();
 
 			return response()->json([
@@ -367,11 +344,6 @@ class SubmitterController extends Controller
 		} catch (\Exception $e) {
 			DB::rollBack();
 
-			Log::error('Failed to save courier details', [
-				'agreement_id' => $agreement->id,
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString()
-			]);
 
 			return response()->json([
 				'success' => false,
@@ -421,10 +393,7 @@ class SubmitterController extends Controller
 				'message' => 'Courier marked as received successfully.'
 			]);
 		} catch (\Exception $e) {
-			Log::error('Failed to mark courier as received', [
-				'agreement_id' => $agreement->id,
-				'error' => $e->getMessage()
-			]);
+			
 
 			return response()->json([
 				'success' => false,

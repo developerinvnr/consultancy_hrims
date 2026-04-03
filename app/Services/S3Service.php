@@ -30,13 +30,6 @@ class S3Service
             }
 
             $url = Storage::disk('s3')->url($path);
-
-            Log::info('File uploaded to S3', [
-                'path' => $path,
-                'filename' => $filename,
-                'url' => $url
-            ]);
-
             return [
                 'success' => true,
                 'url' => $url,
@@ -44,10 +37,6 @@ class S3Service
                 'filename' => $filename
             ];
         } catch (\Exception $e) {
-            Log::error('S3 upload failed', [
-                'error' => $e->getMessage(),
-                'path' => $path
-            ]);
 
             return [
                 'success' => false,
@@ -99,10 +88,7 @@ class S3Service
         try {
             return Storage::disk('s3')->url($filePath);
         } catch (\Exception $e) {
-            Log::error('Failed to get S3 URL', [
-                'error' => $e->getMessage(),
-                'path' => $filePath
-            ]);
+           
             return null;
         }
     }
@@ -115,15 +101,12 @@ class S3Service
         try {
             if (Storage::disk('s3')->exists($filePath)) {
                 Storage::disk('s3')->delete($filePath);
-                Log::info('File deleted from S3', ['path' => $filePath]);
+                
                 return ['success' => true];
             }
             return ['success' => false, 'error' => 'File not found'];
         } catch (\Exception $e) {
-            Log::error('Failed to delete file from S3', [
-                'error' => $e->getMessage(),
-                'path' => $filePath
-            ]);
+         
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -151,10 +134,7 @@ class S3Service
             $request = $client->createPresignedRequest($command, "+{$expiryMinutes} minutes");
             return (string) $request->getUri();
         } catch (\Exception $e) {
-            Log::error('Failed to generate presigned URL', [
-                'error' => $e->getMessage(),
-                'path' => $filePath
-            ]);
+            
             return null;
         }
     }
@@ -185,11 +165,7 @@ class S3Service
             // This forces browser to download instead of opening
             return Storage::disk('s3')->download($filePath, $fileName);
         } catch (\Exception $e) {
-            Log::error('S3 download failed', [
-                'error' => $e->getMessage(),
-                'path'  => $filePath
-            ]);
-
+         
             abort(500, 'Unable to download file');
         }
     }

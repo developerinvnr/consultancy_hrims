@@ -186,10 +186,6 @@ class UserController extends Controller
 	public function store(Request $request)
 	{
 		try {
-			// dd($request->all());
-			// Log::info('User create request received', [
-			// 	'payload' => $request->except(['password', 'password_confirmation'])
-			// ]);
 
 			$request->validate([
 				'name' => 'required|string|max:255',
@@ -212,18 +208,11 @@ class UserController extends Controller
 				'password'   => Hash::make($request->password),
 			]);
 
-			// Log::info('User created successfully', [
-			// 	'user_id' => $user->id,
-			// 	'email' => $user->email,
-			// ]);
 
 			$roles = Role::findMany($request->roles);
 			$user->syncRoles($roles);
 
-			// Log::info('Roles assigned to user', [
-			// 	'user_id' => $user->id,
-			// 	'roles' => $roles->pluck('name')
-			// ]);
+	
 
 			return response()->json([
 				'success' => true,
@@ -231,22 +220,12 @@ class UserController extends Controller
 			]);
 		} catch (ValidationException $e) {
 
-			// Log::warning('User validation failed', [
-			// 	'errors' => $e->errors()
-			// ]);
 
 			return response()->json([
 				'success' => false,
 				'errors' => $e->errors(),
 			], 422);
 		} catch (\Exception $e) {
-
-			// Log::error('Error creating user', [
-			// 	'message' => $e->getMessage(),
-			// 	'file'    => $e->getFile(),
-			// 	'line'    => $e->getLine(),
-			// 	'trace'   => $e->getTraceAsString(),
-			// ]);
 
 			return response()->json([
 				'success' => false,
@@ -362,7 +341,6 @@ class UserController extends Controller
 		try {
 			return Excel::download(new UsersExport($request), 'UserList.xlsx');
 		} catch (\Exception $e) {
-			\Log::error('Export error: ' . $e->getMessage());
 			return response()->json(['error' => 'Failed to export users'], 500);
 		}
 	}

@@ -1242,7 +1242,7 @@ class ReportController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error loading employee filters: ' . $e->getMessage());
+            
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
