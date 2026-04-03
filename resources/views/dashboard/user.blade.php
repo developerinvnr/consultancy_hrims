@@ -215,7 +215,7 @@
 							<tbody>
 								@foreach($pending_approvals as $requisition)
 								<tr>
-									<td>{{ $requisition->requisition_id }}</td>
+									<td>{{ $requisition->request_code }}</td>
 									<td>
 										<div>{{ $requisition->candidate_name }}</div>
 
