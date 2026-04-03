@@ -109,7 +109,7 @@
             </div>
         </div>
         @endcan
-        
+        @can('tat_report')
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
@@ -123,6 +123,7 @@
                 </div>
             </div>
         </div>
+        @endcan
         <div class="col-md-4">
             <div class="card shadow-sm h-100 report-card">
                 <div class="card-body">
