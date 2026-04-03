@@ -268,8 +268,13 @@ class CoreAPIController extends Controller
             // Insert data
             $insertedCount = 0;
             $updatedCount = 0;
+            $skippedCount = 0;
 
             foreach ($data['list'] as $item) {
+                if ($api === 'active_employee' && isset($item['company_id']) && $item['company_id'] == 101) {
+                    $skippedCount++;
+                    continue;
+                }
                 if (!isset($item['id'])) {
                     Log::warning("Item missing 'id' field in $api, skipping");
                     continue;
@@ -286,13 +291,14 @@ class CoreAPIController extends Controller
                 }
             }
 
-            Log::info("Completed $api: Inserted: $insertedCount, Updated: $updatedCount");
+            Log::info("Completed $api: Inserted: $insertedCount, Updated: $updatedCount, Skipped (company_id=101): $skippedCount");
             return [
                 'status' => 'success',
                 'message' => "Synced successfully",
                 'count' => count($data['list']),
                 'inserted' => $insertedCount,
-                'updated' => $updatedCount
+                'updated' => $updatedCount,
+                'skipped' => $skippedCount
             ];
         } catch (\Exception $e) {
             Log::error("Exception in processSimpleApi for $api: " . $e->getMessage());
