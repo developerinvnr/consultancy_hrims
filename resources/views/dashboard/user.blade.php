@@ -244,7 +244,7 @@
 											</a>
 
 											<!-- Quick Approve -->
-											<form action="{{ route('approver.requisition.approve', $requisition) }}"
+											{{--<form action="{{ route('approver.requisition.approve', $requisition) }}"
 												method="POST" class="d-inline">
 												@csrf
 												<input type="hidden" name="approver_remarks" value="Approved via dashboard">
@@ -253,15 +253,15 @@
 													title="Quick Approve">
 													<i class="ri-check-line"></i>
 												</button>
-											</form>
+											</form>--}}
 
 											<!-- Quick Reject -->
-											<button type="button"
+											{{--<button type="button"
 												class="btn btn-danger quick-reject-btn"
 												data-req-id="{{ $requisition->requisition_id }}"
 												data-req-route="{{ route('approver.requisition.reject', $requisition) }}">
 												<i class="ri-close-line"></i>
-											</button>
+											</button>--}}
 										</div>
 									</td>
 								</tr>
