@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 // ✅ PAN Alert (every minute)
 Schedule::command('alert:pan-inoperative')->dailyAt('09:30')->timezone('Asia/Kolkata');
 
+// Contract Expiry Alert
+Schedule::command('contract:expiry-reminders')->dailyAt('09:00')->timezone('Asia/Kolkata');
+
 // ✅ Approval Reminder (daily at 10 AM)
 Schedule::command('approval:reminders')->dailyAt('10:30')->timezone('Asia/Kolkata');
 
