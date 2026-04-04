@@ -23,7 +23,7 @@ class LoginController extends Controller
     {
         $employee = DB::table('core_employee')
             ->where('employee_id', $user->emp_id)
-            ->orWhere('emp_code', $user->emp_code)
+            //->orWhere('emp_code', $user->emp_code)
             ->first();
 
         if ($employee && $employee->department == 15) {

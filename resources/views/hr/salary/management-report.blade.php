@@ -185,32 +185,33 @@
 
 			<div class="table-responsive management-table-wrapper">
 				<table class="table table-bordered table-hover mb-0" id="reportTable">
-					<thead class="table-light">
-						<tr>
-							<th rowspan="2" class="align-middle">S No.</th>
-							<th rowspan="2" class="align-middle">PC</th>
-							<th rowspan="2" class="align-middle">Name</th>
-							<th rowspan="2" class="align-middle">Contract Start Date</th>
-							<th rowspan="2" class="align-middle">Contract End Date</th>
-							<th rowspan="2" class="align-middle">Termination Date</th>
-							<th colspan="12" class="text-center">Monthly Remuneration (Financial Year Order)</th>
-							<th rowspan="2" class="align-middle">Grand Total</th>
-						</tr>
-						<tr>
-							<th class="text-center">April</th>
-							<th class="text-center">May</th>
-							<th class="text-center">June</th>
-							<th class="text-center">July</th>
-							<th class="text-center">August</th>
-							<th class="text-center">September</th>
-							<th class="text-center">October</th>
-							<th class="text-center">November</th>
-							<th class="text-center">December</th>
-							<th class="text-center">January</th>
-							<th class="text-center">February</th>
-							<th class="text-center">March</th>
-						</tr>
-					</thead>
+						<thead class="table-light">
+							<tr>
+								<th rowspan="2" class="align-middle">S No.</th>
+								<th rowspan="2" class="align-middle">PC</th>
+								<th rowspan="2" class="align-middle">Name</th>
+								<th rowspan="2" class="align-middle">Contract Start Date</th>
+								<th rowspan="2" class="align-middle">Contract End Date</th>
+								<th rowspan="2" class="align-middle">Termination Date</th>
+								<th rowspan="2" class="align-middle">Grand Total</th>
+								<th colspan="12" class="text-center">Monthly Remuneration (Financial Year Order)</th>
+							</tr>
+							<tr>
+								<th class="text-center">April</th>
+								<th class="text-center">May</th>
+								<th class="text-center">June</th>
+								<th class="text-center">July</th>
+								<th class="text-center">August</th>
+								<th class="text-center">September</th>
+								<th class="text-center">October</th>
+								<th class="text-center">November</th>
+								<th class="text-center">December</th>
+								<th class="text-center">January</th>
+								<th class="text-center">February</th>
+								<th class="text-center">March</th>
+							</tr>
+						</thead>
+  
 					<tbody id="reportData">
 						<!-- Data will be loaded here -->
 					</tbody>
@@ -361,28 +362,34 @@
 		});
 	}
 
-	function renderReportData(data, monthlyTotals) {
-		const tbody = $('#reportData');
-		const tfoot = $('#reportFooter');
-		tbody.empty();
-		tfoot.hide(); // Hide footer completely
+								function renderReportData(data, monthlyTotals) {
+    const tbody = $('#reportData');
+    const tfoot = $('#reportFooter');
+    tbody.empty();
+    tfoot.hide();
 
-		if (data.length === 0) {
-			tbody.html(`
+    if (data.length === 0) {
+        tbody.html(`
             <tr>
-                <td colspan="20" class="text-center py-4 text-muted">
+                <td colspan="19" class="text-center py-4 text-muted">
                     No data found for selected filters
                 </td>
             </tr>
         `);
-			return;
-		}
+        return;
+    }
 
-		// Add Grand Total Row at the TOP
-		if (monthlyTotals) {
-			const grandTotalRow = `
+    // Add Grand Total Row as FIRST DATA ROW
+    if (monthlyTotals) {
+        const grandTotalRow = `
             <tr class="table-primary fw-bold" style="background-color: #e8f4fd;">
-                <td colspan="6" class="text-center">GRAND TOTAL</td>
+                <td class="text-center">—</td>
+                <td>—</td>
+                <td><strong>GRAND TOTAL</strong></td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td class="text-end fw-bold">${formatCurrency(monthlyTotals.grand_total)}</td>
                 <td class="text-end">${formatCurrency(monthlyTotals.april)}</td>
                 <td class="text-end">${formatCurrency(monthlyTotals.may)}</td>
                 <td class="text-end">${formatCurrency(monthlyTotals.june)}</td>
@@ -395,22 +402,14 @@
                 <td class="text-end">${formatCurrency(monthlyTotals.january)}</td>
                 <td class="text-end">${formatCurrency(monthlyTotals.february)}</td>
                 <td class="text-end">${formatCurrency(monthlyTotals.march)}</td>
-                <td class="text-end">${formatCurrency(monthlyTotals.grand_total)}</td>
             </tr>
         `;
-			tbody.append(grandTotalRow);
-		}
+        tbody.append(grandTotalRow);
+    }
 
-		// Add separator
-		tbody.append(`
-        <tr class="table-secondary">
-            <td colspan="20" class="text-center small">DETAILS</td>
-        </tr>
-    `);
-
-		// Render employee rows
-		data.forEach((employee, index) => {
-			const row = `
+    // Render individual employee rows
+    data.forEach((employee, index) => {
+        const row = `
             <tr>
                 <td class="text-center">${index + 1}</td>
                 <td>${employee.code}</td>
@@ -418,6 +417,7 @@
                 <td>${employee.contract_start_date ?? '-'}</td>
                 <td>${employee.contract_end_date ?? '-'}</td>
                 <td>${employee.termination_date ?? '-'}</td>
+                <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
                 <td class="text-end">${formatCurrency(employee.april)}</td>
                 <td class="text-end">${formatCurrency(employee.may)}</td>
                 <td class="text-end">${formatCurrency(employee.june)}</td>
@@ -430,12 +430,11 @@
                 <td class="text-end">${formatCurrency(employee.january)}</td>
                 <td class="text-end">${formatCurrency(employee.february)}</td>
                 <td class="text-end">${formatCurrency(employee.march)}</td>
-                <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
             </tr>
         `;
-			tbody.append(row);
-		});
-	}
+        tbody.append(row);
+    });
+}
 
 	function formatCurrency(amount) {
 		if (amount === 0 || amount === '0.00' || amount === null || amount === undefined) return '-';

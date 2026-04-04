@@ -222,7 +222,7 @@ class ManpowerRequisitionController extends Controller
             $user = Auth::user();
             $employeeDetails = DB::table('core_employee')
                 ->where('employee_id', $user->emp_id)
-                ->orWhere('emp_code', $user->emp_code)
+                //->orWhere('emp_code', $user->emp_code)
                 ->first();
 
             // Create requisition
