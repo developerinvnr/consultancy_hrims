@@ -206,7 +206,7 @@ class SalaryController extends Controller
                     $agreementSigned = isset($agreementSignedMap[$candidate->id]);
                     $courierReceived = isset($courierReceivedMap[$candidate->id]);
                     $fileCreated = !empty($candidate->file_created_date);
-                   
+
                     $autoHold = false;
                     $holdReason = null;
 
@@ -220,7 +220,7 @@ class SalaryController extends Controller
                         $autoHold = true;
                         $holdReason = 'File not created yet';
                     }
-                    
+
                     $totalPayable = $salaryData['net_pay'] + $arrearAmount;
                     SalaryProcessing::create(array_merge($salaryData, [
                         'candidate_id' => $candidate->id,
@@ -676,7 +676,7 @@ class SalaryController extends Controller
             $territoryName = $candidate->territoryRef?->territory_name ?? '';
 
 
-            
+
 
             //dd($buName);
             // Debug the relationships
@@ -918,6 +918,9 @@ class SalaryController extends Controller
     /**
      * Get management report data
      */
+    /**
+     * Get management report data
+     */
     public function getManagementReportData(Request $request)
     {
         $request->validate([
@@ -928,8 +931,8 @@ class SalaryController extends Controller
             'region' => 'nullable|integer',
             'territory' => 'nullable|integer',
             'employee' => 'nullable|integer',
-            'vertical' => 'nullable|integer', // 🔥 ADD
-            'sub_department' => 'nullable|integer', // 🔥 ADD
+            'vertical' => 'nullable|integer',
+            'sub_department' => 'nullable|integer',
             'requisition_type' => 'sometimes|string|in:Contractual,TFA,CB,All',
         ]);
 
@@ -951,39 +954,19 @@ class SalaryController extends Controller
         $user = Auth::user();
         $hierarchyService = app(\App\Services\HierarchyAccessService::class);
 
-      
         $query = CandidateMaster::whereIn('final_status', ['A', 'D']);
 
-        // DEBUG: Count total active candidates
-        $totalCandidates = CandidateMaster::whereIn('final_status', ['A', 'D'])->count();
-
-        // ✅ Apply hierarchy ONLY for non-admin
+        // Apply hierarchy ONLY for non-admin
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
             $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
             $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
-
-            // Check how many candidates have these reporting managers
-            $candidatesWithAllowedManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                ->whereIn('reporting_manager_employee_id', $allowedEmpIdsString)
-                ->count();
-           
-
             $query->whereIn('reporting_manager_employee_id', $allowedEmpIdsString);
-        } else {
-            \Log::info('Admin/Management user - No hierarchy restriction applied');
         }
 
-        // ✅ Apply employee filter (if selected) - get entire team under that manager
+        // Apply employee filter (if selected)
         if (isset($filters['employee']) && $filters['employee'] !== 'All' && !empty($filters['employee'])) {
             $teamMemberIds = $hierarchyService->getTeamMemberIds($filters['employee']);
             $teamMemberIdsString = array_map('strval', $teamMemberIds);
-
-            // Check candidates with these reporting managers before applying filter
-            $candidatesWithTeamManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
-                ->whereIn('reporting_manager_employee_id', $teamMemberIdsString)
-                ->count();
-           
-
             $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
         }
 
@@ -1012,13 +995,6 @@ class SalaryController extends Controller
                     case 'territory':
                         $query->where('territory', $value);
                         break;
-                    case 'employee':
-                        // 🔥 FIX: Use recursive hierarchy instead of just direct manager
-                        $teamMemberIds = $hierarchyService->getTeamMemberIds($value);
-                        $teamMemberIdsString = array_map('strval', $teamMemberIds);
-                       
-                        $query->whereIn('reporting_manager_employee_id', $teamMemberIdsString);
-                        break;
                     case 'requisition_type':
                         $query->where('requisition_type', $value);
                         break;
@@ -1026,31 +1002,21 @@ class SalaryController extends Controller
             }
         }
 
-        // DEBUG: Count before group by
-        $countBeforeGroup = $query->count();
-       
-
-        // Get sample of reporting_manager_employee_id values in candidate_master
-        $sampleReportingManagers = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->whereNotNull('reporting_manager_employee_id')
-            ->where('reporting_manager_employee_id', '!=', '')
-            ->distinct()
-            ->limit(10)
-            ->pluck('reporting_manager_employee_id')
-            ->toArray();
-        
-
-        // Get sample of department_id values
-        $sampleDepartments = CandidateMaster::whereIn('final_status', ['A', 'D'])
-            ->distinct()
-            ->limit(10)
-            ->pluck('department_id')
-            ->toArray();
-    
-
-        // Get results with grouping
+        // ========== FIX: Add financial year filter to the JOIN ==========
         $candidates = $query
-            ->leftJoin('salary_processings as sp', 'candidate_master.id', '=', 'sp.candidate_id')
+            ->leftJoin('salary_processings as sp', function ($join) use ($startYear, $endYear) {
+                $join->on('candidate_master.id', '=', 'sp.candidate_id')
+                    ->where(function ($q) use ($startYear, $endYear) {
+                        // Filter by financial year: Apr-startYear to Mar-endYear
+                        $q->where(function ($q2) use ($startYear) {
+                            $q2->where('sp.year', $startYear)
+                                ->where('sp.month', '>=', 4);
+                        })->orWhere(function ($q2) use ($endYear) {
+                            $q2->where('sp.year', $endYear)
+                                ->where('sp.month', '<=', 3);
+                        });
+                    });
+            })
             ->select(
                 'candidate_master.id',
                 'candidate_master.candidate_code',
@@ -1085,6 +1051,7 @@ class SalaryController extends Controller
                 'candidate_master.reporting_manager_employee_id',
                 'candidate_master.department_id'
             )
+            ->having('grand_total', '>', 0) // Only show candidates with salary in this FY
             ->orderBy('candidate_master.candidate_code')
             ->get();
 
@@ -1120,23 +1087,26 @@ class SalaryController extends Controller
                     ? Carbon::parse($candidate->last_working_date)->format('d-m-Y') : null,
                 'department_id' => $candidate->department_id,
                 'reporting_manager_id' => $candidate->reporting_manager_employee_id,
-                'grand_total' => 0
+                'april' => floatval($candidate->april ?? 0),
+                'may' => floatval($candidate->may ?? 0),
+                'june' => floatval($candidate->june ?? 0),
+                'july' => floatval($candidate->july ?? 0),
+                'august' => floatval($candidate->august ?? 0),
+                'september' => floatval($candidate->september ?? 0),
+                'october' => floatval($candidate->october ?? 0),
+                'november' => floatval($candidate->november ?? 0),
+                'december' => floatval($candidate->december ?? 0),
+                'january' => floatval($candidate->january ?? 0),
+                'february' => floatval($candidate->february ?? 0),
+                'march' => floatval($candidate->march ?? 0),
+                'grand_total' => floatval($candidate->grand_total ?? 0)
             ];
 
+            // Update monthly totals
             foreach ($months as $month) {
-                $employeeData[$month] = 0;
+                $monthlyTotals[$month] += $employeeData[$month];
             }
-
-            foreach ($candidate->salaryProcessings as $salary) {
-                $monthName = strtolower(date('F', mktime(0, 0, 0, $salary->month, 1)));
-                $amount = $salary->net_pay ?? 0;
-
-                $employeeData[$monthName] = $amount;
-                $employeeData['grand_total'] += $amount;
-
-                $monthlyTotals[$monthName] += $amount;
-                $monthlyTotals['grand_total'] += $amount;
-            }
+            $monthlyTotals['grand_total'] += $employeeData['grand_total'];
 
             $reportData[] = $employeeData;
         }
@@ -1147,13 +1117,7 @@ class SalaryController extends Controller
             'monthly_totals' => $monthlyTotals,
             'count' => count($reportData),
             'financial_year' => $financialYear,
-            'filters' => $filters,
-            'debug' => [
-                'total_candidates' => $totalCandidates,
-                'count_before_group' => $countBeforeGroup,
-                'sample_reporting_managers' => $sampleReportingManagers,
-                'sample_departments' => $sampleDepartments
-            ]
+            'filters' => $filters
         ]);
     }
 

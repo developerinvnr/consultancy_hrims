@@ -94,14 +94,12 @@
 					</select>
 				</div>
 
-
-
-
 				<!-- BU -->
 				@if($access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">BU</label>
 					<select id="bu" class="form-select form-select-sm">
+						<option value="All">All Business Units</option>
 						@foreach($bu_list as $key => $value)
 						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
@@ -109,12 +107,12 @@
 				</div>
 				@endif
 
-
 				<!-- Zone -->
 				@if($access_level == 'zone' || $access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Zone</label>
 					<select id="zone" class="form-select form-select-sm">
+						<option value="All">All Zones</option>
 						@foreach($zone_list as $key => $value)
 						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
@@ -122,12 +120,12 @@
 				</div>
 				@endif
 
-
 				<!-- Region -->
 				@if($access_level == 'region' || $access_level == 'zone' || $access_level == 'bu' || $access_level == 'all')
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Region</label>
 					<select id="region" class="form-select form-select-sm">
+						<option value="All">All Regions</option>
 						@foreach($region_list as $key => $value)
 						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
@@ -140,13 +138,13 @@
 				<div class="col-md-3 col-lg-2">
 					<label class="form-label form-label-sm mb-1">Territory</label>
 					<select id="territory" class="form-select form-select-sm">
+						<option value="All">All Territories</option>
 						@foreach($territory_list as $key => $value)
 						<option value="{{ $key }}">{{ $value }}</option>
 						@endforeach
 					</select>
 				</div>
 				@endif
-
 
 				<!-- Party Type -->
 				<div class="col-md-3 col-lg-2">
@@ -195,8 +193,8 @@
 							<th rowspan="2" class="align-middle">Contract Start Date</th>
 							<th rowspan="2" class="align-middle">Contract End Date</th>
 							<th rowspan="2" class="align-middle">Termination Date</th>
-							<th colspan="12" class="text-center">Monthly Remuneration</th>
-							<th rowspan="3" class="align-middle">Grand Total</th>
+							<th colspan="12" class="text-center">Monthly Remuneration (Financial Year Order)</th>
+							<th rowspan="2" class="align-middle">Grand Total</th>
 						</tr>
 						<tr>
 							<th class="text-center">April</th>
@@ -245,7 +243,6 @@
 @push('scripts')
 
 <script>
-	let currentYear = null;
 	let currentFilters = {};
 
 	function refreshPage() {
@@ -269,18 +266,15 @@
 			currentFilters.employee = employee;
 		}
 
-		// 🔥 ADD: Vertical filter
 		let vertical = $('#vertical').val();
 		if (vertical && vertical !== 'All') {
 			currentFilters.vertical = vertical;
 		}
 
-		// 🔥 ADD: Sub-department filter
 		let subDepartment = $('#sub_department').val();
 		if (subDepartment && subDepartment !== 'All') {
 			currentFilters.sub_department = subDepartment;
 		}
-
 
 		if ($('#bu').length) {
 			let bu = $('#bu').val();
@@ -332,7 +326,7 @@
 					if (currentFilters.requisition_type !== 'All') {
 						filterSummary.push(currentFilters.requisition_type);
 					}
-					if (currentFilters.department !== 'All') {
+					if (currentFilters.department && currentFilters.department !== 'All') {
 						const deptName = $('#department option:selected').text();
 						filterSummary.push(deptName);
 					}
@@ -371,77 +365,80 @@
 		const tbody = $('#reportData');
 		const tfoot = $('#reportFooter');
 		tbody.empty();
-		tfoot.empty();
+		tfoot.hide(); // Hide footer completely
 
 		if (data.length === 0) {
 			tbody.html(`
-                <tr>
-                    <td colspan="16" class="text-center py-4 text-muted">
-                        No data found for selected filters
-                    </td>
-                </tr>
-            `);
-			tfoot.hide();
+            <tr>
+                <td colspan="20" class="text-center py-4 text-muted">
+                    No data found for selected filters
+                </td>
+            </tr>
+        `);
 			return;
 		}
+
+		// Add Grand Total Row at the TOP
+		if (monthlyTotals) {
+			const grandTotalRow = `
+            <tr class="table-primary fw-bold" style="background-color: #e8f4fd;">
+                <td colspan="6" class="text-center">GRAND TOTAL</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.april)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.may)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.june)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.july)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.august)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.september)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.october)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.november)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.december)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.january)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.february)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.march)}</td>
+                <td class="text-end">${formatCurrency(monthlyTotals.grand_total)}</td>
+            </tr>
+        `;
+			tbody.append(grandTotalRow);
+		}
+
+		// Add separator
+		tbody.append(`
+        <tr class="table-secondary">
+            <td colspan="20" class="text-center small">DETAILS</td>
+        </tr>
+    `);
 
 		// Render employee rows
 		data.forEach((employee, index) => {
 			const row = `
-                <tr>
-                    <td class="text-center">${index + 1}</td>
-                    <td>${employee.code}</td>
-                    <td>${employee.name}</td>
-					<td>${employee.contract_start_date ?? '-'}</td>
-					<td>${employee.contract_end_date ?? '-'}</td>
-					<td>${employee.termination_date ?? '-'}</td>
-										<td>${formatCurrency(employee.april)}</td>
-					<td>${formatCurrency(employee.may)}</td>
-					<td>${formatCurrency(employee.june)}</td>
-					<td>${formatCurrency(employee.july)}</td>
-					<td>${formatCurrency(employee.august)}</td>
-					<td>${formatCurrency(employee.september)}</td>
-					<td>${formatCurrency(employee.october)}</td>
-					<td>${formatCurrency(employee.november)}</td>
-					<td>${formatCurrency(employee.december)}</td>
-					<td>${formatCurrency(employee.january)}</td>
-					<td>${formatCurrency(employee.february)}</td>
-					<td>${formatCurrency(employee.march)}</td>
-                    <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
-                </tr>
-            `;
+            <tr>
+                <td class="text-center">${index + 1}</td>
+                <td>${employee.code}</td>
+                <td>${employee.name}</td>
+                <td>${employee.contract_start_date ?? '-'}</td>
+                <td>${employee.contract_end_date ?? '-'}</td>
+                <td>${employee.termination_date ?? '-'}</td>
+                <td class="text-end">${formatCurrency(employee.april)}</td>
+                <td class="text-end">${formatCurrency(employee.may)}</td>
+                <td class="text-end">${formatCurrency(employee.june)}</td>
+                <td class="text-end">${formatCurrency(employee.july)}</td>
+                <td class="text-end">${formatCurrency(employee.august)}</td>
+                <td class="text-end">${formatCurrency(employee.september)}</td>
+                <td class="text-end">${formatCurrency(employee.october)}</td>
+                <td class="text-end">${formatCurrency(employee.november)}</td>
+                <td class="text-end">${formatCurrency(employee.december)}</td>
+                <td class="text-end">${formatCurrency(employee.january)}</td>
+                <td class="text-end">${formatCurrency(employee.february)}</td>
+                <td class="text-end">${formatCurrency(employee.march)}</td>
+                <td class="text-end fw-bold">${formatCurrency(employee.grand_total)}</td>
+            </tr>
+        `;
 			tbody.append(row);
 		});
-
-		// Render footer with totals
-		if (monthlyTotals) {
-			const footerRow = `
-                <tr class="table-light fw-bold">
-                    <td colspan="6" class="text-center">Grand Total</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.january)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.february)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.march)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.april)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.may)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.june)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.july)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.august)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.september)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.october)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.november)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.december)}</td>
-                    <td class="text-end">${formatCurrency(monthlyTotals.grand_total)}</td>
-                </tr>
-            `;
-			tfoot.html(footerRow);
-			tfoot.show();
-		} else {
-			tfoot.hide();
-		}
 	}
 
 	function formatCurrency(amount) {
-		if (amount === 0 || amount === '0.00') return '-';
+		if (amount === 0 || amount === '0.00' || amount === null || amount === undefined) return '-';
 		return '₹ ' + parseFloat(amount).toLocaleString('en-IN', {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2
@@ -456,7 +453,7 @@
 
 		Swal.fire({
 			title: 'Export Management Report',
-			html: `Export management report for <b>${currentFilters.year}</b>?`,
+			html: `Export management report for <b>${currentFilters.financial_year}</b>?`,
 			icon: 'question',
 			showCancelButton: true,
 			confirmButtonText: 'Download Excel',
@@ -473,17 +470,14 @@
 				}
 			});
 
-			// SAME TAB download → session preserved
 			window.location.href = url + '?' + params.toString();
-
 			toastr.success('Report export started');
 		});
 	}
 
+	// Hierarchy cascade functions
 	$(document).on("change", "#bu", function() {
-
 		let bu = $(this).val();
-
 		$.ajax({
 			url: "{{ route('hierarchy.zone.by.bu') }}",
 			type: "POST",
@@ -492,26 +486,20 @@
 				bu: bu
 			},
 			success: function(response) {
-
 				let zoneSelect = $('#zone');
 				zoneSelect.empty();
-				zoneSelect.append('<option value="All">All Zone</option>');
-
+				zoneSelect.append('<option value="All">All Zones</option>');
 				$.each(response.zoneList, function(index, zone) {
 					zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
 				});
-
-				$('#region').empty().append('<option value="All">All Region</option>');
-				$('#territory').empty().append('<option value="All">All Territory</option>');
+				$('#region').empty().append('<option value="All">All Regions</option>');
+				$('#territory').empty().append('<option value="All">All Territories</option>');
 			}
 		});
 	});
 
-
 	$(document).on("change", "#zone", function() {
-
 		let zone = $(this).val();
-
 		$.ajax({
 			url: "{{ route('hierarchy.region.by.zone') }}",
 			type: "POST",
@@ -520,25 +508,19 @@
 				zone: zone
 			},
 			success: function(response) {
-
 				let regionSelect = $('#region');
 				regionSelect.empty();
-				regionSelect.append('<option value="All">All Region</option>');
-
+				regionSelect.append('<option value="All">All Regions</option>');
 				$.each(response.regionList, function(index, region) {
 					regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
 				});
-
-				$('#territory').empty().append('<option value="All">All Territory</option>');
+				$('#territory').empty().append('<option value="All">All Territories</option>');
 			}
 		});
 	});
 
-
 	$(document).on("change", "#region", function() {
-
 		let region = $(this).val();
-
 		$.ajax({
 			url: "{{ route('hierarchy.territory.by.region') }}",
 			type: "POST",
@@ -547,11 +529,9 @@
 				region: region
 			},
 			success: function(response) {
-
 				let territorySelect = $('#territory');
 				territorySelect.empty();
-				territorySelect.append('<option value="All">All Territory</option>');
-
+				territorySelect.append('<option value="All">All Territories</option>');
 				$.each(response.territoryList, function(index, territory) {
 					territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
 				});
@@ -559,20 +539,16 @@
 		});
 	});
 
-
-	// 🔥 ADD: Function to load sub-departments based on department
 	function loadSubDepartmentsByDepartment() {
 		let departmentId = $('#department').val();
 
 		if (!departmentId || departmentId === 'All') {
-			// Reset sub-department dropdown
 			let subDeptSelect = $('#sub_department');
 			subDeptSelect.empty();
 			subDeptSelect.append('<option value="All">All Sub Departments</option>');
 			return;
 		}
 
-		// Show loading state
 		let subDeptSelect = $('#sub_department');
 		subDeptSelect.prop('disabled', true);
 		subDeptSelect.html('<option value="All">Loading sub-departments...</option>');
@@ -587,8 +563,11 @@
 			success: function(response) {
 				if (response.success) {
 					subDeptSelect.empty();
+					subDeptSelect.append('<option value="All">All Sub Departments</option>');
 					$.each(response.sub_departments, function(value, label) {
-						subDeptSelect.append($('<option></option>').val(value).html(label));
+						if (value !== 'All') {
+							subDeptSelect.append($('<option></option>').val(value).html(label));
+						}
 					});
 					subDeptSelect.prop('disabled', false);
 				} else {
@@ -610,23 +589,15 @@
 		subDeptSelect.append('<option value="All">All Sub Departments</option>');
 	}
 
-	// Auto-load current year data on page load
-	$(document).ready(function() {
-		loadReportPreview();
-	});
-
-	// Function to load departments based on selected employee
 	function loadDepartmentsByEmployee() {
 		let employeeId = $('#employee').val();
 		let financialYear = $('#financial_year').val();
 
 		if (!employeeId || employeeId === 'All') {
-			// If All Employees selected, reset department dropdown to show all departments
 			resetDepartmentDropdown();
 			return;
 		}
 
-		// Show loading state
 		let departmentSelect = $('#department');
 		departmentSelect.prop('disabled', true);
 		departmentSelect.html('<option value="All">Loading departments...</option>');
@@ -641,17 +612,14 @@
 			},
 			success: function(response) {
 				if (response.success) {
-					// Populate department dropdown
 					departmentSelect.empty();
+					departmentSelect.append('<option value="All">All Departments</option>');
 					$.each(response.departments, function(value, label) {
-						departmentSelect.append($('<option></option>').val(value).html(label));
+						if (value !== 'All') {
+							departmentSelect.append($('<option></option>').val(value).html(label));
+						}
 					});
 					departmentSelect.prop('disabled', false);
-
-					// If no candidates found, show message
-					if (!response.has_candidates) {
-						toastr.warning('No candidates found under this manager for the selected financial year');
-					}
 				} else {
 					toastr.error('Failed to load departments');
 					resetDepartmentDropdown();
@@ -664,14 +632,11 @@
 		});
 	}
 
-	// Function to reset department dropdown to original state
 	function resetDepartmentDropdown() {
 		let departmentSelect = $('#department');
 		departmentSelect.prop('disabled', false);
 		departmentSelect.empty();
 		departmentSelect.append('<option value="All">All Departments</option>');
-
-		// Add original departments if needed
 		@foreach($departments as $key => $value)
 		@if($key !== 'All')
 		departmentSelect.append('<option value="{{ $key }}">{{ $value }}</option>');
@@ -679,26 +644,19 @@
 		@endforeach
 	}
 
-	// Also call this when financial year changes
 	$(document).ready(function() {
-		// Load departments when employee changes
+		loadReportPreview();
+
 		$('#employee').on('change', function() {
 			loadDepartmentsByEmployee();
 		});
 
-		// Also when financial year changes
 		$('#financial_year').on('change', function() {
 			let employeeId = $('#employee').val();
 			if (employeeId && employeeId !== 'All') {
 				loadDepartmentsByEmployee();
 			}
 		});
-
-		// Initial load - if an employee is pre-selected
-		let initialEmployee = $('#employee').val();
-		if (initialEmployee && initialEmployee !== 'All') {
-			loadDepartmentsByEmployee();
-		}
 	});
 </script>
 @endpush
@@ -709,7 +667,6 @@
 		overflow-y: auto;
 	}
 
-	/* Base header style */
 	.management-table-wrapper thead th {
 		position: sticky;
 		background: #f8f9fa;
@@ -717,15 +674,17 @@
 		z-index: 10;
 	}
 
-	/* First header row */
 	.management-table-wrapper thead tr:first-child th {
 		top: 0;
 		height: 45px;
 	}
 
-	/* Second header row */
 	.management-table-wrapper thead tr:nth-child(2) th {
 		top: 45px;
-		/* match first row height exactly */
+	}
+
+	.table td.text-end,
+	.table th.text-end {
+		text-align: right;
 	}
 </style>
