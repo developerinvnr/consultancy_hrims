@@ -87,7 +87,7 @@ class ManpowerRequisitionController extends Controller
         // Get user's employee details from core_employee table
         $employeeDetails = DB::table('core_employee')
             ->where('employee_id', $user->emp_id)
-            ->orWhere('emp_code', $user->emp_code)
+            //->orWhere('emp_code', $user->emp_code)
             ->first();
 
 
