@@ -126,16 +126,14 @@ class ManpowerRequisition extends Model
         return $this->belongsTo(\App\Models\CoreVertical::class, 'vertical_id');
     }
 
-public function currentApprover()
-{
-    return $this->belongsTo(User::class, 'approver_id', 'emp_id')
-        ->whereExists(function ($query) {
-            $query->select(DB::raw(1))
-                ->from('core_employee')
-                ->whereColumn('core_employee.employee_id', 'users.emp_id')
-                ->where('core_employee.company_id', 1);
-        });
-}
+        public function currentApprover()
+        {
+            return $this->belongsTo(
+                \App\Models\Employee::class,
+                'approver_id',
+                'employee_id'
+            )->where('company_id', 1);
+        }
     // public function employeeGeneral()
     // {
     //     return $this->belongsTo(\App\Models\HrmEmployeeGeneral::class, 'submitted_by_employee_id', 'EmployeeID');
