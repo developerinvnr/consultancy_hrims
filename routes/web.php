@@ -425,17 +425,3 @@ Route::middleware(['auth'])->prefix('payment-workflow')->group(function () {
     Route::post('/sync',[PaymentWorkflowController::class,'syncPayments'])->name('payment.workflow.sync');
 
 });
-
-
-// Route::post('/test/agreement-api', function(Request $request) {
-//     \Log::info('Agreement API Test Payload Received:', $request->all());
-    
-//     // Simulate API response
-//     return response()->json([
-//         'success' => true,
-//         'agreement_number' => 'TEST-' . date('Ymd-His'),
-//         'file_path' => 'test_agreements/TEST-' . date('Ymd-His') . '.pdf',
-//         'message' => 'Test agreement generated successfully',
-//         'received_data' => $request->all() // Return back for verification
-//     ]);
-// });

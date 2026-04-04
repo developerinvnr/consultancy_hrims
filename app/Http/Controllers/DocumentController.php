@@ -18,10 +18,7 @@ class DocumentController extends Controller
 		$filePath = null;
 		$fileUrl = null;
 		$filename = null;
-		Log::info('PAN card processing request received', [
-			'has_file' => $request->hasFile('pan_file'),
-			'requisition_type' => $request->input('requisition_type')
-		]);
+	
 
 		$request->validate([
 			'pan_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -48,12 +45,6 @@ class DocumentController extends Controller
 			$filePath = $upload['key'];
 			$filename = $upload['filename'];
 
-			Log::info('PAN file uploaded to S3', [
-				'filePath' => $filePath,
-				'fileUrl' => $fileUrl,
-				'filename' => $filename
-			]);
-
 			// Extract PAN details
 			$client = new Client();
 			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-pan-card', [
@@ -63,7 +54,6 @@ class DocumentController extends Controller
 			]);
 
 			$extractData = json_decode($extractResponse->getBody(), true);
-			Log::info('PAN extraction response', ['data' => $extractData]);
 
 			if (!$extractData['success'] || empty($extractData['data']['panNumber'])) {
 				throw new \Exception('PAN number extraction failed');
@@ -72,7 +62,6 @@ class DocumentController extends Controller
 			$panNumber = $extractData['data']['panNumber'];
 			$fatherName = $extractData['data']['fatherName'] ?? null;
             $dateOfBirth = $extractData['data']['dateOfBirth'] ?? null;
-			Log::info('Sending PAN verification request', ['pan_number' => $panNumber]);
 
 			// Verify PAN with external API
 			$verifyResponse = $client->post('https://api.rpacpc.com/services/get-pan-nsdl-details', [
@@ -86,7 +75,6 @@ class DocumentController extends Controller
 			]);
 
 			$verifyData = json_decode($verifyResponse->getBody(), true);
-			Log::info('PAN verification response', ['data' => $verifyData]);
 
 			// Determine if PAN is verified
 			$isVerified = ($verifyData['status'] === 'SUCCESS' &&
@@ -119,11 +107,6 @@ class DocumentController extends Controller
 			// 	Log::info('Cleaned up PAN file from S3 due to processing error', ['filePath' => $filePath]);
 			// }
 
-			Log::error('PAN processing error', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString()
-			]);
-
 			return response()->json([
 				'status' => 'PARTIAL_SUCCESS',
 				'data' => [
@@ -146,10 +129,6 @@ class DocumentController extends Controller
 		$filePath = null;
 		$fileUrl = null;
 		$filename = null;
-		Log::info('Bank document processing request received', [
-			'has_file' => $request->hasFile('bank_file'),
-			'requisition_type' => $request->input('requisition_type')
-		]);
 
 		$request->validate([
 			'bank_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -176,12 +155,6 @@ class DocumentController extends Controller
 			$filePath = $upload['key'];
 			$filename = $upload['filename'];
 
-			Log::info('Bank file uploaded to S3', [
-				'filePath' => $filePath,
-				'fileUrl' => $fileUrl,
-				'filename' => $filename
-			]);
-
 			// Extract bank details
 			$client = new Client();
 			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-cheque-details', [
@@ -191,7 +164,6 @@ class DocumentController extends Controller
 			]);
 
 			$extractData = json_decode($extractResponse->getBody(), true);
-			Log::info('Bank extraction response', ['data' => $extractData]);
 
 			if (!$extractData['success']) {
 				throw new \Exception('Bank details extraction failed');
@@ -207,10 +179,6 @@ class DocumentController extends Controller
 
 			// Verify bank details if we have both account number and IFSC
 			if ($accountNumber && $ifscCode) {
-				Log::info('Sending bank verification request', [
-					'account_number' => $accountNumber,
-					'ifsc_code' => $ifscCode,
-				]);
 
 				$verifyResponse = $client->post('https://api.rpacpc.com/services/account-verification-pl', [
 					'headers' => [
@@ -226,7 +194,6 @@ class DocumentController extends Controller
 				]);
 
 				$verifyData = json_decode($verifyResponse->getBody(), true);
-				Log::info('Bank verification response', ['data' => $verifyData]);
 
 				$isVerified = ($verifyData['status'] === 'SUCCESS' &&
 					!empty($verifyData['data']['verification_status']) &&
@@ -260,11 +227,6 @@ class DocumentController extends Controller
 			// 	Log::info('Cleaned up bank file from S3 due to processing error', ['filePath' => $filePath]);
 			// }
 
-			Log::error('Bank processing error', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString()
-			]);
-
 			return response()->json([
 				'status' => 'PARTIAL_SUCCESS',
 				'data' => [
@@ -289,11 +251,6 @@ class DocumentController extends Controller
 		$filePath = null;
 		$fileUrl = null;
 		$filename = null;
-
-		Log::info('Aadhaar card processing request received', [
-			'has_file' => $request->hasFile('aadhaar_file'),
-			'requisition_type' => $request->input('requisition_type')
-		]);
 
 		$request->validate([
 			'aadhaar_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -320,13 +277,6 @@ class DocumentController extends Controller
 			$fileUrl = $upload['url'];
 			$filePath = $upload['key'];
 			$filename = $upload['filename'];
-
-			Log::info('Aadhaar file uploaded to S3', [
-				'filePath' => $filePath,
-				'fileUrl' => $fileUrl,
-				'filename' => $filename
-			]);
-
 			// Extract Aadhaar number
 			$client = new Client();
 			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-aadhaar-number', [
@@ -336,7 +286,6 @@ class DocumentController extends Controller
 			]);
 
 			$extractData = json_decode($extractResponse->getBody(), true);
-			Log::info('Aadhaar extraction response', ['data' => $extractData]);
 
 			if (!$extractData['success'] || empty($extractData['data']['aadhaarNumber'])) {
 				// Clean up uploaded file on failure
@@ -360,7 +309,7 @@ class DocumentController extends Controller
 			$verificationData = null;
 
 			try {
-				Log::info('Calling Aadhaar verification API', ['aadhaar_number' => $aadhaarNumber]);
+				
 
 				$verifyResponse = $client->post('https://api.rpacpc.com/services/aadhaar-verification', [
 					'headers' => [
@@ -373,7 +322,6 @@ class DocumentController extends Controller
 				]);
 
 				$verifyData = json_decode($verifyResponse->getBody(), true);
-				Log::info('Aadhaar verification response', ['data' => $verifyData]);
 
 				// Check if verification was successful
 				if ($verifyData['status'] === 'SUCCESS' && isset($verifyData['data'])) {
@@ -413,10 +361,10 @@ class DocumentController extends Controller
 					}
 				}
 			} catch (\Exception $e) {
-				Log::warning('Aadhaar verification failed, but extraction succeeded', [
-					'error' => $e->getMessage(),
-					'aadhaar_number' => $aadhaarNumber
-				]);
+				// Log::warning('Aadhaar verification failed, but extraction succeeded', [
+				// 	'error' => $e->getMessage(),
+				// 	'aadhaar_number' => $aadhaarNumber
+				// ]);
 				// Continue with extraction only - verification failed but we still have the number
 			}
 
@@ -443,13 +391,8 @@ class DocumentController extends Controller
 			// Clean up S3 file if upload was successful but processing failed
 			if ($filePath && $s3Service->fileExists($filePath)) {
 				$s3Service->deleteFile($filePath);
-				Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
+				// Log::info('Cleaned up Aadhaar file from S3 due to processing error', ['filePath' => $filePath]);
 			}
-
-			Log::error('Aadhaar processing error', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString()
-			]);
 
 			return response()->json([
 				'status' => 'PARTIAL_SUCCESS',
@@ -475,10 +418,7 @@ class DocumentController extends Controller
 		$fileUrl = null;
 		$filename = null;
 
-		Log::info('Driving License processing request received', [
-			'has_file'         => $request->hasFile('dl_file'),
-			'requisition_type' => $request->input('requisition_type')
-		]);
+		
 
 		$request->validate([
 			'dl_file'          => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -505,12 +445,6 @@ class DocumentController extends Controller
 			$filePath = $upload['key'];
 			$filename = $upload['filename'];
 
-			Log::info('DL file uploaded to S3', [
-				'filePath' => $filePath,
-				'fileUrl'  => $fileUrl,
-				'filename' => $filename
-			]);
-
 			// Call extraction API
 			$client = new Client();
 			$extractResponse = $client->post('https://api-gf4tdduqha-uc.a.run.app/api/v1/extract-driving-license', [
@@ -521,15 +455,11 @@ class DocumentController extends Controller
 
 			$extractData = json_decode($extractResponse->getBody(), true);
 
-			Log::info('DL extraction response', ['data' => $extractData]);
 
 			// ✅ FIXED PATHS
 			$apiSuccess = data_get($extractData, 'success', false);
 			$apiMessage = data_get($extractData, 'message', 'No message provided');
 			$innerData  = data_get($extractData, 'data', []);
-
-			// Debug
-			Log::debug('DL innerData keys', ['keys' => array_keys($innerData)]);
 
 			// Extract values
 			$dlNumberRaw = data_get($innerData, 'drivingLicenseNumber');
@@ -547,12 +477,6 @@ class DocumentController extends Controller
 
 			// Validation
 			if (!$apiSuccess || empty($dlNumberRaw)) {
-				Log::warning('DL extraction validation failed', [
-					'apiSuccess' => $apiSuccess,
-					'dlNumberRaw' => $dlNumberRaw,
-					'innerData'   => $innerData
-				]);
-
 				throw new \Exception("DL extraction failed: {$apiMessage}");
 			}
 
@@ -577,12 +501,6 @@ class DocumentController extends Controller
 			// 	Log::info('Cleaned up DL file from S3 due to processing error', ['filePath' => $filePath]);
 			// }
 
-			Log::error('DL processing error', [
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString()
-			]);
-
-
 			return response()->json([
 				'status' => 'PARTIAL_SUCCESS',
 				'data' => [
@@ -602,9 +520,6 @@ class DocumentController extends Controller
 	 */
 	public function verifyPANManually(Request $request)
 	{
-		Log::info('Manual PAN verification request', [
-			'pan_number' => $request->input('pan_number')
-		]);
 
 		$request->validate([
 			'pan_number' => 'required|string|size:10',
@@ -625,7 +540,6 @@ class DocumentController extends Controller
 			]);
 
 			$verifyData = json_decode($verifyResponse->getBody(), true);
-			Log::info('PAN verification response', ['data' => $verifyData]);
 
 			if ($verifyData['status'] === 'SUCCESS' && !empty($verifyData['data'])) {
 				$data = $verifyData['data'];
@@ -648,10 +562,7 @@ class DocumentController extends Controller
 				], 400);
 			}
 		} catch (\Exception $e) {
-			Log::error('PAN manual verification error', [
-				'error' => $e->getMessage(),
-				'pan_number' => $request->pan_number
-			]);
+			
 
 			return response()->json([
 				'status' => 'FAILURE',
@@ -665,10 +576,6 @@ class DocumentController extends Controller
 	 */
 	public function verifyBankAccount(Request $request)
 	{
-		Log::info('Bank account verification request', [
-			'account_number' => $request->input('account_number'),
-			'ifsc_code'      => $request->input('ifsc_code')
-		]);
 
 		$request->validate([
 			'account_number' => 'required|string',
@@ -691,7 +598,6 @@ class DocumentController extends Controller
 			]);
 
 			$verifyData = json_decode($verifyResponse->getBody(), true);
-			Log::info('Bank verification response', ['data' => $verifyData]);
 
 			// ────────────────────────────────────────────────
 			// FIXED PATHS
@@ -699,12 +605,6 @@ class DocumentController extends Controller
 			$bankData   = data_get($verifyData, 'data');             // ← the nested object we want
 
 			$verificationStatus = strtoupper(trim(data_get($bankData, 'verification_status', '')));
-
-			Log::info('DEBUG CHECK', [
-				'outerStatus'        => $status,
-				'verification_status' => $verificationStatus,
-				'bankData_keys'      => $bankData ? array_keys($bankData) : null
-			]);
 
 			if ($status === 'SUCCESS' && $verificationStatus === 'VERIFIED') {
 
@@ -740,10 +640,6 @@ class DocumentController extends Controller
 					($verificationStatus ? "Verification: $verificationStatus" : 'Unknown verification status'),
 			], 400);
 		} catch (\Exception $e) {
-			Log::error('Bank account verification error', [
-				'error'         => $e->getMessage(),
-				'account_number' => $request->account_number ?? 'N/A'
-			]);
 
 			return response()->json([
 				'status'  => 'FAILURE',
@@ -757,10 +653,7 @@ class DocumentController extends Controller
 	 */
 	public function verifyDLManually(Request $request)
 	{
-		Log::info('DL manual verification request', [
-			'dl_number' => $request->input('dl_number')
-		]);
-
+		
 		$request->validate([
 			'dl_number' => 'required|string',
 		]);
@@ -783,7 +676,6 @@ class DocumentController extends Controller
 			]);
 
 			$verifyData = json_decode($verifyResponse->getBody(), true);
-			Log::info('DL verification response', ['data' => $verifyData]);
 
 			if ($verifyData['status'] === 'SUCCESS' && $verifyData['status_code'] === '200') {
 				$data = $verifyData['data'];
@@ -821,10 +713,7 @@ class DocumentController extends Controller
 				], 400);
 			}
 		} catch (\Exception $e) {
-			Log::error('DL manual verification error', [
-				'error' => $e->getMessage(),
-				'dl_number' => $request->dl_number
-			]);
+			
 
 			return response()->json([
 				'status' => 'FAILURE',
@@ -857,10 +746,7 @@ class DocumentController extends Controller
 				], 500);
 			}
 		} catch (\Exception $e) {
-			Log::error('Document deletion error', [
-				'error' => $e->getMessage(),
-				'file_path' => $request->file_path
-			]);
+		
 
 			return response()->json([
 				'status' => 'FAILURE',

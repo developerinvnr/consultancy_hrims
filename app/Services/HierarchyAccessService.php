@@ -340,7 +340,7 @@ class HierarchyAccessService
 			->pluck('employee_id')
 			->toArray();
 
-		\Log::info('Direct reports for manager ' . $managerEmployeeId . ': ' . json_encode($directReports));
+		//\Log::info('Direct reports for manager ' . $managerEmployeeId . ': ' . json_encode($directReports));
 
 		foreach ($directReports as $reportId) {
 			if (!in_array($reportId, $teamIds)) {

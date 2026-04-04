@@ -22,7 +22,7 @@ class PanVerificationService
 
             $data = $response->json();
 
-            Log::info('PAN verify response', $data);
+            //Log::info('PAN verify response', $data);
 
             if ($data['status'] === 'SUCCESS') {
                 return $data['data'];
@@ -32,7 +32,7 @@ class PanVerificationService
 
         } catch (\Exception $e) {
 
-            Log::error("PAN verify failed: ".$e->getMessage());
+            //Log::error("PAN verify failed: ".$e->getMessage());
 
             return null;
         }
