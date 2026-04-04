@@ -132,8 +132,8 @@ public function currentApprover()
         ->whereExists(function ($query) {
             $query->select(DB::raw(1))
                 ->from('core_employee')
-                ->whereColumn('core_employee.employee_id', 'users.emp_id');
-                //->where('core_employee.company_id', 1);
+                ->whereColumn('core_employee.employee_id', 'users.emp_id')
+                ->where('core_employee.company_id', 1);
         });
 }
     // public function employeeGeneral()
