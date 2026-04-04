@@ -15,6 +15,8 @@ A requisition has been submitted in the **Peepal Bonsai Portal** and requires yo
 - **Engagement Type:** {{ $requisition->requisition_type }}
 - **Duration:** {{ optional($requisition->contract_start_date)->format('d M Y') ?? 'N/A' }}
   – {{ optional($requisition->contract_end_date)->format('d M Y') ?? 'N/A' }}
+- **Submitted By:** {{ $requisition->submittedBy->name ?? 'N/A' }}
+
 
 @component('mail::button', ['url' => $approvalUrl])
 Open Peepal Bonsai Portal
