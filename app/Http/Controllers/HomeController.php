@@ -446,15 +446,6 @@ class HomeController extends Controller
                 $ageDays = 0;
             }
 
-        //     \Log::info('Priority Debug', [
-        //     'requisition_code' => $requisition->requisition_code,
-        //     'candidate_name' => $requisition->candidate->candidate_name ?? 'N/A',
-        //     'base_date' => $baseDate,
-        //     'age_days' => $ageDays,
-        //     'current_date' => Carbon::now()->toDateString(),
-        //     'calculation' => Carbon::parse($baseDate)->diffInDays(Carbon::now())
-        // ]);
-
             // Ensure it's an integer
             $requisition->ageing_days = (int) $ageDays;
             // Priority classification
@@ -525,20 +516,10 @@ class HomeController extends Controller
                 return $requisition->ageing_days > 2;
             });
 
-        \Log::info('=== ALL REQUISITIONS WITH ageing_days > 2 ===');
-        \Log::info('Count: ' . $allDelayedRequisitions->count());
-
+       
         foreach ($allDelayedRequisitions as $req) {
             $candidateStatus = $req->candidate ? $req->candidate->candidate_status : 'NO CANDIDATE';
             $isExcluded = in_array($candidateStatus, ['Inactive', 'Rejected', 'Cancelled', 'Active']);
-            
-            \Log::info('Requisition: ' . $req->requisition_code);
-            \Log::info('  - Ageing Days: ' . $req->ageing_days);
-            \Log::info('  - Has Candidate: ' . ($req->candidate ? 'Yes' : 'No'));
-            \Log::info('  - Candidate Status: ' . $candidateStatus);
-            \Log::info('  - Is Excluded: ' . ($isExcluded ? 'Yes' : 'No'));
-            \Log::info('  - Will be counted: ' . ($isExcluded ? 'NO' : 'YES'));
-            \Log::info('---');
         }
 
         // Then calculate delayed cases
@@ -550,10 +531,6 @@ class HomeController extends Controller
             });
 
         $attention['delayed_cases'] = $delayedRequisitions->count();
-
-        \Log::info('=== FINAL DELAYED CASES COUNT ===');
-        \Log::info('Delayed Cases: ' . $attention['delayed_cases']);
-
 
         $avgDelayDays = DB::table('manpower_requisitions')
             ->where('status', 'Pending Approval')

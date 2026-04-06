@@ -711,9 +711,7 @@ class ReportController extends Controller
 
    public function tat(Request $request, HierarchyAccessService $hierarchyService)
 {
-    // Start debug logging
-    \Log::info('=== TAT Report Started ===');
-    \Log::info('Request URL: ' . $request->fullUrl());
+    
     
     // Get all filter parameters
     $financialYear = $request->get('financial_year');
@@ -762,10 +760,7 @@ class ReportController extends Controller
     $isManagementDept = $employee && $employee->department == 18;
     $hasFullAccess = $user->hasAnyRole(['Admin', 'hr_admin', 'management']) || $isManagementDept;
     
-    \Log::info('User: ' . $user->emp_id . ' (' . ($employee ? $employee->emp_name : 'Unknown') . ')');
-    \Log::info('Department: ' . ($employee ? $employee->department : 'N/A') . ', Management Dept: ' . ($isManagementDept ? 'Yes' : 'No'));
-    \Log::info('Has Full Access: ' . ($hasFullAccess ? 'Yes' : 'No'));
-    \Log::info('Employee Filter: ' . ($employeeId ?: 'None'));
+   
 
     // ============================================
     // Get hierarchy lists for dropdowns
@@ -890,8 +885,8 @@ class ReportController extends Controller
         $allowedEmpIds = $hierarchyService->getReportingEmployeeIds($user->emp_id);
         $allowedEmpIdsString = array_map('strval', $allowedEmpIds);
         $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIdsString);
-        \Log::info('Applied hierarchy restriction - allowed managers: ' . count($allowedEmpIds));
-    }
+
+        }
     
     // 2. Employee filter (when a specific manager is selected)
     if ($employeeId && $employeeId !== '') {
@@ -899,50 +894,50 @@ class ReportController extends Controller
         $teamMemberIds = $hierarchyService->getTeamMemberIds($employeeId);
         $teamMemberIdsString = array_map('strval', $teamMemberIds);
         $query->whereIn('candidate_master.reporting_manager_employee_id', $teamMemberIdsString);
-        \Log::info('Applied employee filter - manager: ' . $employeeId . ', team size: ' . count($teamMemberIds));
-    }
+
+        }
     
     // 3. Department filter
     if ($departmentId && $departmentId !== '') {
         $query->where('candidate_master.department_id', $departmentId);
-        \Log::info('Applied department filter: ' . $departmentId);
-    }
+
+        }
     
     // 4. Sub-department filter
     if ($subDepartmentId && $subDepartmentId !== '') {
         $query->where('candidate_master.sub_department', $subDepartmentId);
-        \Log::info('Applied sub-department filter: ' . $subDepartmentId);
-    }
+
+        }
     
     // 5. Vertical filter
     if ($verticalId && $verticalId !== '') {
         $query->where('candidate_master.vertical_id', $verticalId);
-        \Log::info('Applied vertical filter: ' . $verticalId);
-    }
+
+        }
     
     // 6. BU filter
     if ($buId && $buId !== '') {
         $query->where('candidate_master.business_unit', $buId);
-        \Log::info('Applied BU filter: ' . $buId);
-    }
+
+        }
     
     // 7. Zone filter
     if ($zoneId && $zoneId !== '') {
         $query->where('candidate_master.zone', $zoneId);
-        \Log::info('Applied zone filter: ' . $zoneId);
-    }
+
+        }
     
     // 8. Region filter
     if ($regionId && $regionId !== '') {
         $query->where('candidate_master.region', $regionId);
-        \Log::info('Applied region filter: ' . $regionId);
-    }
+
+        }
     
     // 9. Territory filter
     if ($territoryId && $territoryId !== '') {
         $query->where('candidate_master.territory', $territoryId);
-        \Log::info('Applied territory filter: ' . $territoryId);
-    }
+
+        }
     
     // 10. Requisition type filter
     if ($requisitionType && $requisitionType !== '') {
@@ -974,8 +969,8 @@ class ReportController extends Controller
     $records = $query->orderBy('candidate_master.contract_start_date', 'desc')->paginate(20);
     $allRecords = $query->get();
     
-    \Log::info('Total records found: ' . $allRecords->count());
 
+    
     // ============================================
     // Calculate TAT summaries
     // ============================================
