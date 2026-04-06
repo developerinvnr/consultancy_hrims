@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -9,8 +11,15 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class LedgerExport implements FromCollection, WithHeadings, WithEvents
+class LedgerExport implements FromCollection, WithHeadings, WithEvents, WithColumnFormatting
 {
+
+    public function columnFormats(): array
+    {
+        return [
+            'V' => NumberFormat::FORMAT_TEXT,
+        ];
+    }
     protected $records;
 
     public function __construct($records)
