@@ -49,7 +49,7 @@ class RemunerationReportExport implements
         ])
             ->where('month', $this->month)
             ->where('year', $this->year)
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 'pending')
             ->whereHas('candidate', function ($q) {
                 $q->whereIn('final_status', ['A', 'D']);
 
