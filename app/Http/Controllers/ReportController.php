@@ -283,7 +283,7 @@ class ReportController extends Controller
             ->where('month', $month)
             ->where('year', $year)
             // ✅ show only released parties
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 'pending')
             ->whereHas('candidate', function ($q) use ($departmentId, $requisitionType) {
                 $q->whereIn('final_status', ['A', 'D']);
 

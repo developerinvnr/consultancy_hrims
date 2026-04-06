@@ -307,7 +307,7 @@ class ManpowerRequisitionController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-         
+
 
             return response()->json([
                 'success' => false,
@@ -362,7 +362,7 @@ class ManpowerRequisitionController extends Controller
         // Helper function to save documents without path manipulation
         $saveDocument = function ($type, $filenameField, $pathField) use ($request, $requisitionId, $userId, $s3Service) {
             if (!$request->filled($filenameField) || !$request->filled($pathField)) {
-              
+
                 return false;
             }
 
@@ -371,11 +371,11 @@ class ManpowerRequisitionController extends Controller
 
             // CRITICAL: Verify the file exists in S3 before saving
             if (!$s3Service->fileExists($filePath)) {
-               
+
                 return false;
             }
 
-          
+
 
             // Use updateOrCreate to avoid duplicates
             RequisitionDocument::updateOrCreate(
@@ -445,7 +445,6 @@ class ManpowerRequisitionController extends Controller
             'contract_duration' => 'required|integer|min:15|max:270',
             'contract_end_date' => 'required|date',
             'remuneration_per_month' => 'required|numeric|min:0',
-            // 'fuel_reimbursement_per_month' => 'nullable|numeric|min:0',
             'reporting_manager_address' => 'required|string|max:500',
 
             // Document number fields
@@ -465,37 +464,64 @@ class ManpowerRequisitionController extends Controller
             //newly added fields
             'bank_verification_status' => 'nullable|string|max:50',
             'bank_branch_address' => 'nullable|string',
-
             'pan_verification_status' => 'nullable|string|max:50',
             'pan_aadhaar_link_status' => 'nullable|string|max:50',
             'pan_status_2' => 'nullable|string|max:50',
-
             'driving_licence_no' => 'nullable|string|max:50',
             'dl_valid_from' => 'nullable|date',
             'dl_valid_to' => 'nullable|date',
             'dl_verification_status' => 'nullable|string|max:50',
-
             'aadhaar_verification_status' => 'nullable|string|max:50',
         ];
 
         // ✅ Only for Contractual
         if ($request->requisition_type === 'Contractual') {
             $rules['other_reimbursement_required'] = 'required|in:Y,N';
-            $rules['out_of_pocket_required']       = 'required|in:Y,N';
+            $rules['out_of_pocket_required'] = 'required|in:Y,N';
         } else {
-            // ✅ CB / TFA → optional
             $rules['other_reimbursement_required'] = 'nullable|in:Y,N';
-            $rules['out_of_pocket_required']       = 'nullable|in:Y,N';
+            $rules['out_of_pocket_required'] = 'nullable|in:Y,N';
         }
 
+        // ✅ PAN Validation for Contractual and TFA
         if (in_array($request->requisition_type, ['Contractual', 'TFA'])) {
             $rules['pan_no'] = 'required|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/';
-            $rules['pan_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+
+            $hasPanFile = $request->hasFile('pan_card');
+            $hasPreExtractedPan = $request->filled('pan_filename') && $request->filled('pan_filepath');
+
+            if (!$hasPanFile && !$hasPreExtractedPan) {
+                // No PAN card provided at all
+                $rules['pan_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+            } elseif ($hasPreExtractedPan) {
+                // Verify the pre-extracted file actually exists in S3
+                $s3Service = app(S3Service::class);
+                $fileExists = $s3Service->fileExists($request->pan_filepath);
+
+                if (!$fileExists) {
+                    // File path provided but doesn't exist in S3
+                    $rules['pan_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+                } else {
+                    // File exists, make pan_card optional but validate format if provided
+                    $rules['pan_card'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120';
+
+                    // Also validate that the filename follows expected pattern
+                    if (!preg_match('/\.(jpg|jpeg|png|pdf)$/i', $request->pan_filename)) {
+                        throw ValidationException::withMessages([
+                            'pan_filename' => ['Invalid PAN document filename format.']
+                        ]);
+                    }
+                }
+            } elseif ($hasPanFile) {
+                // New file uploaded, validate it
+                $rules['pan_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+            }
         } else {
             // CB → optional
             $rules['pan_no'] = 'nullable|string|max:10|regex:/[A-Z]{5}[0-9]{4}[A-Z]{1}/';
             $rules['pan_card'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120';
         }
+
         return $request->validate($rules);
     }
 
