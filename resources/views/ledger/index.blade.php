@@ -217,7 +217,7 @@ href="{{ route('ledger.index', array_merge(request()->query(), ['tab' => 'create
 								<td>{{ $candidate->requisition_type ?? '-' }}</td>
 								<td>{{ $candidate->reportingManager->emp_name ?? '-' }}</td>
 								<td>{{ $candidate->aadhaar_no ?? '-' }}</td>
-								<td>{{ $candidate->function->function_name ?? 'NA' }}</td>
+								<td>{{ $candidate->function->function_code ?? 'NA' }}</td>
 								<td>{{ $candidate->subDepartmentRef->focus_code ?? 'NA' }}</td>
 								<td>{{ $candidate->zoneRef->zone_code ?? 'NA' }}</td>
 								<td>{{ optional($candidate->contract_start_date)->format('d/m/Y') }}</td>

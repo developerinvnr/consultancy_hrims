@@ -63,7 +63,7 @@ class LedgerExport implements FromCollection, WithHeadings, WithEvents, WithColu
                 $c->requisition_type ?? '-',
                 $c->reportingManager->emp_name ?? '-',
                 $c->aadhaar_no ?? '-',
-                $c->function->function_name ?? 'NA',
+                $c->function->function_code ?? 'NA',
                 $c->subDepartmentRef->focus_code ?? 'NA',
                 $c->zoneRef->zone_code ?? 'NA',
                 optional($c->contract_start_date)->format('d/m/Y'),

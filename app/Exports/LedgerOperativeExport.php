@@ -62,7 +62,7 @@ class LedgerOperativeExport implements
                 'Grade'=>$rec->requisition_type,
                 'Reporting To'=>optional($rec->reportingManager)->emp_name,
                 'AADHAR'=>$rec->aadhaar_no,
-                'Function'=>optional($rec->function)->function_name,
+                'Function'=>optional($rec->function)->function_code,
                 'Sub Department'=>optional($rec->subDepartmentRef)->focus_code,
                 'Zone'=>optional($rec->zoneRef)->zone_code,
                 'DOJ'=>optional($rec->contract_start_date)?->format('d/m/Y'),
