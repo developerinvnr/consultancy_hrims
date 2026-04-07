@@ -100,21 +100,34 @@
                 @forelse($records as $rec)
 
                 @php
-                $tds = round($rec->net_pay * 0.02,0);
-                $paymentAmount = round($rec->net_pay - $tds,0);
+                // ✅ Calculate using the same logic as JV report
+                $finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
+
+                // TDS @ 2% (calculated on gross)
+                $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+
+                // Gross Up Amount
+                $grossUp = $finalPayable + $tds;
+
+                // Payment Amount = Gross - TDS (which should equal finalPayable)
+                $paymentAmount = $grossUp - $tds; // This equals $finalPayable
+
+                // For verification, you can also do:
+                // $paymentAmount = $finalPayable;
+
+                $monthYear = \Carbon\Carbon::create()->month($month)->format('M-y');
                 @endphp
 
                 <tr>
                     <td>{{ now()->format('d-m-Y') }}</td>
                     <td>BANK-26</td>
                     <td>
-                        Payment against expenses for
-                        {{ \Carbon\Carbon::create()->month($month)->format('M-y') }}
+                        Payment against expenses for {{ $monthYear }}
                     </td>
                     <td>{{ $rec->candidate->department->department_name ?? '' }}</td>
                     <td>{{ $rec->candidate->candidate_code }}</td>
-                    <td>{{ $paymentAmount }}</td>
-                    <td>{{ $tds }}</td>
+                    <td>{{ number_format($paymentAmount, 0) }}</td>
+                    <td>{{ number_format($tds, 0) }}</td>
                 </tr>
 
                 @empty
