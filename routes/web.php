@@ -89,7 +89,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/create/{type}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'create'])->name('requisitions.create');
         Route::post('/', [\App\Http\Controllers\ManpowerRequisitionController::class, 'store'])->name('requisitions.store');
         Route::get('/{requisition}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'show'])->name('requisitions.show');
-        Route::get('/{requisition}/edit', [\App\Http\Controllers\ManpowerRequisitionController::class, 'edireportt'])->name('requisitions.edit');
+        Route::get('/{requisition}/edit', [\App\Http\Controllers\ManpowerRequisitionController::class, 'edit'])->name('requisitions.edit');
         Route::put('/{requisition}', [\App\Http\Controllers\ManpowerRequisitionController::class, 'update'])->name('requisitions.update');
         Route::get('/document/{document}/download', [\App\Http\Controllers\ManpowerRequisitionController::class, 'downloadDocument'])->name('document.download');
     });
