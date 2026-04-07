@@ -69,7 +69,6 @@ class JVExport implements
                     $q->whereIn('final_status', ['A', 'D']);
                 }
 
-
                 if (!empty($this->requisitionType)) {
                     $q->where('requisition_type', $this->requisitionType);
                 }
@@ -78,9 +77,7 @@ class JVExport implements
 
         // ✅ Apply export status filter
         if ($this->exportStatus === 'exported') {
-
             $query->whereIn('id', function ($sub) {
-
                 $sub->select('reference_id')
                     ->from('report_exports')
                     ->where('reference_table', 'salary_processings')
@@ -89,9 +86,7 @@ class JVExport implements
         }
 
         if ($this->exportStatus === 'not_exported') {
-
             $query->whereNotIn('id', function ($sub) {
-
                 $sub->select('reference_id')
                     ->from('report_exports')
                     ->where('reference_table', 'salary_processings')
@@ -107,17 +102,13 @@ class JVExport implements
         $batchNo = 'JV-' . date('dmY-His');
 
         if ($this->exportStatus !== 'exported') {
-
             foreach ($records as $rec) {
-
                 DB::table('report_exports')->updateOrInsert(
-
                     [
                         'reference_id'    => $rec->id,
                         'reference_table' => 'salary_processings',
                         'report_type'     => 'jv',
                     ],
-
                     [
                         'batch_no'    => $batchNo,
                         'exported_by' => auth()->id(),
@@ -129,19 +120,25 @@ class JVExport implements
             }
         }
 
-
         $billDate = Carbon::create($this->year, $this->month, 1)
             ->endOfMonth()
             ->format('d-m-Y');
 
         return $records->map(function ($rec) use ($narration) {
-
             $billingDate = Carbon::create($this->year, $this->month, 1);
             $invoiceDatePart = $billingDate->endOfMonth()->format('dmy');
-
             $billNo = $rec->candidate->candidate_code . '-' . $invoiceDatePart;
-
             $billDate = $billingDate->endOfMonth()->format('d-m-Y');
+
+            // ✅ Calculate TDS and Gross Up
+            // finalPayable = total_payable OR (net_pay + arrear_amount)
+            $finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
+
+            // TDS @ 2%
+            $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+
+            // Gross Up Amount (This is what should be shown as the main Amount)
+            $grossUp = $finalPayable + $tds;
 
             return [
                 '', // DocNo
@@ -167,9 +164,9 @@ class JVExport implements
                 $rec->candidate->zoneRef->zone_code ?? '',
                 'INDIRECT-MSC-17',
                 $rec->candidate->candidate_code,
-                round($rec->net_pay, 0),
-                '',
-                '',
+                round($grossUp, 0),      // ✅ Show Gross Up amount
+                round($tds, 0),          // ✅ Show TDS amount
+                '2%',                     // ✅ Show TDS Percentage
             ];
         });
     }

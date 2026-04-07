@@ -143,7 +143,6 @@
 
 			<tbody>
 				@forelse($records as $rec)
-
 				@php
 				$narration = "Being Contractual Expenses for the Month of "
 				. \Carbon\Carbon::create()->month($month)->format('F')
@@ -154,8 +153,12 @@
 
 				$billNo = $rec->candidate->candidate_code . '-' . $invoiceDatePart;
 				$billDate = $billingDate->endOfMonth()->format('d-m-Y');
-				@endphp
 
+				// ✅ Calculate TDS and Gross Up
+				$finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
+				$tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+				$grossUp = $finalPayable + $tds;
+				@endphp
 				<tr>
 					<td></td> {{-- DocNo --}}
 					<td>{{ now()->format('d-m-Y') }}</td>
@@ -180,14 +183,13 @@
 					<td>{{ $rec->candidate->zoneRef->zone_code ?? '' }}</td>
 					<td>INDIRECT-MSC-17</td>
 					<td>{{ $rec->candidate->candidate_code }}</td>
-					<td>{{ number_format($rec->net_pay,0) }}</td>
-					<td></td> {{-- TDS --}}
-					<td></td> {{-- TDSPer --}}
+					<td>{{ number_format($grossUp, 0) }}</td> {{-- ✅ Show Gross Up --}}
+					<td>{{ number_format($tds, 0) }}</td> {{-- ✅ Show TDS --}}
+					<td>2%</td> {{-- ✅ Show TDS % --}}
 				</tr>
-
 				@empty
 				<tr>
-					<td colspan="13" class="text-center">No records found</td>
+					<td colspan="26" class="text-center">No records found</td>
 				</tr>
 				@endforelse
 			</tbody>
