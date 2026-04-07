@@ -141,7 +141,7 @@
                     <td>{{ $rec->requisition_type ?? '-' }}</td>
                     <td>{{ $rec->reportingManager?->emp_name ?? '-' }}</td>
                     <td>{{ $rec->aadhaar_no ?? '-' }}</td>
-                    <td>S & M</td>
+                    <td>{{ $rec->function->function_code ?? '-' }}</td>
                     <td>{{ $rec->subDepartmentRef->focus_code ?? '-' }}</td>
                     <td>{{ $rec->zoneRef->zone_code ?? '-' }}</td>
                     <td>{{ optional($rec->contract_start_date)->format('d/m/Y') }}</td>

@@ -94,7 +94,7 @@ class FocusMasterExport implements
                 $rec->reporting_to ?? '-',
 
                 $rec->aadhaar_no ?? '-',
-                'S & M',
+                $rec->function->function_code ?? '-',
                 $rec->subDepartmentRef->focus_code ?? '-',
                 $rec->zoneRef->zone_code ?? '-',
                 optional($rec->contract_start_date)->format('d/m/Y'),
