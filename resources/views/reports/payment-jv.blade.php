@@ -100,17 +100,17 @@
                 @forelse($records as $rec)
 
                 @php
-                // ✅ Calculate using the same logic as JV report
-                $finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
+               // ✅ PRIORITIZE total_payable, fallback to net_pay + arrear_amount
+$finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
 
-                // TDS @ 2% (calculated on gross)
-                $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+// TDS @ 2% (calculated on gross, where finalPayable is 98% of gross)
+$tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
 
-                // Gross Up Amount
-                $grossUp = $finalPayable + $tds;
+// Gross Up Amount (Total amount including TDS)
+$grossUp = $finalPayable + $tds;
 
-                // Payment Amount = Gross - TDS (which should equal finalPayable)
-                $paymentAmount = $grossUp - $tds; // This equals $finalPayable
+// Payment Amount = Gross - TDS = finalPayable
+$paymentAmount = $finalPayable;
 
                 // For verification, you can also do:
                 // $paymentAmount = $finalPayable;
