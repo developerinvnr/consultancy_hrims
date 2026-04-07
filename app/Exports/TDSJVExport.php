@@ -63,7 +63,6 @@ class TDSJVExport implements
 
         if ($this->exportStatus === 'exported') {
             $query->whereIn('id', function ($sub) {
-
                 $sub->select('reference_id')
                     ->from('report_exports')
                     ->where('reference_table', 'salary_processings')
@@ -72,9 +71,7 @@ class TDSJVExport implements
         }
 
         if ($this->exportStatus === 'not_exported') {
-
             $query->whereNotIn('id', function ($sub) {
-
                 $sub->select('reference_id')
                     ->from('report_exports')
                     ->where('reference_table', 'salary_processings')
@@ -83,22 +80,19 @@ class TDSJVExport implements
         }
 
         $records = $query->get();
+
         // ✅ Generate batch number
         $batchNo = 'TDSJV' . time();
 
         // ✅ Save export history
         if ($this->exportStatus !== 'exported') {
-
             foreach ($records as $rec) {
-
                 DB::table('report_exports')->updateOrInsert(
-
                     [
                         'reference_id'    => $rec->id,
                         'reference_table' => 'salary_processings',
                         'report_type'     => 'tds_jv',
                     ],
-
                     [
                         'batch_no'    => $batchNo,
                         'exported_by' => auth()->id(),
@@ -110,29 +104,35 @@ class TDSJVExport implements
             }
         }
 
-
         return $records->map(function ($rec) {
 
-            $tds = round($rec->net_pay * 0.02, 0);
+            // ✅ Calculate using the same logic as JV report
+            // finalPayable = total_payable OR (net_pay + arrear_amount)
+            $finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
 
+            // TDS @ 2% (calculated on gross)
+            $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+
+            // Gross Up Amount
+            $grossUp = $finalPayable + $tds;
+
+            // ✅ Updated narration showing the correct gross amount
             $narration = "TDS deducted on Rs. "
-                . round($rec->net_pay, 0)
+                . round($grossUp, 0)
                 . " @2%, Being Contractual Expenses for the Month of "
                 . Carbon::create()->month($this->month)->format('F')
                 . " {$this->year}";
 
             return [
-
-                '',
-                Carbon::now()->format('d-m-Y'),
-                120,
-                $narration,
-                '',
-                $rec->candidate->candidate_code,
-                'STAT-DUES-TDS-15',
-                $tds,
-                ''
-
+                '',                                    // DocNo
+                Carbon::now()->format('d-m-Y'),       // Date
+                120,                                   // Business Entity
+                $narration,                           // sNarration
+                '',                                    // TDSVoucherNo
+                $rec->candidate->candidate_code,      // DrAccount
+                'STAT-DUES-TDS-15',                   // CrAccount
+                round($tds, 0),                       // Amount (TDS)
+                ''                                     // Reference
             ];
         });
     }

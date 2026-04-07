@@ -13,27 +13,27 @@
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
             <form method="GET"
-                  action="{{ route('reports.tds-jv') }}"
-                  id="tdsForm"
-                  class="row g-3 align-items-end">
+                action="{{ route('reports.tds-jv') }}"
+                id="tdsForm"
+                class="row g-3 align-items-end">
 
                 {{-- Financial Year --}}
                 <div class="col-md-2">
                     <label class="form-label form-label-sm">Financial Year</label>
                     <select name="financial_year" class="form-select form-select-sm">
                         @php
-                            $currentYear = date('Y');
-                            $startYear = $currentYear - 2;
-                            $endYear = $currentYear;
+                        $currentYear = date('Y');
+                        $startYear = $currentYear - 2;
+                        $endYear = $currentYear;
                         @endphp
 
                         @for($y=$startYear;$y<=$endYear;$y++)
                             @php $fy=$y.'-'.($y+1); @endphp
                             <option value="{{ $fy }}"
-                                {{ $financialYear==$fy?'selected':'' }}>
-                                {{ $fy }}
+                            {{ $financialYear==$fy?'selected':'' }}>
+                            {{ $fy }}
                             </option>
-                        @endfor
+                            @endfor
                     </select>
                 </div>
 
@@ -43,10 +43,10 @@
                     @php $fyMonths=[4,5,6,7,8,9,10,11,12,1,2,3]; @endphp
                     <select name="month" class="form-select form-select-sm">
                         @foreach($fyMonths as $m)
-                            <option value="{{ $m }}"
-                                {{ $month==$m?'selected':'' }}>
-                                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
-                            </option>
+                        <option value="{{ $m }}"
+                            {{ $month==$m?'selected':'' }}>
+                            {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -69,9 +69,9 @@
                         <option value="CB" {{ request('requisition_type') == 'CB' ? 'selected' : '' }}>CB</option>
                         <option value="Contractual" {{ request('requisition_type') == 'Contractual' ? 'selected' : '' }}>Contractual</option>
                     </select>
-			   </div>
+                </div>
 
-               <div class="col-md-2">
+                <div class="col-md-2">
                     <label class="form-label form-label-sm">Export Status</label>
                     <select name="export_status" class="form-select form-select-sm">
                         <option value="All">All</option>
@@ -86,7 +86,7 @@
                             Not Exported
                         </option>
                     </select>
-               </div>
+                </div>
 
                 {{-- Buttons --}}
                 <div class="col-md-2 d-flex gap-2">
@@ -95,8 +95,8 @@
                     </button>
 
                     <button type="button"
-                            class="btn btn-sm btn-success w-50"
-                            onclick="exportTDS()">
+                        class="btn btn-sm btn-success w-50"
+                        onclick="exportTDS()">
                         Export
                     </button>
                 </div>
@@ -123,16 +123,20 @@
             </thead>
 
             <tbody>
-            @forelse($records as $rec)
+            <tbody>
+                @forelse($records as $rec)
 
                 @php
-                    $tds = round($rec->net_pay * 0.02,0);
+                // ✅ Calculate using the same logic as JV report
+                $finalPayable = $rec->total_payable ?? ($rec->net_pay + ($rec->arrear_amount ?? 0));
+                $tds = $finalPayable > 0 ? ($finalPayable / 98) * 2 : 0;
+                $grossUp = $finalPayable + $tds;
 
-                    $narration = "TDS deducted on Rs. "
-                        . round($rec->net_pay,0)
-                        . " @2%, Being Contractual Expenses for the Month of "
-                        . \Carbon\Carbon::create()->month($month)->format('F')
-                        . " $year";
+                $narration = "TDS deducted on Rs. "
+                . round($grossUp, 0)
+                . " @2%, Being Contractual Expenses for the Month of "
+                . \Carbon\Carbon::create()->month($month)->format('F')
+                . " $year";
                 @endphp
 
                 <tr>
@@ -143,15 +147,15 @@
                     <td></td>
                     <td>{{ $rec->candidate->candidate_code }}</td>
                     <td>STAT-DUES-TDS-15</td>
-                    <td>{{ $tds }}</td>
+                    <td>{{ round($tds, 0) }}</td>
                     <td></td>
                 </tr>
 
-            @empty
+                @empty
                 <tr>
                     <td colspan="9" class="text-center">No records found</td>
                 </tr>
-            @endforelse
+                @endforelse
             </tbody>
         </table>
     </div>
@@ -164,10 +168,10 @@
 @endsection
 
 <script>
-function exportTDS(){
-    let form = $('#tdsForm');
-    let params = form.serialize();
-    window.location.href =
-        "{{ route('reports.tds-jv.export') }}?" + params;
-}
+    function exportTDS() {
+        let form = $('#tdsForm');
+        let params = form.serialize();
+        window.location.href =
+            "{{ route('reports.tds-jv.export') }}?" + params;
+    }
 </script>
