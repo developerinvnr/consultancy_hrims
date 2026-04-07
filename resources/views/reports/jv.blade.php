@@ -170,17 +170,17 @@
 					<td>{{ $billDate }}</td>
 					<td>{{ $rec->candidate->department->department_code ?? '' }}</td>
 					<td>N/A</td> {{-- Cost Center --}}
-					<td>{{ $rec->candidate->businessUnit->business_unit_code ?? '' }}</td>
+					<td>{{ $rec->candidate->businessUnit->business_unit_code ?? 'N/A' }}</td>
 					<td>All Activity</td>
-					<td>{{ $rec->candidate->workLocation->focus_code ?? '' }}</td>
+					<td>{{ $rec->candidate->work_location_hq ?? '' }}</td>
 					<td>{{ $rec->candidate->workState->state_code ?? '' }}</td>
 					<td>N/A</td>
 					<td>All Crop</td>
 					<td>{{ $rec->candidate->regionRef->focus_code ?? 'N/A' }}</td>
-					<td>{{ $rec->candidate->function->function_code ?? '' }}</td>
-					<td>{{ $rec->candidate->vertical->vertical_code ?? '' }}</td>
-					<td>{{ $rec->candidate->subDepartmentRef->focus_code ?? '' }}</td>
-					<td>{{ $rec->candidate->zoneRef->zone_code ?? '' }}</td>
+					<td>{{ $rec->candidate->function->function_code ?? 'N/A' }}</td>
+					<td>{{ $rec->candidate->vertical->vertical_code ?? 'N/A' }}</td>
+					<td>{{ $rec->candidate->subDepartmentRef->focus_code ?? 'N/A' }}</td>
+					<td>{{ $rec->candidate->zoneRef->zone_code ?? 'N/A' }}</td>
 					<td>INDIRECT-MSC-17</td>
 					<td>{{ $rec->candidate->candidate_code }}</td>
 					<td>{{ number_format($grossUp, 0) }}</td> {{-- ✅ Show Gross Up --}}
