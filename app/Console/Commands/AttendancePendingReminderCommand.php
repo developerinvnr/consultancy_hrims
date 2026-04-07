@@ -17,6 +17,9 @@ class AttendancePendingReminderCommand extends Command
 
     public function handle()
     {
+        $excludedEmails = [
+            'atul.sah@vnrseeds.com'
+        ];
 
         $isDryRun = $this->option('dry-run');
 
@@ -102,7 +105,7 @@ class AttendancePendingReminderCommand extends Command
             $mailTo = $candidate->reportingManager?->emp_email;
 
 
-            if (!$mailTo) {
+            if (!$mailTo || in_array($mailTo, $excludedEmails)) {
 
                 $this->line("⚠️ Skipped: No reporting manager email");
 
@@ -124,8 +127,7 @@ class AttendancePendingReminderCommand extends Command
                 $rmManagerEmail =
                     optional($candidate->reportingManager->manager)->emp_email;
 
-                if ($rmManagerEmail) {
-
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
 
@@ -138,8 +140,7 @@ class AttendancePendingReminderCommand extends Command
                 $rmManagerEmail =
                     optional($candidate->reportingManager->manager)->emp_email;
 
-                if ($rmManagerEmail) {
-
+               if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
 
@@ -150,8 +151,7 @@ class AttendancePendingReminderCommand extends Command
                     )->emp_email;
 
 
-                if ($highestManagerEmail) {
-
+                if ($highestManagerEmail && !in_array($highestManagerEmail, $excludedEmails)) {
                     $mailCc[] = $highestManagerEmail;
                 }
 

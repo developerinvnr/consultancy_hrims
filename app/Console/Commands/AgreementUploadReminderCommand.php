@@ -15,6 +15,9 @@ class AgreementUploadReminderCommand extends Command
 
     public function handle()
     {
+        $excludedEmails = [
+            'atul.sah@vnrseeds.com'
+        ];
         $candidates = CandidateMaster::whereNotNull('candidate_code')
             ->where('candidate_status', 'Unsigned Agreement Created')
             ->whereNull('last_working_date')
@@ -42,7 +45,7 @@ class AgreementUploadReminderCommand extends Command
 
             $mailTo = $candidate->reportingManager?->emp_email;
 
-            if (!$mailTo) {
+            if (!$mailTo || in_array($mailTo, $excludedEmails)) {
                 continue;
             }
 
@@ -59,7 +62,7 @@ class AgreementUploadReminderCommand extends Command
                     $candidate->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
             }
@@ -71,7 +74,7 @@ class AgreementUploadReminderCommand extends Command
                     $candidate->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
 
@@ -79,7 +82,7 @@ class AgreementUploadReminderCommand extends Command
                     optional($candidate->reportingManager->manager)->manager
                 )->emp_email;
 
-                if ($highestManagerEmail) {
+                if ($highestManagerEmail && !in_array($highestManagerEmail, $excludedEmails)) {
                     $mailCc[] = $highestManagerEmail;
                 }
             }

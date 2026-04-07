@@ -14,6 +14,9 @@ class CorrectionReminderCommand extends Command
 
     public function handle()
     {
+        $excludedEmails = [
+            'atul.sah@vnrseeds.com'
+        ];
         $requisitions = ManpowerRequisition::where('status', 'correction_pending')
             ->with('reportingManager.manager.manager')
             ->get();
@@ -22,7 +25,7 @@ class CorrectionReminderCommand extends Command
 
             $mailTo = $requisition->reportingManager?->emp_email;
 
-            if (!$mailTo) {
+           if (!$mailTo || in_array($mailTo, $excludedEmails)) {
                 continue;
             }
 
@@ -42,7 +45,7 @@ class CorrectionReminderCommand extends Command
                     $requisition->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
             }
@@ -54,7 +57,7 @@ class CorrectionReminderCommand extends Command
                     $requisition->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
 
@@ -62,7 +65,7 @@ class CorrectionReminderCommand extends Command
                     optional($requisition->reportingManager->manager)->manager
                 )->emp_email;
 
-                if ($highestManagerEmail) {
+                if ($highestManagerEmail && !in_array($highestManagerEmail, $excludedEmails)) {
                     $mailCc[] = $highestManagerEmail;
                 }
             }

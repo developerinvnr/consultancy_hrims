@@ -36,7 +36,8 @@ class ContractExpiryReminderCommand extends Command
 
             $mailTo = $candidate->reportingManager?->emp_email;
 
-            if (!$mailTo) {
+           // Exclude Atul Sah email
+            if (!$mailTo || $mailTo == 'atul.sah@vnrseeds.com') {
                 continue;
             }
 
@@ -44,7 +45,7 @@ class ContractExpiryReminderCommand extends Command
 
             $rmManager = optional($candidate->reportingManager)->manager;
 
-            if ($rmManager?->emp_email) {
+           if ($rmManager?->emp_email && $rmManager->emp_email != 'atul.sah@vnrseeds.com') {
                 $mailCc[] = $rmManager->emp_email;
             }
 

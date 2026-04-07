@@ -17,6 +17,9 @@ class ProcessApprovalReminders extends Command
 
     public function handle()
     {
+        $excludedEmails = [
+            'atul.sah@vnrseeds.com'
+        ];
         $requisitions = ManpowerRequisition::where('status', 'Pending Approval')
             ->whereNotNull('approval_requested_at')
             ->get();
@@ -52,8 +55,9 @@ class ProcessApprovalReminders extends Command
 
             if ($hours >= 24 && $req->reminder_level == 0) {
 
-                Mail::to($approver->emp_email)
-                    ->queue(new RequisitionApprovalReminder($req, $approver));
+                if (!in_array($approver->emp_email, $excludedEmails)) {
+                    Mail::to($approver->emp_email)->queue(new RequisitionApprovalReminder($req, $approver));
+                }
 
                 $req->reminder_level = 1;
                 $req->save();
@@ -65,9 +69,13 @@ class ProcessApprovalReminders extends Command
 
             if ($hours >= 72 && $req->reminder_level == 1 && $manager) {
 
-                Mail::to($approver->emp_email)
-                    ->cc([$manager->emp_email])
-                    ->queue(new RequisitionEscalationMail($req, $approver));
+                $cc = [];
+
+                if (!in_array($manager->emp_email, $excludedEmails)) {
+                    $cc[] = $manager->emp_email;
+                }
+
+                Mail::to($approver->emp_email)->cc($cc)->queue(new RequisitionEscalationMail($req, $approver));
 
                 $req->reminder_level = 2;
                 $req->save();
@@ -80,9 +88,22 @@ class ProcessApprovalReminders extends Command
 
             if ($hours >= 120 && $req->reminder_level == 2 && $upperManager) {
 
-                Mail::to($approver->emp_email)
-                    ->cc([$manager->emp_email, $upperManager->emp_email])
-                    ->queue(new RequisitionEscalationMail($req, $approver));
+                $cc = [];
+
+                if (!in_array($manager->emp_email, $excludedEmails)) {
+                    $cc[] = $manager->emp_email;
+                }
+
+                if (!in_array($upperManager->emp_email, $excludedEmails)) {
+                    $cc[] = $upperManager->emp_email;
+                }
+
+                if (!in_array($approver->emp_email, $excludedEmails)) {
+
+                    Mail::to($approver->emp_email)
+                        ->cc($cc)
+                        ->queue(new RequisitionEscalationMail($req, $approver));
+                }
 
                 $req->reminder_level = 3;
                 $req->save();
@@ -95,9 +116,22 @@ class ProcessApprovalReminders extends Command
 
             if ($hours >= 168 && $req->reminder_level == 3 && $upperManager) {
 
-                Mail::to($approver->emp_email)
-                    ->cc([$manager->emp_email, $upperManager->emp_email])
-                    ->queue(new RequisitionEscalationMail($req, $approver));
+                $cc = [];
+
+                if (!in_array($manager->emp_email, $excludedEmails)) {
+                    $cc[] = $manager->emp_email;
+                }
+
+                if (!in_array($upperManager->emp_email, $excludedEmails)) {
+                    $cc[] = $upperManager->emp_email;
+                }
+
+                if (!in_array($approver->emp_email, $excludedEmails)) {
+
+                    Mail::to($approver->emp_email)
+                        ->cc($cc)
+                        ->queue(new RequisitionEscalationMail($req, $approver));
+                }
 
                 $req->reminder_level = 4;
                 $req->save();

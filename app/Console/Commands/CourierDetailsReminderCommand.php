@@ -16,6 +16,9 @@ class CourierDetailsReminderCommand extends Command
 
     public function handle()
     {
+        $excludedEmails = [
+            'atul.sah@vnrseeds.com'
+        ];
         $candidates = CandidateMaster::whereNotNull('candidate_code')
             ->where('candidate_status', 'Signed Agreement Uploaded')
             ->whereNull('last_working_date')
@@ -51,7 +54,7 @@ class CourierDetailsReminderCommand extends Command
 
             $mailTo = $candidate->reportingManager?->emp_email;
 
-            if (!$mailTo) {
+            if (!$mailTo || in_array($mailTo, $excludedEmails)) {
                 continue;
             }
 
@@ -68,7 +71,7 @@ class CourierDetailsReminderCommand extends Command
                     $candidate->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+                if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
             }
@@ -80,7 +83,7 @@ class CourierDetailsReminderCommand extends Command
                     $candidate->reportingManager->manager
                 )->emp_email;
 
-                if ($rmManagerEmail) {
+               if ($rmManagerEmail && !in_array($rmManagerEmail, $excludedEmails)) {
                     $mailCc[] = $rmManagerEmail;
                 }
 
@@ -88,7 +91,7 @@ class CourierDetailsReminderCommand extends Command
                     optional($candidate->reportingManager->manager)->manager
                 )->emp_email;
 
-                if ($highestManagerEmail) {
+                if ($highestManagerEmail && !in_array($highestManagerEmail, $excludedEmails)) {
                     $mailCc[] = $highestManagerEmail;
                 }
             }
