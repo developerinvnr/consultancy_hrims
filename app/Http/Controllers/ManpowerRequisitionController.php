@@ -536,10 +536,18 @@ class ManpowerRequisitionController extends Controller
             $user->emp_id === $requisition->approver_id
         );
 
+        $submitterReportingManager = DB::table('core_employee')
+            ->where('employee_id', $requisition->submitted_by_employee_id)
+            ->value('emp_reporting');
+
+        $isSubmitterReportingManager =
+            $submitterReportingManager &&
+            $submitterReportingManager == $user->emp_id;
+
         // Optional: HR role access
         $isHr = $user->hasRole('hr_admin'); // only if using roles
 
-        if (! $isSubmitter && ! $isApprover && ! $isHr) {
+        if (! $isSubmitter && ! $isApprover && ! $isHr &&  ! $isSubmitterReportingManager) {
             abort(403, 'You are not authorized to view this requisition.');
         }
         // dd($requisition);
