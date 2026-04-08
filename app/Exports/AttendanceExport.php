@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -24,7 +25,8 @@ class AttendanceExport implements
     FromCollection,
     WithHeadings,
     WithMapping,
-    WithEvents
+    WithEvents,
+    WithCustomStartCell
 {
     protected $month;
     protected $year;
@@ -46,6 +48,10 @@ class AttendanceExport implements
         $this->monthEnd = Carbon::create($this->year, $this->month, 1)->endOfMonth();
     }
 
+    public function startCell(): string
+    {
+        return 'A3';
+    }
     public function collection(): Collection
     {
 
@@ -73,7 +79,7 @@ class AttendanceExport implements
         // Role-based filtering
         if ($this->user) {
             if (!$this->user->hasRole('hr_admin') && !$this->user->hasRole('admin')) {
-                $query->where('reporting_manager_employee_code', $this->user->emp_code);
+                $query->where('reporting_manager_employee_id', $this->user->emp_id);
             }
         }
 
@@ -87,9 +93,27 @@ class AttendanceExport implements
 
 
         if ($candidates->isEmpty()) {
-            return collect([]);
-        }
 
+            $row = [
+                'sno' => '',
+                'code' => 'No data found for selected filters',
+                'name' => '',
+                'type' => '',
+                'doj' => '',
+                'leave_credited' => ''
+            ];
+
+            for ($d = 1; $d <= $this->daysInMonth; $d++) {
+                $row["day_$d"] = '';
+            }
+
+            $row['total_present'] = '';
+            $row['total_absent'] = '';
+            $row['total_cl'] = '';
+            $row['cl_remaining'] = '';
+
+            return collect([$row]);
+        }
         // Eager load attendance records
         $candidateIds = $candidates->pluck('id')->toArray();
 
@@ -211,8 +235,10 @@ class AttendanceExport implements
 
     public function headings(): array
     {
-        // Return empty array - we'll handle headers manually
-        return [];
+        return [
+            ['', '', '', '', '', ''],
+            ['', '', '', '', '', '']
+        ];
     }
 
     public function map($row): array
@@ -260,26 +286,26 @@ class AttendanceExport implements
 
 
 
-                // If we have data, shift it down by 2 rows
-                if ($highestRow > 0) {
-                    // Create a new range starting from row 3
-                    for ($row = $highestRow; $row >= 1; $row--) {
-                        for ($col = 1; $col <= $totalCols; $col++) {
-                            $colLetter = Coordinate::stringFromColumnIndex($col);
-                            $oldCell = "{$colLetter}{$row}";
-                            $newCell = "{$colLetter}" . ($row + 2);
+                // // If we have data, shift it down by 2 rows
+                // if ($highestRow > 0) {
+                //     // Create a new range starting from row 3
+                //     for ($row = $highestRow; $row >= 1; $row--) {
+                //         for ($col = 1; $col <= $totalCols; $col++) {
+                //             $colLetter = Coordinate::stringFromColumnIndex($col);
+                //             $oldCell = "{$colLetter}{$row}";
+                //             $newCell = "{$colLetter}" . ($row + 2);
 
-                            // Copy cell value
-                            $cellValue = $sheet->getCell($oldCell)->getValue();
-                            $sheet->setCellValue($newCell, $cellValue);
+                //             // Copy cell value
+                //             $cellValue = $sheet->getCell($oldCell)->getValue();
+                //             $sheet->setCellValue($newCell, $cellValue);
 
-                            // Clear old cell
-                            if ($row <= 2) {
-                                $sheet->setCellValue($oldCell, null);
-                            }
-                        }
-                    }
-                }
+                //             // Clear old cell
+                //             if ($row <= 2) {
+                //                 $sheet->setCellValue($oldCell, null);
+                //             }
+                //         }
+                //     }
+                // }
 
                 // STEP 2: Now write headers in rows 1-2
                 // Basic headers

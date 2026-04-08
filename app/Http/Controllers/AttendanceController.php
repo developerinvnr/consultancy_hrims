@@ -1420,7 +1420,7 @@ class AttendanceController extends Controller
         $request->validate([
             'month' => 'required|integer|between:1,12',
             'year' => 'required|integer|digits:4',
-            'employee_type' => 'nullable|string|in:all,Contractual,Consultant,Permanent'
+            'employee_type' => 'nullable|string|in:all,Contractual,Consultant,Permanent,TFA,CB'
         ]);
 
         try {
