@@ -25,7 +25,9 @@
         </div>
     </div>
 
-    @include('layouts.modals.help-manual')
+    @if(request()->routeIs('dashboard*'))
+        @include('layouts.modals.help-manual')
+    @endif
 
 
     @include('layouts.script')
