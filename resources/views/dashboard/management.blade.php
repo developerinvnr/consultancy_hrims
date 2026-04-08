@@ -5,17 +5,27 @@
 
 @section('content')
 <div class="container-fluid px-3 py-3">
-	
+
 	<!-- Filters Card -->
 	<div class="card filter-card border-0 shadow-sm mb-2">
 		<div class="card-body p-3">
 			<div class="row g-2 align-items-end">
-				<!-- Year -->
+				<!-- Financial Year -->
 				<div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-					<label class="form-label">Year</label>
+					<label class="form-label">Financial Year</label>
 					<select id="filterYear" class="form-select form-select-sm">
-						@for($i = date('Y'); $i >= 2026; $i--)
-						<option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
+						@php
+						$currentYear = date('Y');
+						$currentMonth = date('n');
+						// If current month is April or later (4-12), we are in FY that started this year
+						// If current month is Jan-Mar (1-3), we are in FY that started last year
+						// Example: April 2026 -> FY 2026-27, January 2026 -> FY 2025-26
+						$currentFY = ($currentMonth >= 4) ? $currentYear : $currentYear - 1;
+						@endphp
+						@for($i = $currentFY; $i >= 2024; $i--)
+						<option value="{{ $i }}" {{ $i == $currentFY ? 'selected' : '' }}>
+							{{ $i }}-{{ $i + 1 }}
+						</option>
 						@endfor
 					</select>
 				</div>
@@ -25,9 +35,17 @@
 					<label class="form-label">Month</label>
 					<select id="filterMonth" class="form-select form-select-sm">
 						<option value="">All Months</option>
-						@foreach(range(1, 12) as $month)
-						<option value="{{ $month }}" {{ $month == date('m') ? 'selected' : '' }}>
-							{{ DateTime::createFromFormat('!m', $month)->format('F') }}
+						@php
+						$months = [
+						4 => 'April', 5 => 'May', 6 => 'June', 7 => 'July',
+						8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November',
+						12 => 'December', 1 => 'January', 2 => 'February', 3 => 'March'
+						];
+						$currentMonth = date('n');
+						@endphp
+						@foreach($months as $num => $name)
+						<option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
+							{{ $name }}
 						</option>
 						@endforeach
 					</select>
@@ -115,7 +133,7 @@
 					<button class="btn btn-primary btn-sm w-100" onclick="loadDashboardData()">
 						<i class="ri-filter-line me-1"></i> Apply Filters
 					</button>
-					
+
 				</div>
 				{{--<div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
 					
@@ -235,8 +253,8 @@
 	</div>
 
 
-		<!-- Recent Requisitions Table -->
-		{{--<div class="row mt-4">
+	<!-- Recent Requisitions Table -->
+	{{--<div class="row mt-4">
 			<div class="col-12">
 				<div class="card">
 					<div class="card-header">
@@ -260,39 +278,39 @@
 									@forelse($recent_requisitions as $req)
 									<tr>
 										<td>{{ $req->id }}</td>
-										<td>{{ $req->position_title ?? 'N/A' }}</td>
-										<td>{{ $req->department->department_name ?? 'N/A' }}</td>
-										<td>
-											<span class="badge bg-{{ $req->priority_color ?? 'secondary' }}">
-												{{ $req->status }}
-											</span>
-										</td>
-										<td>{{ $req->submitted_by_name ?? 'N/A' }}</td>
-										<td>{{ $req->submission_date ? Carbon\Carbon::parse($req->submission_date)->format('d-m-Y') : 'N/A' }}</td>
-										<td>
-											<span class="badge bg-{{ $req->priority_color }}">
-												{{ $req->ageing_days ?? 0 }} days
-											</span>
-										</td>
-									</tr>
-									@empty
-									<tr>
-										<td colspan="7" class="text-center">No requisitions found</td>
-									</tr>
-									@endforelse
-								</tbody>
-							</table>
-						</div>
-						<div class="p-3">
-							{{ $recent_requisitions->links() }}
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>--}}
+	<td>{{ $req->position_title ?? 'N/A' }}</td>
+	<td>{{ $req->department->department_name ?? 'N/A' }}</td>
+	<td>
+		<span class="badge bg-{{ $req->priority_color ?? 'secondary' }}">
+			{{ $req->status }}
+		</span>
+	</td>
+	<td>{{ $req->submitted_by_name ?? 'N/A' }}</td>
+	<td>{{ $req->submission_date ? Carbon\Carbon::parse($req->submission_date)->format('d-m-Y') : 'N/A' }}</td>
+	<td>
+		<span class="badge bg-{{ $req->priority_color }}">
+			{{ $req->ageing_days ?? 0 }} days
+		</span>
+	</td>
+	</tr>
+	@empty
+	<tr>
+		<td colspan="7" class="text-center">No requisitions found</td>
+	</tr>
+	@endforelse
+	</tbody>
+	</table>
+</div>
+<div class="p-3">
+	{{ $recent_requisitions->links() }}
+</div>
+</div>
+</div>
+</div>
+</div>--}}
 
-		<!-- Contract Expiry -->
-		{{--<div class="row mt-4">
+<!-- Contract Expiry -->
+{{--<div class="row mt-4">
 			<div class="col-12">
 				<div class="card">
 					<div class="card-header">
@@ -313,32 +331,32 @@
 									@forelse($expiry['lt_30_days'] as $candidate)
 									<tr>
 										<td>{{ $candidate->candidate_name ?? 'N/A' }}</td>
-										<td>{{ $candidate->department->department_name ?? 'N/A' }}</td>
-										<td>{{ $candidate->contract_end_date ? Carbon\Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : 'N/A' }}</td>
-										<td>
-											@php
-												$daysLeft = Carbon\Carbon::now()->diffInDays(Carbon\Carbon::parse($candidate->contract_end_date), false);
-											@endphp
-											<span class="badge bg-{{ $daysLeft <= 7 ? 'danger' : ($daysLeft <= 15 ? 'warning' : 'info') }}">
-												{{ max(0, $daysLeft) }} days
-											</span>
-										</td>
-									</tr>
-									@empty
-									<tr>
-										<td colspan="4" class="text-center">No contracts expiring soon</td>
-									</tr>
-									@endforelse
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>--}}
+<td>{{ $candidate->department->department_name ?? 'N/A' }}</td>
+<td>{{ $candidate->contract_end_date ? Carbon\Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : 'N/A' }}</td>
+<td>
+	@php
+	$daysLeft = Carbon\Carbon::now()->diffInDays(Carbon\Carbon::parse($candidate->contract_end_date), false);
+	@endphp
+	<span class="badge bg-{{ $daysLeft <= 7 ? 'danger' : ($daysLeft <= 15 ? 'warning' : 'info') }}">
+		{{ max(0, $daysLeft) }} days
+	</span>
+</td>
+</tr>
+@empty
+<tr>
+	<td colspan="4" class="text-center">No contracts expiring soon</td>
+</tr>
+@endforelse
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>--}}
 
-		<!-- Top Submitters & Departments -->
-		{{--<div class="row mt-4">
+<!-- Top Submitters & Departments -->
+{{--<div class="row mt-4">
 			<div class="col-md-6">
 				<div class="card">
 					<div class="card-header">
@@ -348,32 +366,32 @@
 						@forelse($topSubmitters as $submitter)
 						<div class="d-flex justify-content-between align-items-center mb-2">
 							<span>{{ $submitter->submitted_by_name }}</span>
-							<span class="badge bg-primary">{{ $submitter->count }}</span>
-						</div>
-						@empty
-						<p class="text-muted mb-0">No data available</p>
-						@endforelse
-					</div>
-				</div>
+<span class="badge bg-primary">{{ $submitter->count }}</span>
+</div>
+@empty
+<p class="text-muted mb-0">No data available</p>
+@endforelse
+</div>
+</div>
+</div>
+<div class="col-md-6">
+	<div class="card">
+		<div class="card-header">
+			<h6 class="mb-0">Top Departments (Active)</h6>
+		</div>
+		<div class="card-body">
+			@forelse($topDepartments as $dept)
+			<div class="d-flex justify-content-between align-items-center mb-2">
+				<span>{{ $dept->department->department_name ?? 'N/A' }}</span>
+				<span class="badge bg-info">{{ $dept->count }}</span>
 			</div>
-			<div class="col-md-6">
-				<div class="card">
-					<div class="card-header">
-						<h6 class="mb-0">Top Departments (Active)</h6>
-					</div>
-					<div class="card-body">
-						@forelse($topDepartments as $dept)
-						<div class="d-flex justify-content-between align-items-center mb-2">
-							<span>{{ $dept->department->department_name ?? 'N/A' }}</span>
-							<span class="badge bg-info">{{ $dept->count }}</span>
-						</div>
-						@empty
-						<p class="text-muted mb-0">No data available</p>
-						@endforelse
-					</div>
-				</div>
-			</div>
-		</div>--}}
+			@empty
+			<p class="text-muted mb-0">No data available</p>
+			@endforelse
+		</div>
+	</div>
+</div>
+</div>--}}
 
 
 </div>
@@ -697,72 +715,86 @@
 
 	function updateOverviewStats(stats) {
 		const html = `
-            <div class="col-xl-3 col-md-6">
-                <div class="card dashboard-card stat-card created">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="stat-value text-primary">${stats.total_created}</div>
-                                <div class="stat-label">Total Created</div>
-                            </div>
-                            <div class="stat-icon" style="background-color: var(--primary-light); color: var(--primary);">
-                                <i class="ri-user-add-line"></i>
-                            </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Active</h6>
+                            <h3 class="mb-0">${stats.total_active}</h3>
                         </div>
+                        <i class="ri-user-line fs-1"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card dashboard-card stat-card active">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="stat-value text-success">${stats.total_active}</div>
-                                <div class="stat-label">Active Parties</div>
-                            </div>
-                            <div class="stat-icon" style="background-color: var(--success-light); color: var(--success);">
-                                <i class="ri-user-line"></i>
-                            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">In Process</h6>
+                            <h3 class="mb-0">${stats.in_process || 0}</h3>
                         </div>
+                        <i class="ri-time-line fs-1"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card dashboard-card stat-card deactivated">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="stat-value text-danger">${stats.total_deactivated}</div>
-                                <div class="stat-label">Deactivated</div>
-                            </div>
-                            <div class="stat-icon" style="background-color: var(--danger-light); color: var(--danger);">
-                                <i class="ri-user-unfollow-line"></i>
-                            </div>
+        </div>
+        <div class="col-xl-2 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Contractual</h6>
+                            <h3 class="mb-0">${stats.contractual || 0}</h3>
                         </div>
+                        <i class="ri-file-copy-line fs-1"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card dashboard-card stat-card remaining">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="stat-value text-warning">${stats.total_remaining}</div>
-                                <div class="stat-label">Remaining</div>
-                            </div>
-                            <div class="stat-icon" style="background-color: var(--warning-light); color: var(--warning);">
-                                <i class="ri-time-line"></i>
-                            </div>
+        </div>
+        <div class="col-xl-2 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">TFA</h6>
+                            <h3 class="mb-0">${stats.tfa || 0}</h3>
                         </div>
+                        <i class="ri-group-line fs-1"></i>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+        <div class="col-xl-2 col-md-6">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">CB</h6>
+                            <h3 class="mb-0">${stats.cb || 0}</h3>
+                        </div>
+                        <i class="ri-user-star-line fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 
 		$('#overviewStats').html(html);
 	}
 
 	function updateMonthlyTrendChart(data) {
+		const chartElement = document.querySelector("#monthlyTrendChart");
+		if (!chartElement) return;
+
+		if (monthlyTrendChart) {
+			try {
+				monthlyTrendChart.destroy();
+			} catch (e) {}
+			monthlyTrendChart = null;
+		}
 		const options = {
 			...chartOptions,
 			chart: {
@@ -832,6 +864,16 @@
 	}
 
 	function updateDepartmentChart(data) {
+		const chartElement = document.querySelector("#departmentChart");
+		if (!chartElement) return;
+
+		if (departmentChart) {
+			try {
+				departmentChart.destroy();
+			} catch (e) {}
+			departmentChart = null;
+		}
+
 		// Sort and take top 10 departments
 		const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 10);
 
@@ -890,6 +932,15 @@
 	}
 
 	function updateTypeChart(data) {
+		const chartElement = document.querySelector("#typeChart");
+		if (!chartElement) return;
+
+		if (typeChart) {
+			try {
+				typeChart.destroy();
+			} catch (e) {}
+			typeChart = null;
+		}
 		const options = {
 			...chartOptions,
 			chart: {
@@ -953,6 +1004,15 @@
 	}
 
 	function updateStatusChart(data) {
+		const chartElement = document.querySelector("#statusChart");
+		if (!chartElement) return;
+
+		if (statusChart) {
+			try {
+				statusChart.destroy();
+			} catch (e) {}
+			statusChart = null;
+		}
 		const options = {
 			...chartOptions,
 			chart: {
@@ -998,145 +1058,225 @@
 		// Sort by count and take top 8
 		const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 8);
 
+		// Get the container element
+		const chartElement = document.querySelector("#geoChart");
+		if (!chartElement) {
+			console.error('Geo chart element not found');
+			return;
+		}
+
+		// Destroy existing chart if it exists
+		if (geoChart) {
+			try {
+				geoChart.destroy();
+			} catch (e) {
+				console.warn('Error destroying geo chart:', e);
+			}
+			geoChart = null;
+		}
+
 		const options = {
 			...chartOptions,
+
 			chart: {
-				...chartOptions.chart,
 				type: 'bar',
-				height: 280
+				height: 260,
+				toolbar: {
+					show: false
+				}
 			},
+
 			series: [{
 				name: 'Active Parties',
-				data: sortedData.map(item => item.count)
+				data: sortedData.map(item => Number(item.count) || 0)
 			}],
-			colors: [chartColors.primaryLight],
+
+			colors: ['#6366F1'],
+
 			plotOptions: {
 				bar: {
-					borderRadius: 4,
-					horizontal: true
+					horizontal: true,
+					barHeight: '28%',
+					borderRadius: 8,
+					distributed: false
 				}
 			},
+
+			dataLabels: {
+				enabled: true,
+				offsetX: 8,
+				style: {
+					fontSize: '11px',
+					fontWeight: 600
+				}
+			},
+
+			grid: {
+				borderColor: '#EEF2F7',
+				strokeDashArray: 4
+			},
+
 			xaxis: {
-				labels: {
-					formatter: function(val) {
-						return Math.round(val);
-					}
-				}
-			},
-			yaxis: {
-				categories: sortedData.map(item => {
-					const location = item.location || 'Unknown';
-					return location.length > 25 ? location.substring(0, 25) + '...' : location;
-				}),
+				categories: sortedData.map(item => item.location || 'Unknown'),
 				labels: {
 					style: {
-						fontSize: '10px'
+						fontSize: '11px'
 					}
 				}
 			},
+
 			tooltip: {
 				y: {
-					formatter: function(val) {
-						return val + ' parties';
-					}
+					formatter: val => `${val} parties`
 				}
 			}
 		};
 
-		if (geoChart) {
-			geoChart.updateOptions(options);
-		} else {
-			geoChart = new ApexCharts(document.querySelector("#geoChart"), options);
+		try {
+			geoChart = new ApexCharts(chartElement, options);
 			geoChart.render();
+		} catch (e) {
+			console.error('Error rendering geo chart:', e);
+			chartElement.innerHTML = '<div class="text-center text-danger">Error loading chart</div>';
 		}
 	}
 
 	function updateSalaryChart(data) {
+		const chartElement = document.querySelector("#salaryChart");
+		if (!chartElement) return;
 
-    const totalSalary   = Number(data?.total_salary || 0);
-    const avgSalary     = Number(data?.avg_monthly_salary || data?.avg_salary || 0);
-    const employeeCount = Number(data?.employee_count || 0);
+		if (salaryChart) {
+			try {
+				salaryChart.destroy();
+			} catch (e) {}
+			salaryChart = null;
+		}
 
-    // Update summary boxes ALWAYS
-    $('#totalSalary').text(formatCurrency(totalSalary));
-    $('#avgSalary').text(formatCurrency(avgSalary));
-    $('#employeeCount').text(employeeCount);
+		const totalSalary = Number(data?.total_salary || 0);
+		const avgSalary = Number(data?.avg_monthly_salary || data?.avg_salary || 0);
+		const employeeCount = Number(data?.employee_count || 0);
 
-    // Clean container before rendering
-    $('#salaryChart').empty();
+		// Update summary boxes ALWAYS
+		$('#totalSalary').text(formatCurrency(totalSalary));
+		$('#avgSalary').text(formatCurrency(avgSalary));
+		$('#employeeCount').text(employeeCount);
 
-    // 🔴 CASE 1: Absolutely no salary data
-    if (totalSalary === 0 && employeeCount === 0) {
-        $('#radialGaugeCenter').hide();
-        $('#salaryChart').html(`
+		// Clean container before rendering
+		$('#salaryChart').empty();
+
+		// 🔴 CASE 1: Absolutely no salary data
+		if (totalSalary === 0 && employeeCount === 0) {
+			$('#radialGaugeCenter').hide();
+			$('#salaryChart').html(`
             <div class="no-data-message">
                 <i class="ri-money-rupee-circle-line"></i>
                 <h6>No Salary Data Available</h6>
                 <p>No data found for the selected filters</p>
             </div>
         `);
-        return;
-    }
+			return;
+		}
 
-    // 🟢 CASE 2: Monthly trend exists → Line chart
-    if (Array.isArray(data.monthly_data) && data.monthly_data.length > 0) {
+		// 🟢 CASE 2: Monthly trend exists → Line chart
+		if (Array.isArray(data.monthly_data) && data.monthly_data.length > 0) {
 
-        $('#radialGaugeCenter').hide();
+			$('#radialGaugeCenter').hide();
 
-        const options = {
-            ...chartOptions,
-            chart: {
-                ...chartOptions.chart,
-                type: 'line',
-                height: 200,
-                toolbar: { show: false }
-            },
-            series: [{
-                name: 'Monthly Salary',
-                data: data.monthly_data.map(m => m.total_salary || 0)
-            }],
-            xaxis: {
-                categories: data.monthly_data.map(m => m.month)
-            },
-            colors: [chartColors.danger]
-        };
+			const options = {
+				...chartOptions,
+				chart: {
+					...chartOptions.chart,
+					type: 'line',
+					height: 200,
+					toolbar: {
+						show: false
+					}
+				},
+				series: [{
+					name: 'Monthly Salary',
+					data: data.monthly_data.map(m => m.total_salary || 0)
+				}],
+				xaxis: {
+					categories: data.monthly_data.map(m => m.month)
+				},
+				colors: [chartColors.danger]
+			};
 
-        salaryChart = new ApexCharts(
-            document.querySelector('#salaryChart'),
-            options
-        );
-        salaryChart.render();
-        return;
-    }
+			salaryChart = new ApexCharts(
+				document.querySelector('#salaryChart'),
+				options
+			);
+			salaryChart.render();
+			return;
+		}
 
-    // 🟡 CASE 3: Only total salary → Radial gauge
-    $('#radialGaugeCenter').show();
-    $('#radialGaugeValue').text(formatCurrencyShort(totalSalary));
+		// 🟡 CASE 3: Only total salary → Radial gauge
+		$('#radialGaugeCenter').show();
+		$('#radialGaugeValue').text(formatCurrencyShort(totalSalary));
 
-    const options = {
-        ...chartOptions,
-        chart: {
-            ...chartOptions.chart,
-            type: 'radialBar',
-            height: 200,
-            toolbar: { show: false }
-        },
-        series: [100],
-        colors: [chartColors.danger],
-        plotOptions: {
-            radialBar: {
-                hollow: { size: '70%' },
-                dataLabels: { show: false }
-            }
-        }
-    };
+		const options = {
+			...chartOptions,
+			chart: {
+				...chartOptions.chart,
+				type: 'radialBar',
+				height: 240,
+				toolbar: {
+					show: false
+				}
+			},
 
-    salaryChart = new ApexCharts(
-        document.querySelector('#salaryChart'),
-        options
-    );
-    salaryChart.render();
-}
+			series: [100],
+
+			colors: [chartColors.success],
+
+			plotOptions: {
+				radialBar: {
+					hollow: {
+						size: '65%'
+					},
+					track: {
+						background: '#EEF2F7'
+					},
+					dataLabels: {
+						show: true,
+						value: {
+							formatter: function() {
+								return employeeCount;
+							}
+						}
+					}
+				}
+			},
+
+			labels: ['Employees'],
+			series: [employeeCount],
+			colors: [chartColors.danger],
+			plotOptions: {
+				radialBar: {
+					hollow: {
+						size: '68%'
+					},
+					track: {
+						background: '#EEF2F7'
+					},
+					dataLabels: {
+						show: true,
+						value: {
+							formatter: function() {
+								return employeeCount;
+							}
+						}
+					}
+				}
+			}
+		};
+
+		salaryChart = new ApexCharts(
+			document.querySelector('#salaryChart'),
+			options
+		);
+		salaryChart.render();
+	}
 
 
 	function formatCurrency(amount) {
