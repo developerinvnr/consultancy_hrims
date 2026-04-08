@@ -61,7 +61,8 @@ class AttendanceExport implements
                 'remuneration_per_month',
                 'reporting_manager_employee_id'
             ])
-            ->where('final_status', 'A')
+            ->whereIn('final_status', ['A', 'D'])
+            ->whereNotIn('candidate_status', ['Cancelled','Rejected'])
             ->whereNotNull('contract_start_date')
             ->where('contract_start_date', '<=', $this->monthEnd);
 
