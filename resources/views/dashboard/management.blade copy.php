@@ -117,12 +117,12 @@
 					</button>
 					
 				</div>
-				{{--<div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+				<div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
 					
 					<button class="btn btn-sm btn-outline-secondary" onclick="exportDashboardData()">
 						<i class="ri-download-line me-1"></i> Export
 					</button>
-				</div>--}}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -233,149 +233,6 @@
 			</div>
 		</div>
 	</div>
-
-
-		<!-- Recent Requisitions Table -->
-		{{--<div class="row mt-4">
-			<div class="col-12">
-				<div class="card">
-					<div class="card-header">
-						<h6 class="mb-0">Recent Requisitions</h6>
-					</div>
-					<div class="card-body p-0">
-						<div class="table-responsive">
-							<table class="table table-hover mb-0">
-								<thead class="table-light">
-									<tr>
-										<th>ID</th>
-										<th>Position</th>
-										<th>Department</th>
-										<th>Status</th>
-										<th>Submitted By</th>
-										<th>Submitted Date</th>
-										<th>Ageing</th>
-									</tr>
-								</thead>
-								<tbody>
-									@forelse($recent_requisitions as $req)
-									<tr>
-										<td>{{ $req->id }}</td>
-										<td>{{ $req->position_title ?? 'N/A' }}</td>
-										<td>{{ $req->department->department_name ?? 'N/A' }}</td>
-										<td>
-											<span class="badge bg-{{ $req->priority_color ?? 'secondary' }}">
-												{{ $req->status }}
-											</span>
-										</td>
-										<td>{{ $req->submitted_by_name ?? 'N/A' }}</td>
-										<td>{{ $req->submission_date ? Carbon\Carbon::parse($req->submission_date)->format('d-m-Y') : 'N/A' }}</td>
-										<td>
-											<span class="badge bg-{{ $req->priority_color }}">
-												{{ $req->ageing_days ?? 0 }} days
-											</span>
-										</td>
-									</tr>
-									@empty
-									<tr>
-										<td colspan="7" class="text-center">No requisitions found</td>
-									</tr>
-									@endforelse
-								</tbody>
-							</table>
-						</div>
-						<div class="p-3">
-							{{ $recent_requisitions->links() }}
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>--}}
-
-		<!-- Contract Expiry -->
-		{{--<div class="row mt-4">
-			<div class="col-12">
-				<div class="card">
-					<div class="card-header">
-						<h6 class="mb-0">Contract Expiry (Next 30 Days)</h6>
-					</div>
-					<div class="card-body p-0">
-						<div class="table-responsive">
-							<table class="table table-hover mb-0">
-								<thead class="table-light">
-									<tr>
-										<th>Candidate Name</th>
-										<th>Department</th>
-										<th>Contract End Date</th>
-										<th>Days Remaining</th>
-									</tr>
-								</thead>
-								<tbody>
-									@forelse($expiry['lt_30_days'] as $candidate)
-									<tr>
-										<td>{{ $candidate->candidate_name ?? 'N/A' }}</td>
-										<td>{{ $candidate->department->department_name ?? 'N/A' }}</td>
-										<td>{{ $candidate->contract_end_date ? Carbon\Carbon::parse($candidate->contract_end_date)->format('d-m-Y') : 'N/A' }}</td>
-										<td>
-											@php
-												$daysLeft = Carbon\Carbon::now()->diffInDays(Carbon\Carbon::parse($candidate->contract_end_date), false);
-											@endphp
-											<span class="badge bg-{{ $daysLeft <= 7 ? 'danger' : ($daysLeft <= 15 ? 'warning' : 'info') }}">
-												{{ max(0, $daysLeft) }} days
-											</span>
-										</td>
-									</tr>
-									@empty
-									<tr>
-										<td colspan="4" class="text-center">No contracts expiring soon</td>
-									</tr>
-									@endforelse
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>--}}
-
-		<!-- Top Submitters & Departments -->
-		{{--<div class="row mt-4">
-			<div class="col-md-6">
-				<div class="card">
-					<div class="card-header">
-						<h6 class="mb-0">Top Submitters (Last 30 Days)</h6>
-					</div>
-					<div class="card-body">
-						@forelse($topSubmitters as $submitter)
-						<div class="d-flex justify-content-between align-items-center mb-2">
-							<span>{{ $submitter->submitted_by_name }}</span>
-							<span class="badge bg-primary">{{ $submitter->count }}</span>
-						</div>
-						@empty
-						<p class="text-muted mb-0">No data available</p>
-						@endforelse
-					</div>
-				</div>
-			</div>
-			<div class="col-md-6">
-				<div class="card">
-					<div class="card-header">
-						<h6 class="mb-0">Top Departments (Active)</h6>
-					</div>
-					<div class="card-body">
-						@forelse($topDepartments as $dept)
-						<div class="d-flex justify-content-between align-items-center mb-2">
-							<span>{{ $dept->department->department_name ?? 'N/A' }}</span>
-							<span class="badge bg-info">{{ $dept->count }}</span>
-						</div>
-						@empty
-						<p class="text-muted mb-0">No data available</p>
-						@endforelse
-					</div>
-				</div>
-			</div>
-		</div>--}}
-
-
 </div>
 
 <!-- Floating Refresh Button -->
