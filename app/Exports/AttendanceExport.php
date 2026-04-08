@@ -48,7 +48,7 @@ class AttendanceExport implements
 
     public function collection(): Collection
     {
-        
+
         // Build query with role-based filtering
         $query = CandidateMaster::query()
             ->select([
@@ -62,9 +62,13 @@ class AttendanceExport implements
                 'reporting_manager_employee_id'
             ])
             ->whereIn('final_status', ['A', 'D'])
-            ->whereNotIn('candidate_status', ['Cancelled','Rejected'])
+            ->whereNotIn('candidate_status', ['Cancelled', 'Rejected'])
             ->whereNotNull('contract_start_date')
-            ->where('contract_start_date', '<=', $this->monthEnd);
+            ->where('contract_start_date', '<=', $this->monthEnd)
+            ->where(function ($q) {
+                $q->whereNull('contract_end_date')
+                    ->orWhere('contract_end_date', '>=', $this->monthStart);
+            });
 
         // Role-based filtering
         if ($this->user) {
@@ -80,7 +84,7 @@ class AttendanceExport implements
 
         $candidates = $query->orderBy('candidate_code')->get();
 
-      
+
 
         if ($candidates->isEmpty()) {
             return collect([]);
@@ -88,18 +92,18 @@ class AttendanceExport implements
 
         // Eager load attendance records
         $candidateIds = $candidates->pluck('id')->toArray();
-        
+
         $attendances = Attendance::whereIn('candidate_id', $candidateIds)
             ->where('Month', $this->month)
             ->where('Year', $this->year)
             ->get()
             ->keyBy('candidate_id');
-            
+
         // Eager load leave balances for contractual candidates
         $contractualIds = $candidates->where('requisition_type', 'Contractual')
             ->pluck('id')
             ->toArray();
-            
+
         $leaveBalances = collect([]);
         if (!empty($contractualIds)) {
             $leaveBalances = LeaveBalance::whereIn('CandidateID', $contractualIds)
@@ -112,14 +116,14 @@ class AttendanceExport implements
 
         foreach ($candidates as $index => $candidate) {
             $attendance = $attendances[$candidate->id] ?? null;
-            
+
             // Get leave balance for contractual candidates
             $clRemaining = 0;
             $clUsed = 0;
-            
+
             if ($candidate->requisition_type === 'Contractual') {
                 $leaveBalance = $leaveBalances[$candidate->id] ?? null;
-                
+
                 if ($leaveBalance) {
                     $clRemaining = max(0, $leaveBalance->opening_cl_balance - $leaveBalance->cl_utilized);
                     $clUsed = $leaveBalance->cl_utilized;
@@ -127,7 +131,7 @@ class AttendanceExport implements
                     // Fallback calculation
                     $joiningDate = Carbon::parse($candidate->contract_start_date);
                     $joiningYear = $joiningDate->year;
-                    
+
                     if ($joiningYear < $this->year) {
                         $clRemaining = 12;
                     } elseif ($joiningYear == $this->year) {
@@ -136,7 +140,7 @@ class AttendanceExport implements
                             $clRemaining = min($eligibleMonths, 12);
                         }
                     }
-                    
+
                     if ($candidate->leave_credited && $candidate->leave_credited > 0) {
                         $clRemaining = $candidate->leave_credited;
                     }
@@ -149,14 +153,14 @@ class AttendanceExport implements
                 'code' => $candidate->candidate_code ?? '',
                 'name' => $candidate->candidate_name ?? '',
                 'type' => $candidate->requisition_type ?? '',
-                'doj' => $candidate->contract_start_date 
-                    ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y') 
+                'doj' => $candidate->contract_start_date
+                    ? Carbon::parse($candidate->contract_start_date)->format('d-m-Y')
                     : '',
                 'leave_credited' => $candidate->leave_credited ?? 0,
                 'cl_remaining' => $clRemaining,
                 'cl_used' => $clUsed,
-                'daily_rate' => $candidate->remuneration_per_month 
-                    ? round($candidate->remuneration_per_month / 26, 2) 
+                'daily_rate' => $candidate->remuneration_per_month
+                    ? round($candidate->remuneration_per_month / 26, 2)
                     : 0,
                 'total_present' => 0,
                 'total_absent' => 0,
@@ -168,9 +172,9 @@ class AttendanceExport implements
             for ($day = 1; $day <= $this->daysInMonth; $day++) {
                 $col = "A{$day}";
                 $status = $attendance ? ($attendance->$col ?? '') : '';
-                
+
                 $date = Carbon::create($this->year, $this->month, $day);
-                
+
                 // Handle Sundays
                 if ($date->dayOfWeek === Carbon::SUNDAY) {
                     $status = $status === 'P' ? 'P' : 'W';
@@ -200,8 +204,8 @@ class AttendanceExport implements
         }
 
         $this->collectionData = collect($rows);
-       
-        
+
+
         return $this->collectionData;
     }
 
@@ -239,23 +243,23 @@ class AttendanceExport implements
     public function registerEvents(): array
     {
         return [
-            BeforeSheet::class => function(BeforeSheet $event) {
+            BeforeSheet::class => function (BeforeSheet $event) {
                 // This event fires before data is written
             },
-            
+
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                
+
                 // Calculate total columns
                 $totalCols = 6 + $this->daysInMonth + 4;
                 $lastCol = Coordinate::stringFromColumnIndex($totalCols);
-                
+
                 // STEP 1: First, shift all existing data DOWN by 2 rows
                 $highestRow = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
-                
-                
-                
+
+
+
                 // If we have data, shift it down by 2 rows
                 if ($highestRow > 0) {
                     // Create a new range starting from row 3
@@ -264,11 +268,11 @@ class AttendanceExport implements
                             $colLetter = Coordinate::stringFromColumnIndex($col);
                             $oldCell = "{$colLetter}{$row}";
                             $newCell = "{$colLetter}" . ($row + 2);
-                            
+
                             // Copy cell value
                             $cellValue = $sheet->getCell($oldCell)->getValue();
                             $sheet->setCellValue($newCell, $cellValue);
-                            
+
                             // Clear old cell
                             if ($row <= 2) {
                                 $sheet->setCellValue($oldCell, null);
@@ -276,28 +280,28 @@ class AttendanceExport implements
                         }
                     }
                 }
-                
+
                 // STEP 2: Now write headers in rows 1-2
                 // Basic headers
                 $basicHeaders = ['S.No', 'Code', 'Name', 'Type', 'DOJ', 'Leave Credited'];
-                
+
                 $colIndex = 1;
                 foreach ($basicHeaders as $header) {
                     $colLetter = Coordinate::stringFromColumnIndex($colIndex++);
                     $sheet->setCellValue("{$colLetter}1", $header);
                     $sheet->mergeCells("{$colLetter}1:{$colLetter}2");
                 }
-                
+
                 // Day headers
                 $colIndex = 7;
                 for ($day = 1; $day <= $this->daysInMonth; $day++) {
                     $colLetter = Coordinate::stringFromColumnIndex($colIndex++);
                     $date = Carbon::create($this->year, $this->month, $day);
-                    
+
                     $sheet->setCellValue("{$colLetter}1", $day);
                     $sheet->setCellValue("{$colLetter}2", $date->format('D'));
                 }
-                
+
                 // Summary headers
                 $summaryHeaders = ['P', 'A', 'CL', 'Bal'];
                 foreach ($summaryHeaders as $header) {
@@ -305,7 +309,7 @@ class AttendanceExport implements
                     $sheet->setCellValue("{$colLetter}1", $header);
                     $sheet->mergeCells("{$colLetter}1:{$colLetter}2");
                 }
-                
+
                 // STEP 3: Apply styling to header rows
                 $headerStyle = [
                     'font' => [
@@ -323,13 +327,13 @@ class AttendanceExport implements
                         'wrapText' => true
                     ],
                 ];
-                
+
                 $sheet->getStyle("A1:{$lastCol}2")->applyFromArray($headerStyle);
-                
+
                 // Set row height for headers
                 $sheet->getRowDimension(1)->setRowHeight(25);
                 $sheet->getRowDimension(2)->setRowHeight(20);
-                
+
                 // STEP 4: Apply borders to all cells
                 $newHighestRow = $sheet->getHighestRow();
                 $sheet->getStyle("A1:{$lastCol}{$newHighestRow}")->applyFromArray([
@@ -340,7 +344,7 @@ class AttendanceExport implements
                         ]
                     ]
                 ]);
-                
+
                 // STEP 5: Color Sunday columns
                 $colIndex = 7;
                 for ($day = 1; $day <= $this->daysInMonth; $day++) {
@@ -357,19 +361,19 @@ class AttendanceExport implements
                     }
                     $colIndex++;
                 }
-                
+
                 // STEP 6: Center align all cells
                 $sheet->getStyle("A1:{$lastCol}{$newHighestRow}")
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
-                
+
                 // STEP 7: Freeze header rows
                 $sheet->freezePane('A3');
-                
+
                 // STEP 8: Auto-filter
                 $sheet->setAutoFilter("A1:{$lastCol}2");
-                
+
                 // STEP 9: Set column widths
                 $widths = [
                     'A' => 6,    // S.No
@@ -398,8 +402,6 @@ class AttendanceExport implements
                 foreach ($widths as $column => $width) {
                     $sheet->getColumnDimension($column)->setWidth($width);
                 }
-                
-               
             }
         ];
     }
