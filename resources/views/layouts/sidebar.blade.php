@@ -28,7 +28,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
         </button>
     </div>
 
-    <div id="scrollbar" data-simplebar class="h-100">
+    <div id="scrollbar" class="h-100">
         <div class="container-fluid">
             <ul class="navbar-nav" id="navbar-nav">
 
