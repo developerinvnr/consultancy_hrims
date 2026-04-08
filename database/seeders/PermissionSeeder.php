@@ -74,6 +74,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'payment_workflow.view', 'group_name' => 'payment_workflow'],
             ['name' => 'payment_workflow.verify', 'group_name' => 'payment_workflow'],
             ['name' => 'payment_workflow.release', 'group_name' => 'payment_workflow'],
+
+            // Attendance
+            ['name' => 'attendance.view', 'group_name' => 'attendance'],
+
+            // Requisitions
+            ['name' => 'requisitions.view', 'group_name' => 'requisitions'],
         ];
 
         foreach ($permissions as $permission) {

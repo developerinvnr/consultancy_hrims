@@ -86,24 +86,26 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 @endif
 
 
+             @can('requisitions.view')
 
-                @if(auth()->user()->hasAnyRole(['hr_admin']))
-                <li class="nav-item">
-                    <a class="nav-link menu-link @activeRoute('hr_requisitions.*')"
-                        href="{{ route('hr_requisitions.index') }}">
-                        <i class="ri-file-list-3-line"></i>
-                        <span>Requisitions</span>
-                    </a>
-                </li>
-                @else
-                <li class="nav-item">
-                    <a class="nav-link menu-link @activeRoute('requisitions.*')"
-                        href="{{ route('requisitions.index') }}">
-                        <i class="ri-file-list-3-line"></i>
-                        <span>Requisitions</span>
-                    </a>
-                </li>
-                @endif
+                    @if(auth()->user()->hasAnyRole(['hr_admin']))
+                    <li class="nav-item">
+                        <a class="nav-link menu-link @activeRoute('hr_requisitions.*')"
+                            href="{{ route('hr_requisitions.index') }}">
+                            <i class="ri-file-list-3-line"></i>
+                            <span>Requisitions</span>
+                        </a>
+                    </li>
+                    @else
+                    <li class="nav-item">
+                        <a class="nav-link menu-link @activeRoute('requisitions.*')"
+                            href="{{ route('requisitions.index') }}">
+                            <i class="ri-file-list-3-line"></i>
+                            <span>Requisitions</span>
+                        </a>
+                    </li>
+                    @endif
+             @endcan
 
                 {{--
                     @if(auth()->user()->hasAnyRole(['hr_admin']))
@@ -122,12 +124,14 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
 
 
                 {{-- Attendance --}}
+                @can('attendance.view')
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('attendance.*')" href="{{ route('attendance.index') }}">
                         <i class="ri-calendar-check-line"></i>
                         <span>Attendance</span>
                     </a>
                 </li>
+                @endcan
 
                 @if($hasTeam)
                 @if($hasTeam)
