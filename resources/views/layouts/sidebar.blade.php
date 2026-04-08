@@ -107,6 +107,16 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     @endif
              @endcan
 
+             @can('requisitions.team.view')
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('team.requisitions.*')"
+                        href="{{ route('team.requisitions.index') }}">
+                        <i class="ri-team-line"></i>
+                        <span>Team Requisitions</span>
+                    </a>
+                </li>
+             @endcan
+
                 {{--
                     @if(auth()->user()->hasAnyRole(['hr_admin']))
                         <li class="nav-item">

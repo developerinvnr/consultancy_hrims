@@ -80,6 +80,7 @@ class PermissionSeeder extends Seeder
 
             // Requisitions
             ['name' => 'requisitions.view', 'group_name' => 'requisitions'],
+            ['name' => 'requisitions.team.view','group_name' => 'requisition_team'],
         ];
 
         foreach ($permissions as $permission) {

@@ -27,6 +27,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\PaymentWorkflowController;
 use App\Http\Controllers\EmailLogController;
+use App\Http\Controllers\TeamRequisitionController;
 
 
 
@@ -423,5 +424,12 @@ Route::middleware(['auth'])->prefix('payment-workflow')->group(function () {
     Route::post('/confirm',[PaymentWorkflowController::class, 'confirm'])->name('payment.workflow.confirm');
 
     Route::post('/sync',[PaymentWorkflowController::class,'syncPayments'])->name('payment.workflow.sync');
+
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/team-requisitions',
+            [TeamRequisitionController::class, 'index']
+        )->name('team.requisitions.index');
 
 });
