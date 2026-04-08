@@ -126,18 +126,31 @@ class ApproverController extends Controller
 			return redirect()->back()
 				->with('error', 'This requisition is not pending approval.');
 		}
-
-		$request->validate([
-			'approver_remarks' => 'nullable|string|max:1000'
-		]);
+		
+	    // dd($final_days);
+		// $request->validate([
+		// 'contract_start_date' => 'required|date',
+		// 'contract_end_date' => 'required|date|after:contract_start_date',
+		// 'remuneration_per_month' => 'required|numeric|min:1',
+		// 'approver_remarks' => 'nullable|string|max:1000'
+		// ]);
 
 		DB::beginTransaction();
 		try {
+			
+		    $requisition->contract_start_date = $request->contract_start_date;
+			$requisition->contract_end_date = $request->contract_end_date;
+			$requisition->remuneration_per_month = $request->remuneration_per_month;
+			$start = \Carbon\Carbon::parse($request->contract_start_date);
+			$end = \Carbon\Carbon::parse($request->contract_end_date);
+			$requisition->contract_duration = $start->diffInDays($end);
 			// Update requisition status to "Approved"
 			$requisition->status = 'Approved';
 			$requisition->approver_remarks = $request->approver_remarks;
 			$requisition->approval_date = now();
 			$requisition->save();
+
+			
 
 			// // Create approval log
 			// \App\Models\ApprovalLog::create([
