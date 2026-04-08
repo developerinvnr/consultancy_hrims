@@ -45,3 +45,27 @@ $(document).ready(function () {
     });
 });
 </script>
+<script>
+
+window.addEventListener('load', function () {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('show', 'd-flex');
+        overlay.classList.add('d-none');
+        overlay.style.display = 'none';
+    }
+});
+
+window.addEventListener('load', function () {
+    // Remove stuck modal backdrop
+    document.body.classList.remove('modal-open');
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    // Hide any open bootstrap modal if stuck
+    document.querySelectorAll('.modal.show').forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';    });
+
+});
+
+
+</script>

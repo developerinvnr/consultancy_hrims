@@ -632,6 +632,7 @@
 			});
 		});
 	});
+	
 </script>
 <style>
 	.sticky-tabs {
