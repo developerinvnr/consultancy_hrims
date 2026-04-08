@@ -537,56 +537,53 @@
 	});
 
 	function loadDashboardData() {
-		showLoading();
 
-		const filters = {
-			year: $('#filterYear').val(),
-			month: $('#filterMonth').val(),
-			department: $('#filterDepartment').val(),
-			bu: $('#filterBU').val(),
-			zone: $('#filterZone').val(),
-			region: $('#filterRegion').val(),
-			territory: $('#filterTerritory').val(),
-			vertical: $('#filterVertical').val(),
-			requisition_type: $('#filterType').val()
-		};
+	showLoading();
 
-		$.ajax({
-			url: '{{ route("dashboard.management.data") }}',
-			type: 'POST',
-			data: {
-				_token: '{{ csrf_token() }}',
-				...filters
-			},
-			dataType: 'json',
-			timeout: 30000,
+	const filters = {
+		year: $('#filterYear').val(),
+		month: $('#filterMonth').val(),
+		department: $('#filterDepartment').val(),
+		bu: $('#filterBU').val(),
+		zone: $('#filterZone').val(),
+		region: $('#filterRegion').val(),
+		territory: $('#filterTerritory').val(),
+		vertical: $('#filterVertical').val(),
+		requisition_type: $('#filterType').val()
+	};
 
-			success: function(response) {
-				if (response.success) {
-					updateDashboard(response.data);
-					toastr.success('Dashboard updated successfully');
-				} else {
-					toastr.error('Failed to load dashboard data');
-				}
-			},
+	$.ajax({
+		url: '{{ route("dashboard.management.data") }}',
+		type: 'POST',
+		data: {
+			_token: '{{ csrf_token() }}',
+			...filters
+		},
+		dataType: 'json',
+		timeout: 30000
+	})
 
-			error: function(xhr, status, error) {
-				console.error('Dashboard AJAX error:', xhr.responseText);
+	.done(function(response) {
 
-				if (xhr.status === 0) {
-					toastr.error('Network error. Please check your connection.');
-				} else if (xhr.status === 500) {
-					toastr.error('Server error. Please try again later.');
-				} else {
-					toastr.error('Failed to load dashboard data');
-				}
-			},
+		if (response.success) {
+			updateDashboard(response.data);
+		}
 
-			complete: function() {
-				hideLoading();
-			}
-		});
-	}
+	})
+
+	.fail(function(xhr) {
+
+		console.error('Dashboard AJAX error:', xhr.responseText);
+
+	})
+
+	.always(function() {
+
+		// GUARANTEED overlay removal
+		hideLoading();
+
+	});
+}
 
 	function showLoading() {
 		console.log('Showing loading overlay');
