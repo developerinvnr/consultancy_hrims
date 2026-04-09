@@ -80,22 +80,11 @@ class AttendanceController extends Controller
             if ($departmentId && $departmentId !== 'all') {
                 $query->where('department_id', $departmentId);
             }
-
-            // $query->where(function ($q) use ($year, $month) {
-            //     $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
-
-            //     $q->whereNull('contract_end_date')
-            //         ->orWhere('contract_end_date', '>=', $monthStart);
-            // });
             $query->where(function ($q) use ($year, $month) {
                 $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
-                $monthEnd = Carbon::create($year, $month)->endOfMonth();
-                $q->where('candidate_master.contract_start_date', '<=', $monthEnd)
-                ->where(function ($sub) use ($monthStart) {
-                    $sub->whereNull('candidate_master.last_working_date')
-                        ->orWhere('candidate_master.last_working_date', '>=', $monthStart);
-                });
 
+                $q->whereNull('contract_end_date')
+                    ->orWhere('contract_end_date', '>=', $monthStart);
             });
             $candidates = $query->get();
 
