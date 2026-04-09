@@ -42,7 +42,12 @@ class PaymentWorkflowController extends Controller
 				'sp.*',
 				'c.candidate_code',
 				'c.candidate_name',
-				'c.requisition_type'
+				'c.requisition_type',
+				DB::raw('
+					COALESCE(sp.total_payable,
+						(COALESCE(sp.net_pay,0) + COALESCE(sp.arrear_amount,0))
+					) as final_payable
+				')
 			);
 
 

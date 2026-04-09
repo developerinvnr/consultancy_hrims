@@ -376,7 +376,7 @@
 
             <td>${r.month}</td>
 
-            <td>₹ ${Number(r.net_pay).toLocaleString('en-IN')}</td>
+            <td>₹ ${Number(r.final_payable).toLocaleString('en-IN')}</td>
 
             <td>
                 <span class="badge ${statusBadge}">
