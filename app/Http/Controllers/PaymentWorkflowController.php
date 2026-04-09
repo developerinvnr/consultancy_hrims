@@ -225,7 +225,11 @@ class PaymentWorkflowController extends Controller
 			->where('sp.year', $year)
 			->select(
 				'sp.id',
-				'sp.net_pay',
+				DB::raw('
+					COALESCE(sp.total_payable,
+						(COALESCE(sp.net_pay,0) + COALESCE(sp.arrear_amount,0))
+					) as final_payable
+				'),
 				're.exported_at',
 				'cm.bank_account_no',
 				'cm.candidate_code'
@@ -243,13 +247,13 @@ class PaymentWorkflowController extends Controller
 		$payload = ['payments' => []];
 
 		foreach ($records as $row) {
-			if ($row->net_pay <= 0) {
+			if ($row->final_payable <= 0) {
 				continue;
 			}
 
 			$payload['payments'][] = [
 				'beneficiary_account_number' => $row->bank_account_no,
-				'amount' => (float)$row->net_pay,
+				'amount' => (float)$row->final_payable,
 				'date' => date('Y-m-d', strtotime($row->exported_at)),
 				'source' => 'Peepal Bonsai',
 				'source_reference' => $row->candidate_code
@@ -287,7 +291,7 @@ class PaymentWorkflowController extends Controller
 
 				// Find matching record by account and amount
 				$matchedRow = $records->first(function ($r) use ($account, $amount) {
-					return $r->bank_account_no == $account && $r->net_pay == $amount;
+					return $r->bank_account_no == $account && $r->final_payable == $amount;
 				});
 
 				if ($matchedRow) {
