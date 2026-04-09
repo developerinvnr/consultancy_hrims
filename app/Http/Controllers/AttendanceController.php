@@ -51,22 +51,22 @@ class AttendanceController extends Controller
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
             // Get active candidates
-            $query = CandidateMaster::select([
-                'id as candidate_id',
-                'candidate_code',
-                'candidate_name',
-                'requisition_type',
-                'remuneration_per_month',
-                'contract_start_date',
-                'contract_end_date',
-                'leave_credited',
-                'reporting_manager_employee_id'
-            ])
-                ->whereIn('final_status', ['A', 'D'])
-                ->whereNotIn('candidate_status', ['Cancelled', 'Rejected'])
-                ->whereNotNull('contract_start_date')
-                ->where('contract_start_date', '<=', Carbon::create($year, $month)->endOfMonth());
-
+            $query = CandidateMaster::with('reportingManager') // Add this line
+                ->select([
+                    'candidate_master.id as candidate_id',
+                    'candidate_master.candidate_code',
+                    'candidate_master.candidate_name',
+                    'candidate_master.requisition_type',
+                    'candidate_master.remuneration_per_month',
+                    'candidate_master.contract_start_date',
+                    'candidate_master.contract_end_date',
+                    'candidate_master.leave_credited',
+                    'candidate_master.reporting_manager_employee_id'
+                ])
+                ->whereIn('candidate_master.final_status', ['A', 'D'])
+                ->whereNotIn('candidate_master.candidate_status', ['Cancelled', 'Rejected'])
+                ->whereNotNull('candidate_master.contract_start_date')
+                ->where('candidate_master.contract_start_date', '<=', Carbon::create($year, $month)->endOfMonth());
             // Filter based on user role
             if (!$user->hasRole('hr_admin')) {
                 // For non-HR admins, show only candidates they manage
@@ -123,6 +123,9 @@ class AttendanceController extends Controller
                 $leaveBalance = LeaveBalance::where('CandidateID', $candidate->candidate_id)
                     ->where('calendar_year', $year)
                     ->first();
+
+
+                $reportingManagerName = $candidate->reportingManager ? $candidate->reportingManager->emp_name : ($candidate->reporting_manager_employee_id ?? 'N/A');
 
                 // Get attendance for each day
                 $dayAttendance = [];
@@ -192,6 +195,7 @@ class AttendanceController extends Controller
                     'candidate_id' => $candidate->candidate_id,
                     'candidate_code' => $candidate->candidate_code,
                     'candidate_name' => $candidate->candidate_name,
+                    'reporting_manager_name' => $reportingManagerName,
                     'requisition_type' => $candidate->requisition_type,
                     'leave_credited' => $candidate->leave_credited ?: 0,
                     'contract_start_date' => Carbon::parse($candidate->contract_start_date)->format('Y-m-d'),

@@ -323,6 +323,7 @@
         <th class="text-center" style="width:40px">#</th>
         <th>Code</th>
         <th>Name</th>
+        <th>Reporting Manager</th> 
         <th class="text-center">Type</th>
     `;
 
@@ -363,6 +364,7 @@
             <td class="text-center">${index + 1}</td>
             <td>${candidate.candidate_code}</td>
             <td>${candidate.candidate_name}</td>
+            <td>${candidate.reporting_manager_name || 'N/A'}</td> 
             <td class="text-center">
                 <span class="badge bg-secondary">${candidate.requisition_type}</span>
             </td>
