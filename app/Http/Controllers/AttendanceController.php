@@ -548,7 +548,11 @@ class AttendanceController extends Controller
 
                 //$attendance->{"A{$day}"} = $status;
                 if (array_key_exists($day, $attendanceData)) {
+
                     $attendance->{"A{$day}"} = $attendanceData[$day];
+                } elseif ($date->dayOfWeek === Carbon::SUNDAY && empty($attendance->{"A{$day}"})) {
+
+                    $attendance->{"A{$day}"} = 'W';
                 }
 
                 switch ($status) {

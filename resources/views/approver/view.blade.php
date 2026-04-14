@@ -53,10 +53,10 @@
 
                             @if($requisition->status === 'Pending Approval')
                             <div class="btn-group">
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal"
+                                {{--<button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal"
                                     @if($submitterEmpId && $submitterEmpId==$currentUserEmpId) disabled @endif>
                                     <i class="ri-check-line me-1"></i> Approve
-                                </button>
+                                </button>--}}
                                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal"
                                     @if($submitterEmpId && $submitterEmpId==$currentUserEmpId) disabled @endif>
                                     <i class="ri-close-line me-1"></i> Reject

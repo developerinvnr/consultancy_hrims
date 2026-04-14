@@ -115,12 +115,13 @@ class ApproverController extends Controller
 	 */
 	public function approveRequisition(Request $request, ManpowerRequisition $requisition)
 	{
+	
 		$user = Auth::user();
+		//dd($request->all());
 		// Validate authorization
 		if ($requisition->approver_id != $user->emp_id) {
 			abort(403, 'You are not authorized to approve this requisition.');
 		}
-
 		// Validate status
 		if ($requisition->status != 'Pending Approval') {
 			return redirect()->back()
