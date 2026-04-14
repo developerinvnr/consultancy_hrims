@@ -1761,87 +1761,49 @@ class AttendanceController extends Controller
 
         try {
 
-            $month = $request->month;
-            $year  = $request->year;
-
             foreach ($request->attendance as $record) {
 
                 $candidateId = $record['party_id'];
 
-                $attendance = Attendance::firstOrNew([
+                // Convert days into same format as updateAttendance()
+                $attendanceJson = json_encode($record['days']);
+
+                // Create a new request instance for reuse
+                $newRequest = new Request([
                     'candidate_id' => $candidateId,
-                    'month' => $month,
-                    'year' => $year
+                    'month' => $request->month,
+                    'year' => $request->year,
+                    'attendance' => $attendanceJson
                 ]);
 
-                foreach ($record['days'] as $day => $status) {
+                // Call existing logic
+                $response = $this->updateAttendance($newRequest);
 
-                    $column = "A{$day}";
+                $responseData = $response->getData(true);
 
-                    $attendance->$column = strtoupper($status);
+                if (!$responseData['success']) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Error for Party ID {$candidateId}: " . $responseData['message']
+                    ]);
                 }
-
-                // 🔹 Recalculate totals
-                $daysInMonth = Carbon::create($year, $month)->daysInMonth;
-
-                $totalPresent = 0;
-                $totalAbsent  = 0;
-                $totalCL      = 0;
-                $totalLWP     = 0;
-                $totalOD      = 0;
-
-                for ($i = 1; $i <= $daysInMonth; $i++) {
-
-                    $col = "A{$i}";
-                    $val = $attendance->$col;
-
-                    switch ($val) {
-
-                        case 'P':
-                            $totalPresent++;
-                            break;
-
-                        case 'A':
-                            $totalAbsent++;
-                            break;
-
-                        case 'CL':
-                            $totalCL++;
-                            break;
-
-                        case 'LWP':
-                            $totalLWP++;
-                            break;
-
-                        case 'OD':
-                            $totalOD++;
-                            break;
-                    }
-                }
-
-                $attendance->total_present = $totalPresent;
-                $attendance->total_absent  = $totalAbsent;
-                $attendance->total_cl      = $totalCL;
-                $attendance->total_lwp     = $totalLWP;
-                $attendance->total_od      = $totalOD;
-                $attendance->status        = 'submitted';
-
-                $attendance->save();
             }
 
             DB::commit();
 
             return response()->json([
-                'Code' => 200,
-                'Message' => 'Bulk attendance updated successfully'
+                'success' => true,
+                'message' => 'Bulk attendance updated successfully'
             ]);
         } catch (\Exception $e) {
 
             DB::rollBack();
 
             return response()->json([
-                'Code' => 500,
-                'Message' => $e->getMessage()
+                'success' => false,
+                'message' => $e->getMessage()
             ]);
         }
     }
