@@ -1748,4 +1748,101 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
+    public function bulkPartyAttendanceUpdate(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year'  => 'required|integer',
+            'attendance' => 'required|array'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $month = $request->month;
+            $year  = $request->year;
+
+            foreach ($request->attendance as $record) {
+
+                $candidateId = $record['party_id'];
+
+                $attendance = Attendance::firstOrNew([
+                    'candidate_id' => $candidateId,
+                    'month' => $month,
+                    'year' => $year
+                ]);
+
+                foreach ($record['days'] as $day => $status) {
+
+                    $column = "A{$day}";
+
+                    $attendance->$column = strtoupper($status);
+                }
+
+                // 🔹 Recalculate totals
+                $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+
+                $totalPresent = 0;
+                $totalAbsent  = 0;
+                $totalCL      = 0;
+                $totalLWP     = 0;
+                $totalOD      = 0;
+
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+
+                    $col = "A{$i}";
+                    $val = $attendance->$col;
+
+                    switch ($val) {
+
+                        case 'P':
+                            $totalPresent++;
+                            break;
+
+                        case 'A':
+                            $totalAbsent++;
+                            break;
+
+                        case 'CL':
+                            $totalCL++;
+                            break;
+
+                        case 'LWP':
+                            $totalLWP++;
+                            break;
+
+                        case 'OD':
+                            $totalOD++;
+                            break;
+                    }
+                }
+
+                $attendance->total_present = $totalPresent;
+                $attendance->total_absent  = $totalAbsent;
+                $attendance->total_cl      = $totalCL;
+                $attendance->total_lwp     = $totalLWP;
+                $attendance->total_od      = $totalOD;
+                $attendance->status        = 'submitted';
+
+                $attendance->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'Code' => 200,
+                'Message' => 'Bulk attendance updated successfully'
+            ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'Code' => 500,
+                'Message' => $e->getMessage()
+            ]);
+        }
+    }
 }
