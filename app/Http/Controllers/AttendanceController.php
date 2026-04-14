@@ -1763,32 +1763,85 @@ class AttendanceController extends Controller
 
             foreach ($request->attendance as $record) {
 
+                if (!isset($record['party_id']) || !isset($record['days'])) {
+                    throw new \Exception("Invalid attendance payload format");
+                }
+
                 $candidateId = $record['party_id'];
+                $daysData = $record['days'];
 
-                // Convert days into same format as updateAttendance()
-                $attendanceJson = json_encode($record['days']);
-
-                // Create a new request instance for reuse
-                $newRequest = new Request([
+                $attendance = Attendance::firstOrNew([
                     'candidate_id' => $candidateId,
                     'month' => $request->month,
-                    'year' => $request->year,
-                    'attendance' => $attendanceJson
+                    'year' => $request->year
                 ]);
 
-                // Call existing logic
-                $response = $this->updateAttendance($newRequest);
+                foreach ($daysData as $day => $status) {
 
-                $responseData = $response->getData(true);
+                    $column = "A{$day}";
 
-                if (!$responseData['success']) {
-                    DB::rollBack();
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Error for Party ID {$candidateId}: " . $responseData['message']
-                    ]);
+                    $attendance->$column = strtoupper($status);
                 }
+
+                // Recalculate totals
+                $daysInMonth = Carbon::create(
+                    $request->year,
+                    $request->month
+                )->daysInMonth;
+
+                $totalPresent = 0;
+                $totalAbsent  = 0;
+                $totalCL      = 0;
+                $totalOD      = 0;
+                $totalCH      = 0;
+                $totalLWP     = 0;
+
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+
+                    $val = $attendance->{"A{$i}"};
+
+                    switch ($val) {
+
+                        case 'P':
+                        case 'OD':
+                        case 'CL':
+                        case 'H':
+                            $totalPresent += 1;
+                            break;
+
+                        case 'CH':
+                            $totalPresent += 1;
+                            $totalCH += 0.5;
+                            break;
+
+                        case 'HF':
+                            $totalPresent += 0.5;
+                            $totalAbsent += 0.5;
+                            break;
+
+                        case 'A':
+                            $totalAbsent += 1;
+                            break;
+                    }
+
+                    if ($val === 'CL') {
+                        $totalCL++;
+                    }
+
+                    if ($val === 'OD') {
+                        $totalOD++;
+                    }
+                }
+
+                $attendance->total_present = $totalPresent;
+                $attendance->total_absent  = $totalAbsent;
+                $attendance->total_cl      = $totalCL;
+                $attendance->total_ch      = $totalCH;
+                $attendance->total_od      = $totalOD;
+                $attendance->total_lwp     = $totalLWP;
+                $attendance->status        = 'submitted';
+
+                $attendance->save();
             }
 
             DB::commit();
