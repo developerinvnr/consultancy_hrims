@@ -99,6 +99,102 @@
 </div>
 
 <div class="row">
+@if($candidate->sub_department)
+    {{-- Sub Department --}}
+    <div class="col-md-4">
+            <div class="form-group">
+                <label>Sub Department</label>
+                <select name="sub_department" class="form-control">
+                    <option value="">Select</option>
+                    @foreach($subDepartments ?? [] as $subDept)
+                        <option value="{{ $subDept->id }}"
+                            {{ $candidate->sub_department == $subDept->id ? 'selected' : '' }}>
+                            {{ $subDept->sub_department_name  }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+    </div>
+@endif
+
+    {{-- Business Unit --}}
+    @if($candidate->business_unit)
+    <div class="col-md-4">
+        <div class="form-group">
+            <label>Business Unit</label>
+            <select name="business_unit" class="form-control">
+                <option value="">Select</option>
+                @foreach($businessUnits ?? [] as $bu)
+                    <option value="{{ $bu->id }}"
+                        {{ $candidate->business_unit == $bu->id ? 'selected' : '' }}>
+                        {{ $bu->business_unit_name  }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
+
+    {{-- Zone --}}
+    @if($candidate->zone)
+    <div class="col-md-4">
+        <div class="form-group">
+            <label>Zone</label>
+            <select name="zone" class="form-control">
+                <option value="">Select</option>
+                @foreach($zones ?? [] as $zone)
+                    <option value="{{ $zone->id }}"
+                        {{ $candidate->zone == $zone->id ? 'selected' : '' }}>
+                        {{ $zone->zone_name  }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
+
+    {{-- Region --}}
+    @if($candidate->region)
+    <div class="col-md-4">
+        <div class="form-group">
+            <label>Region</label>
+            <select name="region" class="form-control">
+                <option value="">Select</option>
+                @foreach($regions ?? [] as $region)
+                    <option value="{{ $region->id }}"
+                        {{ $candidate->region == $region->id ? 'selected' : '' }}>
+                        {{ $region->region_name  }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
+
+    {{-- Territory --}}
+    @if($candidate->territory)
+    <div class="col-md-4">
+        <div class="form-group">
+            <label>Territory</label>
+            <select name="territory" class="form-control">
+                <option value="">Select</option>
+                @foreach($territories ?? [] as $territory)
+                    <option value="{{ $territory->id }}"
+                        {{ $candidate->territory == $territory->id ? 'selected' : '' }}>
+                        {{ $territory->territory_name  }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
+</div>
+
+<div class="row">
     <div class="col-md-6">
         <div class="form-group">
             <label>Monthly Remuneration (₹)</label>

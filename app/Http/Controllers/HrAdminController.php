@@ -23,6 +23,11 @@ use App\Mail\CorrectionRequested;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\PartyEditHistory;
+use App\Models\CoreSubDepartment;
+use App\Models\CoreBusinessUnit;
+use App\Models\CoreZone;
+use App\Models\CoreRegion;
+use App\Models\CoreTerritory;
 use App\Services\S3Service;
 
 class HrAdminController extends Controller
@@ -133,11 +138,11 @@ class HrAdminController extends Controller
 				->latest()
 				->first();
 
-						$agreements = [
-							'unsigned' => $unsigned,
-							'signed' => $signed,
-						];
-					}
+			$agreements = [
+				'unsigned' => $unsigned,
+				'signed' => $signed,
+			];
+		}
 
 		if ($candidate) {
 			try {
@@ -728,11 +733,11 @@ class HrAdminController extends Controller
 				try {
 					Mail::to($approver->emp_email)->send(new RequisitionApprovalRequest($requisition, $approver));
 					$emailStatus = "Email notification sent to " . $approver->emp_email;
-				} catch (\Exception $emailException) {					
+				} catch (\Exception $emailException) {
 					$emailStatus = "Email notification failed to send.";
 				}
 			} else {
-				
+
 				$emailStatus = "Email notification not sent (communication control disabled).";
 			}
 
@@ -743,7 +748,7 @@ class HrAdminController extends Controller
 				->with('success', 'Application sent for approval successfully. ' . $emailStatus);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			
+
 			return redirect()->back()
 				->with('error', 'Failed to send for approval: ' . $e->getMessage());
 		}
@@ -798,11 +803,11 @@ class HrAdminController extends Controller
 
 					$emailStatus = "Correction request email sent to {$reportingManager->emp_email}";
 				} catch (\Exception $e) {
-					
+
 					$emailStatus = "Correction email failed.";
 				}
 			} else {
-				
+
 
 				$emailStatus = "Correction email skipped (disabled by admin).";
 			}
@@ -1026,7 +1031,7 @@ class HrAdminController extends Controller
 			// Call Agreement Generation API
 			$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidateCode);
 
-		
+
 
 			if (!$agreementResponse['success']) {
 				throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
@@ -1137,7 +1142,7 @@ class HrAdminController extends Controller
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-	
+
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to process application: ' . $e->getMessage()
@@ -1240,7 +1245,7 @@ class HrAdminController extends Controller
 			$curlError = curl_error($ch);
 			curl_close($ch);
 
-		
+
 
 			if ($curlError || !$response) {
 				return [
@@ -1723,7 +1728,7 @@ class HrAdminController extends Controller
 				$updateData['uploaded_by_user_id'] = Auth::id();
 				$agreement->update($updateData);
 
-				
+
 
 				DB::commit();
 
@@ -1740,7 +1745,7 @@ class HrAdminController extends Controller
 			}
 		} catch (\Exception $e) {
 			DB::rollBack();
-			
+
 
 			return response()->json([
 				'success' => false,
@@ -1836,7 +1841,7 @@ class HrAdminController extends Controller
 				'Content-Type' => $document->mime_type,
 			]);
 		} catch (\Exception $e) {
-	
+
 
 			return redirect()->back()
 				->with('error', 'Failed to download document. Please try again.');
@@ -1899,7 +1904,7 @@ class HrAdminController extends Controller
 				'Content-Disposition' => 'attachment; filename="' . basename($filePath) . '"',
 			]);
 		} catch (\Exception $e) {
-			
+
 			return redirect()->back()
 				->with('error', 'Failed to download agreement.');
 		}
@@ -1928,7 +1933,7 @@ class HrAdminController extends Controller
 				'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"',
 			]);
 		} catch (\Exception $e) {
-		
+
 			abort(500, 'Failed to view agreement.');
 		}
 	}
@@ -2020,7 +2025,7 @@ class HrAdminController extends Controller
 		try {
 
 			if (!auth()->user()->hasRole('hr_admin')) {
-			
+
 				abort(403, 'Unauthorized');
 			}
 
@@ -2047,6 +2052,26 @@ class HrAdminController extends Controller
 			$qualifications = \App\Models\MasterEducation::orderBy('EducationName')->get();
 
 
+			$subDepartments = CoreSubDepartment::where('is_active', 1)
+				->orderBy('sub_department_name')
+				->get();
+
+			$businessUnits = CoreBusinessUnit::where(
+				'vertical_id',
+				$candidate->vertical_id
+			)->get();
+
+			$zones = CoreZone::where('is_active', 1)->get();
+
+			$regions = CoreRegion::where('is_active', 1)
+					->orderBy('region_name')
+					->get();
+
+			$territories = CoreTerritory::where('is_active', 1)
+				->orderBy('territory_name')
+				->get();
+
+
 			$departmentEmployees = DB::table('core_employee')
 				->where('department', $candidate->department_id)
 				->where('emp_status', 'A')
@@ -2070,12 +2095,23 @@ class HrAdminController extends Controller
 				'departmentEmployees',
 				'selectedCity',
 				'states',
-				'qualifications'
+				'qualifications',
+				'subDepartments',
+				'businessUnits',
+				'zones',
+				'regions',
+				'territories'
 			));
 		} catch (\Throwable $e) {
 
-			
 
+						 Log::error('Edit Party Error', [
+					'candidate_id' => $candidate->id ?? null,
+					'message' => $e->getMessage(),
+					'file' => $e->getFile(),
+					'line' => $e->getLine(),
+					'trace' => $e->getTraceAsString(),
+				]);
 			abort(500, 'Something went wrong.');
 		}
 	}
@@ -2155,6 +2191,11 @@ class HrAdminController extends Controller
 				'contract_end_date' => 'required|date|after_or_equal:contract_start_date',
 				'remuneration_per_month' => 'required|numeric|min:0',
 				'team_id' => 'nullable|string|max:50',
+				'sub_department' => 'nullable|exists:core_sub_department,id',
+				'business_unit' => 'nullable|exists:core_business_unit,id',
+				'zone' => 'nullable|exists:core_zone,id',
+				'region' => 'nullable|exists:core_region,id',
+				'territory' => 'nullable|exists:core_territory,id',
 			]);
 		}
 
@@ -2307,6 +2348,11 @@ class HrAdminController extends Controller
 					'contract_end_date',
 					'remuneration_per_month',
 					'team_id',
+					'sub_department',
+					'business_unit',
+					'zone',
+					'region',
+					'territory',
 				]);
 			}
 
@@ -2338,7 +2384,7 @@ class HrAdminController extends Controller
 		| Get only changed fields
 		|--------------------------------------------------------------------------
 		*/
-		
+
 
 			$dirtyFields = $candidate->getDirty();
 
@@ -2644,7 +2690,7 @@ class HrAdminController extends Controller
 			// 		// Generate new agreement via API
 			// 		$agreementResponse = $this->generateAgreementViaAPI($requisition, $candidate->candidate_code);
 
-		
+
 
 			// 		if (!$agreementResponse['success']) {
 			// 			throw new \Exception('Failed to generate agreement: ' . $agreementResponse['message']);
@@ -2714,7 +2760,7 @@ class HrAdminController extends Controller
 			// 			'reason' => 'Reporting manager changed',
 			// 		]);
 
-			
+
 			// 	} catch (\Exception $e) {
 			// 		// Don't rollback the entire transaction if agreement generation fails
 			// 		// Just log it and continue - the reporting change is still saved
@@ -2735,8 +2781,6 @@ class HrAdminController extends Controller
 				$candidate->save();
 
 				$this->syncManpowerTable($candidate);
-
-			
 			}
 
 			DB::commit();
@@ -2762,7 +2806,7 @@ class HrAdminController extends Controller
 			return redirect()->back()->with('success', $message);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			
+
 
 			return redirect()->back()
 				->with('error', 'Failed to update party details: ' . $e->getMessage())
@@ -2817,7 +2861,7 @@ class HrAdminController extends Controller
 				'document' => $document
 			]);
 		} catch (\Exception $e) {
-			
+
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to upload document: ' . $e->getMessage()
@@ -2879,7 +2923,7 @@ class HrAdminController extends Controller
 
 			DB::rollBack();
 
-			
+
 
 			return response()->json([
 				'success' => false,
