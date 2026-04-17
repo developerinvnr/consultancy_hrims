@@ -518,7 +518,7 @@ class AttendanceController extends Controller
                 }
 
                 if ($contractEndDate && $date->greaterThan($contractEndDate)) {
-                    if (!empty($status && $status !== 'H')) {
+                    if (!empty($status) && $status !== 'H') {
                         return response()->json([
                             'success' => false,
                             'message' => 'Attendance cannot be filled after contract end date'
