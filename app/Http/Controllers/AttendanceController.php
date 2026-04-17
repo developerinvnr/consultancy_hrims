@@ -435,7 +435,7 @@ class AttendanceController extends Controller
             // ]);
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
-
+                                    Log::info('Processing day: ' . $day);
                 //$status = $attendanceData[$day] ?? $attendance->{"A" . $day};
                 $status = array_key_exists($day, $attendanceData) ? $attendanceData[$day] : $attendance->{"A{$day}"};
                 $date = Carbon::create($year, $month, $day);
