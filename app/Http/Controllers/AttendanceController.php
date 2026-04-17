@@ -504,6 +504,18 @@ class AttendanceController extends Controller
 
                 $joiningDate = Carbon::parse($candidate->contract_start_date);
 
+                $date = Carbon::create($year, $month, $day);
+
+                Log::info('Date comparison debug', [
+                    'day' => $day,
+                    'date_value' => $date->format('Y-m-d H:i:s'),
+                    'joining_date_value' => $joiningDate->format('Y-m-d H:i:s'),
+                    'date_timestamp' => $date->timestamp,
+                    'joining_timestamp' => $joiningDate->timestamp,
+                    'is_less_than' => $date->lessThan($joiningDate),
+                    'status' => $status
+                ]);
+
                 if ($date->lessThan($joiningDate)) {
 
                     if (!empty($status) && $status !== 'H') {
