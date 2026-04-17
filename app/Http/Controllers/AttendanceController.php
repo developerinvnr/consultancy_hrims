@@ -271,6 +271,19 @@ class AttendanceController extends Controller
             // ]);
 
             $candidate = CandidateMaster::findOrFail($candidateId);
+
+
+            \Log::info('DEBUG - Candidate last_working_date', [
+                'candidate_id' => $candidate->id,
+                'raw_value' => $candidate->getRawOriginal('last_working_date'),  // This gets database value
+                'accessed_value' => $candidate->last_working_date,  // This gets Eloquent value
+                'is_null' => is_null($candidate->last_working_date),
+                'empty_check' => empty($candidate->last_working_date),
+                'type' => gettype($candidate->last_working_date),
+                'casts' => $candidate->getCasts(),
+            ]);
+
+
             if (!empty($candidate->last_working_date)) {
                 $lastWorkingDate = Carbon::parse($candidate->last_working_date);
                 if ($lastWorkingDate->lessThan(Carbon::create($year, $month, 1))) {
