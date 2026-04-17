@@ -435,7 +435,7 @@ class AttendanceController extends Controller
             // ]);
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
-                                    Log::info('Processing day: ' . $day);
+                                    //Log::info('Processing day: ' . $day);
                 //$status = $attendanceData[$day] ?? $attendance->{"A" . $day};
                 $status = array_key_exists($day, $attendanceData) ? $attendanceData[$day] : $attendance->{"A{$day}"};
                 $date = Carbon::create($year, $month, $day);
@@ -474,15 +474,15 @@ class AttendanceController extends Controller
                         if (!$isHRAdmin) {
                             if (!empty($status)) {
 
-                                   Log::error('LAST WORKING DATE ERROR', [
-                                    'candidate_id' => $candidate->id,
-                                    'candidate_name' => $candidate->candidate_name,
-                                    'last_working_date' => $candidate->last_working_date,
-                                    'current_date' => $date->format('Y-m-d'),
-                                    'day' => $day,
-                                    'status' => $status,
-                                    'isHRAdmin' => $isHRAdmin
-                                ]);
+                                //    Log::error('LAST WORKING DATE ERROR', [
+                                //     'candidate_id' => $candidate->id,
+                                //     'candidate_name' => $candidate->candidate_name,
+                                //     'last_working_date' => $candidate->last_working_date,
+                                //     'current_date' => $date->format('Y-m-d'),
+                                //     'day' => $day,
+                                //     'status' => $status,
+                                //     'isHRAdmin' => $isHRAdmin
+                                // ]);
 
                                 return response()->json([
                                     'success' => false,
@@ -504,17 +504,17 @@ class AttendanceController extends Controller
 
                 $joiningDate = Carbon::parse($candidate->contract_start_date);
 
-                Log::info('Date comparison debug', [
-                    'day' => $day,
-                    'date_value' => $date->format('Y-m-d H:i:s'),
-                    'joining_date_value' => $joiningDate->format('Y-m-d H:i:s'),
-                    'is_less_than' => $date->lessThan($joiningDate),
-                    'status' => $status
-                ]);
+                // Log::info('Date comparison debug', [
+                //     'day' => $day,
+                //     'date_value' => $date->format('Y-m-d H:i:s'),
+                //     'joining_date_value' => $joiningDate->format('Y-m-d H:i:s'),
+                //     'is_less_than' => $date->lessThan($joiningDate),
+                //     'status' => $status
+                // ]);
 
                 if ($date->lessThan($joiningDate)) {
 
-                    if (!empty($status) && $status !== 'H') {
+                    if (!empty($status) && $status !== 'H' && $status !== 'W') {
                         return response()->json([
                             'success' => false,
                             'message' => 'Attendance cannot be filled before joining date'
