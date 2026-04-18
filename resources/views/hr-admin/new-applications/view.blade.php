@@ -561,7 +561,7 @@
 
 <!-- Document View Modal -->
 <div class="modal fade" id="documentViewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h6 class="modal-title mb-0" id="documentModalTitle">Document View</h6>
@@ -1159,6 +1159,37 @@ auth()->user()->hasRole('hr_admin')
             e.preventDefault();
             $(this).unbind('submit').submit();
         });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const modal = document.querySelector("#documentViewModal .modal-dialog");
+        const header = document.querySelector("#documentViewModal .modal-header");
+
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        header.style.cursor = "move";
+
+        header.addEventListener("mousedown", function(e) {
+            isDragging = true;
+            offsetX = e.clientX - modal.offsetLeft;
+            offsetY = e.clientY - modal.offsetTop;
+        });
+
+        document.addEventListener("mousemove", function(e) {
+            if (isDragging) {
+                modal.style.position = "absolute";
+                modal.style.margin = "0";
+                modal.style.left = e.clientX - offsetX + "px";
+                modal.style.top = e.clientY - offsetY + "px";
+            }
+        });
+
+        document.addEventListener("mouseup", function() {
+            isDragging = false;
+        });
+
     });
 </script>
 @endpush

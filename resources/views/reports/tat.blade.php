@@ -18,9 +18,21 @@
                     <form method="GET" action="{{ route('reports.tat') }}" class="row g-2 align-items-end" id="mainFilterForm">
                         <div class="col-md-2">
                             <label class="form-label form-label-sm">Financial Year</label>
+                            @php
+                            $currentMonth = date('n');
+                            $currentYear  = date('Y');
+                            $currentFYStart = ($currentMonth >= 4) ? $currentYear : $currentYear - 1;
+                            $startYear = $currentFYStart - 2;
+                            $endYear   = $currentFYStart;
+                            @endphp
+
                             <select name="financial_year" class="form-select form-select-sm">
-                                <option value="2024-2025" {{ $financialYear=='2024-2025' ? 'selected' : '' }}>2024-2025</option>
-                                <option value="2025-2026" {{ $financialYear=='2025-2026' ? 'selected' : '' }}>2025-2026</option>
+                                @for($y = $startYear; $y <= $endYear; $y++)
+                                    @php $fy=$y . '-' . ($y + 1); @endphp
+                                    <option value="{{ $fy }}" {{ $financialYear == $fy ? 'selected' : '' }}>
+                                    {{ $fy }}
+                                    </option>
+                                    @endfor
                             </select>
                         </div>
 
