@@ -307,37 +307,27 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         $query->whereIn('candidate_master.final_status', ['A', 'D']);
 
         // Date filter based on Contract Start Date
+        // Date filter based on Contract Start Date
+        $fyStart = $this->startYear . '-04-01';
+        $fyEnd   = $this->endYear . '-03-31';
+
         if ($this->month && $this->month != 'All') {
+
             $year = ($this->month >= 4) ? $this->startYear : $this->endYear;
+
             $startDate = "{$year}-{$this->month}-01";
             $endDate = Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
 
-            $query->whereNotNull('candidate_master.contract_start_date')
-                ->where(function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate])
-                        ->orWhere(function ($q2) use ($startDate, $endDate) {
-                            $q2->where('candidate_master.contract_start_date', '<=', $endDate)
-                                ->where(function ($q3) use ($startDate) {
-                                    $q3->whereNull('candidate_master.contract_end_date')
-                                        ->orWhere('candidate_master.contract_end_date', '>=', $startDate);
-                                });
-                        });
-                });
+            $query->whereBetween(
+                'candidate_master.contract_start_date',
+                [$startDate, $endDate]
+            );
         } else {
-            $fyStart = $this->startYear . '-04-01';
-            $fyEnd = $this->endYear . '-03-31';
 
-            $query->whereNotNull('candidate_master.contract_start_date')
-                ->where(function ($q) use ($fyStart, $fyEnd) {
-                    $q->whereBetween('candidate_master.contract_start_date', [$fyStart, $fyEnd])
-                        ->orWhere(function ($q2) use ($fyStart, $fyEnd) {
-                            $q2->where('candidate_master.contract_start_date', '<=', $fyEnd)
-                                ->where(function ($q3) use ($fyStart) {
-                                    $q3->whereNull('candidate_master.contract_end_date')
-                                        ->orWhere('candidate_master.contract_end_date', '>=', $fyStart);
-                                });
-                        });
-                });
+            $query->whereBetween(
+                'candidate_master.contract_start_date',
+                [$fyStart, $fyEnd]
+            );
         }
 
         $records = $query->orderByDesc('candidate_master.contract_start_date')->get();
@@ -475,10 +465,10 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             $index,
             $record['requisition_id'],
             $record['candidate_name'],
-            $record['reporting_manager'],   
-            $record['approver'],            
-            $record['submission_date'],    
-            $record['contract_start_date'], 
+            $record['reporting_manager'],
+            $record['approver'],
+            $record['submission_date'],
+            $record['contract_start_date'],
             $record['business_unit'],
             $record['zone'],
             $record['region'],
