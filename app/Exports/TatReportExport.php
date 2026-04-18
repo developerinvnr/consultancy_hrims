@@ -172,7 +172,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 'territory.territory_name',
                 'vertical.vertical_name',
                 'dept.department_name'
-            );
+            )->distinct();
 
         // Apply Hierarchy Access Control - FIXED to use employee records for territory mapping
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {

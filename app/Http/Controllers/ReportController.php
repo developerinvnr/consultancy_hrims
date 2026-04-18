@@ -924,32 +924,20 @@ class ReportController extends Controller
             $startDate = "{$year}-{$month}-01";
             $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
 
-            $query->whereNotNull('candidate_master.contract_start_date')
-                ->where(function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('candidate_master.contract_start_date', [$startDate, $endDate])
-                        ->orWhere(function ($q2) use ($startDate, $endDate) {
-                            $q2->where('candidate_master.contract_start_date', '<=', $endDate)
-                                ->where(function ($q3) use ($startDate) {
-                                    $q3->whereNull('candidate_master.contract_end_date')
-                                        ->orWhere('candidate_master.contract_end_date', '>=', $startDate);
-                                });
-                        });
-                });
+            $fyStart = $startYear . '-04-01';
+            $fyEnd   = $endYear . '-03-31';
+
+            $query->whereBetween(
+                'candidate_master.contract_start_date',
+                [$fyStart, $fyEnd]
+            );
         } else {
             $fyStart = $startYear . '-04-01';
             $fyEnd = $endYear . '-03-31';
-
-            $query->whereNotNull('candidate_master.contract_start_date')
-                ->where(function ($q) use ($fyStart, $fyEnd) {
-                    $q->whereBetween('candidate_master.contract_start_date', [$fyStart, $fyEnd])
-                        ->orWhere(function ($q2) use ($fyStart, $fyEnd) {
-                            $q2->where('candidate_master.contract_start_date', '<=', $fyEnd)
-                                ->where(function ($q3) use ($fyStart) {
-                                    $q3->whereNull('candidate_master.contract_end_date')
-                                        ->orWhere('candidate_master.contract_end_date', '>=', $fyStart);
-                                });
-                        });
-                });
+            $query->whereBetween(
+                'candidate_master.contract_start_date',
+                [$fyStart, $fyEnd]
+            );
         }
 
         // Get all records for TAT calculation
