@@ -4,7 +4,7 @@
     <div class="row mb-2">
         <div class="col-12 d-flex justify-content-between align-items-center">
             <h4 class="mb-0">TAT Report (Action Wise)</h4>
-            <a href="{{ route('reports.tat.export', request()->query()) }}" class="btn btn-sm btn-success">
+            <a href="#" id="exportBtn" class="btn btn-sm btn-success">
                 <i class="ri-file-excel-2-line"></i> Export Excel
             </a>
         </div>
@@ -20,10 +20,10 @@
                             <label class="form-label form-label-sm">Financial Year</label>
                             @php
                             $currentMonth = date('n');
-                            $currentYear  = date('Y');
+                            $currentYear = date('Y');
                             $currentFYStart = ($currentMonth >= 4) ? $currentYear : $currentYear - 1;
                             $startYear = $currentFYStart - 2;
-                            $endYear   = $currentFYStart;
+                            $endYear = $currentFYStart;
                             @endphp
 
                             <select name="financial_year" class="form-select form-select-sm">
@@ -278,6 +278,8 @@
                             <th>#</th>
                             <th>Req ID</th>
                             <th>Candidate</th>
+                            <th>Reporting Manager</th>
+                            <th>Approver</th>
                             <th>Submission</th>
                             <th>Contract Start Date</th>
                             @foreach($stages as $key => $s)
@@ -298,6 +300,8 @@
                                 </span>
                             </td>
                             <td>{{ $row->candidate_name }}</td>
+                            <td>{{ $row->reporting_manager_name ?? '-' }}</td>
+                            <td>{{ $row->approver_name ?? '-' }}</td>
                             <td>
                                 {{ $row->submission_date ? \Carbon\Carbon::parse($row->submission_date)->format('d-M-Y') : '-' }}
                             </td>
@@ -828,6 +832,19 @@
         // Debug: Log what's in the dropdowns
         console.log('Department dropdown HTML:', $('#department_filter').html());
         console.log('Sub Department dropdown HTML:', $('#sub_department_filter').html());
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', function() {
+
+        let params = new URLSearchParams();
+
+        document.querySelectorAll('#mainFilterForm select, #hierarchyFilterForm select').forEach(el => {
+            if (el.value !== '') {
+                params.append(el.name, el.value);
+            }
+        });
+
+        window.location.href = "{{ route('reports.tat.export') }}?" + params.toString();
     });
 </script>
 <style>

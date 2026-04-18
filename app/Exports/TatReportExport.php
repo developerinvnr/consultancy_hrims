@@ -19,6 +19,7 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use App\Services\HierarchyAccessService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Employee;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class TatReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents
 {
@@ -63,7 +64,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         $this->departmentId = $departmentId;
         $this->requisitionType = $requisitionType;
         $this->status = $status;
-        
+
         // Store all filters for display
         $this->filters = [
             'bu' => $buId,
@@ -102,7 +103,8 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
         // Build query with hierarchy joins
         $query = CandidateMaster::query()
             ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
-            
+            ->leftJoin('core_employee as rm', 'rm.employee_id', '=', 'candidate_master.reporting_manager_employee_id')
+            ->leftJoin('core_employee as appr', 'appr.employee_id', '=', 'mr.approver_id')
             // Join hierarchy tables for display names
             ->leftJoin('core_business_unit as bu', 'bu.id', '=', 'candidate_master.business_unit')
             ->leftJoin('core_zone as zone', 'zone.id', '=', 'candidate_master.zone')
@@ -154,6 +156,8 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             ->select(
                 'candidate_master.*',
                 'mr.submission_date',
+                'rm.emp_name as reporting_manager_name',
+                'appr.emp_name as approver_name',
                 'mr.hr_verification_date',
                 'mr.approval_date',
                 'candidate_master.file_created_date',
@@ -179,7 +183,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             $query->whereIn('candidate_master.reporting_manager_employee_id', $allowedEmpIdsString);
 
             $accessLevel = $this->hierarchyService->getAccessLevel($employee);
-            
+
             // Get territory IDs based on access level using employee records
             $territoryIds = [];
 
@@ -352,11 +356,13 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
 
         // Prepare data
         $this->data = [];
-        
+
         foreach ($records as $row) {
             $record = [
                 'requisition_id' => $row->requisition_id,
                 'candidate_name' => $row->candidate_name,
+                'reporting_manager' => $row->reporting_manager_name ?? '-',
+                'approver' => $row->approver_name ?? '-',
                 'submission_date' => $row->submission_date ? Carbon::parse($row->submission_date)->format('d-M-Y') : '-',
                 'contract_start_date' => $row->contract_start_date ? Carbon::parse($row->contract_start_date)->format('d-M-Y') : '-',
                 'business_unit' => $row->business_unit_name ?? '-',
@@ -390,17 +396,17 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 if ($fromDate && $toDate) {
                     $days = max(0, ceil(Carbon::parse($fromDate)->diffInDays($toDate)));
                     $stageData['tat'] = $days;
-                    
+
                     if ($days <= 1) {
                         $stageData['tat_text'] = 'Within 1 Day';
                     } else {
                         $stageData['tat_text'] = $days . ' Days';
                     }
-                    
+
                     // Update totals
                     $this->stageTotals[$key]['total']++;
                     $this->stageTotals[$key]['sum_days'] += $days;
-                    
+
                     if ($days <= 1) {
                         $this->stageTotals[$key]['within_1']++;
                     } elseif ($days <= 3) {
@@ -409,17 +415,17 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                         $this->stageTotals[$key]['above_3']++;
                     }
                 }
-                
+
                 $record['stages'][$key] = $stageData;
             }
-            
+
             $this->data[] = $record;
         }
-        
+
         // Calculate averages
         foreach ($this->stageTotals as $key => &$totals) {
-            $totals['avg'] = $totals['total'] > 0 
-                ? round($totals['sum_days'] / $totals['total'], 2) 
+            $totals['avg'] = $totals['total'] > 0
+                ? round($totals['sum_days'] / $totals['total'], 2)
                 : 0;
         }
     }
@@ -435,6 +441,8 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             'S No.',
             'Req ID',
             'Candidate Name',
+            'Reporting Manager',
+            'Approver',
             'Submission Date',
             'Contract Start Date',
             'Business Unit',
@@ -467,8 +475,10 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             $index,
             $record['requisition_id'],
             $record['candidate_name'],
-            $record['submission_date'],
-            $record['contract_start_date'],
+            $record['reporting_manager'],   
+            $record['approver'],            
+            $record['submission_date'],    
+            $record['contract_start_date'], 
             $record['business_unit'],
             $record['zone'],
             $record['region'],
@@ -507,7 +517,7 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
                 $lastRow = count($this->data) + 3;
-                $lastColumn = chr(65 + (count($this->headings()) - 1));
+                $lastColumn = Coordinate::stringFromColumnIndex(count($this->headings()));
 
                 // Set column widths
                 $sheet->getColumnDimension('A')->setWidth(8);
@@ -524,11 +534,11 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
 
                 $stageCount = count($this->stages);
                 for ($i = 0; $i < $stageCount; $i++) {
-                    $col = chr(76 + $i);
+                    $col = Coordinate::stringFromColumnIndex(12 + $i);
                     $sheet->getColumnDimension($col)->setWidth(15);
                 }
                 for ($i = 0; $i < $stageCount; $i++) {
-                    $col = chr(76 + $stageCount + $i);
+                    $col = Coordinate::stringFromColumnIndex(12 + $stageCount + $i);
                     $sheet->getColumnDimension($col)->setWidth(15);
                 }
 
@@ -548,10 +558,10 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 // Add title
                 $sheet->insertNewRowBefore(1, 2);
                 $sheet->mergeCells('A1:' . $lastColumn . '1');
-                
+
                 $title = "TAT Report (Action Wise) - {$this->financialYear}";
                 $filterText = '';
-                
+
                 $filterDescriptions = [];
                 if ($this->month && $this->month != 'All') {
                     $monthName = date('F', mktime(0, 0, 0, $this->month, 1));
@@ -578,11 +588,11 @@ class TatReportExport implements FromCollection, WithHeadings, WithMapping, With
                 if ($this->status && $this->status != 'All') {
                     $filterDescriptions[] = "Status: {$this->status}";
                 }
-                
+
                 if (!empty($filterDescriptions)) {
                     $title .= " (" . implode(', ', $filterDescriptions) . ")";
                 }
-                
+
                 $sheet->setCellValue('A1', $title);
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 14],

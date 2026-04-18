@@ -765,6 +765,8 @@ class ReportController extends Controller
                 'mr.approval_date',
                 'candidate_master.file_created_date',
                 'candidate_master.contract_start_date',
+                'rm.emp_name as reporting_manager_name',
+                'appr.emp_name as approver_name',
                 DB::raw('(SELECT created_at FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "UNSIGNED" ORDER BY created_at DESC LIMIT 1) as agreement_created_date'),
                 DB::raw('(SELECT created_at FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "SIGNED" ORDER BY created_at DESC LIMIT 1) as agreement_uploaded_date'),
                 DB::raw('(SELECT dispatch_date FROM agreement_couriers WHERE agreement_document_id = (SELECT id FROM agreement_documents WHERE candidate_id = candidate_master.id AND document_type = "agreement" AND sign_status = "SIGNED" ORDER BY created_at DESC LIMIT 1) ORDER BY id DESC LIMIT 1) as dispatch_date'),
@@ -773,6 +775,8 @@ class ReportController extends Controller
                 'sub_dept.sub_department_name'
             )
             ->leftJoin('manpower_requisitions as mr', 'mr.id', '=', 'candidate_master.requisition_id')
+            ->leftJoin('core_employee as rm', 'rm.employee_id', '=', 'candidate_master.reporting_manager_employee_id')
+            ->leftJoin('core_employee as appr', 'appr.employee_id', '=', 'mr.approver_id')
             ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
             ->leftJoin('core_sub_department as sub_dept', 'sub_dept.id', '=', 'candidate_master.sub_department')
             ->whereIn('candidate_master.final_status', ['A', 'D'])
@@ -1121,12 +1125,12 @@ class ReportController extends Controller
         ));
     }
     public function tatExport(Request $request)
-    {
+    {  //dd($request->all());
         $request->validate([
             'financial_year' => 'required|string',
             'month' => 'nullable|integer|between:1,12',
             'department_id' => 'nullable|integer',
-            'requisition_type' => 'nullable|string|in:Contractual,TFA,CB',
+            'requisition_type' => 'nullable|string|in:Contractual,TFA,CB,All',
             'status' => 'nullable|string',
             // ✅ New hierarchy filters
             'bu' => 'nullable|string',
@@ -1136,6 +1140,7 @@ class ReportController extends Controller
             'vertical' => 'nullable|string',
             'employee' => 'nullable|string',
         ]);
+        //dd($request->all());
 
         return Excel::download(
             new TatReportExport(
