@@ -919,21 +919,23 @@ class ReportController extends Controller
         }
 
         // Filter by contract start date
+        // Filter by contract start date
         if ($month && $month != 'All') {
+
             $year = ($month >= 4) ? $startYear : $endYear;
+
             $startDate = "{$year}-{$month}-01";
             $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->format('Y-m-d');
+
+            $query->whereBetween(
+                'candidate_master.contract_start_date',
+                [$startDate, $endDate]
+            );
+        } else {
 
             $fyStart = $startYear . '-04-01';
             $fyEnd   = $endYear . '-03-31';
 
-            $query->whereBetween(
-                'candidate_master.contract_start_date',
-                [$fyStart, $fyEnd]
-            );
-        } else {
-            $fyStart = $startYear . '-04-01';
-            $fyEnd = $endYear . '-03-31';
             $query->whereBetween(
                 'candidate_master.contract_start_date',
                 [$fyStart, $fyEnd]
@@ -1235,7 +1237,7 @@ class ReportController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            
+
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
