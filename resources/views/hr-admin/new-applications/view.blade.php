@@ -561,9 +561,9 @@
 
 <!-- Document View Modal -->
 <div class="modal fade" id="documentViewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header py-2">
+            <div class="modal-header py-2 d-flex justify-content-between align-items-center">
                 <h6 class="modal-title mb-0" id="documentModalTitle">Document View</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -573,7 +573,7 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
-                <iframe id="documentViewer" style="display:none; width:100%; height:500px; border:none;"></iframe>
+                <iframe id="documentViewer" style="display:none; width:100%; height:75vh; border:none;"></iframe>
                 <div id="documentError" class="text-center py-4" style="display:none;">
                     <i class="ri-error-warning-line text-danger fs-1"></i>
                     <p class="mt-2 small">Unable to load document</p>
@@ -1191,5 +1191,23 @@ auth()->user()->hasRole('hr_admin')
         });
 
     });
+
+    function resizeDocModal(size) {
+        const modal = document.querySelector("#documentViewModal .modal-dialog");
+        const viewer = document.getElementById("documentViewer");
+
+        modal.classList.remove("modal-md", "modal-lg", "modal-xl", "modal-fullscreen");
+
+        if (size === "md") {
+            modal.classList.add("modal-lg");
+            viewer.style.height = "60vh";
+        } else if (size === "xl") {
+            modal.classList.add("modal-xl");
+            viewer.style.height = "75vh";
+        } else if (size === "full") {
+            modal.classList.add("modal-fullscreen");
+            viewer.style.height = "95vh";
+        }
+    }
 </script>
 @endpush
