@@ -780,7 +780,7 @@ class ReportController extends Controller
             ->leftJoin('core_department as dept', 'dept.id', '=', 'candidate_master.department_id')
             ->leftJoin('core_sub_department as sub_dept', 'sub_dept.id', '=', 'candidate_master.sub_department')
             ->whereIn('candidate_master.final_status', ['A', 'D'])
-            ->distinct();
+            ->distinct('candidate_master.id');
 
         // Apply hierarchy access control
         if (!$user->hasAnyRole(['Admin', 'hr_admin', 'management'])) {
@@ -943,7 +943,8 @@ class ReportController extends Controller
         }
 
         // Get all records for TAT calculation
-        $allRecords = $query->get();
+        $summaryQuery = clone $query;
+        $allRecords = $summaryQuery->get();
 
         // Define stages
         $stages = [
