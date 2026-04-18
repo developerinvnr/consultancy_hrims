@@ -561,7 +561,7 @@
 
 <!-- Document View Modal -->
 <div class="modal fade" id="documentViewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header py-2 d-flex justify-content-between align-items-center">
                 <h6 class="modal-title mb-0" id="documentModalTitle">Document View</h6>
