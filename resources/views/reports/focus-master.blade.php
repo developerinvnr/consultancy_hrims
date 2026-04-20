@@ -121,7 +121,7 @@
                     <td>{{ $rec->vertical->vertical_code ?? '-' }}</td>
                     <td>{{ $rec->regionRef->focus_code ?? '-' }}</td>
                     <td>{{ $rec->formatted_address }}</td>
-                    <td>{{ $rec->focus_code ?? '-' }}</td>
+                    <td>{{ $rec->workLocation->focus_code ?? '-' }}</td>
                     <td>{{ $rec->pin_code ?? '-' }}</td>
                     <td>{{ $rec->candidate_email ?? '-' }}</td>
                     <td>{{ $rec->mobile_no ?? '-' }}</td>
@@ -129,7 +129,7 @@
                     <td>{{ $rec->bank_account_no ?? '-' }}</td>
                     <td>{{ $rec->bank_ifsc ?? '-' }}</td>
                     <td>{{ $rec->mobile_no ?? '-' }}</td>
-                    <td>{{ $rec->city_village_name ?? '-' }}</td>
+                    <td>{{ $rec->workLocation->city_village_name ?? '-' }}</td>
                     <td>N/A</td>
                     <td>NO</td>
                     <td>{{ $rec->workState->state_name ?? '-' }}</td>
