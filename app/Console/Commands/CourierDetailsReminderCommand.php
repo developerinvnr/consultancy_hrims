@@ -50,8 +50,8 @@ class CourierDetailsReminderCommand extends Command
                 continue;
             }
 
-            $pendingDays = now()->diffInDays($agreement->created_at);
-
+            // $pendingDays = now()->diffInDays($agreement->created_at);
+            $pendingDays = $agreement->created_at->startOfDay()->diffInDays(now()->startOfDay());
             $mailTo = $candidate->reportingManager?->emp_email;
 
             if (!$mailTo || in_array($mailTo, $excludedEmails)) {
