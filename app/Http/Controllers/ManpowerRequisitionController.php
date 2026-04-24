@@ -529,13 +529,16 @@ class ManpowerRequisitionController extends Controller
     {
         $user = Auth::user();
 
+        // Check if user is the submitter
         $isSubmitter = $user->id === $requisition->submitted_by_user_id;
 
+        // Check if user is the approver
         $isApprover = (
             $requisition->approver_id &&
             $user->emp_id === $requisition->approver_id
         );
 
+        // Check if user is the immediate reporting manager
         $submitterReportingManager = DB::table('core_employee')
             ->where('employee_id', $requisition->submitted_by_employee_id)
             ->value('emp_reporting');
@@ -544,14 +547,26 @@ class ManpowerRequisitionController extends Controller
             $submitterReportingManager &&
             $submitterReportingManager == $user->emp_id;
 
-        // Optional: HR role access
-        $isHr = $user->hasRole('hr_admin'); // only if using roles
+        // NEW: Check if user is ANY superior in the hierarchy (direct or indirect)
+        $isSuperior = false;
 
-        if (! $isSubmitter && ! $isApprover && ! $isHr &&  ! $isSubmitterReportingManager) {
+        // Get all subordinates of the current user (direct and indirect)
+        $subordinateIds = $this->getAllSubordinateIds($user->emp_id);
+
+        // If the submitter is in the user's team hierarchy
+        if (!empty($subordinateIds) && in_array($requisition->submitted_by_employee_id, $subordinateIds)) {
+            $isSuperior = true;
+        }
+
+        // Check if user is HR admin
+        $isHr = $user->hasRole('hr_admin');
+
+        // Authorize: Submititer OR Approver OR Reporting Manager OR Any Superior OR HR
+        if (!$isSubmitter && !$isApprover && !$isHr && !$isSubmitterReportingManager && !$isSuperior) {
             abort(403, 'You are not authorized to view this requisition.');
         }
-        // dd($requisition);
 
+        // Load all relationships
         $requisition->load([
             'function',
             'department',
@@ -562,7 +577,7 @@ class ManpowerRequisitionController extends Controller
             'cityMaster',
             'residenceState',
             'workState',
-            'candidate.agreementDocuments', // Add this to load agreements through candidate
+            'candidate.agreementDocuments',
         ]);
 
         // Get agreement documents for this requisition
@@ -571,7 +586,6 @@ class ManpowerRequisitionController extends Controller
             'unsigned' => collect(),
             'signed' => null,
         ];
-
 
         if ($candidate) {
             $agreements['unsigned'] = AgreementDocument::where('candidate_id', $candidate->id)
@@ -589,6 +603,29 @@ class ManpowerRequisitionController extends Controller
         }
 
         return view('requisitions.show', compact('requisition', 'agreements'));
+    }
+
+    /**
+     * Get all subordinate employees recursively (direct and indirect reports)
+     */
+    private function getAllSubordinateIds($managerId)
+    {
+        $subordinateIds = [];
+
+        $directReports = DB::table('core_employee')
+            ->where('emp_reporting', $managerId)
+            ->pluck('employee_id')
+            ->toArray();
+
+        foreach ($directReports as $empId) {
+            $subordinateIds = array_merge(
+                $subordinateIds,
+                [$empId],
+                $this->getAllSubordinateIds($empId)
+            );
+        }
+
+        return array_unique($subordinateIds);
     }
 
     public function edit(ManpowerRequisition $requisition)

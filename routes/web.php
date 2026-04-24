@@ -166,6 +166,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('approver')->name('approver.')->group(function () {
+        Route::get('/approver/pending-approvals', [ApproverController::class, 'pendingApprovals'])
+        ->name('pending-approvals');
         Route::get('/requisition/{requisition}', [ApproverController::class, 'viewRequisition'])
             ->name('requisition.view');
         Route::post('/requisition/{requisition}/approve', [ApproverController::class, 'approveRequisition'])

@@ -115,7 +115,7 @@ class ApproverController extends Controller
 	 */
 	public function approveRequisition(Request $request, ManpowerRequisition $requisition)
 	{
-	
+
 		$user = Auth::user();
 		//dd($request->all());
 		// Validate authorization
@@ -127,8 +127,8 @@ class ApproverController extends Controller
 			return redirect()->back()
 				->with('error', 'This requisition is not pending approval.');
 		}
-		
-	    // dd($final_days);
+
+		// dd($final_days);
 		// $request->validate([
 		// 'contract_start_date' => 'required|date',
 		// 'contract_end_date' => 'required|date|after:contract_start_date',
@@ -138,8 +138,8 @@ class ApproverController extends Controller
 
 		DB::beginTransaction();
 		try {
-			
-		    $requisition->contract_start_date = $request->contract_start_date;
+
+			$requisition->contract_start_date = $request->contract_start_date;
 			$requisition->contract_end_date = $request->contract_end_date;
 			$requisition->remuneration_per_month = $request->remuneration_per_month;
 			$start = \Carbon\Carbon::parse($request->contract_start_date);
@@ -151,7 +151,7 @@ class ApproverController extends Controller
 			$requisition->approval_date = now();
 			$requisition->save();
 
-			
+
 
 			// // Create approval log
 			// \App\Models\ApprovalLog::create([
@@ -247,5 +247,18 @@ class ApproverController extends Controller
 		];
 
 		return response()->json($stats);
+	}
+	public function pendingApprovals()
+	{
+		$user = Auth::user();
+
+		// Get pending requisitions where user is approver
+		$pending_approvals = ManpowerRequisition::where('status', 'Pending Approval')
+			->where('approver_id', $user->emp_id)
+			->with(['department', 'submittedBy'])
+			->orderBy('submission_date', 'asc')
+			->get(); // Use get() instead of paginate() if partial expects collection
+
+		return view('approver.pending-approvals', compact('pending_approvals'));
 	}
 }

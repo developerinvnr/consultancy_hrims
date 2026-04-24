@@ -3,6 +3,14 @@
 $user = Auth::user();
 $hasTeam = $user->emp_id &&
 App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id)->exists();
+
+// Get pending approvals count for badge
+$pendingApprovalsCount = 0;
+if($user && $user->emp_id) {
+$pendingApprovalsCount = App\Models\ManpowerRequisition::where('status', 'Pending Approval')
+->where('approver_id', $user->emp_id)
+->count();
+}
 @endphp
 <div class="app-menu navbar-menu">
     <div class="navbar-brand-box">
@@ -85,29 +93,43 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </li>--}}
                 @endif
 
+                <!-- Pending Approvals Menu Item - Only shows when there are pending approvals -->
+                @if($pendingApprovalsCount > 0)
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('approver.pending-approvals')"
+                        href="{{ route('approver.pending-approvals') }}">
+                        <i class="ri-checkbox-circle-line"></i>
+                        <span>Pending Approvals</span>
+                        <span class="badge bg-danger rounded-pill ms-2">
+                            {{ $pendingApprovalsCount }}
+                        </span>
+                    </a>
+                </li>
+                @endif
 
-             @can('requisitions.view')
 
-                    @if(auth()->user()->hasAnyRole(['hr_admin']))
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @activeRoute('hr_requisitions.*')"
-                            href="{{ route('hr_requisitions.index') }}">
-                            <i class="ri-file-list-3-line"></i>
-                            <span>Requisitions</span>
-                        </a>
-                    </li>
-                    @else
-                    <li class="nav-item">
-                        <a class="nav-link menu-link @activeRoute('requisitions.*')"
-                            href="{{ route('requisitions.index') }}">
-                            <i class="ri-file-list-3-line"></i>
-                            <span>Requisitions</span>
-                        </a>
-                    </li>
-                    @endif
-             @endcan
+                @can('requisitions.view')
 
-             @can('requisitions.team.view')
+                @if(auth()->user()->hasAnyRole(['hr_admin']))
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('hr_requisitions.*')"
+                        href="{{ route('hr_requisitions.index') }}">
+                        <i class="ri-file-list-3-line"></i>
+                        <span>Requisitions</span>
+                    </a>
+                </li>
+                @else
+                <li class="nav-item">
+                    <a class="nav-link menu-link @activeRoute('requisitions.*')"
+                        href="{{ route('requisitions.index') }}">
+                        <i class="ri-file-list-3-line"></i>
+                        <span>Requisitions</span>
+                    </a>
+                </li>
+                @endif
+                @endcan
+
+                @can('requisitions.team.view')
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('team.requisitions.*')"
                         href="{{ route('team.requisitions.index') }}">
@@ -115,18 +137,18 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                         <span>Team Requisitions</span>
                     </a>
                 </li>
-             @endcan
+                @endcan
 
                 {{--
                     @if(auth()->user()->hasAnyRole(['hr_admin']))
                         <li class="nav-item">
                             <a class="nav-link menu-link @activeRoute('import.candidates.*')"
                                 href="{{ route('import.candidates') }}">
-                                        <i class="ri-file-list-3-line"></i>
-                                        <span>Import Excel</span>
-                             </a>
-                        </li>
-                    @endif
+                <i class="ri-file-list-3-line"></i>
+                <span>Import Excel</span>
+                </a>
+                </li>
+                @endif
                 --}}
 
 
@@ -174,19 +196,19 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     </a>
                 </li>
 
-               <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.hr.*')" href="{{ route('salary.hr.review') }}">
                         <i class="ri-shield-user-line"></i>
                         <span>HR Salary Review</span>
                     </a>
                 </li>
 
-                    {{--<li class="nav-item">
+                {{--<li class="nav-item">
                         <a class="nav-link menu-link @activeRoute('master')" href="{{ route('master') }}">
-                    <i class="ri-database-2-line"></i>
-                    <span>Master Report</span>
-                    </a>
-                    </li>--}}
+                <i class="ri-database-2-line"></i>
+                <span>Master Report</span>
+                </a>
+                </li>--}}
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('salary.detailed.report.*')"
@@ -205,12 +227,12 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
 
                 <li class="nav-item">
                     <a class="nav-link menu-link @activeRoute('email.logs.*')"
-                    href="{{ route('email.logs.index') }}">
+                        href="{{ route('email.logs.index') }}">
                         <i class="ri-mail-line"></i>
                         <span>Email Logs</span>
                     </a>
                 </li>
-               @endif
+                @endif
 
                 {{--<li class="nav-item">
                     <a href="{{ route('salary.management.report') }}" class="nav-link">
@@ -219,13 +241,13 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                 </a>
                 </li>--}}
 
-               @can('payment_workflow.view')
-                    <li class="nav-item">
-                        <a href="{{ route('payment.workflow.index') }}" class="nav-link">
-                            <i class="mdi mdi-cash"></i>
-                            <span>Payment Workflow</span>
-                        </a>
-                    </li>
+                @can('payment_workflow.view')
+                <li class="nav-item">
+                    <a href="{{ route('payment.workflow.index') }}" class="nav-link">
+                        <i class="mdi mdi-cash"></i>
+                        <span>Payment Workflow</span>
+                    </a>
+                </li>
                 @endcan
 
                 <a href="{{ route('reports.index') }}" class="nav-link">
@@ -233,7 +255,7 @@ App\Models\CandidateMaster::where('reporting_manager_employee_id', $user->emp_id
                     <span>Reports</span>
                 </a>
 
-                
+
 
                 @can('ledger.manage')
                 <a href="{{ route('ledger.index') }}" class="nav-link">
