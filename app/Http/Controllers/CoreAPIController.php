@@ -36,7 +36,7 @@ class CoreAPIController extends Controller
             // Check if the response is successful
             if ($response->failed()) {
                 // Handle unsuccessful responses
-                Log::error('API sync failed', ['status' => $response->status(), 'response' => $response->body()]);
+                //Log::error('API sync failed', ['status' => $response->status(), 'response' => $response->body()]);
                 return response()->json(['status' => 400, 'msg' => 'Failed to synchronize APIs.']);
             }
 
@@ -45,7 +45,7 @@ class CoreAPIController extends Controller
 
             // Validate the structure of the response
             if (!isset($data['api_list']) || !is_array($data['api_list'])) {
-                Log::error('Invalid API response structure', ['response' => $data]);
+                //Log::error('Invalid API response structure', ['response' => $data]);
                 return response()->json(['status' => 400, 'msg' => 'Unexpected API response format.']);
             }
 
@@ -75,7 +75,7 @@ class CoreAPIController extends Controller
             return response()->json(['status' => 200, 'msg' => 'API synchronized successfully.']);
         } catch (\Illuminate\Database\QueryException $e) {
             // Handle database-specific exceptions
-            Log::error('Database error during API sync', ['error' => $e->getMessage()]);
+            //Log::error('Database error during API sync', ['error' => $e->getMessage()]);
             return response()->json(['status' => 500, 'msg' => 'Database error occurred.']);
         }
     }
@@ -103,13 +103,14 @@ class CoreAPIController extends Controller
 
         $results = [];
         foreach ($sortedApis as $api) {
-            Log::info("Starting sync for API: $api");
+            
+            //Log::info("Starting sync for API: $api");
 
             try {
                 $apiData = DB::table('core_apis')->where('api_end_point', $api)->first(['parameters', 'table_name']);
 
                 if (!$apiData) {
-                    Log::error("API configuration not found for: $api");
+                    //Log::error("API configuration not found for: $api");
                     $results[$api] = ['status' => 'error', 'message' => 'API configuration not found'];
                     continue;
                 }
@@ -118,8 +119,10 @@ class CoreAPIController extends Controller
                 $tableName = $prefix . $apiData->table_name;
 
                 if ($api === 'employee_tools') {
+
                     $applicationName = 'Consultancy HRIMS';
-                    Log::info("Calling employee_tools API...");
+
+                    //Log::info("Calling employee_tools API...");
 
                     $response = Http::withHeaders([
                         'api-key' => $apiKey,
@@ -131,71 +134,165 @@ class CoreAPIController extends Controller
                         ->get("$baseUrl/api/$api", [
                             'application_name' => $applicationName
                         ]);
-                    Log::info("employee_tools API response received");
+
+                    //Log::info("employee_tools API response received");
+
                     if ($response->failed()) {
-                        Log::error("API sync failed for $api: HTTP Status {$response->status()}");
+                        //Log::error("API sync failed for $api: HTTP Status {$response->status()}");
                         continue;
                     }
 
                     $data = $response->json();
+
                     if (!isset($data['list']) || !is_array($data['list'])) {
-                        Log::error("Invalid API response structure for $api");
+                        //Log::error("Invalid API response structure for $api");
                         continue;
                     }
 
-                    // Get ALL employee IDs from API response (regardless of status)
+                    //Log::info("Total employees received from API: " . count($data['list']));
+
+                    /**
+                     * STEP 1: Get employee IDs from API
+                     */
                     $apiEmployeeIds = array_column($data['list'], 'employee_id');
 
-                    // Get existing employee IDs from our database
+                    /**
+                     * STEP 2: Get existing employee IDs from DB
+                     */
                     $existingEmployeeIds = DB::table('users')
                         ->whereNotNull('emp_id')
                         ->pluck('emp_id')
                         ->toArray();
 
-                    // Find employees in DB but not in API response at all
-                    $missingEmployeeIds = array_diff($existingEmployeeIds, $apiEmployeeIds);
+                    /**
+                     * STEP 3: Disable employees missing from API
+                     */
+                    $missingEmployeeIds = array_diff(
+                        $existingEmployeeIds,
+                        $apiEmployeeIds
+                    );
 
-                    // Disable completely missing employees
                     if (!empty($missingEmployeeIds)) {
+
                         DB::table('users')
                             ->whereIn('emp_id', $missingEmployeeIds)
                             ->update([
                                 'status' => 'D',
                                 'updated_at' => now()
                             ]);
+
+                        //Log::info("Disabled employees count: " . count($missingEmployeeIds));
                     }
 
-                    // Process all employees from API (both active and inactive)
-                    $bulkData = [];
+                    /**
+                     * STEP 4: Prepare insert + update arrays
+                     */
+                    $insertData = [];
+                    $updateData = [];
 
                     foreach ($data['list'] as $employee) {
+
                         if (empty($employee['employee_id'])) {
-                            Log::warning('Skipping employee with missing employee_id', $employee);
                             continue;
                         }
 
-                        $bulkData[] = [
-                            'name' => $employee['emp_name'] ?? '',
-                            'emp_id' => $employee['employee_id'],
-                            'emp_code' => $employee['emp_code'],
-                            'status' => 'A',
-                            'reporting_id' => $employee['emp_reporting'],
-                            'email' => $employee['emp_email'] ?? null,
-                            'password' => Hash::make($employee['emp_contact'] ?? 'default123'),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
+                        $empId = $employee['employee_id'];
 
-                    if (!empty($bulkData)) {
-                        foreach (array_chunk($bulkData, 100) as $chunk) {
-                            DB::table('users')->upsert(
-                                $chunk,
-                                ['emp_id'],
-                                ['name', 'emp_code', 'status', 'reporting_id', 'email', 'password', 'updated_at']
-                            );
+                        $status = ($employee['emp_status'] ?? 'A') == 'A'
+                            ? 'A'
+                            : 'D';
+
+                        if (in_array($empId, $existingEmployeeIds)) {
+
+                            $updateRow = [
+                                'emp_id' => $empId,
+                                'status' => $status,
+                                'reporting_id' => $employee['emp_reporting'] ?? null,
+                                'updated_at' => now()
+                            ];
+
+                            $updateData[] = $updateRow;
+                        } else {
+                            $email = $employee['emp_email'] ?? null;
+
+                            $emailExists = DB::table('users')
+                                ->where('email', $email)
+                                ->exists();
+                            // NEW USER → insert
+                            $insertData[] = [
+
+                                'name' => $employee['emp_name'] ?? '',
+                                'emp_id' => $empId,
+                                'emp_code' => $employee['emp_code'] ?? null,
+                                'status' => $status,
+                                'reporting_id' => $employee['emp_reporting'] ?? null,
+                                'email' => $emailExists ? null : $email,
+                                'password' => Hash::make(
+                                    $employee['emp_contact'] ?? 'default123'
+                                ),
+                                'created_at' => now(),
+                                'updated_at' => now(),
+
+                            ];
+
+                            //Log::info("New employee inserting: $empId");
                         }
                     }
+
+                    /**
+                     * STEP 5: INSERT NEW USERS (batch)
+                     */
+                    if (!empty($insertData)) {
+
+                        foreach (array_chunk($insertData, 100) as $chunk) {
+
+                            DB::table('users')->insert($chunk);
+                        }
+
+                        //Log::info("Inserted employees count: " . count($insertData));
+                    }
+
+                    /**
+                     * STEP 6: UPDATE EXISTING USERS (SAFE EMAIL UPDATE)
+                     */
+
+                    if (!empty($updateData)) {
+
+                        foreach ($updateData as $row) {
+
+                            $updatePayload = [
+                                'status' => $row['status'],
+                                'reporting_id' => $row['reporting_id'],
+                                'updated_at' => now()
+                            ];
+
+                            if (!empty($row['email'])) {
+
+                                $duplicateEmailExists = DB::table('users')
+                                    ->where('email', $row['email'])
+                                    ->where('emp_id', '!=', $row['emp_id'])
+                                    ->exists();
+
+                                if (!$duplicateEmailExists) {
+
+                                    $updatePayload['email'] = $row['email'];
+                                } else {
+
+                                    // Log::warning(
+                                    //     "Duplicate email skipped for emp_id {$row['emp_id']} -> {$row['email']}"
+                                    // );
+                                }
+                            }
+
+                            DB::table('users')
+                                ->where('emp_id', $row['emp_id'])
+                                ->update($updatePayload);
+                        }
+
+                        //Log::info("Updated employees count: " . count($updateData));
+                    }
+
+                    //Log::info("employee_tools sync completed successfully");
 
                     continue;
                 }
@@ -209,7 +306,7 @@ class CoreAPIController extends Controller
 
                 $results[$api] = $result;
             } catch (\Exception $e) {
-                Log::error("Error processing API $api: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                //Log::error("Error processing API $api: " . $e->getMessage() . "\n" . $e->getTraceAsString());
                 $results[$api] = ['status' => 'error', 'message' => $e->getMessage()];
             }
         }
