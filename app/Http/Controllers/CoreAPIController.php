@@ -119,11 +119,19 @@ class CoreAPIController extends Controller
 
                 if ($api === 'employee_tools') {
                     $applicationName = 'Consultancy HRIMS';
+                    Log::info("Calling employee_tools API...");
+
                     $response = Http::withHeaders([
                         'api-key' => $apiKey,
                         'Accept' => 'application/json',
-                    ])->get("$baseUrl/api/$api", ['application_name' => $applicationName]);
-
+                    ])
+                        ->timeout(120)
+                        ->connectTimeout(30)
+                        ->retry(2, 3000)
+                        ->get("$baseUrl/api/$api", [
+                            'application_name' => $applicationName
+                        ]);
+                    Log::info("employee_tools API response received");
                     if ($response->failed()) {
                         Log::error("API sync failed for $api: HTTP Status {$response->status()}");
                         continue;
