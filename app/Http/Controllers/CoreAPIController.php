@@ -180,7 +180,7 @@ class CoreAPIController extends Controller
                     }
 
                     if (!empty($bulkData)) {
-                        foreach (array_chunk($bulkData, 500) as $chunk) {
+                        foreach (array_chunk($bulkData, 100) as $chunk) {
                             DB::table('users')->upsert(
                                 $chunk,
                                 ['emp_id'],
