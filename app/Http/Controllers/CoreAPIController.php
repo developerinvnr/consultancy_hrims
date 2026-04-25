@@ -161,6 +161,10 @@ class CoreAPIController extends Controller
                     $bulkData = [];
 
                     foreach ($data['list'] as $employee) {
+                        if (empty($employee['employee_id'])) {
+                            Log::warning('Skipping employee with missing employee_id', $employee);
+                            continue;
+                        }
 
                         $bulkData[] = [
                             'name' => $employee['emp_name'] ?? '',
@@ -175,13 +179,14 @@ class CoreAPIController extends Controller
                         ];
                     }
 
-                    foreach (array_chunk($bulkData, 500) as $chunk) {
-
-                        DB::table('users')->upsert(
-                            $chunk,
-                            ['emp_id'], // unique key
-                            ['name', 'emp_code', 'status', 'reporting_id', 'email', 'password', 'updated_at']
-                        );
+                    if (!empty($bulkData)) {
+                        foreach (array_chunk($bulkData, 500) as $chunk) {
+                            DB::table('users')->upsert(
+                                $chunk,
+                                ['emp_id'],
+                                ['name', 'emp_code', 'status', 'reporting_id', 'email', 'password', 'updated_at']
+                            );
+                        }
                     }
 
                     continue;
